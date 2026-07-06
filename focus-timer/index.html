@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月夜の集中タイマー｜ポモドーロ式の無料作業タイマー</title>
+<meta name="description" content="夜空の下で集中。25分作業+5分休憩のポモドーロ式タイマー。今日の集中時間も自動で記録される無料アプリです。">
+<meta name="theme-color" content="#0c0f1d">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
+    background: linear-gradient(180deg, #0c0f1d 0%, #131a33 70%, #0c0f1d 100%);
+    color: #e8e6dd;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  #sky { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  .star {
+    position: absolute; border-radius: 50%; background: #e8e6dd;
+    animation: twinkle 3s ease-in-out infinite;
+  }
+  @keyframes twinkle { 0%,100% { opacity: .15; } 50% { opacity: .8; } }
+
+  .wrap { position: relative; z-index: 1; max-width: 560px; margin: 0 auto; padding: 18px 14px 26px; text-align: center; }
+
+  .head h1 { font-size: 20px; letter-spacing: .12em; color: #d9b96a; font-weight: 700; }
+  .head p { font-size: 12px; color: #9aa0b5; margin-top: 2px; }
+
+  /* モード選択 */
+  .modes { display: flex; gap: 8px; justify-content: center; margin: 14px 0 4px; }
+  .mode {
+    padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer;
+    color: #b9bfd2; background: rgba(255,255,255,.05);
+    border: 1px solid #2c3552; border-radius: 999px; transition: all .15s;
+  }
+  .mode.active { color: #0c0f1d; background: #d9b96a; border-color: #d9b96a; }
+  .custom-row { display: none; gap: 10px; justify-content: center; align-items: center; margin-top: 10px; font-size: 13px; color: #b9bfd2; }
+  .custom-row.show { display: flex; }
+  .custom-row input {
+    width: 62px; padding: 5px 6px; font-size: 15px; font-weight: 700; text-align: center;
+    color: #d9b96a; background: rgba(255,255,255,.06);
+    border: 1px solid #2c3552; border-radius: 8px;
+  }
+
+  /* タイマー本体 */
+  .dial { position: relative; width: 290px; height: 290px; margin: 18px auto 6px; }
+  .dial svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: #232b47; stroke-width: 10; }
+  .ring-fg { fill: none; stroke: #d9b96a; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset .3s linear, stroke .3s; }
+  .ring-fg.break { stroke: #7fb69b; }
+  .dial-center {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2px;
+  }
+  .state { font-size: 14px; letter-spacing: .3em; color: #9aa0b5; }
+  .state.working { color: #d9b96a; }
+  .state.resting { color: #7fb69b; }
+  .time { font-size: 64px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: .04em; line-height: 1.1; }
+  .cycle-dots { display: flex; gap: 7px; margin-top: 6px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid #4a547a; }
+  .dot.done { background: #d9b96a; border-color: #d9b96a; }
+
+  .msg { min-height: 22px; font-size: 13.5px; color: #b9bfd2; margin: 4px 0 10px; }
+
+  /* ボタン */
+  .btns { display: flex; gap: 10px; justify-content: center; }
+  button.ctl {
+    min-width: 118px; padding: 13px 18px; font-size: 15px; font-weight: 700; cursor: pointer;
+    border-radius: 12px; border: 1px solid #d9b96a; transition: transform .1s;
+  }
+  button.ctl:active { transform: scale(.97); }
+  #btnMain { background: #d9b96a; color: #0c0f1d; }
+  .ctl.sub { background: transparent; color: #d9b96a; }
+
+  /* 統計 */
+  .stats {
+    margin-top: 18px; padding: 12px; font-size: 13px; color: #b9bfd2;
+    background: rgba(255,255,255,.04); border: 1px solid #232b47; border-radius: 12px;
+  }
+  .stats b { color: #d9b96a; font-size: 16px; }
+
+  .note { margin-top: 12px; font-size: 11px; color: #6b7390; }
+
+  @media (max-width: 380px) {
+    .dial { width: 250px; height: 250px; }
+    .dial svg { width: 250px; height: 250px; }
+    .time { font-size: 52px; }
+  }
+</style>
+</head>
+<body>
+<div id="sky"></div>
+<div class="wrap">
+
+  <header class="head">
+    <h1>🌙 月夜の集中タイマー</h1>
+    <p>しずかな夜空の下で、じぶんのペースで集中。</p>
+  </header>
+
+  <div class="modes">
+    <button class="mode active" data-work="25" data-break="5" type="button">25分＋休憩5分</button>
+    <button class="mode" data-work="50" data-break="10" type="button">50分＋休憩10分</button>
+    <button class="mode" data-custom="1" type="button">カスタム</button>
+  </div>
+  <div class="custom-row" id="customRow">
+    作業 <input type="number" id="cWork" min="1" max="120" value="30"> 分
+    ／ 休憩 <input type="number" id="cBreak" min="1" max="30" value="5"> 分
+  </div>
+
+  <div class="dial">
+    <svg width="290" height="290" viewBox="0 0 290 290">
+      <circle class="ring-bg" cx="145" cy="145" r="130"></circle>
+      <circle class="ring-fg" id="ring" cx="145" cy="145" r="130"></circle>
+    </svg>
+    <div class="dial-center">
+      <div class="state" id="state">じゅんび</div>
+      <div class="time" id="time">25:00</div>
+      <div class="cycle-dots" id="dots"></div>
+    </div>
+  </div>
+
+  <div class="msg" id="msg">スタートを押すと集中時間がはじまります</div>
+
+  <div class="btns">
+    <button class="ctl" id="btnMain" type="button">スタート</button>
+    <button class="ctl sub" id="btnSkip" type="button">スキップ</button>
+    <button class="ctl sub" id="btnReset" type="button">リセット</button>
+  </div>
+
+  <div class="stats">
+    今日の集中時間: <b id="todayTotal">0分</b>
+    <span id="sessionCount"></span>
+  </div>
+
+  <p class="note">4回の集中ごとに長めの休憩が入ります。音が鳴るので音量にご注意ください🔔<br>
+  スマホでは「ホーム画面に追加」で単独アプリとして使えます。</p>
+
+</div>
+
+<script>
+"use strict";
+function $(id) { return document.getElementById(id); }
+
+/* ---------- 星空 ---------- */
+(function stars() {
+  const sky = $("sky");
+  for (let i = 0; i < 60; i++) {
+    const s = document.createElement("div");
+    s.className = "star";
+    const size = Math.random() * 2 + 1;
+    s.style.cssText = `width:${size}px;height:${size}px;left:${Math.random() * 100}%;top:${Math.random() * 100}%;animation-delay:${Math.random() * 3}s;`;
+    sky.appendChild(s);
+  }
+})();
+
+/* ---------- 設定 ---------- */
+let workMin = 25, breakMin = 5;
+const LONG_EVERY = 4;               // 4回の集中ごとに長休憩
+const longBreakMin = () => Math.min(breakMin * 3, 30);
+
+/* ---------- 状態 ---------- */
+let mode = "work";                  // work | break
+let running = false;
+let endTime = 0;                    // 実時刻ベース(タブが裏でも正確)
+let remaining = workMin * 60;       // 停止中の残り秒
+let doneSessions = 0;               // 今サイクルの完了数(0-3)
+let lastTick = 0;
+
+const RING_C = 2 * Math.PI * 130;
+$("ring").style.strokeDasharray = RING_C;
+
+const BREAK_MSGS = [
+  "お茶を一杯どうぞ🍵", "肩の力を抜いて、深呼吸", "窓の外の空を眺めてみましょう",
+  "軽くのびをしてリフレッシュ", "水分補給を忘れずに", "目を閉じて30秒、休ませてあげて",
+];
+const WORK_MSGS = [
+  "いい調子です。このままいきましょう", "月が見守っています🌙", "ひとつのことに、静かに集中",
+];
+
+/* ---------- 今日の記録 (localStorage) ---------- */
+const KEY = "tsukiyo-focus-stats";
+function todayKey() { return new Date().toISOString().slice(0, 10); }
+function loadStats() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; }
+}
+function addFocusSeconds(sec) {
+  const s = loadStats();
+  s[todayKey()] = (s[todayKey()] || 0) + sec;
+  // 古い日付は7日分だけ残す
+  const keys = Object.keys(s).sort().slice(-7);
+  const trimmed = {};
+  keys.forEach(k => trimmed[k] = s[k]);
+  try { localStorage.setItem(KEY, JSON.stringify(trimmed)); } catch (e) {}
+  renderStats();
+}
+function renderStats() {
+  const sec = loadStats()[todayKey()] || 0;
+  const h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60);
+  $("todayTotal").textContent = h > 0 ? `${h}時間${m}分` : `${m}分`;
+}
+
+/* ---------- チャイム (WebAudio・外部ファイル不要) ---------- */
+let audioCtx = null;
+function chime(times) {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    for (let i = 0; i < times; i++) {
+      const t0 = audioCtx.currentTime + i * 0.5;
+      [880, 1320].forEach(freq => {
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.frequency.value = freq; o.type = "sine";
+        g.gain.setValueAtTime(0.12, t0);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.45);
+        o.connect(g).connect(audioCtx.destination);
+        o.start(t0); o.stop(t0 + 0.5);
+      });
+    }
+  } catch (e) {}
+}
+
+/* ---------- 表示 ---------- */
+function totalSec() {
+  if (mode === "work") return workMin * 60;
+  return (doneSessions === 0 ? longBreakMin() : breakMin) * 60;  // doneSessions=0はサイクル完了直後=長休憩
+}
+function fmt(sec) {
+  sec = Math.max(0, Math.ceil(sec));
+  return `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
+}
+function render() {
+  const rem = running ? (endTime - Date.now()) / 1000 : remaining;
+  $("time").textContent = fmt(rem);
+  const prog = 1 - Math.max(0, rem) / totalSec();
+  $("ring").style.strokeDashoffset = RING_C * (1 - prog);
+  $("ring").classList.toggle("break", mode === "break");
+
+  const st = $("state");
+  if (!running && rem === totalSec()) { st.textContent = "じゅんび"; st.className = "state"; }
+  else if (mode === "work") { st.textContent = running ? "集中中" : "一時停止"; st.className = "state working"; }
+  else { st.textContent = running ? "休憩中" : "一時停止"; st.className = "state resting"; }
+
+  document.title = running ? `${mode === "work" ? "▶" : "☕"} ${fmt(rem)} - 月夜の集中タイマー` : "月夜の集中タイマー";
+
+  const dots = $("dots");
+  dots.innerHTML = "";
+  for (let i = 0; i < LONG_EVERY; i++) {
+    const d = document.createElement("div");
+    d.className = "dot" + (i < doneSessions ? " done" : "");
+    dots.appendChild(d);
+  }
+}
+
+/* ---------- タイマー進行 ---------- */
+function tick() {
+  if (!running) return;
+  const now = Date.now();
+  if (mode === "work" && lastTick) {
+    focusBuffer += (now - lastTick) / 1000;
+    if (focusBuffer >= 10) { addFocusSeconds(Math.round(focusBuffer)); focusBuffer = 0; }
+  }
+  lastTick = now;
+  if (now >= endTime) { complete(); return; }
+  render();
+}
+let focusBuffer = 0;
+
+function flushFocus() {
+  if (focusBuffer > 0) { addFocusSeconds(Math.round(focusBuffer)); focusBuffer = 0; }
+}
+
+function complete() {
+  flushFocus();
+  lastTick = 0;
+  if (mode === "work") {
+    doneSessions++;
+    const isLong = doneSessions >= LONG_EVERY;
+    if (isLong) doneSessions = 0;
+    mode = "break";
+    remaining = (isLong ? longBreakMin() : breakMin) * 60;
+    // 長休憩判定をtotalSecで再現するためのフラグ調整: doneSessions=0 かつ mode=break → 長休憩
+    if (!isLong && doneSessions === 0) doneSessions = LONG_EVERY - 1; // 保険(通常起きない)
+    $("msg").textContent = (isLong ? "おつかれさま！長めの休憩です。" : "おつかれさま！") + " " + BREAK_MSGS[Math.floor(Math.random() * BREAK_MSGS.length)];
+    chime(2);
+  } else {
+    mode = "work";
+    remaining = workMin * 60;
+    $("msg").textContent = "さあ、つぎの集中をはじめましょう";
+    chime(1);
+  }
+  endTime = Date.now() + remaining * 1000;
+  running = true;   // 自動でつぎのフェーズへ
+  render();
+}
+
+function start() {
+  running = true;
+  endTime = Date.now() + remaining * 1000;
+  lastTick = Date.now();
+  $("btnMain").textContent = "一時停止";
+  if (mode === "work") $("msg").textContent = WORK_MSGS[Math.floor(Math.random() * WORK_MSGS.length)];
+  render();
+}
+function pause() {
+  flushFocus();
+  running = false;
+  remaining = Math.max(0, (endTime - Date.now()) / 1000);
+  lastTick = 0;
+  $("btnMain").textContent = "再開";
+  render();
+}
+function reset(toWork) {
+  flushFocus();
+  running = false;
+  lastTick = 0;
+  if (toWork) { mode = "work"; doneSessions = 0; }
+  remaining = totalSec();
+  $("btnMain").textContent = "スタート";
+  $("msg").textContent = "スタートを押すと集中時間がはじまります";
+  render();
+}
+
+$("btnMain").addEventListener("click", () => running ? pause() : start());
+$("btnSkip").addEventListener("click", () => {
+  if (!running && remaining === totalSec()) return;
+  endTime = Date.now();   // 即完了扱い
+  if (!running) { running = true; lastTick = 0; }
+  complete();
+});
+$("btnReset").addEventListener("click", () => reset(true));
+
+/* ---------- モード切替 ---------- */
+document.querySelectorAll(".mode").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".mode").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    $("customRow").classList.toggle("show", !!btn.dataset.custom);
+    if (!btn.dataset.custom) {
+      workMin = parseInt(btn.dataset.work, 10);
+      breakMin = parseInt(btn.dataset.break, 10);
+      reset(true);
+    } else {
+      applyCustom();
+    }
+  });
+});
+function applyCustom() {
+  workMin = Math.min(120, Math.max(1, parseInt($("cWork").value, 10) || 30));
+  breakMin = Math.min(30, Math.max(1, parseInt($("cBreak").value, 10) || 5));
+  reset(true);
+}
+$("cWork").addEventListener("change", applyCustom);
+$("cBreak").addEventListener("change", applyCustom);
+
+/* ---------- 初期化 ---------- */
+setInterval(tick, 250);
+renderStats();
+render();
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+</script>
+</body>
+</html>

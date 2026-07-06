@@ -1,0 +1,16 @@
+{
+  "name": "月夜の集中タイマー",
+  "short_name": "集中タイマー",
+  "description": "夜空の下で集中するポモドーロ式タイマー。今日の集中時間も自動記録。",
+  "lang": "ja",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c0f1d",
+  "theme_color": "#0c0f1d",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
