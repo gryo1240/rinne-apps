@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>STAR BEATS（仮）</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="game-wrap">
+  <canvas id="game-canvas"></canvas>
+  <button id="pause-btn" class="hidden" aria-label="一時停止">&#10073;&#10073;</button>
+
+  <div id="title-screen" class="overlay">
+    <h1>STAR BEATS</h1>
+    <p class="sub">v0.5</p>
+    <div class="howto">
+      <div class="howto-card">
+        <h3>&#128421; PC</h3>
+        <p><span class="kbd">D</span><span class="kbd">F</span><span class="kbd">J</span><span class="kbd">K</span><br>（6レーンは <span class="kbd">S</span>〜<span class="kbd">L</span>）</p>
+        <p><span class="kbd">Esc</span> 一時停止</p>
+      </div>
+      <div class="howto-card">
+        <h3>&#128241; スマホ</h3>
+        <p>画面下のボタンを<br>タップ / 長押し</p>
+        <p>左上 <b>&#10073;&#10073;</b> 一時停止</p>
+      </div>
+    </div>
+    <p class="desc">ノーツが白いラインに重なった瞬間に叩こう！<br>細長いノーツは<b>押しっぱなし</b>でボーナス。ミスが続くと体力が尽きて失敗！</p>
+    <div class="volume-row">
+      <span class="vol-label">&#128266; 音量</span>
+      <input type="range" id="vol-slider" min="0" max="100" value="70" aria-label="音量">
+      <span id="vol-val">70</span>
+    </div>
+    <button id="start-btn">スタート</button>
+  </div>
+
+  <div id="song-screen" class="overlay hidden">
+    <h2>SONG SELECT</h2>
+    <p class="sub">&#9664; &#9654; で曲を回して、Enter / タップで決定（PC: &larr;&rarr;で回す・&uarr;&darr;でタイトルへ戻る）</p>
+    <div id="song-list"></div>
+    <button id="song-back-btn" class="secondary">タイトルへ</button>
+  </div>
+
+  <div id="diff-screen" class="overlay hidden">
+    <h2 id="diff-song-title">曲名</h2>
+    <p class="sub">難易度をえらんでください（PC: &larr;&rarr;で選択・Enterで決定・&uarr;&darr;で戻る）</p>
+    <div id="diff-list"></div>
+    <button id="diff-back-btn" class="secondary">曲選択へ戻る</button>
+  </div>
+
+  <div id="pause-screen" class="overlay hidden">
+    <h2>PAUSE</h2>
+    <p id="pause-song" class="sub"></p>
+    <button id="resume-btn">再開</button>
+    <button id="restart-btn" class="secondary">最初から</button>
+    <button id="quit-btn" class="secondary">曲選択に戻る</button>
+  </div>
+
+  <div id="result-screen" class="overlay hidden">
+    <h2 id="r-status">RESULT</h2>
+    <p id="r-song" class="sub"></p>
+    <div id="r-rank">-</div>
+    <table class="r-table">
+      <tr><td>スコア</td><td id="r-score">0</td></tr>
+      <tr><td>精度</td><td id="r-acc">0%</td></tr>
+      <tr><td>最大コンボ</td><td id="r-combo">0</td></tr>
+      <tr><td class="c-perfect">PERFECT</td><td id="r-perfect">0</td></tr>
+      <tr><td class="c-good">GOOD</td><td id="r-good">0</td></tr>
+      <tr><td class="c-miss">MISS</td><td id="r-miss">0</td></tr>
+    </table>
+    <button id="retry-btn">もう一度</button>
+    <button id="share-btn" class="secondary">&#128241; 結果をシェア</button>
+    <button id="result-songs-btn" class="secondary">曲選択へ</button>
+  </div>
+</div>
+<script src="charts/songs.js"></script>
+<script src="audio.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,373 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: #0b0c18;
+  color: #f0f0f8;
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#game-wrap { position: fixed; inset: 0; }
+
+#game-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+/* 一時停止ボタン(プレイ中のみ表示) */
+#pause-btn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 5;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(240, 240, 248, 0.4);
+  background: rgba(20, 22, 40, 0.7);
+  color: #f0f0f8;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: none;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  background: rgba(11, 12, 24, 0.9);
+  text-align: center;
+  padding: 24px;
+  z-index: 10;
+  overflow-y: auto;
+}
+
+.overlay.hidden, #pause-btn.hidden { display: none; }
+
+h1 {
+  font-size: clamp(2.2rem, 8vw, 3.6rem);
+  letter-spacing: 0.12em;
+  background: linear-gradient(135deg, #ff5c8a, #9d7bff, #4dd2ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+h2 {
+  font-size: 1.7rem;
+  letter-spacing: 0.18em;
+  color: #9d7bff;
+}
+
+.sub { color: #8a8db0; font-size: 0.9rem; }
+
+.desc { line-height: 1.85; font-size: 0.95rem; }
+
+/* タイトル画面の操作説明カード */
+.howto {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.howto-card {
+  background: #161830;
+  border: 1px solid #3a3d66;
+  border-radius: 16px;
+  padding: 16px 22px;
+  min-width: 170px;
+  line-height: 2.0;
+  font-size: 0.95rem;
+}
+
+.howto-card h3 {
+  color: #9d7bff;
+  font-size: 1.05rem;
+  margin-bottom: 6px;
+  letter-spacing: 0.08em;
+}
+
+.kbd {
+  display: inline-block;
+  background: #2a2c48;
+  border: 1px solid #52558a;
+  border-bottom-width: 3px;
+  border-radius: 6px;
+  padding: 1px 9px;
+  margin: 0 2px;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+button {
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #fff;
+  background: linear-gradient(135deg, #ff5c8a, #9d7bff);
+  border: none;
+  border-radius: 999px;
+  padding: 13px 48px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(157, 123, 255, 0.45);
+}
+
+button:active { transform: scale(0.96); }
+
+button.secondary {
+  background: #2a2c48;
+  box-shadow: none;
+  font-size: 0.92rem;
+  padding: 10px 34px;
+}
+
+/* 曲選択・難易度選択リスト */
+#song-list, #diff-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(90vw, 420px);
+}
+
+/* 曲選択: 太鼓の達人風の横ローテーション */
+#song-list {
+  width: min(96vw, 640px);
+  gap: 14px;
+  align-items: center;
+}
+.carousel-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+.carousel-arrow {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.15rem;
+  background: #2a2c48;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.carousel-stage {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  height: 156px;
+  overflow: hidden;
+}
+.song-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 16px;
+  background: #1b1d36;
+  border: 1px solid #3a3d66;
+  text-align: center;
+  cursor: pointer;
+  padding: 12px;
+  transition: transform 0.14s ease, background 0.14s ease, border-color 0.14s ease, opacity 0.14s ease;
+}
+.song-card.center {
+  flex: 0 0 auto;
+  width: min(62vw, 340px);
+  min-height: 136px;
+  background: #232650;
+  border-color: #f0f0f8;
+  box-shadow: 0 6px 26px rgba(157, 123, 255, 0.4);
+  z-index: 2;
+}
+.song-card.side {
+  flex: 0 0 auto;
+  width: clamp(34px, 12vw, 84px);
+  height: 100px;
+  opacity: 0.5;
+  overflow: hidden;
+}
+.song-card.side .s-title {
+  font-size: 0.72rem;
+  color: #b8bbe0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+.song-card.center .s-title {
+  font-size: 1.28rem;
+  font-weight: bold;
+  line-height: 1.3;
+}
+.song-card.center .s-meta {
+  color: #8a8db0;
+  font-size: 0.8rem;
+  font-weight: normal;
+}
+.song-card.center .s-level {
+  font-size: 0.86rem;
+  font-weight: bold;
+  color: #6fe3ff;
+}
+.song-card .s-go {
+  margin-top: 3px;
+  font-size: 0.82rem;
+  color: #ffd75e;
+  font-weight: bold;
+}
+.carousel-index {
+  color: #8a8db0;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+}
+
+/* タイトル: 音量スライダー */
+.volume-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: #c8cbe0;
+}
+.volume-row input[type="range"] {
+  width: 160px;
+  accent-color: #9d7bff;
+  cursor: pointer;
+}
+#vol-val { min-width: 2.2em; text-align: left; color: #9d7bff; font-weight: bold; }
+
+/* CLEAR / PERFECT スタンプ */
+.diff-btn { position: relative; }
+.d-clear {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 1px 7px;
+  border-radius: 5px;
+  white-space: nowrap;
+  transform: rotate(-7deg);
+}
+.d-clear.clear { color: #ffe14d; border: 1.5px solid #ffe14d; }
+.d-clear.perfect {
+  color: #fff; border: 1.5px solid #ff8ad2;
+  background: linear-gradient(90deg, rgba(255,138,210,.28), rgba(120,220,255,.28));
+}
+.song-card.center { position: relative; }
+.card-clear {
+  position: absolute;
+  right: 12px;
+  bottom: 9px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 1px 7px;
+  border-radius: 5px;
+  white-space: nowrap;
+  transform: rotate(-7deg);
+  pointer-events: none;
+}
+.card-clear.clear { color: #ffe14d; border: 1.5px solid #ffe14d; }
+.card-clear.perfect {
+  color: #fff; border: 1.5px solid #ff8ad2;
+  background: linear-gradient(90deg, rgba(255,138,210,.3), rgba(120,220,255,.3));
+}
+
+/* 狭い画面では左右のプレビューを隠し、中央カード＋矢印だけにする(回転はスワイプ/矢印で) */
+@media (max-width: 480px) {
+  .song-card.side { display: none; }
+  .carousel-arrow { width: 42px; height: 42px; font-size: 1.05rem; }
+  .song-card.center { width: min(70vw, 300px); }
+  .carousel-stage { height: 148px; }
+}
+
+.song-btn, .diff-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: #1b1d36;
+  border: 1px solid #3a3d66;
+  box-shadow: none;
+  font-size: 1rem;
+  text-align: left;
+  transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+/* 選択中の項目を少し拡大して見える化 */
+.song-btn:hover, .diff-btn:hover,
+.song-btn.selected, .diff-btn.selected {
+  transform: scale(1.06);
+  background: #232650;
+  border-color: #f0f0f8;
+}
+
+.song-btn .s-title { font-size: 1.05rem; }
+.song-btn .s-meta, .diff-btn .d-meta {
+  color: #8a8db0;
+  font-size: 0.78rem;
+  font-weight: normal;
+  white-space: nowrap;
+}
+
+.diff-btn { border-width: 2px; }
+.diff-btn.d-easy   { border-color: #4dff9d; }
+.diff-btn.d-easy   .d-name { color: #4dff9d; }
+.diff-btn.d-normal { border-color: #4dd2ff; }
+.diff-btn.d-normal .d-name { color: #4dd2ff; }
+.diff-btn.d-hard   { border-color: #ffb84d; }
+.diff-btn.d-hard   .d-name { color: #ffb84d; }
+.diff-btn.d-fever  { border-color: #ff5c8a; }
+.diff-btn.d-fever  .d-name { color: #ff5c8a; }
+
+#r-rank {
+  font-size: 4.2rem;
+  font-weight: bold;
+  line-height: 1.1;
+  background: linear-gradient(135deg, #ffd75e, #ff5c8a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+#r-rank.failed {
+  background: linear-gradient(135deg, #777a99, #ff5c5c);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+#r-status.failed { color: #ff5c5c; }
+
+.r-table { border-collapse: collapse; font-size: 1.02rem; }
+.r-table td { padding: 4px 18px; }
+.r-table td:first-child { color: #8a8db0; text-align: left; }
+.r-table td:last-child { text-align: right; font-weight: bold; }
+
+.c-perfect { color: #ffd75e !important; }
+.c-good { color: #6fe3ff !important; }
+.c-miss { color: #777a99 !important; }
