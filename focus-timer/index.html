@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>月夜の集中タイマー｜ポモドーロ式の無料作業タイマー</title>
-<meta name="description" content="夜空の下で集中。25分作業+5分休憩のポモドーロ式タイマー。今日の集中時間も自動で記録される無料アプリです。">
+<meta name="description" content="夜空の下で集中。25分作業+5分休憩のポモドーロ式タイマー。占い師・宵乃こよみが夜のお供に。今日の集中時間も自動で記録される無料アプリです。">
 <meta name="theme-color" content="#0c0f1d">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
@@ -32,7 +32,7 @@
   .head p { font-size: 12px; color: #9aa0b5; margin-top: 2px; }
 
   /* モード選択 */
-  .modes { display: flex; gap: 8px; justify-content: center; margin: 14px 0 4px; }
+  .modes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 14px 0 4px; }
   .mode {
     padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer;
     color: #b9bfd2; background: rgba(255,255,255,.05);
@@ -51,8 +51,8 @@
   .dial { position: relative; width: 290px; height: 290px; margin: 18px auto 6px; }
   .dial svg { transform: rotate(-90deg); }
   .ring-bg { fill: none; stroke: #232b47; stroke-width: 10; }
-  .ring-fg { fill: none; stroke: #d9b96a; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset .3s linear, stroke .3s; }
-  .ring-fg.break { stroke: #7fb69b; }
+  .ring-fg { fill: none; stroke: #d9b96a; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset .3s linear, stroke .3s; filter: drop-shadow(0 0 5px rgba(217,185,106,.45)); }
+  .ring-fg.break { stroke: #7fb69b; filter: drop-shadow(0 0 5px rgba(127,182,155,.45)); }
   .dial-center {
     position: absolute; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 2px;
@@ -65,7 +65,44 @@
   .dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid #4a547a; }
   .dot.done { background: #d9b96a; border-color: #d9b96a; }
 
-  .msg { min-height: 22px; font-size: 13.5px; color: #b9bfd2; margin: 4px 0 10px; }
+  /* こよみの相棒カード＋吹き出し */
+  .says { display: flex; align-items: center; gap: 12px; justify-content: center; margin: 8px auto 14px; max-width: 452px; }
+  .koyomi { position: relative; flex: 0 0 auto; width: 104px; height: 128px; animation: bob 3.8s ease-in-out infinite; }
+  .koyomi .glow {
+    position: absolute; inset: -26%; z-index: -1; border-radius: 50%;
+    background: radial-gradient(circle, rgba(217,185,106,.4) 0%, rgba(217,185,106,0) 66%);
+    filter: blur(6px); animation: glowPulse 4.6s ease-in-out infinite;
+  }
+  .koyomi .frame {
+    position: absolute; inset: 0; border-radius: 16px; overflow: hidden;
+    border: 2px solid rgba(217,185,106,.6); box-shadow: 0 6px 18px rgba(0,0,0,.5);
+  }
+  .koyomi .pic { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.2s ease; }
+  .koyomi .pic.on { opacity: 1; }
+  .koyomi .spark {
+    position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #f5e3ad;
+    box-shadow: 0 0 6px 1px rgba(245,227,173,.85); opacity: 0;
+  }
+  .koyomi .s1 { left: -5px; bottom: 26px; animation: rise 3.6s ease-in-out .2s infinite; }
+  .koyomi .s2 { right: -4px; bottom: 48px; animation: rise 4.3s ease-in-out 1.5s infinite; }
+  .koyomi .s3 { left: 52%; bottom: 6px; animation: rise 5.1s ease-in-out 2.7s infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  @keyframes glowPulse { 0%,100% { opacity: .5; transform: scale(.95); } 50% { opacity: 1; transform: scale(1.06); } }
+  @keyframes rise { 0% { opacity: 0; transform: translateY(6px) scale(.6); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-28px) scale(1); } }
+
+  .bubble {
+    position: relative; text-align: left; font-size: 13.5px; line-height: 1.55; color: #f2f0e6;
+    background: rgba(22,27,49,.9); border: 1px solid rgba(217,185,106,.42);
+    padding: 10px 13px; border-radius: 14px; min-height: 20px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.35);
+    min-width: 0; flex: 1 1 auto; overflow-wrap: anywhere;
+  }
+  .bubble::before {
+    content: ""; position: absolute; left: -7px; top: 50%; transform: translateY(-50%);
+    border: 7px solid transparent; border-right-color: rgba(22,27,49,.9);
+  }
+  .bubble.pop { animation: pop .34s ease; }
+  @keyframes pop { 0% { transform: scale(.97); opacity: .5; } 100% { transform: scale(1); opacity: 1; } }
 
   /* ボタン */
   .btns { display: flex; gap: 10px; justify-content: center; }
@@ -85,11 +122,16 @@
   .stats b { color: #d9b96a; font-size: 16px; }
 
   .note { margin-top: 12px; font-size: 11px; color: #6b7390; }
+  .note .who { color: #d9b96a; }
 
   @media (max-width: 380px) {
     .dial { width: 250px; height: 250px; }
     .dial svg { width: 250px; height: 250px; }
     .time { font-size: 52px; }
+    .koyomi { width: 92px; height: 114px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .koyomi, .koyomi .glow, .koyomi .spark { animation: none; }
   }
 </style>
 </head>
@@ -99,7 +141,7 @@
 
   <header class="head">
     <h1>🌙 月夜の集中タイマー</h1>
-    <p>しずかな夜空の下で、じぶんのペースで集中。</p>
+    <p>しずかな夜空の下で、こよみと一緒に集中。</p>
   </header>
 
   <div class="modes">
@@ -124,7 +166,17 @@
     </div>
   </div>
 
-  <div class="msg" id="msg">スタートを押すと集中時間がはじまります</div>
+  <div class="says">
+    <div class="koyomi" id="koyomi">
+      <div class="glow"></div>
+      <div class="frame">
+        <img class="pic pic-work" src="koyomi-work-mini.jpg" alt="占い中の宵乃こよみ">
+        <img class="pic pic-rest on" src="koyomi-rest-mini.jpg" alt="読書中の宵乃こよみ">
+      </div>
+      <span class="spark s1"></span><span class="spark s2"></span><span class="spark s3"></span>
+    </div>
+    <div class="bubble" id="bubble">スタートを押すと、集中がはじまりますよ🌙</div>
+  </div>
 
   <div class="btns">
     <button class="ctl" id="btnMain" type="button">スタート</button>
@@ -138,7 +190,8 @@
   </div>
 
   <p class="note">4回の集中ごとに長めの休憩が入ります。音が鳴るので音量にご注意ください🔔<br>
-  スマホでは「ホーム画面に追加」で単独アプリとして使えます。</p>
+  スマホでは「ホーム画面に追加」で単独アプリとして使えます。<br>
+  夜のお供は占い師 <span class="who">宵乃こよみ</span>。集中中は占い、休憩中は読書でそばにいます🌙</p>
 
 </div>
 
@@ -158,6 +211,21 @@ function $(id) { return document.getElementById(id); }
   }
 })();
 
+/* ---------- こよみの表情切替(work=占い / rest=読書) ---------- */
+function setScene(kind) {
+  document.querySelector(".pic-work").classList.toggle("on", kind === "work");
+  document.querySelector(".pic-rest").classList.toggle("on", kind === "rest");
+}
+
+/* ---------- こよみの吹き出し ---------- */
+function say(text) {
+  const b = $("bubble");
+  b.textContent = text;
+  b.classList.remove("pop");
+  void b.offsetWidth;      // リフローで再アニメーション
+  b.classList.add("pop");
+}
+
 /* ---------- 設定 ---------- */
 let workMin = 25, breakMin = 5;
 const LONG_EVERY = 4;               // 4回の集中ごとに長休憩
@@ -174,12 +242,19 @@ let lastTick = 0;
 const RING_C = 2 * Math.PI * 130;
 $("ring").style.strokeDasharray = RING_C;
 
+/* こよみの声(やわらかい丁寧語・不安を煽らない) */
 const BREAK_MSGS = [
-  "お茶を一杯どうぞ🍵", "肩の力を抜いて、深呼吸", "窓の外の空を眺めてみましょう",
-  "軽くのびをしてリフレッシュ", "水分補給を忘れずに", "目を閉じて30秒、休ませてあげて",
+  "おつかれさま。お茶を一杯どうぞ🍵",
+  "肩の力を抜いて、ふぅっと深呼吸を",
+  "窓の外の夜空を、すこし眺めてみましょう",
+  "軽くのびをして、リフレッシュしましょうね",
+  "お水を飲んで、ひと休みしてくださいね",
+  "目を閉じて30秒、休ませてあげましょう",
 ];
 const WORK_MSGS = [
-  "いい調子です。このままいきましょう", "月が見守っています🌙", "ひとつのことに、静かに集中",
+  "わたしも占いに集中しますね。一緒にがんばりましょう🌙",
+  "ひとつのことに、しずかに集中してみてくださいね",
+  "だいじょうぶ、お月さまが見守っていますよ",
 ];
 
 /* ---------- 今日の記録 (localStorage) ---------- */
@@ -284,12 +359,14 @@ function complete() {
     remaining = (isLong ? longBreakMin() : breakMin) * 60;
     // 長休憩判定をtotalSecで再現するためのフラグ調整: doneSessions=0 かつ mode=break → 長休憩
     if (!isLong && doneSessions === 0) doneSessions = LONG_EVERY - 1; // 保険(通常起きない)
-    $("msg").textContent = (isLong ? "おつかれさま！長めの休憩です。" : "おつかれさま！") + " " + BREAK_MSGS[Math.floor(Math.random() * BREAK_MSGS.length)];
+    setScene("rest");   // こよみも月夜の読書でひと休み
+    say((isLong ? "たくさん集中できましたね。長めに休みましょう。" : "ひと区切りですね、おつかれさま。") + " " + BREAK_MSGS[Math.floor(Math.random() * BREAK_MSGS.length)]);
     chime(2);
   } else {
     mode = "work";
     remaining = workMin * 60;
-    $("msg").textContent = "さあ、つぎの集中をはじめましょう";
+    setScene("work");   // こよみも占いを再開
+    say("さあ、つぎの集中をはじめましょうか🌙");
     chime(1);
   }
   endTime = Date.now() + remaining * 1000;
@@ -302,7 +379,7 @@ function start() {
   endTime = Date.now() + remaining * 1000;
   lastTick = Date.now();
   $("btnMain").textContent = "一時停止";
-  if (mode === "work") $("msg").textContent = WORK_MSGS[Math.floor(Math.random() * WORK_MSGS.length)];
+  if (mode === "work") { setScene("work"); say(WORK_MSGS[Math.floor(Math.random() * WORK_MSGS.length)]); }
   render();
 }
 function pause() {
@@ -311,6 +388,7 @@ function pause() {
   remaining = Math.max(0, (endTime - Date.now()) / 1000);
   lastTick = 0;
   $("btnMain").textContent = "再開";
+  say("ひとやすみですね。続きはいつでも待っていますよ");
   render();
 }
 function reset(toWork) {
@@ -320,7 +398,8 @@ function reset(toWork) {
   if (toWork) { mode = "work"; doneSessions = 0; }
   remaining = totalSec();
   $("btnMain").textContent = "スタート";
-  $("msg").textContent = "スタートを押すと集中時間がはじまります";
+  setScene("rest");
+  say("スタートを押すと、集中がはじまりますよ🌙");
   render();
 }
 
@@ -357,6 +436,7 @@ $("cWork").addEventListener("change", applyCustom);
 $("cBreak").addEventListener("change", applyCustom);
 
 /* ---------- 初期化 ---------- */
+setScene("rest");
 setInterval(tick, 250);
 renderStats();
 render();
