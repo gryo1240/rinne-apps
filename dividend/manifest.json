@@ -1,0 +1,16 @@
+{
+  "name": "配当金シミュレーター",
+  "short_name": "配当シミュ",
+  "description": "配当でいくらもらえる？必要な投資額は？再投資の複利効果もわかる無料の配当金シミュレーター。",
+  "lang": "ja",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f5ef",
+  "theme_color": "#f7f5ef",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

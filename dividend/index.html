@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>配当金シミュレーター｜配当でいくらもらえる？必要な投資額は？</title>
+<meta name="description" content="投資額と配当利回りを入れるだけで、もらえる配当金と再投資の複利効果をシミュレーション。「毎月〇円の配当がほしい」から必要な投資額を逆算もできる無料ツールです。">
+<meta name="theme-color" content="#f7f5ef">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
+    background: #f7f5ef;
+    color: #33301f;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px 28px; }
+
+  .head { text-align: center; padding: 10px 0 14px; }
+  .head h1 { font-size: 22px; letter-spacing: 0.04em; color: #6b5010; }
+  .head h1 .coin { font-size: 20px; }
+  .head p { font-size: 12.5px; color: #7a6f4c; margin-top: 2px; }
+
+  .tabs { display: flex; gap: 8px; margin: 10px 0 14px; }
+  .tab {
+    flex: 1; padding: 10px 6px; font-size: 14px; font-weight: 700;
+    color: #6b5f3c; background: #efe8d6; border: 1px solid #e0d6bd;
+    border-radius: 10px; cursor: pointer; text-align: center;
+    transition: background .15s, color .15s;
+  }
+  .tab.active { background: #b07d1e; border-color: #b07d1e; color: #fff; }
+
+  .card {
+    background: #fff; border: 1px solid #ece5d3; border-radius: 14px;
+    padding: 16px 16px 14px; margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(80, 60, 20, .05);
+  }
+  .card h2 { font-size: 14px; color: #6b5010; margin-bottom: 10px; }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 2px; }
+  .field .row { display: flex; align-items: baseline; justify-content: space-between; }
+  .field label { font-size: 13.5px; font-weight: 700; color: #453d22; }
+  .field .val { display: flex; align-items: baseline; gap: 4px; }
+  .field input[type="number"] {
+    width: 96px; padding: 5px 8px; font-size: 16px; font-weight: 700;
+    color: #9a6c14; text-align: right;
+    border: 1px solid #ddd2b6; border-radius: 8px; background: #fdfcf8;
+  }
+  .field .unit { font-size: 13px; color: #7a6f4c; }
+  .field input[type="range"] {
+    width: 100%; margin-top: 8px; accent-color: #b07d1e; height: 22px;
+  }
+  .toggles { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 4px; }
+  .toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #453d22; cursor: pointer; }
+  .toggle input { width: 18px; height: 18px; accent-color: #b07d1e; }
+
+  .result { text-align: center; padding-top: 4px; }
+  .result .label { font-size: 13px; color: #7a6f4c; }
+  .result .big { font-size: 34px; font-weight: 800; color: #9a6c14; letter-spacing: 0.02em; line-height: 1.3; }
+  .result .big small { font-size: 18px; }
+  .stats { display: flex; gap: 8px; margin-top: 12px; }
+  .stat { flex: 1; background: #f7f2e6; border-radius: 10px; padding: 8px 4px; text-align: center; }
+  .stat .k { font-size: 11.5px; color: #7a6f4c; }
+  .stat .v { font-size: 15px; font-weight: 700; color: #33301f; }
+  .stat .v.plus { color: #9a6c14; }
+  .nisa {
+    margin-top: 12px; font-size: 12.5px; color: #5f5636;
+    background: #f6f1e4; border-left: 4px solid #b07d1e; border-radius: 6px;
+    padding: 8px 10px; text-align: left;
+  }
+
+  .chart-box { position: relative; }
+  canvas { width: 100%; height: 240px; display: block; }
+  .legend { display: flex; gap: 16px; justify-content: center; margin-top: 8px; font-size: 12px; color: #6b5f3c; }
+  .legend span::before {
+    content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 3px;
+    margin-right: 5px; vertical-align: -1px;
+  }
+  .legend .lg-cum::before { background: #9a6c14; }
+  .legend .lg-asset::before { background: #d3b46b; }
+  .tooltip {
+    position: absolute; pointer-events: none; display: none;
+    background: rgba(60, 45, 15, .93); color: #fff; font-size: 11.5px;
+    padding: 7px 10px; border-radius: 8px; white-space: nowrap; z-index: 5; line-height: 1.5;
+  }
+
+  details summary {
+    cursor: pointer; font-size: 13.5px; font-weight: 700; color: #6b5010;
+    padding: 4px 0; list-style-position: inside;
+  }
+  .table-scroll { max-height: 320px; overflow-y: auto; margin-top: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { padding: 6px 4px; text-align: right; border-bottom: 1px solid #f1ece0; }
+  th { color: #7a6f4c; font-weight: 700; background: #faf7ef; position: sticky; top: 0; }
+  th:first-child, td:first-child { text-align: center; }
+  td.gain { color: #9a6c14; }
+
+  .disclaimer {
+    font-size: 11.5px; color: #8a7f5c; background: #f1ece0;
+    border-radius: 10px; padding: 10px 12px; margin-top: 2px;
+  }
+  .disclaimer strong { color: #6b5f3c; }
+
+  .hidden { display: none; }
+
+  @media (max-width: 430px) {
+    .head h1 { font-size: 19px; }
+    .result .big { font-size: 28px; }
+    .stats { flex-wrap: wrap; }
+    .stat { min-width: 45%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <h1><span class="coin">🪙</span> 配当金シミュレーター</h1>
+    <p>配当でいくらもらえる？いくら投資すればいい？</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" id="tabFwd" type="button">配当でいくらもらえる？</button>
+    <button class="tab" id="tabRev" type="button">目標の配当から逆算</button>
+  </div>
+
+  <!-- ========== 順算モード ========== -->
+  <section id="panelFwd">
+    <div class="card">
+      <h2>条件を入力（スライダーでも動かせます）</h2>
+      <div class="field">
+        <div class="row">
+          <label for="fPrincipal">投資する元本</label>
+          <span class="val"><input type="number" id="fPrincipal" min="0" max="100000" step="10" value="300"><span class="unit">万円</span></span>
+        </div>
+        <input type="range" id="fPrincipalR" min="0" max="3000" step="10" value="300" aria-label="投資する元本">
+      </div>
+      <div class="field">
+        <div class="row">
+          <label for="fYield">配当利回り（税引前・年）</label>
+          <span class="val"><input type="number" id="fYield" min="0" max="15" step="0.1" value="4"><span class="unit">%</span></span>
+        </div>
+        <input type="range" id="fYieldR" min="0" max="10" step="0.1" value="4" aria-label="配当利回り">
+      </div>
+      <div class="field">
+        <div class="row">
+          <label for="fGrowth">増配率（毎年配当が増える率・任意）</label>
+          <span class="val"><input type="number" id="fGrowth" min="0" max="15" step="0.5" value="0"><span class="unit">%</span></span>
+        </div>
+        <input type="range" id="fGrowthR" min="0" max="10" step="0.5" value="0" aria-label="増配率">
+      </div>
+      <div class="field">
+        <div class="row">
+          <label for="fYears">保有年数</label>
+          <span class="val"><input type="number" id="fYears" min="1" max="50" step="1" value="20"><span class="unit">年</span></span>
+        </div>
+        <input type="range" id="fYearsR" min="1" max="40" step="1" value="20" aria-label="保有年数">
+      </div>
+      <div class="toggles">
+        <label class="toggle"><input type="checkbox" id="fReinvest" checked>配当を再投資する</label>
+        <label class="toggle"><input type="checkbox" id="fNisa">NISA（非課税）で計算</label>
+      </div>
+    </div>
+
+    <div class="card result">
+      <div class="label"><span id="fYearsLabel">20</span>年間で受け取る配当の合計（手取り・概算）</div>
+      <div class="big" id="fResult">—</div>
+      <div class="stats">
+        <div class="stat"><div class="k">初年度の年間配当（手取り）</div><div class="v" id="fFirst">—</div></div>
+        <div class="stat"><div class="k"><span id="fLastYearLabel">20</span>年後の年間配当（手取り）</div><div class="v plus" id="fLast">—</div></div>
+        <div class="stat"><div class="k" id="fAssetLabel">再投資後の資産</div><div class="v" id="fAsset">—</div></div>
+      </div>
+      <div class="nisa" id="fNisaNote"></div>
+    </div>
+
+    <div class="card">
+      <h2>配当と資産の増え方グラフ</h2>
+      <div class="chart-box">
+        <canvas id="chart"></canvas>
+        <div class="tooltip" id="tooltip"></div>
+      </div>
+      <div class="legend">
+        <span class="lg-cum">受け取った配当の累計（手取り）</span>
+        <span class="lg-asset">資産評価額（簿価）</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <details>
+        <summary>年ごとの推移を表で見る</summary>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>年</th><th>年間配当(税引前)</th><th>手取り</th><th>累計(手取り)</th><th>資産(簿価)</th></tr></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ========== 逆算モード ========== -->
+  <section id="panelRev" class="hidden">
+    <div class="card">
+      <h2>目標を入力</h2>
+      <div class="field">
+        <div class="row">
+          <label for="rTarget">ほしい配当（手取り・年）</label>
+          <span class="val"><input type="number" id="rTarget" min="1" max="100000" step="1" value="60"><span class="unit">万円/年</span></span>
+        </div>
+        <input type="range" id="rTargetR" min="1" max="600" step="1" value="60" aria-label="ほしい年間配当">
+      </div>
+      <div class="field">
+        <div class="row">
+          <label for="rYield">配当利回り（税引前・年）</label>
+          <span class="val"><input type="number" id="rYield" min="0.1" max="15" step="0.1" value="4"><span class="unit">%</span></span>
+        </div>
+        <input type="range" id="rYieldR" min="0.5" max="10" step="0.1" value="4" aria-label="配当利回り">
+      </div>
+      <div class="toggles">
+        <label class="toggle"><input type="checkbox" id="rNisa">NISA（非課税）で計算</label>
+      </div>
+    </div>
+
+    <div class="card result">
+      <div class="label">年<span id="rTargetLabel">60万円</span>の配当（手取り）を受け取るのに必要な元本</div>
+      <div class="big" id="rResult">—</div>
+      <div class="stats">
+        <div class="stat"><div class="k">月あたりの配当（手取り）</div><div class="v" id="rMonthly">—</div></div>
+        <div class="stat"><div class="k">税引前で必要な年間配当</div><div class="v" id="rPre">—</div></div>
+        <div class="stat"><div class="k">元本に対する手取り利回り</div><div class="v plus" id="rNetYield">—</div></div>
+      </div>
+      <div class="nisa" id="rNisaNote"></div>
+    </div>
+  </section>
+
+  <div class="disclaimer">
+    <strong>ご利用上の注意:</strong> 本ツールは配当の受取額を試算する概算シミュレーションです。配当は「元本（簿価）× 配当利回り」で計算し、増配率がある場合は毎年その率で配当が増えるものとしています。<strong>株価の変動・売買手数料・単元株数・減配や無配のリスクは考慮していません</strong>。税金は上場株式配当の税率20.315%（NISA選択時は非課税）で計算しています。再投資は税引後の配当を簿価に加えて翌年の配当を計算します。将来の成果を保証するものではなく、特定銘柄の勧誘・投資助言を行うものではありません。投資の最終判断はご自身でお願いします。
+  </div>
+
+</div>
+
+<script>
+"use strict";
+function $(id) { return document.getElementById(id); }
+var TAX = 0.20315;
+
+function fmtMan(man) {
+  var n = Math.round(man);
+  if (n >= 10000) {
+    var oku = Math.floor(n / 10000), rest = n % 10000;
+    return rest === 0 ? oku + "億円" : oku + "億" + rest.toLocaleString() + "万円";
+  }
+  return n.toLocaleString() + "万円";
+}
+// 万円 → 円（100円単位）
+function fmtYen(man) {
+  var yen = Math.round(man * 10000 / 100) * 100;
+  return yen.toLocaleString() + "円";
+}
+function readNum(id, fallback) {
+  var v = parseFloat($(id).value);
+  return isFinite(v) && v >= 0 ? v : fallback;
+}
+function bindPair(numId, rangeId, onChange) {
+  var num = $(numId), rng = $(rangeId);
+  num.addEventListener("input", function () { rng.value = num.value; onChange(); });
+  rng.addEventListener("input", function () { num.value = rng.value; onChange(); });
+}
+
+/* ---------- 順算 ---------- */
+var chartData = null;
+
+function calcForward() {
+  var principal = readNum("fPrincipal", 0);
+  var yieldPct = readNum("fYield", 0);
+  var growth = readNum("fGrowth", 0);
+  var years = Math.max(1, Math.round(readNum("fYears", 1)));
+  var reinvest = $("fReinvest").checked;
+  var taxFree = $("fNisa").checked;
+  var after = taxFree ? 1 : (1 - TAX);
+
+  var cost = principal, cumAfter = 0;
+  var rows = [{ year: 0, divPre: 0, divAfter: 0, cumAfter: 0, value: principal }];
+  var first = 0, last = 0;
+  for (var k = 1; k <= years; k++) {
+    var divPre = cost * (yieldPct / 100) * Math.pow(1 + growth / 100, k - 1);
+    var divAfter = divPre * after;
+    cumAfter += divAfter;
+    if (reinvest) cost = cost + divAfter;
+    if (k === 1) first = divAfter;
+    if (k === years) last = divAfter;
+    rows.push({ year: k, divPre: divPre, divAfter: divAfter, cumAfter: cumAfter, value: reinvest ? cost : principal });
+  }
+  chartData = rows;
+
+  $("fYearsLabel").textContent = years;
+  $("fLastYearLabel").textContent = years;
+  $("fResult").textContent = fmtMan(cumAfter);
+  $("fFirst").textContent = fmtMan(first);
+  $("fLast").textContent = fmtMan(last);
+  $("fAssetLabel").textContent = reinvest ? "再投資後の資産（簿価）" : "投資した元本";
+  $("fAsset").textContent = fmtMan(reinvest ? cost : principal);
+
+  var msg;
+  if (taxFree) {
+    msg = "🪙 NISA（非課税）で計算中。配当に約20%の税金がかからないぶん、手取りが増えます。";
+  } else {
+    msg = "🪙 上場株式の配当には約20.315%の税金がかかります。NISA口座で受け取ると非課税にできます（上のチェックで切替）。";
+  }
+  if (reinvest) msg += " 配当を再投資すると、翌年の配当が少しずつ増える複利効果がはたらきます。";
+  $("fNisaNote").innerHTML = msg;
+
+  var tbody = $("tableBody");
+  tbody.innerHTML = rows.slice(1).map(function (r) {
+    return "<tr><td>" + r.year + "年目</td><td>" + fmtMan(r.divPre) + "</td><td class='gain'>" +
+      fmtMan(r.divAfter) + "</td><td>" + fmtMan(r.cumAfter) + "</td><td>" + fmtMan(r.value) + "</td></tr>";
+  }).join("");
+
+  drawChart();
+}
+
+/* ---------- グラフ ---------- */
+var PAD = { top: 14, right: 12, bottom: 26, left: 58 };
+function niceStep(max, ticks) {
+  var raw = max / ticks, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  var arr = [1, 2, 2.5, 5, 10];
+  for (var i = 0; i < arr.length; i++) { if (raw / mag <= arr[i]) return arr[i] * mag; }
+  return 10 * mag;
+}
+function drawChart() {
+  if (!chartData) return;
+  var canvas = $("chart"), dpr = window.devicePixelRatio || 1;
+  var w = canvas.clientWidth, h = canvas.clientHeight;
+  if (w === 0) return;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  var ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  var rows = chartData, years = rows[rows.length - 1].year;
+  var maxVal = Math.max(rows[rows.length - 1].value, rows[rows.length - 1].cumAfter, 1);
+  var step = niceStep(maxVal, 4), yMax = Math.ceil(maxVal / step) * step;
+  var plotW = w - PAD.left - PAD.right, plotH = h - PAD.top - PAD.bottom;
+  var X = function (yr) { return PAD.left + plotW * (yr / years); };
+  var Y = function (v) { return PAD.top + plotH * (1 - v / yMax); };
+
+  ctx.font = "11px sans-serif"; ctx.fillStyle = "#9a8f68"; ctx.strokeStyle = "#efe8d6";
+  ctx.lineWidth = 1; ctx.textAlign = "right";
+  for (var v = 0; v <= yMax; v += step) {
+    ctx.beginPath(); ctx.moveTo(PAD.left, Y(v)); ctx.lineTo(w - PAD.right, Y(v)); ctx.stroke();
+    ctx.fillText(v >= 10000 ? (v / 10000) + "億" : v.toLocaleString() + "万", PAD.left - 6, Y(v) + 4);
+  }
+  ctx.textAlign = "center";
+  var xStep = years <= 8 ? 1 : years <= 16 ? 2 : years <= 32 ? 5 : 10;
+  for (var yr = 0; yr <= years; yr += xStep) { ctx.fillText(yr + "年", X(yr), h - 8); }
+
+  function area(getVal, fill) {
+    ctx.beginPath(); ctx.moveTo(X(0), Y(0));
+    rows.forEach(function (r) { ctx.lineTo(X(r.year), Y(getVal(r))); });
+    ctx.lineTo(X(years), Y(0)); ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+  }
+  area(function (r) { return r.value; }, "rgba(211, 180, 107, 0.20)");
+  area(function (r) { return r.cumAfter; }, "rgba(154, 108, 20, 0.16)");
+
+  function line(getVal, color) {
+    ctx.beginPath();
+    rows.forEach(function (r, i) { i === 0 ? ctx.moveTo(X(r.year), Y(getVal(r))) : ctx.lineTo(X(r.year), Y(getVal(r))); });
+    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.stroke();
+  }
+  line(function (r) { return r.value; }, "#d3b46b");
+  line(function (r) { return r.cumAfter; }, "#9a6c14");
+}
+
+(function setupTooltip() {
+  var canvas = $("chart"), tip = $("tooltip");
+  canvas.addEventListener("pointermove", function (ev) {
+    if (!chartData) return;
+    var rect = canvas.getBoundingClientRect();
+    var px = ev.clientX - rect.left;
+    var years = chartData[chartData.length - 1].year;
+    var plotW = rect.width - PAD.left - PAD.right;
+    var yr = Math.round((px - PAD.left) / plotW * years);
+    if (yr < 0 || yr > years) { tip.style.display = "none"; return; }
+    var r = chartData[yr];
+    tip.innerHTML = "<b>" + yr + "年後</b><br>累計配当 " + fmtMan(r.cumAfter) + "<br>資産 " + fmtMan(r.value);
+    tip.style.display = "block";
+    var tw = tip.offsetWidth;
+    tip.style.left = Math.min(Math.max(px - tw / 2, 0), rect.width - tw) + "px";
+    tip.style.top = "6px";
+  });
+  canvas.addEventListener("pointerleave", function () { tip.style.display = "none"; });
+})();
+
+/* ---------- 逆算 ---------- */
+function calcReverse() {
+  var targetAfter = readNum("rTarget", 0);   // 手取り万円/年
+  var yieldPct = readNum("rYield", 0);
+  var taxFree = $("rNisa").checked;
+  var after = taxFree ? 1 : (1 - TAX);
+
+  var preNeeded = targetAfter / after;        // 税引前で必要な年間配当(万円)
+  var principal = yieldPct > 0 ? preNeeded / (yieldPct / 100) : 0;
+  var netYield = principal > 0 ? (targetAfter / principal * 100) : 0;
+
+  $("rTargetLabel").textContent = fmtMan(targetAfter);
+  $("rResult").textContent = yieldPct > 0 ? fmtMan(principal) : "利回りを入力してください";
+  $("rMonthly").textContent = fmtYen(targetAfter / 12);
+  $("rPre").textContent = fmtMan(preNeeded);
+  $("rNetYield").textContent = yieldPct > 0 ? netYield.toFixed(2) + "%" : "—";
+
+  $("rNisaNote").innerHTML = taxFree
+    ? "🪙 NISA（非課税）で計算中。税金がかからないので、同じ配当額でも必要な元本が少なくてすみます。"
+    : "🪙 配当には約20.315%の税金がかかるため、手取りで受け取るには税引前で少し多めの配当（＝多めの元本）が必要です。NISAなら非課税にできます。";
+}
+
+/* ---------- タブ ---------- */
+$("tabFwd").addEventListener("click", function () {
+  $("tabFwd").classList.add("active"); $("tabRev").classList.remove("active");
+  $("panelFwd").classList.remove("hidden"); $("panelRev").classList.add("hidden");
+  drawChart();
+});
+$("tabRev").addEventListener("click", function () {
+  $("tabRev").classList.add("active"); $("tabFwd").classList.remove("active");
+  $("panelRev").classList.remove("hidden"); $("panelFwd").classList.add("hidden");
+});
+
+/* ---------- 初期化 ---------- */
+bindPair("fPrincipal", "fPrincipalR", calcForward);
+bindPair("fYield", "fYieldR", calcForward);
+bindPair("fGrowth", "fGrowthR", calcForward);
+bindPair("fYears", "fYearsR", calcForward);
+$("fReinvest").addEventListener("change", calcForward);
+$("fNisa").addEventListener("change", calcForward);
+bindPair("rTarget", "rTargetR", calcReverse);
+bindPair("rYield", "rYieldR", calcReverse);
+$("rNisa").addEventListener("change", calcReverse);
+
+window.addEventListener("resize", drawChart);
+calcForward();
+calcReverse();
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(function () {});
+}
+</script>
+</body>
+</html>
