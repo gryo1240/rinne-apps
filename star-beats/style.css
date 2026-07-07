@@ -371,3 +371,49 @@ button.secondary {
 .c-perfect { color: #ffd75e !important; }
 .c-good { color: #6fe3ff !important; }
 .c-miss { color: #777a99 !important; }
+
+/* キーボードフォーカス(↑↓でえらんでEnter)。全画面共通の金色リング */
+.overlay .selected { outline: 2px solid #ffd75e; outline-offset: 3px; }
+.kbd-hint { font-size: 0.78rem; }
+
+/* リザルトのSNSシェア */
+.share-box {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  align-items: center;
+}
+.share-label { color: #8a8db0; font-size: 0.85rem; }
+.share-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.share-row button {
+  font-size: 0.82rem;
+  font-weight: bold;
+  padding: 9px 15px;
+  border-radius: 999px;
+  box-shadow: none;
+}
+.sh-x { background: #0f1419; border: 1px solid #3a3d66; }
+.sh-threads { background: #101010; border: 1px solid #3a3d66; }
+.sh-line { background: #06c755; }
+.sh-ig { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+
+/* シェア時のお知らせ(コピー完了など) */
+#share-toast {
+  position: absolute;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 22, 40, 0.96);
+  border: 1px solid #9d7bff;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 0.88rem;
+  z-index: 30;
+  max-width: 90vw;
+}
+#share-toast.hidden { display: none; }

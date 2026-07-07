@@ -13,7 +13,7 @@
 
   <div id="title-screen" class="overlay">
     <h1>STAR BEATS</h1>
-    <p class="sub">v0.5</p>
+    <p class="sub">v0.6</p>
     <div class="howto">
       <div class="howto-card">
         <h3>&#128421; PC</h3>
@@ -33,18 +33,19 @@
       <span id="vol-val">70</span>
     </div>
     <button id="start-btn">スタート</button>
+    <p class="sub kbd-hint">PC: &uarr;&darr;でえらぶ・Enterで決定・音量は&larr;&rarr;（マウスなしで遊べます）</p>
   </div>
 
   <div id="song-screen" class="overlay hidden">
     <h2>SONG SELECT</h2>
-    <p class="sub">&#9664; &#9654; で曲を回して、Enter / タップで決定（PC: &larr;&rarr;で回す・&uarr;&darr;でタイトルへ戻る）</p>
+    <p class="sub">&#9664; &#9654; / &larr;&rarr;で曲をまわす・&uarr;&darr;でえらぶ・Enter / タップで決定</p>
     <div id="song-list"></div>
     <button id="song-back-btn" class="secondary">タイトルへ</button>
   </div>
 
   <div id="diff-screen" class="overlay hidden">
     <h2 id="diff-song-title">曲名</h2>
-    <p class="sub">難易度をえらんでください（PC: &larr;&rarr;で選択・Enterで決定・&uarr;&darr;で戻る）</p>
+    <p class="sub">難易度をえらんでください（PC: &uarr;&darr;でえらぶ・Enterで決定）</p>
     <div id="diff-list"></div>
     <button id="diff-back-btn" class="secondary">曲選択へ戻る</button>
   </div>
@@ -70,8 +71,17 @@
       <tr><td class="c-miss">MISS</td><td id="r-miss">0</td></tr>
     </table>
     <button id="retry-btn">もう一度</button>
-    <button id="share-btn" class="secondary">&#128241; 結果をシェア</button>
+    <div class="share-box">
+      <p class="share-label">&#128241; 結果をシェア</p>
+      <div class="share-row">
+        <button id="share-x" class="sh-x" aria-label="Xでシェア">&#120143;</button>
+        <button id="share-threads" class="sh-threads" aria-label="Threadsでシェア">Threads</button>
+        <button id="share-line" class="sh-line" aria-label="LINEでシェア">LINE</button>
+        <button id="share-ig" class="sh-ig" aria-label="Instagramでシェア">Instagram</button>
+      </div>
+    </div>
     <button id="result-songs-btn" class="secondary">曲選択へ</button>
+    <div id="share-toast" class="hidden"></div>
   </div>
 </div>
 <script src="charts/songs.js"></script>

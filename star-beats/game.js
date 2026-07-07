@@ -121,7 +121,10 @@
     hitY = padTop - 26;
     initSky();
   }
-  window.addEventListener("resize", resize);
+  window.addEventListener("resize", () => {
+    resize();
+    if (state !== "playing") drawIdleBackground(); // リサイズでキャンバスが消えるため再描画
+  });
 
   // ---- 背景演出 ----
   let stars = [];
@@ -244,17 +247,38 @@
   }
 
   // ---- 画面遷移・選択UI ----
+  // 各画面の「フォーカスできる要素」を navList に登録し、↑↓で移動・Enterで決定する。
+  // マウスなしで全画面を操作するための仕組み(ホバーでもフォーカスが追従する)。
   let navList = [];
   let navIndex = 0;
+  const hoverBound = new WeakSet();
 
   function setNav(els, defIndex) {
-    navList = els;
-    navIndex = Math.min(defIndex || 0, els.length - 1);
+    navList = els.filter(Boolean);
+    navIndex = Math.max(0, Math.min(defIndex || 0, navList.length - 1));
+    for (const el of navList) {
+      if (hoverBound.has(el)) continue;
+      hoverBound.add(el);
+      el.addEventListener("mouseenter", () => {
+        const i = navList.indexOf(el);
+        if (i >= 0) { navIndex = i; applyNav(); }
+      });
+    }
     applyNav();
   }
 
   function applyNav() {
     navList.forEach((el, i) => el.classList.toggle("selected", i === navIndex));
+  }
+
+  function moveNav(d) {
+    if (!navList.length) return;
+    navIndex = (navIndex + d + navList.length) % navList.length;
+    applyNav();
+  }
+
+  function activateNav() {
+    if (navList[navIndex]) navList[navIndex].click();
   }
 
   function showScreen(name) {
@@ -263,6 +287,9 @@
     }
     if (name) state = name === "pause" ? "paused" : name;
     if (name !== "diff" && name !== "songs") stopPreview();
+    if (name === "title") {
+      setNav([document.getElementById("start-btn"), document.querySelector(".volume-row")], 0);
+    }
     if (name !== null) {
       pauseBtn.classList.add("hidden");
       drawIdleBackground();
@@ -430,6 +457,11 @@
     }
     const idx = document.getElementById("carousel-index");
     if (idx) idx.textContent = (songCursor + 1) + " / " + n;
+
+    // ↑↓のフォーカス対象: 中央カード(この曲であそぶ) → タイトルへ
+    const backBtn = document.getElementById("song-back-btn");
+    const keep = navList.length === 2 && navList[1] === backBtn ? navIndex : 0;
+    setNav([stage.querySelector(".song-card.center"), backBtn], keep);
   }
 
   function rotateSong(dir) {
@@ -437,6 +469,8 @@
     songCursor = (songCursor + dir + n) % n;
     selSong = songCursor;
     renderCarousel();
+    navIndex = 0; // 曲を回したらフォーカスは中央カードへ戻す
+    applyNav();
     drawIdleBackground();
     startPreview();
   }
@@ -481,7 +515,6 @@
         btn.appendChild(cm); // 名前とメタの「間」に入れて既存文字と重ならないようにする
       }
       btn.appendChild(meta);
-      btn.addEventListener("mouseenter", () => { navIndex = i; applyNav(); });
       btn.addEventListener("click", () => {
         selDiff = d.id;
         startGame();
@@ -489,7 +522,9 @@
       list.appendChild(btn);
       btns.push(btn);
     });
-    setNav(btns, DIFF_DEFS.findIndex((d) => d.id === selDiff));
+    // ↑↓のフォーカス対象: 各難易度 → 曲選択へ戻る
+    btns.push(document.getElementById("diff-back-btn"));
+    setNav(btns, Math.max(0, DIFF_DEFS.findIndex((d) => d.id === selDiff)));
   }
 
   // ---- ゲーム進行 ----
@@ -540,6 +575,11 @@
       currentSong().title + " ／ " + DIFF_NAMES[selDiff];
     screens.pause.classList.remove("hidden");
     pauseBtn.classList.add("hidden");
+    setNav([
+      document.getElementById("resume-btn"),
+      document.getElementById("restart-btn"),
+      document.getElementById("quit-btn"),
+    ], 0);
   }
 
   function resumeGame() {
@@ -590,6 +630,14 @@
     document.getElementById("r-good").textContent = counts.good;
     document.getElementById("r-miss").textContent = counts.miss;
     showScreen("result");
+    setNav([
+      document.getElementById("retry-btn"),
+      document.getElementById("share-x"),
+      document.getElementById("share-threads"),
+      document.getElementById("share-line"),
+      document.getElementById("share-ig"),
+      document.getElementById("result-songs-btn"),
+    ], 0);
   }
 
   function setJudge(text, color) {
@@ -912,52 +960,65 @@
         keyHeld[lane] = true;
         hitLane(lane);
       }
-    } else if (state === "paused" && e.code === "Escape") {
-      e.preventDefault();
-      resumeGame();
-    } else if (state === "songs") {
-      if (e.code === "ArrowLeft") {
+    } else if (state === "paused") {
+      // 一時停止: ↑↓で再開/最初から/曲選択を選び、Enterで決定。Escで再開
+      if (e.code === "Escape") {
         e.preventDefault();
-        rotateSong(-1);
-      } else if (e.code === "ArrowRight") {
-        e.preventDefault();
-        rotateSong(1);
+        resumeGame();
       } else if (e.code === "ArrowUp" || e.code === "ArrowDown") {
         e.preventDefault();
-        showScreen("title"); // 前のページ(タイトル)へ戻る
+        moveNav(e.code === "ArrowDown" ? 1 : -1);
       } else if (e.code === "Enter" || e.code === "Space") {
         e.preventDefault();
-        selSong = songCursor;
-        openDiffScreen();
+        activateNav();
       }
-    } else if (state === "diff") {
+    } else if (state === "songs") {
+      // 曲選択: ←→で曲を回す・↑↓で「この曲であそぶ/タイトルへ」を選ぶ・Enterで決定
       if (e.code === "ArrowLeft" || e.code === "ArrowRight") {
         e.preventDefault();
-        const d = e.code === "ArrowRight" ? 1 : -1;
-        navIndex = (navIndex + d + navList.length) % navList.length;
-        applyNav();
+        rotateSong(e.code === "ArrowRight" ? 1 : -1);
       } else if (e.code === "ArrowUp" || e.code === "ArrowDown") {
         e.preventDefault();
-        buildSongList();
-        showScreen("songs");
-        startPreviewIfNeeded(); // 前のページ(曲選択)へ戻る(試聴は継続)
+        moveNav(e.code === "ArrowDown" ? 1 : -1);
       } else if (e.code === "Enter" || e.code === "Space") {
         e.preventDefault();
-        if (navList[navIndex]) navList[navIndex].click();
+        activateNav();
+      }
+    } else if (state === "diff") {
+      // 難易度選択: ↑↓(←→でも可)で各難易度と「曲選択へ戻る」を選び、Enterで決定
+      if (e.code === "ArrowUp" || e.code === "ArrowLeft") {
+        e.preventDefault();
+        moveNav(-1);
+      } else if (e.code === "ArrowDown" || e.code === "ArrowRight") {
+        e.preventDefault();
+        moveNav(1);
+      } else if (e.code === "Enter" || e.code === "Space") {
+        e.preventDefault();
+        activateNav();
       }
     } else if (state === "result") {
-      if (e.code === "Enter" || e.code === "Space") {
+      // リザルト: ↑↓で「もう一度/各シェア/曲選択へ」を選び、Enterで決定
+      if (e.code === "ArrowUp" || e.code === "ArrowDown") {
         e.preventDefault();
-        startGame(); // もう一度
-      } else if (e.code === "ArrowUp" || e.code === "ArrowDown") {
+        moveNav(e.code === "ArrowDown" ? 1 : -1);
+      } else if (e.code === "Enter" || e.code === "Space") {
         e.preventDefault();
-        backToSongs();
+        activateNav();
       }
-    } else if (state === "title" && (e.code === "Space" || e.code === "Enter")) {
-      GameAudio.ensureCtx();
-      buildSongList();
-      showScreen("songs");
-      startPreview();
+    } else if (state === "title") {
+      // タイトル: ↑↓で「スタート/音量」を選ぶ。音量は←→で調整、スタートはEnterで決定
+      if (e.code === "ArrowUp" || e.code === "ArrowDown") {
+        e.preventDefault();
+        moveNav(e.code === "ArrowDown" ? 1 : -1);
+      } else if (e.code === "ArrowLeft" || e.code === "ArrowRight") {
+        if (navList[navIndex] && navList[navIndex].classList.contains("volume-row")) {
+          e.preventDefault();
+          nudgeVolume(e.code === "ArrowRight" ? 5 : -5);
+        }
+      } else if (e.code === "Enter" || e.code === "Space") {
+        e.preventDefault();
+        if (navList[navIndex] && navList[navIndex].id === "start-btn") activateNav();
+      }
     }
   });
 
@@ -971,6 +1032,10 @@
     touchHeld.fill(0);
     touchLaneMap.clear();
     mouseLane = -1;
+    if (state === "playing") pauseGame(); // タブ切替中に曲だけ進んでミスが積み上がるのを防ぐ
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && state === "playing") pauseGame();
   });
 
   function pointToLane(clientX) {
@@ -1052,26 +1117,95 @@
     });
   }
 
-  // リザルトのSNSシェア
+  // ←→キーでの音量調整(タイトル画面で音量にフォーカス中)
+  function nudgeVolume(d) {
+    if (!volSlider) return;
+    const v = Math.max(0, Math.min(100, (parseInt(volSlider.value, 10) || 0) + d));
+    volSlider.value = v;
+    GameAudio.setVolume(v / 100);
+    if (volVal) volVal.textContent = v;
+  }
+
+  // ---- リザルトのSNSシェア(X / Threads / LINE / Instagram) ----
   const SHARE_URL = "https://gryo1240.github.io/rinne-apps/star-beats/";
-  function shareResult() {
+
+  function shareText() {
     const rank = document.getElementById("r-rank").textContent;
     const sc = document.getElementById("r-score").textContent;
     const ac = document.getElementById("r-acc").textContent;
-    const text = "STAR BEATSで「" + currentSong().title + "」[" + DIFF_NAMES[selDiff] +
-      "] をプレイ！ ランク" + rank + " / スコア" + sc + " / 精度" + ac + "　#STARBEATS #音ゲー";
-    if (navigator.share) {
-      navigator.share({ title: "STAR BEATS", text, url: SHARE_URL }).catch(() => {});
-    } else {
-      const u = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(text) +
-        "&url=" + encodeURIComponent(SHARE_URL);
-      window.open(u, "_blank", "noopener");
-    }
+    const cb = document.getElementById("r-combo").textContent;
+    return "STAR BEATSで「" + currentSong().title + "」[" + DIFF_NAMES[selDiff] +
+      "] をプレイ！\nランク" + rank + " / スコア" + sc + " / 精度" + ac +
+      " / 最大" + cb + "コンボ\n#STARBEATS #音ゲー";
   }
-  const shareBtn = document.getElementById("share-btn");
-  if (shareBtn) shareBtn.addEventListener("click", shareResult);
+
+  function openShare(url) {
+    window.open(url, "_blank", "noopener");
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById("share-toast");
+    if (!t) return;
+    t.textContent = msg;
+    t.classList.remove("hidden");
+    clearTimeout(showToast._tm);
+    showToast._tm = setTimeout(() => t.classList.add("hidden"), 2600);
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise((resolve, reject) => {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        if (document.execCommand("copy")) resolve();
+        else reject(new Error("copy失敗"));
+      } catch (err) {
+        reject(err);
+      } finally {
+        ta.remove();
+      }
+    });
+  }
+
+  document.getElementById("share-x").addEventListener("click", () => {
+    openShare("https://twitter.com/intent/tweet?text=" + encodeURIComponent(shareText()) +
+      "&url=" + encodeURIComponent(SHARE_URL));
+  });
+  document.getElementById("share-threads").addEventListener("click", () => {
+    openShare("https://www.threads.net/intent/post?text=" +
+      encodeURIComponent(shareText() + "\n" + SHARE_URL));
+  });
+  document.getElementById("share-line").addEventListener("click", () => {
+    openShare("https://social-plugins.line.me/lineit/share?url=" + encodeURIComponent(SHARE_URL) +
+      "&text=" + encodeURIComponent(shareText()));
+  });
+  document.getElementById("share-ig").addEventListener("click", () => {
+    // Instagramは投稿用のWebリンクがないため、スマホはOSの共有シート、PCは本文コピー→IGを開く
+    if (navigator.share) {
+      navigator.share({ title: "STAR BEATS", text: shareText(), url: SHARE_URL }).catch(() => {});
+    } else {
+      copyText(shareText() + "\n" + SHARE_URL)
+        .then(() => showToast("結果をコピーしました！Instagramに貼り付けて投稿してね"))
+        .catch(() => showToast("コピーできませんでした"));
+      openShare("https://www.instagram.com/");
+    }
+  });
+
+  // クリックしたボタンにブラウザ標準フォーカスが残ると、Enter/Spaceがボタンと
+  // ゲーム操作の両方に効いて二重発火するため、クリック後は外す
+  document.querySelectorAll(".overlay").forEach((ov) => {
+    ov.addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (b) b.blur();
+    });
+  });
 
   // 初期化
   resize();
-  drawIdleBackground();
+  showScreen("title");
 })();
