@@ -174,7 +174,11 @@ button.secondary {
   justify-content: center;
   gap: 8px;
   min-width: 0;
-  height: 156px;
+  /* 高さ固定だと長い曲名(2行折返し)でカードの上下枠が見切れるため、
+     内容に合わせて伸ばして曲番号・タイトルへボタンを下へ押し下げる。
+     overflow:hiddenは左右のはみ出し対策として維持(縦は伸びるので切れない) */
+  min-height: 172px;
+  padding: 8px 0;
   overflow: hidden;
 }
 .song-card {
@@ -300,7 +304,7 @@ button.secondary {
   .song-card.side { display: none; }
   .carousel-arrow { width: 42px; height: 42px; font-size: 1.05rem; }
   .song-card.center { width: min(70vw, 300px); }
-  .carousel-stage { height: 148px; }
+  .carousel-stage { min-height: 160px; }
 }
 
 .song-btn, .diff-btn {
