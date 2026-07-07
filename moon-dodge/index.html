@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>MOON DODGE（ムーンドッジ）- 月うさぎの流星よけゲーム</title>
-<meta name="description" content="満月の上を駆ける月うさぎのルナで、降りそそぐ流星をよけ続けろ！夜明け(10分)まで逃げきればクリア。無料・登録不要のミニゲーム。">
+<meta name="description" content="満月の上を駆ける月うさぎのルナで、降りそそぐ流星をよけ続けろ！夜明け(5分)まで逃げきればクリア。無料・登録不要のミニゲーム。">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0c0f1d">
 <link rel="icon" href="icon-192.png">
@@ -117,7 +117,7 @@
       <p class="story">
         満月の夜。お団子づくりの名人、月うさぎの「ルナ」のもとへ<br>
         キラキラ光る流星群が降りそそいできた！<br>
-        <b>夜明け（10分）まで逃げきればゲームクリア。</b><br>
+        <b>夜明け（5分）まで逃げきればゲームクリア。</b><br>
         まずは10秒、生きのびてみよう。
       </p>
       <p class="best" id="best-title"></p>
@@ -161,7 +161,7 @@
   const CFG = {
     playerSpeed: 180,      // ルナの移動速度(px/秒)
     playerHit: 5.5,        // 当たり判定の半径(見た目より小さくして理不尽さを消す)
-    clearTime: 600,        // 逃げきり時間(秒) = 10分でクリア
+    clearTime: 300,        // 逃げきり時間(秒) = 5分でクリア
     rampEnd: 240,          // この秒数で難易度が上限に到達
     baseRate: 1.5,         // 開始時の流星発生数(個/秒)
     rateGrow1: 0.21,       // 〜45秒までの増加(個/秒/秒)
@@ -556,8 +556,8 @@
     document.getElementById("result").classList.remove("hidden");
   }
   function rankOf(s) {
-    if (s >= 600) return ["CLEAR", "夜明けを見た伝説のうさぎ"];
-    if (s >= 300) return ["SS", "月の守り神"];
+    if (s >= 300) return ["CLEAR", "夜明けを見た伝説のうさぎ"];
+    if (s >= 180) return ["SS", "月の守り神"];
     if (s >= 120) return ["S", "流星マスター"];
     if (s >= 60) return ["A", "韋駄天うさぎ"];
     if (s >= 30) return ["B", "跳ねうさぎ"];
@@ -604,7 +604,7 @@
     const time = document.getElementById("r-time").textContent;
     const rk = document.getElementById("r-rank").textContent;
     return (state === "clear"
-      ? "【MOON DODGE】月うさぎのルナで流星群から10分逃げきってゲームクリア！🌙\n"
+      ? "【MOON DODGE】月うさぎのルナで流星群から5分逃げきってゲームクリア！🌙\n"
       : "【MOON DODGE】月うさぎのルナで " + time + "秒 逃げきりました🌙\n")
       + rk + "\n#ムーンドッジ";
   }
