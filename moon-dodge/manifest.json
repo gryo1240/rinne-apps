@@ -1,0 +1,16 @@
+{
+  "name": "MOON DODGE（ムーンドッジ）",
+  "short_name": "MOON DODGE",
+  "description": "月うさぎのルナで流星群をよけ続けるミニゲーム。夜明け(10分)まで逃げきればクリア。",
+  "lang": "ja",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c0f1d",
+  "theme_color": "#0c0f1d",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

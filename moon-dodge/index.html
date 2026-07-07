@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>MOON DODGE（ムーンドッジ）- 月うさぎの流星よけゲーム</title>
+<meta name="description" content="満月の上を駆ける月うさぎのルナで、降りそそぐ流星をよけ続けろ！夜明け(10分)まで逃げきればクリア。無料・登録不要のミニゲーム。">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0c0f1d">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #0c0f1d; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    color: #e8e6df; -webkit-user-select: none; user-select: none;
+    touch-action: manipulation;
+  }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 10px 10px 16px; }
+  header { text-align: center; padding: 4px 0 8px; }
+  header h1 {
+    font-size: 26px; letter-spacing: 4px; color: #ffd75e;
+    text-shadow: 0 0 14px rgba(255, 215, 94, .35);
+  }
+  header .tag { font-size: 12px; color: #a9a698; margin-top: 2px; }
+
+  .hud {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 2px; font-size: 12px;
+  }
+  .dawn { flex: 1; display: flex; align-items: center; gap: 6px; color: #a9a698; }
+  .dawn .bar {
+    flex: 1; height: 8px; border-radius: 4px; overflow: hidden;
+    background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 215, 94, .25);
+  }
+  .dawn .bar i {
+    display: block; height: 100%; width: 0%;
+    background: linear-gradient(90deg, #ffd75e, #ffb45e);
+    transition: width .2s linear;
+  }
+  .time {
+    font-variant-numeric: tabular-nums; font-weight: bold;
+    color: #ffd75e; font-size: 16px; min-width: 74px; text-align: right;
+  }
+  #mute {
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2);
+    color: #e8e6df; border-radius: 8px; font-size: 14px; padding: 3px 8px; cursor: pointer;
+  }
+
+  #stage { position: relative; width: 100%; }
+  #cv { display: block; width: 100%; border-radius: 12px; }
+
+  .overlay {
+    position: absolute; inset: 0; border-radius: 12px;
+    background: rgba(8, 10, 22, .82); backdrop-filter: blur(2px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 14px; gap: 10px;
+  }
+  .overlay.hidden, .hidden { display: none; }
+  .overlay h2 { color: #ffd75e; letter-spacing: 3px; font-size: 24px; }
+  .story { font-size: 13px; line-height: 1.75; color: #d8d5c8; }
+  .story b { color: #ffd75e; }
+  .ctl { font-size: 11px; color: #8f8c7f; line-height: 1.7; }
+  .best { font-size: 12px; color: #9fd8ff; }
+  .btn-main {
+    background: linear-gradient(180deg, #ffd75e, #e8a93d); color: #241a04;
+    font-weight: bold; font-size: 16px; border: none; border-radius: 999px;
+    padding: 11px 34px; cursor: pointer; letter-spacing: 1px;
+    box-shadow: 0 3px 12px rgba(255, 215, 94, .3);
+  }
+  .btn-main:active { transform: translateY(1px); }
+  .r-time { font-size: 15px; color: #d8d5c8; }
+  .r-time span { font-size: 34px; font-weight: bold; color: #fff; font-variant-numeric: tabular-nums; }
+  .r-rank { font-size: 15px; color: #ffd75e; font-weight: bold; }
+  .newbest { color: #7dffb1; font-weight: bold; font-size: 13px; }
+
+  .share-box p { font-size: 11px; color: #8f8c7f; margin-bottom: 6px; }
+  .share-btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .sh {
+    border: none; border-radius: 8px; color: #fff; font-size: 12px; font-weight: bold;
+    padding: 8px 12px; cursor: pointer; min-width: 64px;
+  }
+  .sh-x { background: #0f1419; border: 1px solid #3a4048; }
+  .sh-threads { background: #101010; border: 1px solid #3a3a3a; }
+  .sh-line { background: #06c755; }
+  .sh-ig { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+  #share-toast {
+    position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%);
+    background: rgba(255, 215, 94, .95); color: #241a04; font-size: 12px; font-weight: bold;
+    padding: 8px 14px; border-radius: 999px; white-space: nowrap; max-width: 94%;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  #pause-tip { font-size: 13px; color: #d8d5c8; }
+  .foot { text-align: center; font-size: 12px; margin-top: 12px; }
+  .foot a { color: #9fd8ff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>MOON DODGE</h1>
+    <p class="tag">月うさぎの流星よけ 〜夜明けまで逃げきれ〜</p>
+  </header>
+
+  <div class="hud">
+    <div class="dawn"><span>夜明けまで</span><div class="bar"><i id="dawn-fill"></i></div></div>
+    <div class="time" id="time">0.0秒</div>
+    <button id="mute" class="hidden" aria-label="BGM切り替え">🔊</button>
+  </div>
+
+  <div id="stage">
+    <canvas id="cv" width="460" height="460"></canvas>
+
+    <div id="title" class="overlay">
+      <h2>MOON DODGE</h2>
+      <p class="story">
+        満月の夜。お団子づくりの名人、月うさぎの「ルナ」のもとへ<br>
+        キラキラ光る流星群が降りそそいできた！<br>
+        <b>夜明け（10分）まで逃げきればゲームクリア。</b><br>
+        まずは10秒、生きのびてみよう。
+      </p>
+      <p class="best" id="best-title"></p>
+      <button id="start-btn" class="btn-main">はじめる</button>
+      <p class="ctl">PC: 矢印キー / WASD で移動（Enterでスタート）<br>スマホ: 画面にふれたところからスティック操作</p>
+    </div>
+
+    <div id="pause" class="overlay hidden">
+      <h2>ひとやすみ</h2>
+      <p id="pause-tip">キーを押すか画面にふれると再開します</p>
+    </div>
+
+    <div id="result" class="overlay hidden">
+      <h2 id="r-head">つかまった！</h2>
+      <p class="r-time"><span id="r-time">0.0</span> 秒 逃げきり</p>
+      <p class="r-rank" id="r-rank"></p>
+      <p class="best" id="best-result"></p>
+      <button id="retry-btn" class="btn-main">もう一度（Enter）</button>
+      <div class="share-box">
+        <p>リザルトをシェア</p>
+        <div class="share-btns">
+          <button id="share-x" class="sh sh-x">X</button>
+          <button id="share-threads" class="sh sh-threads">Threads</button>
+          <button id="share-line" class="sh sh-line">LINE</button>
+          <button id="share-ig" class="sh sh-ig">Instagram</button>
+        </div>
+      </div>
+    </div>
+
+    <p id="share-toast" class="hidden"></p>
+  </div>
+
+  <p class="foot">🌙 <a href="https://rinne-blog.com/apps" target="_blank" rel="noopener">りんねブログの無料アプリ一覧はこちら</a></p>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ================== 難易度パラメータ（調整はここ） ==================
+  const CFG = {
+    playerSpeed: 180,      // ルナの移動速度(px/秒)
+    playerHit: 5.5,        // 当たり判定の半径(見た目より小さくして理不尽さを消す)
+    clearTime: 600,        // 逃げきり時間(秒) = 10分でクリア
+    rampEnd: 240,          // この秒数で難易度が上限に到達
+    baseRate: 1.5,         // 開始時の流星発生数(個/秒)
+    rateGrow1: 0.21,       // 〜45秒までの増加(個/秒/秒)
+    rateGrow2: 0.012,      // 45秒〜rampEndの増加
+    maxRate: 13,           // 発生数の上限(個/秒)
+    aimRatio: 0.32,        // プレイヤーを狙う流星の割合
+    meteorSpeedMin: 125, meteorSpeedMax: 215, meteorSpeedRamp: 90,
+    burstFrom: 20, burstEvery: 8,    // 流星の壁(7連)の解禁秒と間隔
+    cometFrom: 50, cometEvery: 12,   // 追尾ほうき星
+    laserFrom: 90, laserEvery: 9     // 月光レーザー
+  };
+  // ====================================================================
+
+  const W = 460, H = 460, CX = 230, CY = 230, AR = 200; // AR=満月フィールド半径
+  const cv = document.getElementById("cv");
+  const ctx = cv.getContext("2d");
+  const stage = document.getElementById("stage");
+  let scale = 1;
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const cssW = stage.clientWidth;
+    cv.width = Math.round(cssW * dpr);
+    cv.height = Math.round(cssW * dpr);
+    scale = cv.width / W;
+  }
+  window.addEventListener("resize", resize);
+
+  // ---- 背景の星とクレーター(固定シードで毎回同じ配置) ----
+  let seed = 20260708;
+  const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  const stars = [];
+  for (let i = 0; i < 70; i++) {
+    stars.push({ x: rnd() * W, y: rnd() * H, r: .5 + rnd() * 1.3, p: rnd() * 6.28 });
+  }
+  const craters = [];
+  for (let i = 0; i < 9; i++) {
+    const a = rnd() * 6.28, d = rnd() * .8 * AR;
+    craters.push({ x: CX + Math.cos(a) * d, y: CY + Math.sin(a) * d, r: 8 + rnd() * 16 });
+  }
+
+  // ---- 状態 ----
+  let state = "title";           // title | play | over | clear
+  let paused = false;
+  let t = 0;                     // 経過秒
+  let px = CX, py = CY;
+  let meteors = [], comets = [], lasers = [];
+  let spawnAcc = 0, nextBurst = 0, nextComet = 0, nextLaser = 0;
+  let best = parseFloat(localStorage.getItem("md-best") || "0");
+  const R = Math.random;
+
+  // ---- 入力(キーボード) ----
+  const keys = {};
+  const KEYMAP = {
+    ArrowUp: "u", ArrowDown: "d", ArrowLeft: "l", ArrowRight: "r",
+    w: "u", s: "d", a: "l", d: "r", W: "u", S: "d", A: "l", D: "r"
+  };
+  document.addEventListener("keydown", (e) => {
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) e.preventDefault();
+    if (KEYMAP[e.key]) keys[KEYMAP[e.key]] = true;
+    if (paused) { resume(); return; }
+    if ((e.key === "Enter" || e.key === " ") && state !== "play") {
+      if (document.activeElement && document.activeElement.tagName === "BUTTON") return;
+      startGame();
+    }
+  });
+  document.addEventListener("keyup", (e) => { if (KEYMAP[e.key]) keys[KEYMAP[e.key]] = false; });
+
+  // ---- 入力(仮想スティック) ----
+  const stick = { on: false, id: null, ox: 0, oy: 0, vx: 0, vy: 0 };
+  function toLogical(touch) {
+    const rc = cv.getBoundingClientRect();
+    return { x: (touch.clientX - rc.left) * (W / rc.width), y: (touch.clientY - rc.top) * (W / rc.width) };
+  }
+  cv.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    if (paused) { resume(); return; }
+    if (state !== "play") return;
+    const tc = e.changedTouches[0];
+    const p = toLogical(tc);
+    stick.on = true; stick.id = tc.identifier;
+    stick.ox = p.x; stick.oy = p.y; stick.vx = 0; stick.vy = 0;
+  }, { passive: false });
+  cv.addEventListener("touchmove", (e) => {
+    e.preventDefault();
+    if (!stick.on) return;
+    for (const tc of e.changedTouches) {
+      if (tc.identifier !== stick.id) continue;
+      const p = toLogical(tc);
+      let dx = (p.x - stick.ox) / 42, dy = (p.y - stick.oy) / 42;
+      const m = Math.hypot(dx, dy);
+      if (m > 1) { dx /= m; dy /= m; }
+      stick.vx = dx; stick.vy = dy;
+    }
+  }, { passive: false });
+  const stickEnd = (e) => {
+    for (const tc of e.changedTouches) {
+      if (tc.identifier === stick.id) { stick.on = false; stick.vx = stick.vy = 0; }
+    }
+  };
+  cv.addEventListener("touchend", stickEnd);
+  cv.addEventListener("touchcancel", stickEnd);
+
+  // ---- BGM(bgm/bgm.mp3 を置くと自動でループ再生) ----
+  let bgm = null, muted = localStorage.getItem("md-mute") === "1";
+  const muteBtn = document.getElementById("mute");
+  fetch("bgm/bgm.mp3", { method: "HEAD" }).then((r) => {
+    if (!r.ok) return;
+    bgm = new Audio("bgm/bgm.mp3");
+    bgm.loop = true; bgm.volume = 0.35;
+    muteBtn.classList.remove("hidden");
+    updateMute();
+  }).catch(() => {});
+  function updateMute() {
+    muteBtn.textContent = muted ? "🔇" : "🔊";
+    if (bgm) { bgm.muted = muted; }
+  }
+  muteBtn.addEventListener("click", () => {
+    muted = !muted;
+    localStorage.setItem("md-mute", muted ? "1" : "0");
+    updateMute(); muteBtn.blur();
+  });
+
+  // ---- 敵の生成 ----
+  function rate() {
+    const a = Math.min(t, 45) * CFG.rateGrow1;
+    const b = Math.max(0, Math.min(t, CFG.rampEnd) - 45) * CFG.rateGrow2;
+    return Math.min(CFG.baseRate + a + b, CFG.maxRate);
+  }
+  function ramp() { return Math.min(t, CFG.rampEnd) / CFG.rampEnd; }
+
+  function spawnMeteor() {
+    if (meteors.length > 170) return;
+    const a = R() * 6.28;
+    const sx = CX + Math.cos(a) * (AR + 55), sy = CY + Math.sin(a) * (AR + 55);
+    let tx, ty;
+    if (R() < CFG.aimRatio) { tx = px + (R() - .5) * 52; ty = py + (R() - .5) * 52; }
+    else {
+      const b = R() * 6.28, d = Math.sqrt(R()) * AR * .85;
+      tx = CX + Math.cos(b) * d; ty = CY + Math.sin(b) * d;
+    }
+    const dx = tx - sx, dy = ty - sy, m = Math.hypot(dx, dy) || 1;
+    const sp = CFG.meteorSpeedMin + R() * (CFG.meteorSpeedMax - CFG.meteorSpeedMin) + ramp() * CFG.meteorSpeedRamp;
+    meteors.push({ x: sx, y: sy, vx: dx / m * sp, vy: dy / m * sp, r: 5 + R() * 3 });
+  }
+  function spawnBurst() {
+    const a = R() * 6.28;
+    const ex = CX + Math.cos(a) * (AR + 70), ey = CY + Math.sin(a) * (AR + 70);
+    const dx = (CX - ex), dy = (CY - ey), m = Math.hypot(dx, dy) || 1;
+    const nx = -dy / m, ny = dx / m;
+    const sp = 235 + ramp() * 25;
+    for (let k = -3; k <= 3; k++) {
+      meteors.push({
+        x: ex + nx * k * 44, y: ey + ny * k * 44,
+        vx: dx / m * sp, vy: dy / m * sp, r: 6
+      });
+    }
+  }
+  function spawnComet() {
+    const a = R() * 6.28;
+    comets.push({
+      x: CX + Math.cos(a) * (AR + 60), y: CY + Math.sin(a) * (AR + 60),
+      h: a + Math.PI, sp: 112 + ramp() * 18, life: 6.5, r: 8
+    });
+  }
+  function spawnLaser() {
+    const qx = px + (R() - .5) * 140, qy = py + (R() - .5) * 140;
+    const th = R() * Math.PI;
+    lasers.push({ x: qx, y: qy, dx: Math.cos(th), dy: Math.sin(th), t: 0, warn: .75, on: .35 });
+  }
+
+  // ---- 更新 ----
+  function update(dt) {
+    t += dt;
+    if (t >= CFG.clearTime) { endGame(true); return; }
+
+    // プレイヤー移動
+    let vx = (keys.r ? 1 : 0) - (keys.l ? 1 : 0) + stick.vx;
+    let vy = (keys.d ? 1 : 0) - (keys.u ? 1 : 0) + stick.vy;
+    const vm = Math.hypot(vx, vy);
+    if (vm > 1) { vx /= vm; vy /= vm; }
+    px += vx * CFG.playerSpeed * dt;
+    py += vy * CFG.playerSpeed * dt;
+    const pd = Math.hypot(px - CX, py - CY), lim = AR - 12;
+    if (pd > lim) { px = CX + (px - CX) / pd * lim; py = CY + (py - CY) / pd * lim; }
+
+    // 流星の発生(開始1秒は猶予)
+    if (t > 1) spawnAcc += rate() * dt;
+    while (spawnAcc >= 1) { spawnAcc -= 1; spawnMeteor(); }
+    if (t >= CFG.burstFrom && t >= nextBurst) { spawnBurst(); nextBurst = t + CFG.burstEvery; }
+    if (t >= CFG.cometFrom && t >= nextComet && comets.length < 1) { spawnComet(); nextComet = t + CFG.cometEvery; }
+    if (t >= CFG.laserFrom && t >= nextLaser) { spawnLaser(); nextLaser = t + CFG.laserEvery; }
+
+    // 流星
+    for (let i = meteors.length - 1; i >= 0; i--) {
+      const m = meteors[i];
+      m.x += m.vx * dt; m.y += m.vy * dt;
+      if (Math.hypot(m.x - CX, m.y - CY) > AR + 130) { meteors.splice(i, 1); continue; }
+      if (Math.hypot(m.x - px, m.y - py) < m.r + CFG.playerHit) { endGame(false); return; }
+    }
+    // ほうき星(追尾)
+    for (let i = comets.length - 1; i >= 0; i--) {
+      const c = comets[i];
+      c.life -= dt;
+      if (c.life > 0) {
+        const want = Math.atan2(py - c.y, px - c.x);
+        let d = want - c.h;
+        while (d > Math.PI) d -= 6.283185; while (d < -Math.PI) d += 6.283185;
+        const mx = 2.4 * dt;
+        c.h += Math.max(-mx, Math.min(mx, d));
+      }
+      c.x += Math.cos(c.h) * c.sp * dt; c.y += Math.sin(c.h) * c.sp * dt;
+      if (c.life <= -3 || Math.hypot(c.x - CX, c.y - CY) > AR + 150) { comets.splice(i, 1); continue; }
+      if (Math.hypot(c.x - px, c.y - py) < c.r + CFG.playerHit) { endGame(false); return; }
+    }
+    // 月光レーザー
+    for (let i = lasers.length - 1; i >= 0; i--) {
+      const l = lasers[i];
+      l.t += dt;
+      if (l.t >= l.warn && l.t < l.warn + l.on) {
+        const dist = Math.abs((px - l.x) * (-l.dy) + (py - l.y) * l.dx);
+        if (dist < 12 + CFG.playerHit) { endGame(false); return; }
+      }
+      if (l.t >= l.warn + l.on) lasers.splice(i, 1);
+    }
+
+    // HUD
+    document.getElementById("time").textContent = t.toFixed(1) + "秒";
+    document.getElementById("dawn-fill").style.width = (t / CFG.clearTime * 100).toFixed(2) + "%";
+  }
+
+  // ---- 描画 ----
+  function draw() {
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    // 夜空(クリア間際は夜明けの色へ)
+    const dawn = Math.max(0, (t - CFG.clearTime + 80) / 80);
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, dawn > 0 ? blend("#0c0f1d", "#3a4a72", dawn) : "#0c0f1d");
+    g.addColorStop(1, dawn > 0 ? blend("#141a30", "#7c5a52", dawn) : "#141a30");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    // 星
+    const now = performance.now() / 1000;
+    for (const s of stars) {
+      ctx.globalAlpha = .35 + .45 * Math.abs(Math.sin(now * 1.1 + s.p));
+      ctx.fillStyle = "#fff";
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.283); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // 満月フィールド
+    const mg = ctx.createRadialGradient(CX - 40, CY - 50, 30, CX, CY, AR);
+    mg.addColorStop(0, "#f6eed6"); mg.addColorStop(1, "#d9cda3");
+    ctx.beginPath(); ctx.arc(CX, CY, AR, 0, 6.283);
+    ctx.fillStyle = mg; ctx.fill();
+    ctx.fillStyle = "rgba(160,145,100,.28)";
+    for (const c of craters) { ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, 6.283); ctx.fill(); }
+    ctx.lineWidth = 3; ctx.strokeStyle = "rgba(255,215,94,.85)";
+    ctx.beginPath(); ctx.arc(CX, CY, AR, 0, 6.283); ctx.stroke();
+
+    // 月光レーザー
+    for (const l of lasers) {
+      const x1 = l.x - l.dx * 700, y1 = l.y - l.dy * 700;
+      const x2 = l.x + l.dx * 700, y2 = l.y + l.dy * 700;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+      if (l.t < l.warn) {
+        ctx.setLineDash([8, 8]);
+        ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,240,180," + (.25 + .5 * (l.t / l.warn)) + ")";
+        ctx.stroke(); ctx.setLineDash([]);
+      } else {
+        ctx.lineWidth = 24; ctx.strokeStyle = "rgba(255,236,150,.9)"; ctx.stroke();
+        ctx.lineWidth = 8; ctx.strokeStyle = "#fffbe8"; ctx.stroke();
+      }
+    }
+    // 流星(尾を進行方向の後ろへ)
+    for (const m of meteors) {
+      const mm = Math.hypot(m.vx, m.vy) || 1;
+      const tx = m.x - m.vx / mm * (m.r * 4.5), ty = m.y - m.vy / mm * (m.r * 4.5);
+      const lg = ctx.createLinearGradient(tx, ty, m.x, m.y);
+      lg.addColorStop(0, "rgba(255,215,94,0)"); lg.addColorStop(1, "rgba(255,235,170,.9)");
+      ctx.strokeStyle = lg; ctx.lineWidth = m.r * .9;
+      ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(m.x, m.y); ctx.stroke();
+      ctx.fillStyle = "#fff6da";
+      ctx.beginPath(); ctx.arc(m.x, m.y, m.r * .78, 0, 6.283); ctx.fill();
+    }
+    // ほうき星
+    for (const c of comets) {
+      const tx = c.x - Math.cos(c.h) * 46, ty = c.y - Math.sin(c.h) * 46;
+      const lg = ctx.createLinearGradient(tx, ty, c.x, c.y);
+      lg.addColorStop(0, "rgba(110,230,255,0)"); lg.addColorStop(1, "rgba(110,230,255,.85)");
+      ctx.strokeStyle = lg; ctx.lineWidth = 7;
+      ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(c.x, c.y); ctx.stroke();
+      ctx.fillStyle = "#c9f4ff";
+      ctx.beginPath(); ctx.arc(c.x, c.y, c.r * .8, 0, 6.283); ctx.fill();
+    }
+    // ルナ(月うさぎ)
+    drawRabbit(px, py);
+    // 仮想スティック
+    if (stick.on) {
+      ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(stick.ox, stick.oy, 42, 0, 6.283); ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,.45)";
+      ctx.beginPath(); ctx.arc(stick.ox + stick.vx * 42, stick.oy + stick.vy * 42, 14, 0, 6.283); ctx.fill();
+    }
+  }
+  function blend(c1, c2, k) {
+    const p = (c) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+    const a = p(c1), b = p(c2);
+    const q = a.map((v, i) => Math.round(v + (b[i] - v) * Math.min(k, 1)));
+    return "rgb(" + q.join(",") + ")";
+  }
+  function drawRabbit(x, y) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = "#ffffff";
+    ell(-5, -13, 3.6, 8.5); ell(5, -13, 3.6, 8.5);            // 耳
+    ctx.fillStyle = "#f7b8c4";
+    ell(-5, -12, 1.8, 5.5); ell(5, -12, 1.8, 5.5);            // 耳の内側
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath(); ctx.arc(0, 0, 9.5, 0, 6.283); ctx.fill(); // 顔
+    ctx.fillStyle = "#333";
+    dot(-3.5, -1.5, 1.3); dot(3.5, -1.5, 1.3);                 // 目
+    ctx.fillStyle = "#ff5d8f"; dot(0, 3, 2);                    // 当たり判定の中心(鼻)
+    ctx.restore();
+    function ell(ex, ey, rx, ry) { ctx.beginPath(); ctx.ellipse(ex, ey, rx, ry, 0, 0, 6.283); ctx.fill(); }
+    function dot(dx2, dy2, r) { ctx.beginPath(); ctx.arc(dx2, dy2, r, 0, 6.283); ctx.fill(); }
+  }
+
+  // ---- 進行 ----
+  let lastTs = 0, rafId = 0;
+  function loop(ts) {
+    rafId = requestAnimationFrame(loop);
+    const dt = Math.min((ts - lastTs) / 1000, .05);
+    lastTs = ts;
+    if (state === "play" && !paused) update(dt);
+    draw();
+  }
+  function startGame() {
+    state = "play"; paused = false;
+    t = 0; px = CX; py = CY;
+    meteors = []; comets = []; lasers = [];
+    spawnAcc = 0; nextBurst = CFG.burstFrom; nextComet = CFG.cometFrom; nextLaser = CFG.laserFrom;
+    document.getElementById("title").classList.add("hidden");
+    document.getElementById("result").classList.add("hidden");
+    document.getElementById("pause").classList.add("hidden");
+    if (bgm && bgm.paused) bgm.play().catch(() => {});
+  }
+  function endGame(cleared) {
+    state = cleared ? "clear" : "over";
+    const time = cleared ? CFG.clearTime : t;
+    const [rk, name] = rankOf(time);
+    const isBest = time > best;
+    if (isBest) { best = time; localStorage.setItem("md-best", String(best)); }
+    document.getElementById("r-head").textContent = cleared ? "夜明けだ！ゲームクリア!!" : "つかまった！";
+    document.getElementById("r-time").textContent = time.toFixed(1);
+    document.getElementById("r-rank").textContent = "ランク " + rk + "「" + name + "」";
+    document.getElementById("best-result").innerHTML =
+      (isBest ? '<span class="newbest">✨ 自己ベスト更新！</span> ' : "") + "ベスト: " + best.toFixed(1) + "秒";
+    document.getElementById("result").classList.remove("hidden");
+  }
+  function rankOf(s) {
+    if (s >= 600) return ["CLEAR", "夜明けを見た伝説のうさぎ"];
+    if (s >= 300) return ["SS", "月の守り神"];
+    if (s >= 120) return ["S", "流星マスター"];
+    if (s >= 60) return ["A", "韋駄天うさぎ"];
+    if (s >= 30) return ["B", "跳ねうさぎ"];
+    if (s >= 10) return ["C", "駆け出しうさぎ"];
+    return ["D", "見習いうさぎ"];
+  }
+  function showBestOnTitle() {
+    document.getElementById("best-title").textContent =
+      best > 0 ? "あなたのベスト: " + best.toFixed(1) + "秒" : "";
+  }
+
+  // ---- 一時停止(タブ切替・ウィンドウ非アクティブ) ----
+  function pause() {
+    if (state !== "play" || paused) return;
+    paused = true;
+    document.getElementById("pause").classList.remove("hidden");
+    if (bgm) bgm.pause();
+  }
+  function resume() {
+    if (!paused) return;
+    paused = false;
+    document.getElementById("pause").classList.add("hidden");
+    if (bgm && state === "play") bgm.play().catch(() => {});
+  }
+  document.addEventListener("visibilitychange", () => { if (document.hidden) pause(); });
+  window.addEventListener("blur", pause);
+  document.getElementById("pause").addEventListener("touchstart", (e) => { e.preventDefault(); resume(); }, { passive: false });
+  document.getElementById("pause").addEventListener("click", resume);
+
+  // ---- ボタン ----
+  document.getElementById("start-btn").addEventListener("click", startGame);
+  document.getElementById("retry-btn").addEventListener("click", startGame);
+  // クリックしたボタンにフォーカスが残るとEnterが二重発火するため外す
+  document.querySelectorAll(".overlay").forEach((ov) => {
+    ov.addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (b) b.blur();
+    });
+  });
+
+  // ---- SNSシェア ----
+  const SHARE_URL = "https://gryo1240.github.io/rinne-apps/moon-dodge/";
+  function shareText() {
+    const time = document.getElementById("r-time").textContent;
+    const rk = document.getElementById("r-rank").textContent;
+    return (state === "clear"
+      ? "【MOON DODGE】月うさぎのルナで流星群から10分逃げきってゲームクリア！🌙\n"
+      : "【MOON DODGE】月うさぎのルナで " + time + "秒 逃げきりました🌙\n")
+      + rk + "\n#ムーンドッジ";
+  }
+  function openShare(url) { window.open(url, "_blank", "noopener"); }
+  function showToast(msg) {
+    const el = document.getElementById("share-toast");
+    el.textContent = msg;
+    el.classList.remove("hidden");
+    clearTimeout(showToast._tm);
+    showToast._tm = setTimeout(() => el.classList.add("hidden"), 2600);
+  }
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+    return new Promise((resolve, reject) => {
+      const ta = document.createElement("textarea");
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy") ? resolve() : reject(new Error("copy失敗")); }
+      catch (err) { reject(err); }
+      finally { ta.remove(); }
+    });
+  }
+  document.getElementById("share-x").addEventListener("click", () => {
+    openShare("https://twitter.com/intent/tweet?text=" + encodeURIComponent(shareText()) +
+      "&url=" + encodeURIComponent(SHARE_URL));
+  });
+  document.getElementById("share-threads").addEventListener("click", () => {
+    openShare("https://www.threads.net/intent/post?text=" + encodeURIComponent(shareText() + "\n" + SHARE_URL));
+  });
+  document.getElementById("share-line").addEventListener("click", () => {
+    openShare("https://social-plugins.line.me/lineit/share?url=" + encodeURIComponent(SHARE_URL) +
+      "&text=" + encodeURIComponent(shareText()));
+  });
+  document.getElementById("share-ig").addEventListener("click", () => {
+    // Instagramは投稿用のWebリンクがないため、スマホはOSの共有シート、PCは本文コピー→IGを開く
+    if (navigator.share) {
+      navigator.share({ title: "MOON DODGE", text: shareText(), url: SHARE_URL }).catch(() => {});
+    } else {
+      copyText(shareText() + "\n" + SHARE_URL)
+        .then(() => showToast("結果をコピーしました！Instagramに貼り付けて投稿してね"))
+        .catch(() => showToast("コピーできませんでした"));
+      openShare("https://www.instagram.com/");
+    }
+  });
+
+  // ---- 初期化 ----
+  resize();
+  showBestOnTitle();
+  requestAnimationFrame((ts) => { lastTs = ts; loop(ts); });
+})();
+</script>
+<script>
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+</script>
+</body>
+</html>
