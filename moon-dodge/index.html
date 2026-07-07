@@ -561,6 +561,10 @@
   function endGame(cleared) {
     state = cleared ? "clear" : "over";
     if (bgm) bgm.pause();
+    if (cleared) {
+      document.getElementById("dawn-fill").style.width = "100%";
+      document.getElementById("time").textContent = CFG.clearTime.toFixed(1) + "秒";
+    }
     const time = cleared ? CFG.clearTime : t;
     const [rk, name] = rankOf(time);
     const isBest = time > best;
