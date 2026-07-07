@@ -47,6 +47,9 @@
     background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2);
     color: #e8e6df; border-radius: 8px; font-size: 14px; padding: 3px 8px; cursor: pointer;
   }
+  #vol {
+    width: 72px; accent-color: #ffd75e; cursor: pointer;
+  }
 
   #stage { position: relative; width: 100%; }
   #cv { display: block; width: 100%; border-radius: 12px; }
@@ -107,6 +110,7 @@
     <div class="dawn"><span>夜明けまで</span><div class="bar"><i id="dawn-fill"></i></div></div>
     <div class="time" id="time">0.0秒</div>
     <button id="mute" class="hidden" aria-label="BGM切り替え">🔊</button>
+    <input id="vol" class="hidden" type="range" min="0" max="100" value="35" aria-label="BGM音量">
   </div>
 
   <div id="stage">
@@ -267,25 +271,37 @@
   cv.addEventListener("touchend", stickEnd);
   cv.addEventListener("touchcancel", stickEnd);
 
-  // ---- BGM(bgm/bgm.mp3 を置くと自動でループ再生) ----
+  // ---- BGM(bgm/bgm.mp3 を置くとプレイ中のみループ再生。音量はスライダーで調節) ----
   let bgm = null, muted = localStorage.getItem("md-mute") === "1";
+  let vol = parseInt(localStorage.getItem("md-vol") || "35", 10);
+  if (isNaN(vol) || vol < 0 || vol > 100) vol = 35;
   const muteBtn = document.getElementById("mute");
+  const volSlider = document.getElementById("vol");
+  volSlider.value = vol;
   fetch("bgm/bgm.mp3", { method: "HEAD" }).then((r) => {
     if (!r.ok) return;
     bgm = new Audio("bgm/bgm.mp3");
-    bgm.loop = true; bgm.volume = 0.35;
+    bgm.loop = true;
     muteBtn.classList.remove("hidden");
-    updateMute();
+    volSlider.classList.remove("hidden");
+    updateAudio();
   }).catch(() => {});
-  function updateMute() {
-    muteBtn.textContent = muted ? "🔇" : "🔊";
-    if (bgm) { bgm.muted = muted; }
+  function updateAudio() {
+    muteBtn.textContent = (muted || vol === 0) ? "🔇" : "🔊";
+    if (bgm) { bgm.muted = muted; bgm.volume = vol / 100; }
   }
   muteBtn.addEventListener("click", () => {
     muted = !muted;
     localStorage.setItem("md-mute", muted ? "1" : "0");
-    updateMute(); muteBtn.blur();
+    updateAudio(); muteBtn.blur();
   });
+  volSlider.addEventListener("input", () => {
+    vol = parseInt(volSlider.value, 10) || 0;
+    localStorage.setItem("md-vol", String(vol));
+    updateAudio();
+  });
+  // スライダーにフォーカスが残ると矢印キーが移動操作と衝突するため離す
+  volSlider.addEventListener("change", () => volSlider.blur());
 
   // ---- 敵の生成 ----
   function rate() {
@@ -540,10 +556,11 @@
     document.getElementById("title").classList.add("hidden");
     document.getElementById("result").classList.add("hidden");
     document.getElementById("pause").classList.add("hidden");
-    if (bgm && bgm.paused) bgm.play().catch(() => {});
+    if (bgm) { bgm.currentTime = 0; bgm.play().catch(() => {}); }
   }
   function endGame(cleared) {
     state = cleared ? "clear" : "over";
+    if (bgm) bgm.pause();
     const time = cleared ? CFG.clearTime : t;
     const [rk, name] = rankOf(time);
     const isBest = time > best;
