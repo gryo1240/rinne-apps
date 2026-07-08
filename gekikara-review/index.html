@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>激辛レビュー生成器｜誇張ジョークで全力こき下ろし</title>
+<meta name="description" content="褒めてほしいモノ・作品名(または画像)を入れると、AIが全力でこき下ろす誇張ジョークレビューを生成。結果はカード画像として保存・共有できます。登録不要・完全無料。">
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#fffaf6">
+<link rel="icon" href="./icon-192.png">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+    background: #fffaf6; color: #3a2418;
+  }
+  .wrap {
+    max-width: 560px; margin: 0 auto; padding: 32px 20px 48px;
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+  }
+  h1 { font-size: 26px; font-weight: 800; color: #d94f2b; text-align: center; }
+  .subtitle { font-size: 13px; color: #8a6f63; text-align: center; max-width: 340px; margin-bottom: 6px; }
+  .input-row { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 10px; }
+  input[type=text] {
+    width: 100%; border: 2px solid #eccabd; border-radius: 12px;
+    padding: 12px 14px; font-size: 15px; background: #fff; color: #3a2418;
+  }
+  .btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  button {
+    font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+    border: none; border-radius: 999px; padding: 12px 24px;
+  }
+  #genBtn { background: #d94f2b; color: #fff; }
+  #imgBtn { background: #fff; color: #d94f2b; border: 2px solid #d94f2b; padding: 10px 22px; }
+  #imgStatus { font-size: 12px; color: #8a6f63; min-height: 1.4em; text-align: center; }
+  #result { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 8px; }
+  #result[hidden] { display: none; }
+  #cardWrap { max-width: 100%; }
+  .card-preview { max-width: 100%; border-radius: 14px; box-shadow: 0 4px 18px rgba(60, 30, 10, .12); }
+  .action-row { display: flex; gap: 12px; }
+  #saveBtn, #shareBtn { background: #3a2418; color: #fff; }
+  #saveBtn { background: #fff; color: #3a2418; border: 2px solid #3a2418; }
+  .footer-note {
+    margin-top: 20px; font-size: 11px; color: #b79b8f; text-align: center; max-width: 340px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>激辛レビュー生成器</h1>
+  <p class="subtitle">褒めてほしいモノ・作品(または画像)を入れると、全力でこき下ろします(誇張ジョークです)</p>
+
+  <div class="input-row">
+    <input type="text" id="nounInput" placeholder="例: 手作りカレー / 描いたイラスト / 自作の曲" maxlength="30">
+    <div class="btn-row">
+      <button id="genBtn">審査してもらう</button>
+      <button id="imgBtn">画像で審査してもらう</button>
+    </div>
+    <input type="file" id="imgInput" accept="image/*" hidden>
+    <p id="imgStatus"></p>
+  </div>
+
+  <div id="result" hidden>
+    <div id="cardWrap"></div>
+    <div class="action-row">
+      <button id="shareBtn">シェアする</button>
+      <button id="saveBtn">保存する</button>
+    </div>
+  </div>
+
+  <!-- カード表示用のデータ保持要素(canvas描画の参照元。画面には出さない) -->
+  <div hidden>
+    <span id="cardNoun"></span>
+    <span id="cardChili"></span>
+    <span id="cardText"></span>
+    <span id="cardScore"></span>
+    <div id="cardThumbWrap"><img id="cardThumb" alt=""></div>
+  </div>
+
+  <p class="footer-note">
+    ※対象は「モノ・作品」限定でお願いします。人への誹謗中傷には使わないでください<br>
+    画像認識はすべてこの端末(ブラウザ)内で行われ、外部には送信されません
+  </p>
+</div>
+
+<script src="./generator.js"></script>
+<script src="./labels-ja.js"></script>
+<script src="./imagenet-classes.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

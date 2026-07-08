@@ -1,0 +1,16 @@
+{
+  "name": "謎の名言メーカー",
+  "short_name": "謎の名言",
+  "description": "テーマ語を入れると、実在しない賢者によるそれっぽい格言を自動生成する無料アプリ。",
+  "lang": "ja",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f0e3",
+  "theme_color": "#f7f0e3",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

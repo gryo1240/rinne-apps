@@ -1,0 +1,16 @@
+{
+  "name": "激辛レビュー生成器",
+  "short_name": "激辛レビュー",
+  "description": "褒めてほしいモノ・作品(または画像)を入れると、全力でこき下ろす誇張ジョークレビューを生成する無料アプリ。",
+  "lang": "ja",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fffaf6",
+  "theme_color": "#fffaf6",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
