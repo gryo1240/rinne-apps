@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>音の間（おとのま）｜和風BGM×環境音ミキサー</title>
+<meta name="description" content="和風Lo-fi BGMと雨・風鈴・虫の音・焚き火の環境音を自分好みに混ぜられる作業・睡眠用サウンドツール。スリープタイマー付き。">
+<style>
+  :root{
+    --bg:#141b2b; --panel:#1d2639; --panel2:#232f47;
+    --ink:#ece6d9; --muted:#8b93a5; --accent:#d9a86b; --accent2:#e8c48f;
+    --line:#32405e;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:radial-gradient(1200px 800px at 70% -10%, #1d2a45 0%, var(--bg) 55%);
+    color:var(--ink);
+    font-family:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",serif;
+    min-height:100vh; padding:24px 16px 60px;
+  }
+  .wrap{max-width:720px;margin:0 auto}
+  header{text-align:center;margin-bottom:28px}
+  h1{font-size:2rem;letter-spacing:.35em;text-indent:.35em;color:var(--accent2)}
+  .sub{color:var(--muted);font-size:.85rem;margin-top:8px;letter-spacing:.1em}
+  section{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:18px 18px 20px;margin-bottom:18px;
+  }
+  h2{font-size:1rem;color:var(--accent);letter-spacing:.2em;margin-bottom:14px;
+     border-bottom:1px solid var(--line);padding-bottom:8px}
+  /* BGM */
+  .track{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;border:1px solid transparent}
+  .track:hover{background:var(--panel2)}
+  .track.active{background:var(--panel2);border-color:var(--accent)}
+  .track .theme{font-size:.7rem;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:2px 10px;white-space:nowrap}
+  .track .name{flex:1}
+  .track .mark{width:1.2em;color:var(--accent);text-align:center}
+  .controls{display:flex;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap}
+  button{
+    background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+    border-radius:10px;padding:10px 18px;font-family:inherit;font-size:1rem;cursor:pointer
+  }
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);color:#1a1408;border-color:var(--accent);font-weight:bold;letter-spacing:.15em}
+  button.small{padding:6px 12px;font-size:.85rem}
+  button.on{background:var(--accent);color:#1a1408;border-color:var(--accent)}
+  input[type=range]{flex:1;accent-color:var(--accent);min-width:100px}
+  .vol-row{display:flex;align-items:center;gap:10px;margin-top:10px}
+  .vol-row .lbl{font-size:.85rem;color:var(--muted);width:5.5em}
+  /* ambient */
+  .amb{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px dashed var(--line)}
+  .amb:last-of-type{border-bottom:none}
+  .amb .icon{font-size:1.4rem;width:1.8em;text-align:center}
+  .amb .aname{width:5.5em;letter-spacing:.1em}
+  /* timer */
+  .timer-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  #timerLeft{margin-left:auto;color:var(--accent2);font-size:1.05rem;letter-spacing:.1em;min-width:5em;text-align:right}
+  footer{text-align:center;color:var(--muted);font-size:.78rem;line-height:2;margin-top:30px}
+  footer a{color:var(--accent2)}
+  .note{color:var(--muted);font-size:.78rem;margin-top:10px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>音の間</h1>
+    <div class="sub">― 和風BGMと環境音で、自分だけの静けさをつくる ―</div>
+  </header>
+
+  <!-- BGM -->
+  <section>
+    <h2>■ BGM（和風Lo-fi）</h2>
+    <div id="trackList"></div>
+    <div class="controls">
+      <button class="primary" id="btnPlay">▶ 再生</button>
+      <button class="small" id="btnPrev">前の曲</button>
+      <button class="small" id="btnNext">次の曲</button>
+    </div>
+    <div class="vol-row"><span class="lbl">BGM音量</span><input type="range" id="bgmVol" min="0" max="100" value="70"></div>
+    <div class="note">曲は自動で次へ進み、最後まで行くと最初に戻ります。</div>
+  </section>
+
+  <!-- 環境音 -->
+  <section>
+    <h2>■ 環境音（重ねられます）</h2>
+    <div class="amb"><span class="icon">🌧</span><span class="aname">雨</span><button class="small amb-btn" data-amb="rain">OFF</button><input type="range" data-ambvol="rain" min="0" max="100" value="50"></div>
+    <div class="amb"><span class="icon">🎐</span><span class="aname">風鈴</span><button class="small amb-btn" data-amb="chime">OFF</button><input type="range" data-ambvol="chime" min="0" max="100" value="50"></div>
+    <div class="amb"><span class="icon">🦗</span><span class="aname">虫の音</span><button class="small amb-btn" data-amb="cricket">OFF</button><input type="range" data-ambvol="cricket" min="0" max="100" value="40"></div>
+    <div class="amb"><span class="icon">🔥</span><span class="aname">焚き火</span><button class="small amb-btn" data-amb="fire">OFF</button><input type="range" data-ambvol="fire" min="0" max="100" value="50"></div>
+    <div class="note">環境音はその場で音を合成しています（録音素材ではありません）。BGMを止めて環境音だけでも使えます。</div>
+  </section>
+
+  <!-- スリープタイマー -->
+  <section>
+    <h2>■ スリープタイマー</h2>
+    <div class="timer-row">
+      <button class="small timer-btn on" data-min="0">なし</button>
+      <button class="small timer-btn" data-min="15">15分</button>
+      <button class="small timer-btn" data-min="30">30分</button>
+      <button class="small timer-btn" data-min="60">60分</button>
+      <button class="small timer-btn" data-min="90">90分</button>
+      <span id="timerLeft"></span>
+    </div>
+    <div class="note">終了30秒前からゆっくり音が小さくなり、自動で止まります。おやすみなさい。</div>
+  </section>
+
+  <footer>
+    楽曲はSuno AIで制作したオリジナル曲です。<br>
+    もっと長い作業用BGMは <a href="https://www.youtube.com/@Chill_music_RinRin" target="_blank" rel="noopener">YouTube「Chill music Rin Rin」</a> でどうぞ。<br>
+    © りんね☆ブログ
+  </footer>
+</div>
+
+<script>
+"use strict";
+/* ================= 設定（曲の追加はここを編集） =================
+   file はこの index.html から見た相対パス。新テーマの曲が出来たら
+   {title, theme, file} を足すだけで一覧に表示される。 */
+const TRACKS = [
+  { title: "星のまたたき", theme: "夜の縁側", file: "audio/engawa-1.mp3" },
+  { title: "眠りの合図", theme: "夜の縁側", file: "audio/engawa-2.mp3" },
+  { title: "紙魚の刻", theme: "書店の夜", file: "audio/shoten-1.mp3" },
+  { title: "読みさしの頁", theme: "書店の夜", file: "audio/shoten-2.mp3" },
+];
+/* ================================================================ */
+
+// ---------- BGM ----------
+const audio = new Audio();
+audio.preload = "none";
+let cur = 0, playing = false;
+const listEl = document.getElementById("trackList");
+const btnPlay = document.getElementById("btnPlay");
+
+function renderList(){
+  listEl.innerHTML = "";
+  TRACKS.forEach((t, i) => {
+    const div = document.createElement("div");
+    div.className = "track" + (i === cur ? " active" : "");
+    div.innerHTML = `<span class="mark">${i === cur && playing ? "♪" : ""}</span>
+      <span class="name">${t.title}</span><span class="theme">${t.theme}</span>`;
+    div.onclick = () => { cur = i; play(); };
+    listEl.appendChild(div);
+  });
+}
+function play(){
+  const t = TRACKS[cur];
+  if (!audio.src.endsWith(encodeURI(t.file))) audio.src = t.file;
+  audio.play().then(()=>{ playing = true; btnPlay.textContent = "❚❚ 停止"; renderList(); })
+    .catch(()=>{ /* ファイル未配置時など */ });
+  ensureCtx();
+}
+function pause(){ audio.pause(); playing = false; btnPlay.textContent = "▶ 再生"; renderList(); }
+btnPlay.onclick = () => playing ? pause() : play();
+document.getElementById("btnNext").onclick = () => { cur = (cur + 1) % TRACKS.length; if (playing) play(); else renderList(); };
+document.getElementById("btnPrev").onclick = () => { cur = (cur - 1 + TRACKS.length) % TRACKS.length; if (playing) play(); else renderList(); };
+audio.addEventListener("ended", () => { cur = (cur + 1) % TRACKS.length; play(); });
+const bgmVol = document.getElementById("bgmVol");
+audio.volume = 0.7;
+bgmVol.oninput = () => { audio.volume = (bgmVol.value / 100) * masterGainValue; };
+
+// ---------- 環境音（Web Audio 合成） ----------
+let ctx = null, master = null;
+let masterGainValue = 1; // スリープタイマーのフェードに使う
+const amb = {}; // name -> {gain, stop(), started}
+
+function ensureCtx(){
+  if (!ctx){
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain(); master.gain.value = 1; master.connect(ctx.destination);
+  }
+  if (ctx.state === "suspended") ctx.resume();
+}
+function noiseBuffer(sec, brown=false){
+  const len = Math.floor(ctx.sampleRate * sec);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  let last = 0;
+  for (let i=0;i<len;i++){
+    const w = Math.random()*2-1;
+    if (brown){ last = (last + 0.02*w) / 1.02; d[i] = last*3.5; } else d[i] = w;
+  }
+  return buf;
+}
+
+const ambBuilders = {
+  rain(g){ // 白色ノイズ→ローパス＝雨
+    const src = ctx.createBufferSource(); src.buffer = noiseBuffer(2); src.loop = true;
+    const lp = ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value = 1300; lp.Q.value = 0.6;
+    src.connect(lp).connect(g); src.start();
+    return () => src.stop();
+  },
+  fire(g){ // ブラウンノイズ＋パチパチ
+    const src = ctx.createBufferSource(); src.buffer = noiseBuffer(2, true); src.loop = true;
+    const lp = ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value = 350;
+    src.connect(lp).connect(g); src.start();
+    let alive = true;
+    (function crackle(){
+      if (!alive) return;
+      const t = ctx.currentTime;
+      const s = ctx.createBufferSource(); s.buffer = noiseBuffer(0.04);
+      const bp = ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value = 1500 + Math.random()*2500; bp.Q.value = 1.2;
+      const cg = ctx.createGain();
+      cg.gain.setValueAtTime(0.35 + Math.random()*0.5, t);
+      cg.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+      s.connect(bp).connect(cg).connect(g); s.start(t);
+      setTimeout(crackle, 60 + Math.random()*420);
+    })();
+    return () => { alive = false; src.stop(); };
+  },
+  chime(g){ // 風鈴: 五音音階の澄んだ打音を不定期に
+    let alive = true;
+    const freqs = [1760, 2093, 2349, 2637, 3136];
+    function strike(){
+      if (!alive) return;
+      const f = freqs[Math.floor(Math.random()*freqs.length)] * (0.99 + Math.random()*0.02);
+      const t = ctx.currentTime;
+      [[1,0.5],[2.76,0.18],[5.4,0.07]].forEach(([m, amp])=>{
+        const o = ctx.createOscillator(); o.type="sine"; o.frequency.value = f*m;
+        const og = ctx.createGain();
+        og.gain.setValueAtTime(amp, t);
+        og.gain.exponentialRampToValueAtTime(0.0005, t + 2.5 + Math.random()*1.5);
+        o.connect(og).connect(g); o.start(t); o.stop(t+4.5);
+      });
+      setTimeout(strike, 2500 + Math.random()*9000);
+    }
+    setTimeout(strike, 400);
+    return () => { alive = false; };
+  },
+  cricket(g){ // 鈴虫: 高音のAM変調チリチリ
+    let alive = true;
+    function chirpLoop(baseF, group, rest){
+      if (!alive) return;
+      const t = ctx.currentTime;
+      const o = ctx.createOscillator(); o.type="sine"; o.frequency.value = baseF;
+      const am = ctx.createOscillator(); am.type="sine"; am.frequency.value = 42;
+      const amg = ctx.createGain(); amg.gain.value = 0.5;
+      const env = ctx.createGain(); env.gain.value = 0;
+      am.connect(amg).connect(env.gain);
+      o.connect(env).connect(g);
+      o.start(); am.start();
+      for (let i=0;i<group;i++){
+        const s = t + i*0.28;
+        env.gain.setValueAtTime(0, s);
+        env.gain.linearRampToValueAtTime(0.5, s+0.05);
+        env.gain.setValueAtTime(0.5, s+0.18);
+        env.gain.linearRampToValueAtTime(0, s+0.24);
+      }
+      const total = group*0.28 + rest;
+      setTimeout(()=>{ o.stop(); am.stop(); chirpLoop(baseF, group, rest); }, total*1000);
+    }
+    chirpLoop(4300, 4, 1.1);
+    setTimeout(()=>{ if(alive) chirpLoop(3800, 3, 1.6); }, 700);
+    return () => { alive = false; };
+  },
+};
+
+document.querySelectorAll(".amb-btn").forEach(btn => {
+  const name = btn.dataset.amb;
+  btn.onclick = () => {
+    ensureCtx();
+    if (amb[name] && amb[name].started){
+      amb[name].stop(); amb[name].gain.disconnect(); amb[name] = null;
+      btn.textContent = "OFF"; btn.classList.remove("on");
+    } else {
+      const g = ctx.createGain();
+      const slider = document.querySelector(`[data-ambvol="${name}"]`);
+      g.gain.value = (slider.value/100) * 0.9;
+      g.connect(master);
+      const stop = ambBuilders[name](g);
+      amb[name] = { gain: g, stop, started: true };
+      btn.textContent = "ON"; btn.classList.add("on");
+    }
+  };
+});
+document.querySelectorAll("[data-ambvol]").forEach(sl => {
+  sl.oninput = () => {
+    const a = amb[sl.dataset.ambvol];
+    if (a) a.gain.gain.value = (sl.value/100) * 0.9;
+  };
+});
+
+// ---------- スリープタイマー ----------
+let timerEnd = null, timerTick = null;
+const timerLeft = document.getElementById("timerLeft");
+document.querySelectorAll(".timer-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".timer-btn").forEach(b => b.classList.remove("on"));
+    btn.classList.add("on");
+    clearInterval(timerTick); timerEnd = null; timerLeft.textContent = "";
+    restoreVolume();
+    const min = parseInt(btn.dataset.min, 10);
+    if (min > 0){
+      timerEnd = Date.now() + min*60000;
+      timerTick = setInterval(tick, 250);
+    }
+  };
+});
+function tick(){
+  const remain = timerEnd - Date.now();
+  if (remain <= 0){
+    clearInterval(timerTick); timerEnd = null; timerLeft.textContent = "";
+    pause();
+    Object.keys(amb).forEach(k => { if (amb[k]){ amb[k].stop(); amb[k].gain.disconnect(); amb[k]=null; } });
+    document.querySelectorAll(".amb-btn").forEach(b => { b.textContent="OFF"; b.classList.remove("on"); });
+    restoreVolume();
+    document.querySelector('.timer-btn[data-min="0"]').classList.add("on");
+    document.querySelectorAll('.timer-btn:not([data-min="0"])').forEach(b=>b.classList.remove("on"));
+    return;
+  }
+  const m = Math.floor(remain/60000), s = Math.floor(remain%60000/1000);
+  timerLeft.textContent = `残り ${m}:${String(s).padStart(2,"0")}`;
+  if (remain < 30000){ // 終了30秒前からフェード
+    masterGainValue = remain / 30000;
+    audio.volume = (bgmVol.value/100) * masterGainValue;
+    if (master) master.gain.value = masterGainValue;
+  }
+}
+function restoreVolume(){
+  masterGainValue = 1;
+  audio.volume = bgmVol.value/100;
+  if (master) master.gain.value = 1;
+}
+
+renderList();
+</script>
+</body>
+</html>
