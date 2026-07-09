@@ -42,6 +42,15 @@
   #saveBtn { background: #fff; color: #3a2418; border: 2px solid #3a2418; }
   #shareStatus { font-size: 12px; color: #8a6f63; min-height: 1.4em; text-align: center; }
   #shareStatus[hidden] { display: none; }
+  .share-fallback { width: 100%; max-width: 340px; text-align: center; margin-top: 2px; }
+  .share-fallback[hidden] { display: none; }
+  .share-fallback p { font-size: 12px; color: #8a6f63; margin-bottom: 8px; }
+  .share-btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .sh { border: none; border-radius: 8px; color: #fff; font-size: 12px; font-weight: bold; padding: 8px 12px; cursor: pointer; min-width: 64px; }
+  .sh-x { background: #0f1419; border: 1px solid #3a4048; }
+  .sh-threads { background: #101010; border: 1px solid #3a3a3a; }
+  .sh-line { background: #06c755; }
+  .sh-ig { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
   .footer-note {
     margin-top: 20px; font-size: 11px; color: #b79b8f; text-align: center; max-width: 340px;
   }
@@ -69,6 +78,15 @@
       <button id="saveBtn">保存する</button>
     </div>
     <p id="shareStatus" hidden></p>
+    <div id="shareFallback" class="share-fallback" hidden>
+      <p>画像を保存し、文章もコピーしました。下のボタンでSNSを開いて、保存した画像を貼り付けてね</p>
+      <div class="share-btns">
+        <button id="share-x" class="sh sh-x">X</button>
+        <button id="share-threads" class="sh sh-threads">Threads</button>
+        <button id="share-line" class="sh sh-line">LINE</button>
+        <button id="share-ig" class="sh sh-ig">Instagram</button>
+      </div>
+    </div>
   </div>
 
   <!-- カード表示用のデータ保持要素(canvas描画の参照元。画面には出さない) -->

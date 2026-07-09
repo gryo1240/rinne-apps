@@ -1,5 +1,5 @@
 // 謎の名言メーカー Service Worker (キャッシュ優先・オフライン動作)
-const CACHE = "meigen-maker-v3";
+const CACHE = "meigen-maker-v4";
 const ASSETS = [
   "./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png",
   "./app.js", "./generator.js",

@@ -9,7 +9,28 @@ const els = {
   saveBtn: document.getElementById("saveBtn"),
   shareBtn: document.getElementById("shareBtn"),
   shareStatus: document.getElementById("shareStatus"),
+  shareFallback: document.getElementById("shareFallback"),
+  shareX: document.getElementById("share-x"),
+  shareThreads: document.getElementById("share-threads"),
+  shareLine: document.getElementById("share-line"),
+  shareIg: document.getElementById("share-ig"),
 };
+
+const SHARE_URL = "https://gryo1240.github.io/rinne-apps/meigen-maker/";
+function shareCaption() {
+  return "謎の名言メーカーで生成した格言です🌙\n#謎の名言メーカー";
+}
+function openShare(url) { window.open(url, "_blank", "noopener"); }
+function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+  return new Promise((resolve, reject) => {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy") ? resolve() : reject(new Error("copy失敗")); }
+    catch (err) { reject(err); }
+    finally { ta.remove(); }
+  });
+}
 
 // 印(判子)に使う一文字。generator.jsのSAGE_FIRSTと同じ字の一部から流用
 const SEAL_CHARS = ["風", "月", "雲", "静", "無", "空", "夢", "灯", "境", "刻"];
@@ -153,6 +174,7 @@ function drawCardCanvas(result) {
   const dataUrl = cardCanvasEl.toDataURL("image/png");
   cardBlob = dataUrlToBlob(dataUrl);
   setShareStatus("");
+  els.shareFallback.hidden = true;
   els.cardWrap.innerHTML = "";
   const previewImg = document.createElement("img");
   previewImg.src = dataUrl;
@@ -169,8 +191,28 @@ els.saveBtn.addEventListener("click", () => {
   a.click();
 });
 
+function downloadCard() {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(cardBlob);
+  a.download = "meigen.png";
+  a.click();
+}
+
+// 共有シートが使えない/失敗した環境向けのフォールバック:
+// 画像を保存し、文章もクリップボードにコピーした上で、SNS別ボタンから
+// 投稿画面(URLスキーム/Web Intent)を開く。画像そのものをJSから直接
+// Xやインスタの投稿画面へ添付する手段はWeb上にないため、
+// 「保存した画像を貼り付けるだけで済む」状態まで用意するのが現実的な着地点
+function showShareFallback(reasonMsg) {
+  downloadCard();
+  copyText(shareCaption()).catch(() => {});
+  setShareStatus(reasonMsg);
+  els.shareFallback.hidden = false;
+}
+
 els.shareBtn.addEventListener("click", async () => {
   if (!cardBlob) return;
+  els.shareFallback.hidden = true;
   // File化はクリックハンドラ内で同期的に行う(canvas.toBlob()の非同期コールバック内で
   // navigator.share()を呼ぶと、環境によってはユーザー操作の有効期限が切れてNotAllowedErrorになるため)
   const file = new File([cardBlob], "meigen.png", { type: "image/png" });
@@ -184,19 +226,30 @@ els.shareBtn.addEventListener("click", async () => {
         setShareStatus("");
         return;
       }
-      setShareStatus(`共有に失敗したため画像を保存しました(${e && e.name ? e.name : "エラー"})。X等のアプリ内で開いている場合は、Safari/Chromeで直接開くと共有できることがあります`);
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(cardBlob);
-      a.download = "meigen.png";
-      a.click();
+      showShareFallback(`この端末では共有シートを使えなかった(${e && e.name ? e.name : "エラー"})ため、画像を保存し文章もコピーしました。下のボタンでSNSを開いて、保存した画像を貼り付けてください`);
     }
     return;
   }
-  setShareStatus("この端末・ブラウザは画像共有シートに対応していないため、画像を保存しました。SNSアプリ内ブラウザで開いている場合は、Safari/Chromeで直接開くと共有できることがあります");
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(cardBlob);
-  a.download = "meigen.png";
-  a.click();
+  showShareFallback("この端末・ブラウザは画像共有シートに対応していないため、画像を保存し文章もコピーしました。下のボタンでSNSを開いて、保存した画像を貼り付けてください");
+});
+
+els.shareX.addEventListener("click", () => {
+  copyText(shareCaption()).catch(() => {});
+  openShare("https://twitter.com/intent/tweet?text=" + encodeURIComponent(shareCaption()) +
+    "&url=" + encodeURIComponent(SHARE_URL));
+});
+els.shareThreads.addEventListener("click", () => {
+  copyText(shareCaption()).catch(() => {});
+  openShare("https://www.threads.net/intent/post?text=" + encodeURIComponent(shareCaption() + "\n" + SHARE_URL));
+});
+els.shareLine.addEventListener("click", () => {
+  copyText(shareCaption()).catch(() => {});
+  openShare("https://social-plugins.line.me/lineit/share?url=" + encodeURIComponent(SHARE_URL) +
+    "&text=" + encodeURIComponent(shareCaption()));
+});
+els.shareIg.addEventListener("click", () => {
+  copyText(shareCaption() + "\n" + SHARE_URL).catch(() => {});
+  openShare("https://www.instagram.com/");
 });
 
 // ---------- PWA ----------

@@ -672,37 +672,58 @@
 
   // ---- デモモード(?demo=1でボットが自動プレイ。宣伝動画の自動録画用途。通常プレイには影響しない) ----
   const isDemo = new URLSearchParams(location.search).get("demo") === "1";
+  let __gameOverCallbacks = [];
   if (isDemo) {
+    let deathTime = 0;
+    const reactKeys = { u: false, d: false, l: false, r: false };
+
+    const _origStartGame = startGame;
+    startGame = function () {
+      _origStartGame();
+      deathTime = 15 + Math.random() * 4; // 15〜19秒のどこかでわざと事故ってゲームオーバーにする
+    };
+
     const _origUpdate = update;
     update = function (dt) {
-      // 最寄りの脅威(流星/ほうき星)から逆方向へ移動する単純ヒューリスティック
-      keys.u = keys.d = keys.l = keys.r = false;
-      let nearest = null, nd = Infinity;
-      for (const m of meteors) { const d = Math.hypot(m.x - px, m.y - py); if (d < nd) { nd = d; nearest = m; } }
-      for (const c of comets) { const d = Math.hypot(c.x - px, c.y - py); if (d < nd) { nd = d; nearest = c; } }
-      if (nearest && nd < 170) {
-        const dx = px - nearest.x, dy = py - nearest.y;
-        if (Math.abs(dx) > 6) (dx > 0 ? (keys.r = true) : (keys.l = true));
-        if (Math.abs(dy) > 6) (dy > 0 ? (keys.d = true) : (keys.u = true));
-      } else {
-        // 脅威が近くにないときは中心付近をゆっくり周回して画になる動きにする
-        const ang = t * 0.6;
-        const tx = CX + Math.cos(ang) * AR * 0.35, ty = CY + Math.sin(ang) * AR * 0.35;
-        const dx = tx - px, dy = ty - py;
-        if (Math.abs(dx) > 4) (dx > 0 ? (keys.r = true) : (keys.l = true));
-        if (Math.abs(dy) > 4) (dy > 0 ? (keys.d = true) : (keys.u = true));
+      const overtime = Math.max(0, t - deathTime);
+      const avoidR = Math.max(0, 170 - overtime * 170); // deathTime到達後、約1秒かけて回避半径を0まで劣化させる
+      if (avoidR > 0) {
+        // deathTimeまでは毎フレーム反応(元のロジックとほぼ同等)。回避方向にわずかなブレだけ加えて人間味を出す
+        let nearest = null, nd = Infinity;
+        for (const m of meteors) { const d = Math.hypot(m.x - px, m.y - py); if (d < nd) { nd = d; nearest = m; } }
+        for (const c of comets) { const d = Math.hypot(c.x - px, c.y - py); if (d < nd) { nd = d; nearest = c; } }
+        reactKeys.u = reactKeys.d = reactKeys.l = reactKeys.r = false;
+        // deathTime前は狙い通りの生存時間を安定させるため、回避ロジック自体にはブレを入れない
+        // (人間味はdeathTime到達後の反応劣化フェーズだけで表現する)
+        if (nearest && nd < avoidR) {
+          const dx = px - nearest.x, dy = py - nearest.y;
+          if (Math.abs(dx) > 6) (dx > 0 ? (reactKeys.r = true) : (reactKeys.l = true));
+          if (Math.abs(dy) > 6) (dy > 0 ? (reactKeys.d = true) : (reactKeys.u = true));
+        } else {
+          const ang = t * 0.6;
+          const tx = CX + Math.cos(ang) * AR * 0.35, ty = CY + Math.sin(ang) * AR * 0.35;
+          const dx = tx - px, dy = ty - py;
+          if (Math.abs(dx) > 4) (dx > 0 ? (reactKeys.r = true) : (reactKeys.l = true));
+          if (Math.abs(dy) > 4) (dy > 0 ? (reactKeys.d = true) : (reactKeys.u = true));
+        }
       }
+      // avoidRが0まで劣化した後は反応を更新せず、直前の入力のまま流されて事故る(操作停止=棒立ちにはしない)
+      keys.u = reactKeys.u; keys.d = reactKeys.d; keys.l = reactKeys.l; keys.r = reactKeys.r;
       _origUpdate(dt);
     };
+
     const _origEndGame = endGame;
     endGame = function (cleared) {
       _origEndGame(cleared);
-      setTimeout(startGame, 1500); // 録画尺を安定させるため自動リトライ
+      const cbs = __gameOverCallbacks; __gameOverCallbacks = [];
+      cbs.forEach((cb) => cb(cleared));
     };
     setTimeout(startGame, 400);
   }
 
   // ---- デモ動画の録画(?demo=1限定・宣伝動画作成ツール(tools/record_demo.py)から呼び出す) ----
+  // ヘッダー(タイトル)とHUD(夜明けバー・タイマー)はcanvas外のHTML要素のため、cv.captureStream()だけでは
+  // 映らない。録画用の合成canvasを別途用意し、毎フレーム「HUD再描画 + ゲーム画面(drawImage)」を合成する
   let __audioCtx = null, __audioDest = null;
   function __getAudioDest() {
     if (!__audioCtx) {
@@ -720,10 +741,70 @@
     }
     bgm.__srcNode.connect(dest);
   }
-  window.__startDemoRecording = function (durationMs) {
+  function __roundRectPath(c2, x, y, w, h, r) {
+    c2.beginPath();
+    c2.moveTo(x + r, y);
+    c2.arcTo(x + w, y, x + w, y + h, r);
+    c2.arcTo(x + w, y + h, x, y + h, r);
+    c2.arcTo(x, y + h, x, y, r);
+    c2.arcTo(x, y, x + w, y, r);
+    c2.closePath();
+  }
+  window.__startDemoRecording = function (maxDurationMs) {
     return new Promise((resolve, reject) => {
+      let rafId2 = 0;
       try {
-        const videoStream = cv.captureStream(60);
+        const HUD_H = 76;
+        const compW = W, compH = HUD_H + H;
+        const recCv = document.createElement("canvas");
+        recCv.width = compW; recCv.height = compH;
+        const rctx = recCv.getContext("2d");
+
+        function drawComposite() {
+          rafId2 = requestAnimationFrame(drawComposite);
+          rctx.fillStyle = "#0c0f1d";
+          rctx.fillRect(0, 0, compW, HUD_H);
+          rctx.textAlign = "center";
+          rctx.fillStyle = "#ffd75e";
+          rctx.font = "bold 24px sans-serif";
+          rctx.fillText("MOON DODGE", compW / 2, 28);
+          rctx.fillStyle = "#a9a698";
+          rctx.font = "11px sans-serif";
+          rctx.fillText("月うさぎの流星よけ 〜夜明けまで逃げきれ〜", compW / 2, 43);
+          const barX = 78, barW = compW - 78 - 84, barY = 54, barH = 8;
+          rctx.textAlign = "left";
+          rctx.fillStyle = "#a9a698"; rctx.font = "11px sans-serif";
+          rctx.fillText("夜明けまで", 8, barY + 7);
+          rctx.fillStyle = "rgba(255,255,255,.12)";
+          __roundRectPath(rctx, barX, barY, barW, barH, 4); rctx.fill();
+          const prog = Math.min(t / CFG.clearTime, 1);
+          if (prog > 0) {
+            rctx.fillStyle = "#ffd75e";
+            __roundRectPath(rctx, barX, barY, Math.max(barW * prog, barH), barH, 4); rctx.fill();
+          }
+          rctx.textAlign = "right";
+          rctx.fillStyle = "#ffd75e"; rctx.font = "bold 15px sans-serif";
+          rctx.fillText(t.toFixed(1) + "秒", compW - 8, barY + 7);
+          rctx.drawImage(cv, 0, HUD_H, compW, H);
+          // ゲームオーバー/クリア画面はHTMLオーバーレイ(canvas外)のため、結果表示中は合成canvasにも再現する
+          if (state === "over" || state === "clear") {
+            rctx.fillStyle = "rgba(8,10,22,.82)";
+            rctx.fillRect(0, HUD_H, compW, H);
+            rctx.textAlign = "center";
+            rctx.fillStyle = "#ffd75e";
+            rctx.font = "bold 26px sans-serif";
+            rctx.fillText(document.getElementById("r-head").textContent, compW / 2, HUD_H + H / 2 - 40);
+            rctx.fillStyle = "#d8d5c8";
+            rctx.font = "18px sans-serif";
+            rctx.fillText(document.getElementById("r-time").textContent + " 秒 逃げきり", compW / 2, HUD_H + H / 2);
+            rctx.fillStyle = "#ffd75e";
+            rctx.font = "bold 17px sans-serif";
+            rctx.fillText(document.getElementById("r-rank").textContent, compW / 2, HUD_H + H / 2 + 34);
+          }
+        }
+        drawComposite();
+
+        const videoStream = recCv.captureStream(60);
         __connectBgmToRecording();
         const dest = __getAudioDest();
         const combined = new MediaStream([...videoStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
@@ -732,6 +813,13 @@
         const rec = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 6000000 });
         const chunks = [];
         rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+        let stopped = false;
+        function stopAndSave() {
+          if (stopped) return;
+          stopped = true;
+          cancelAnimationFrame(rafId2);
+          rec.stop();
+        }
         rec.onstop = () => {
           const blob = new Blob(chunks, { type: mimeType });
           const a = document.createElement("a");
@@ -743,8 +831,14 @@
           resolve({ size: blob.size });
         };
         rec.start();
-        setTimeout(() => rec.stop(), durationMs);
-      } catch (err) { reject(err); }
+        // ゲームオーバー(またはクリア)後、結果画面を2.5秒映してから録画終了
+        __gameOverCallbacks.push(() => setTimeout(stopAndSave, 2500));
+        // 保険: 想定より粘った場合の強制タイムアウト
+        setTimeout(stopAndSave, maxDurationMs);
+      } catch (err) {
+        cancelAnimationFrame(rafId2);
+        reject(err);
+      }
     });
   };
 
