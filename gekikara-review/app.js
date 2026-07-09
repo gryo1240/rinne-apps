@@ -20,6 +20,11 @@ let lastImageEl = null;
 
 // ---------- テキストからの生成 ----------
 function handleGenerate() {
+  if (!els.input.value.trim()) {
+    setImgStatus("文字を入力してください");
+    return;
+  }
+  setImgStatus("");
   const result = window.GekikaraGenerator.generateReview(els.input.value);
   renderResult(result, lastImageEl);
 }
@@ -335,10 +340,18 @@ els.shareBtn.addEventListener("click", async () => {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: "激辛レビュー生成器" });
-        return;
-      } catch (e) { /* キャンセル等は無視 */ }
+      } catch (e) {
+        // ユーザーが共有シートをキャンセルした場合は何もしない(意図した操作のためダウンロードに逃がさない)
+        if (e && e.name !== "AbortError") {
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "gekikara-review.png";
+          a.click();
+        }
+      }
+      return;
     }
-    // 共有APIが使えない場合はダウンロードにフォールバック
+    // 共有API(ファイル)未対応の環境のみダウンロードにフォールバック
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "gekikara-review.png";
