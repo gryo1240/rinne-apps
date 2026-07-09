@@ -13,10 +13,27 @@ const els = {
   cardWrap: document.getElementById("cardWrap"),
   saveBtn: document.getElementById("saveBtn"),
   shareBtn: document.getElementById("shareBtn"),
+  shareStatus: document.getElementById("shareStatus"),
 };
 
 let modelPromise = null;
 let lastImageEl = null;
+
+// dataURL→Blob変換(同期)。canvas.toBlob()は非同期でクリックのユーザー操作から
+// 時間が空いてしまい、navigator.share()がNotAllowedErrorになる環境があるため使わない
+function dataUrlToBlob(dataUrl) {
+  const [header, base64] = dataUrl.split(",");
+  const mime = (header.match(/:(.*?);/) || [, "image/png"])[1];
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
+function setShareStatus(text) {
+  els.shareStatus.textContent = text;
+  els.shareStatus.hidden = !text;
+}
 
 // ---------- テキストからの生成 ----------
 function handleGenerate() {
@@ -193,6 +210,7 @@ function wrapText(ctx, text, maxWidth) {
 }
 
 let cardCanvasEl = null;
+let cardBlob = null;
 
 function drawCardCanvas(result, imageEl) {
   if (!cardCanvasEl) {
@@ -288,6 +306,8 @@ function drawCardCanvas(result, imageEl) {
   ctx.fillText("激辛レビュー生成器", W / 2, y);
 
   const dataUrl = cardCanvasEl.toDataURL("image/png");
+  cardBlob = dataUrlToBlob(dataUrl);
+  setShareStatus("");
   els.cardWrap.innerHTML = "";
   const previewImg = document.createElement("img");
   previewImg.src = dataUrl;
@@ -333,30 +353,33 @@ els.saveBtn.addEventListener("click", () => {
 });
 
 els.shareBtn.addEventListener("click", async () => {
-  if (!cardCanvasEl) return;
-  cardCanvasEl.toBlob(async (blob) => {
-    if (!blob) return;
-    const file = new File([blob], "gekikara-review.png", { type: "image/png" });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: "激辛レビュー生成器" });
-      } catch (e) {
-        // ユーザーが共有シートをキャンセルした場合は何もしない(意図した操作のためダウンロードに逃がさない)
-        if (e && e.name !== "AbortError") {
-          const a = document.createElement("a");
-          a.href = URL.createObjectURL(blob);
-          a.download = "gekikara-review.png";
-          a.click();
-        }
+  if (!cardBlob) return;
+  // File化はクリックハンドラ内で同期的に行う(canvas.toBlob()の非同期コールバック内で
+  // navigator.share()を呼ぶと、環境によってはユーザー操作の有効期限が切れてNotAllowedErrorになるため)
+  const file = new File([cardBlob], "gekikara-review.png", { type: "image/png" });
+  const shareText = "激辛レビュー生成器で審査してもらいました🌶";
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: "激辛レビュー生成器", text: shareText });
+      setShareStatus("");
+    } catch (e) {
+      if (e && e.name === "AbortError") {
+        setShareStatus("");
+        return;
       }
-      return;
+      setShareStatus(`共有に失敗したため画像を保存しました(${e && e.name ? e.name : "エラー"})。X等のアプリ内で開いている場合は、Safari/Chromeで直接開くと共有できることがあります`);
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(cardBlob);
+      a.download = "gekikara-review.png";
+      a.click();
     }
-    // 共有API(ファイル)未対応の環境のみダウンロードにフォールバック
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "gekikara-review.png";
-    a.click();
-  }, "image/png");
+    return;
+  }
+  setShareStatus("この端末・ブラウザは画像共有シートに対応していないため、画像を保存しました。SNSアプリ内ブラウザで開いている場合は、Safari/Chromeで直接開くと共有できることがあります");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(cardBlob);
+  a.download = "gekikara-review.png";
+  a.click();
 });
 
 // ---------- PWA ----------

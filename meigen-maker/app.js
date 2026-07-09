@@ -8,10 +8,29 @@ const els = {
   cardWrap: document.getElementById("cardWrap"),
   saveBtn: document.getElementById("saveBtn"),
   shareBtn: document.getElementById("shareBtn"),
+  shareStatus: document.getElementById("shareStatus"),
 };
 
 // 印(判子)に使う一文字。generator.jsのSAGE_FIRSTと同じ字の一部から流用
 const SEAL_CHARS = ["風", "月", "雲", "静", "無", "空", "夢", "灯", "境", "刻"];
+
+let cardBlob = null;
+
+// dataURL→Blob変換(同期)。canvas.toBlob()は非同期でクリックのユーザー操作から
+// 時間が空いてしまい、navigator.share()がNotAllowedErrorになる環境があるため使わない
+function dataUrlToBlob(dataUrl) {
+  const [header, base64] = dataUrl.split(",");
+  const mime = (header.match(/:(.*?);/) || [, "image/png"])[1];
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
+function setShareStatus(text) {
+  els.shareStatus.textContent = text;
+  els.shareStatus.hidden = !text;
+}
 
 function handleGenerate() {
   const result = window.MeigenGenerator.generateQuote(els.input.value);
@@ -132,6 +151,8 @@ function drawCardCanvas(result) {
   ctx.fillText("謎の名言メーカー", W / 2, H - 34);
 
   const dataUrl = cardCanvasEl.toDataURL("image/png");
+  cardBlob = dataUrlToBlob(dataUrl);
+  setShareStatus("");
   els.cardWrap.innerHTML = "";
   const previewImg = document.createElement("img");
   previewImg.src = dataUrl;
@@ -149,30 +170,33 @@ els.saveBtn.addEventListener("click", () => {
 });
 
 els.shareBtn.addEventListener("click", async () => {
-  if (!cardCanvasEl) return;
-  cardCanvasEl.toBlob(async (blob) => {
-    if (!blob) return;
-    const file = new File([blob], "meigen.png", { type: "image/png" });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: "謎の名言メーカー" });
-      } catch (e) {
-        // ユーザーが共有シートをキャンセルした場合は何もしない(意図した操作のためダウンロードに逃がさない)
-        if (e && e.name !== "AbortError") {
-          const a = document.createElement("a");
-          a.href = URL.createObjectURL(blob);
-          a.download = "meigen.png";
-          a.click();
-        }
+  if (!cardBlob) return;
+  // File化はクリックハンドラ内で同期的に行う(canvas.toBlob()の非同期コールバック内で
+  // navigator.share()を呼ぶと、環境によってはユーザー操作の有効期限が切れてNotAllowedErrorになるため)
+  const file = new File([cardBlob], "meigen.png", { type: "image/png" });
+  const shareText = "謎の名言メーカーで生成した格言です🌙";
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: "謎の名言メーカー", text: shareText });
+      setShareStatus("");
+    } catch (e) {
+      if (e && e.name === "AbortError") {
+        setShareStatus("");
+        return;
       }
-      return;
+      setShareStatus(`共有に失敗したため画像を保存しました(${e && e.name ? e.name : "エラー"})。X等のアプリ内で開いている場合は、Safari/Chromeで直接開くと共有できることがあります`);
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(cardBlob);
+      a.download = "meigen.png";
+      a.click();
     }
-    // Web Share API(ファイル)未対応の環境のみダウンロードにフォールバック
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "meigen.png";
-    a.click();
-  }, "image/png");
+    return;
+  }
+  setShareStatus("この端末・ブラウザは画像共有シートに対応していないため、画像を保存しました。SNSアプリ内ブラウザで開いている場合は、Safari/Chromeで直接開くと共有できることがあります");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(cardBlob);
+  a.download = "meigen.png";
+  a.click();
 });
 
 // ---------- PWA ----------
