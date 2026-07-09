@@ -69,7 +69,7 @@ function drawCardCanvas(result) {
   const measure = document.createElement("canvas").getContext("2d");
   measure.font = "30px serif";
   const quoteLines = wrapText(measure, result.quote, W - pad * 2);
-  const H = 200 + quoteLines.length * 46 + 150;
+  const H = 200 + quoteLines.length * 46 + 120;
 
   cardCanvasEl.width = W;
   cardCanvasEl.height = H;
@@ -108,7 +108,7 @@ function drawCardCanvas(result) {
   ctx.font = "22px serif";
   ctx.textAlign = "right";
   ctx.fillText(result.closer, W - pad, y);
-  y += 40;
+  y += 30;
 
   // 印(判子)
   const sealR = 34;
@@ -129,7 +129,7 @@ function drawCardCanvas(result) {
   ctx.fillStyle = "#c2ac86";
   ctx.font = "14px sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("謎の名言メーカー", W / 2, H - 40);
+  ctx.fillText("謎の名言メーカー", W / 2, H - 34);
 
   const dataUrl = cardCanvasEl.toDataURL("image/png");
   els.cardWrap.innerHTML = "";
@@ -156,9 +156,18 @@ els.shareBtn.addEventListener("click", async () => {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: "謎の名言メーカー" });
-        return;
-      } catch (e) { /* キャンセル等は無視 */ }
+      } catch (e) {
+        // ユーザーが共有シートをキャンセルした場合は何もしない(意図した操作のためダウンロードに逃がさない)
+        if (e && e.name !== "AbortError") {
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "meigen.png";
+          a.click();
+        }
+      }
+      return;
     }
+    // Web Share API(ファイル)未対応の環境のみダウンロードにフォールバック
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "meigen.png";
