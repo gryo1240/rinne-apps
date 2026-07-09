@@ -1205,6 +1205,71 @@
     });
   });
 
+  // ---- デモモード(?demo=1でボットが自動プレイ。宣伝動画の自動録画用途。通常プレイには影響しない) ----
+  // ?song=<SONG_LIBRARYのid> ?diff=easy|normal|hard|fever で曲・難易度を指定可(既定は0曲目・normal)
+  const isDemo = new URLSearchParams(location.search).get("demo") === "1";
+  if (isDemo) {
+    const params = new URLSearchParams(location.search);
+    const songId = params.get("song");
+    const foundIdx = songId ? SONG_LIBRARY.findIndex((s) => s.id === songId) : -1;
+    const demoSongIdx = foundIdx >= 0 ? foundIdx : 0;
+    const demoDiff = params.get("diff") || "normal";
+
+    const _origLoop = loop;
+    loop = function () {
+      if (state === "playing" && player) {
+        const now = player.now();
+        for (const n of notes) {
+          if (n.judged) continue;
+          if (n.__jitter === undefined) n.__jitter = Math.random() * 0.06 - 0.03; // ±30ms(見た目の自然さ用)
+          if (now + n.__jitter < n.time) break; // notesは時刻順のため、まだ先のノーツで打ち切り
+          if (n.dur > 0) {
+            keyHeld[n.lane] = true;
+            setTimeout(() => { keyHeld[n.lane] = false; }, n.dur * 1000);
+          }
+          hitLane(n.lane);
+        }
+      }
+      _origLoop();
+    };
+
+    GameAudio.ensureCtx();
+    selSong = demoSongIdx;
+    selDiff = demoDiff;
+    setTimeout(() => {
+      startGame();
+      if (player && player.connectRecording) player.connectRecording();
+    }, 500);
+  }
+
+  // ---- デモ動画の録画(?demo=1限定・宣伝動画作成ツール(tools/record_demo.py)から呼び出す) ----
+  window.__startDemoRecording = function (durationMs) {
+    return new Promise((resolve, reject) => {
+      try {
+        const videoStream = canvas.captureStream(60);
+        const audioStream = GameAudio.getRecordingDestination().stream;
+        const combined = new MediaStream([...videoStream.getVideoTracks(), ...audioStream.getAudioTracks()]);
+        const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
+          ? "video/webm;codecs=vp9,opus" : "video/webm";
+        const rec = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 6000000 });
+        const chunks = [];
+        rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+        rec.onstop = () => {
+          const blob = new Blob(chunks, { type: mimeType });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "star-beats-demo.webm";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          resolve({ size: blob.size });
+        };
+        rec.start();
+        setTimeout(() => rec.stop(), durationMs);
+      } catch (err) { reject(err); }
+    });
+  };
+
   // 初期化
   resize();
   showScreen("title");

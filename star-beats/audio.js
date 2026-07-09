@@ -22,6 +22,28 @@ const GameAudio = (() => {
     return ctx;
   }
 
+  // ---- デモ動画の録画用出力タップ(通常プレイでは未使用・呼ばれない限り何もしない) ----
+  // 効果音・シンセ音源は c.destination の代わりにこのタップ経由で出力し、
+  // getRecordingDestination() 経由で MediaRecorder 用ストリームにも同じ音を流す
+  let outTap = null;
+  function getOutTap() {
+    const c = ensureCtx();
+    if (!outTap) {
+      outTap = c.createGain();
+      outTap.connect(c.destination);
+    }
+    return outTap;
+  }
+  let recDest = null;
+  function getRecordingDestination() {
+    const c = ensureCtx();
+    if (!recDest) {
+      recDest = c.createMediaStreamDestination();
+      getOutTap().connect(recDest);
+    }
+    return recDest;
+  }
+
   // マスター音量(0〜1)。タイトル画面のスライダーで変更し localStorage に保存する。
   let master = 0.7;
   try {
@@ -63,7 +85,7 @@ const GameAudio = (() => {
     f.type = "highpass";
     f.frequency.value = 3200;
     src.connect(f);
-    f.connect(envGain(c, t, 0.09 * master, 0.05, c.destination));
+    f.connect(envGain(c, t, 0.09 * master, 0.05, getOutTap()));
     src.start(t);
     src.stop(t + 0.07);
   }
@@ -142,7 +164,7 @@ const GameAudio = (() => {
 
     const master = c.createGain();
     master.gain.value = 0.8;
-    master.connect(c.destination);
+    master.connect(getOutTap());
 
     function kick(t) {
       const o = c.createOscillator();
@@ -327,6 +349,17 @@ const GameAudio = (() => {
       ended() {
         return audio.ended || this.now() >= dur;
       },
+      // デモ動画の録画用(通常プレイでは呼ばれない)。曲の<audio>要素をMediaRecorder用の
+      // 録画先ストリームにも流す。createMediaElementSource は一度だけ呼べるので、
+      // 通常再生(c.destination)への接続を保ったまま録画先にも分岐させる
+      connectRecording() {
+        const c = ensureCtx();
+        if (!audio.__recSrc) {
+          audio.__recSrc = c.createMediaElementSource(audio);
+          audio.__recSrc.connect(c.destination);
+        }
+        audio.__recSrc.connect(getRecordingDestination());
+      },
     };
   }
 
@@ -367,5 +400,5 @@ const GameAudio = (() => {
     };
   }
 
-  return { ensureCtx, playTap, createSynthPlayer, createFilePlayer, createPreview, synthNoteCount, setVolume, getVolume };
+  return { ensureCtx, playTap, createSynthPlayer, createFilePlayer, createPreview, synthNoteCount, setVolume, getVolume, getRecordingDestination };
 })();

@@ -670,6 +670,84 @@
     }
   });
 
+  // ---- デモモード(?demo=1でボットが自動プレイ。宣伝動画の自動録画用途。通常プレイには影響しない) ----
+  const isDemo = new URLSearchParams(location.search).get("demo") === "1";
+  if (isDemo) {
+    const _origUpdate = update;
+    update = function (dt) {
+      // 最寄りの脅威(流星/ほうき星)から逆方向へ移動する単純ヒューリスティック
+      keys.u = keys.d = keys.l = keys.r = false;
+      let nearest = null, nd = Infinity;
+      for (const m of meteors) { const d = Math.hypot(m.x - px, m.y - py); if (d < nd) { nd = d; nearest = m; } }
+      for (const c of comets) { const d = Math.hypot(c.x - px, c.y - py); if (d < nd) { nd = d; nearest = c; } }
+      if (nearest && nd < 170) {
+        const dx = px - nearest.x, dy = py - nearest.y;
+        if (Math.abs(dx) > 6) (dx > 0 ? (keys.r = true) : (keys.l = true));
+        if (Math.abs(dy) > 6) (dy > 0 ? (keys.d = true) : (keys.u = true));
+      } else {
+        // 脅威が近くにないときは中心付近をゆっくり周回して画になる動きにする
+        const ang = t * 0.6;
+        const tx = CX + Math.cos(ang) * AR * 0.35, ty = CY + Math.sin(ang) * AR * 0.35;
+        const dx = tx - px, dy = ty - py;
+        if (Math.abs(dx) > 4) (dx > 0 ? (keys.r = true) : (keys.l = true));
+        if (Math.abs(dy) > 4) (dy > 0 ? (keys.d = true) : (keys.u = true));
+      }
+      _origUpdate(dt);
+    };
+    const _origEndGame = endGame;
+    endGame = function (cleared) {
+      _origEndGame(cleared);
+      setTimeout(startGame, 1500); // 録画尺を安定させるため自動リトライ
+    };
+    setTimeout(startGame, 400);
+  }
+
+  // ---- デモ動画の録画(?demo=1限定・宣伝動画作成ツール(tools/record_demo.py)から呼び出す) ----
+  let __audioCtx = null, __audioDest = null;
+  function __getAudioDest() {
+    if (!__audioCtx) {
+      __audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      __audioDest = __audioCtx.createMediaStreamDestination();
+    }
+    return __audioDest;
+  }
+  function __connectBgmToRecording() {
+    if (!bgm) return;
+    const dest = __getAudioDest();
+    if (!bgm.__srcNode) {
+      bgm.__srcNode = __audioCtx.createMediaElementSource(bgm);
+      bgm.__srcNode.connect(__audioCtx.destination);
+    }
+    bgm.__srcNode.connect(dest);
+  }
+  window.__startDemoRecording = function (durationMs) {
+    return new Promise((resolve, reject) => {
+      try {
+        const videoStream = cv.captureStream(60);
+        __connectBgmToRecording();
+        const dest = __getAudioDest();
+        const combined = new MediaStream([...videoStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+        const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
+          ? "video/webm;codecs=vp9,opus" : "video/webm";
+        const rec = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 6000000 });
+        const chunks = [];
+        rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+        rec.onstop = () => {
+          const blob = new Blob(chunks, { type: mimeType });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "moon-dodge-demo.webm";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          resolve({ size: blob.size });
+        };
+        rec.start();
+        setTimeout(() => rec.stop(), durationMs);
+      } catch (err) { reject(err); }
+    });
+  };
+
   // ---- 初期化 ----
   resize();
   showBestOnTitle();
