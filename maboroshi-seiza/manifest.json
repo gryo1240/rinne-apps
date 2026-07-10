@@ -1,0 +1,16 @@
+{
+  "name": "存在しない占星術",
+  "short_name": "存在しない占星術",
+  "description": "生年月日から、あなただけの架空の星座を占う無料アプリ。宵乃こよみが星を読みます。",
+  "lang": "ja",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c0f1d",
+  "theme_color": "#0c0f1d",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
