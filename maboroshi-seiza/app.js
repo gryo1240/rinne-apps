@@ -77,7 +77,26 @@ let lastResult = null;
 
 function drawCardCanvas(result) {
   if (!cardCanvasEl) cardCanvasEl = document.createElement("canvas");
-  const W = 720, H = 1000;
+  const W = 720;
+  const chartTop = 40, chartH = 240;
+
+  // 事前計測: 性格説明の折返し行数を先に求め、それに応じてCanvas全体の高さを決める
+  // (2行になる最悪ケースを常に見込んで固定高さにすると、1行で収まる大半のケースで
+  //  下部に不要な空白ができてしまうため)
+  const measureCtx = cardCanvasEl.getContext("2d");
+  measureCtx.font = "25.5px sans-serif";
+  const temperLines = wrapText(measureCtx, result.temper, W - 120);
+
+  let y = chartTop + chartH + 70; // 星座名
+  y += 60; // サブタイトル
+  y += 72; // 守護天体
+  y += 72; // 性格説明の開始位置
+  y += temperLines.length * 42; // 性格説明の行数ぶん
+  y += 30; // ラッキー項目までの余白
+  y += 42 * 3; // ラッキー4行のうち3行ぶん(最終行はまだ加算しない=ラッキー最終行のベースライン)
+  const footerY = y + 60; // フッターまでの余白
+  const H = footerY + 30; // フッター下の余白
+
   cardCanvasEl.width = W;
   cardCanvasEl.height = H;
   const ctx = cardCanvasEl.getContext("2d");
@@ -89,20 +108,19 @@ function drawCardCanvas(result) {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // 細かい星の粒(装飾・固定配置なので毎回同じ)
+  // 細かい星の粒(装飾。Canvas高さが可変になったため、位置はHに対する比率で指定)
   ctx.fillStyle = "rgba(255,255,255,.5)";
-  const deco = [
-    [40, 40], [90, 90], [660, 60], [610, 130], [50, 780], [670, 800],
-    [30, 500], [690, 460], [120, 30], [560, 850],
+  const decoFrac = [
+    [40, 0.044], [90, 0.1], [660, 0.067], [610, 0.144], [50, 0.867], [670, 0.889],
+    [30, 0.556], [690, 0.511], [120, 0.033], [560, 0.944],
   ];
-  for (const [dx, dy] of deco) {
+  for (const [dx, fy] of decoFrac) {
     ctx.beginPath();
-    ctx.arc(dx, dy, 1.6, 0, Math.PI * 2);
+    ctx.arc(dx, fy * H, 1.6, 0, Math.PI * 2);
     ctx.fill();
   }
 
   // 星図エリア(上部)
-  const chartTop = 40, chartH = 300;
   const pts = result.stars.map((s) => ({
     x: 60 + s.x * (W - 120),
     y: chartTop + s.y * chartH,
@@ -123,7 +141,7 @@ function drawCardCanvas(result) {
     ctx.shadowBlur = 0;
   }
 
-  let y = chartTop + chartH + 70;
+  y = chartTop + chartH + 70;
   ctx.textAlign = "center";
   ctx.fillStyle = "#f0dca8";
   ctx.font = "bold 60px serif";
@@ -146,8 +164,7 @@ function drawCardCanvas(result) {
 
   ctx.font = "25.5px sans-serif";
   ctx.fillStyle = "#e8e4d8";
-  const lines = wrapText(ctx, result.temper, W - 120);
-  for (const line of lines) {
+  for (const line of temperLines) {
     ctx.fillText(line, 60, y);
     y += 42;
   }
@@ -166,7 +183,7 @@ function drawCardCanvas(result) {
   ctx.textAlign = "center";
   ctx.fillStyle = "#6b7390";
   ctx.font = "19.5px sans-serif";
-  ctx.fillText("存在しない占星術 〜 宵乃こよみ 〜", W / 2, H - 40);
+  ctx.fillText("存在しない占星術 〜 宵乃こよみ 〜", W / 2, footerY);
 
   const dataUrl = cardCanvasEl.toDataURL("image/png");
   cardBlob = dataUrlToBlob(dataUrl);
