@@ -1,0 +1,16 @@
+{
+  "name": "エアコン電気代シミュレーター",
+  "short_name": "エアコン電気代",
+  "description": "部屋の広さと使い方を選ぶだけで、エアコンの電気代を1時間・1日・1ヶ月で概算できる無料ツール。",
+  "lang": "ja",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f6f8",
+  "theme_color": "#2b7fbf",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

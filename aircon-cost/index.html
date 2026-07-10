@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>エアコン電気代シミュレーター｜つけっぱなしだと1ヶ月いくら？</title>
+<meta name="description" content="部屋の広さと使い方を選ぶだけで、エアコンの電気代を1時間・1日・1ヶ月で概算。つけっぱなしとの比較や設定温度の節約目安もわかる無料ツールです。">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2b7fbf">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
+    background: #f3f6f8;
+    color: #253239;
+    line-height: 1.6;
+    --accent: #2b7fbf;
+    --accent-dark: #1e639a;
+    --accent-bg: #e8f1f8;
+  }
+  body.heat {
+    --accent: #d9663c;
+    --accent-dark: #b34e2a;
+    --accent-bg: #faeee8;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px 28px; }
+
+  .head { text-align: center; padding: 10px 0 14px; }
+  .head h1 { font-size: 23px; letter-spacing: 0.03em; color: var(--accent-dark); }
+  .head p { font-size: 14px; color: #5d6d75; margin-top: 2px; }
+
+  .tabs { display: flex; gap: 8px; margin: 10px 0 14px; }
+  .tab {
+    flex: 1; padding: 11px 6px; font-size: 16px; font-weight: 700;
+    color: #4c5c64; background: #e3eaee; border: 1px solid #d2dce2;
+    border-radius: 10px; cursor: pointer; text-align: center;
+    transition: background .15s, color .15s;
+  }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .card {
+    background: #fff; border: 1px solid #dfe7ec; border-radius: 14px;
+    padding: 16px 16px 14px; margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(30, 50, 60, .05);
+  }
+  .card h2 { font-size: 15.5px; color: var(--accent-dark); margin-bottom: 10px; }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 2px; }
+  .field .row { display: flex; align-items: baseline; justify-content: space-between; }
+  .field label, .field .lbl { font-size: 15px; font-weight: 700; color: #34434b; }
+  .field .val { display: flex; align-items: baseline; gap: 4px; }
+  .field input[type="number"] {
+    width: 96px; padding: 5px 8px; font-size: 17px; font-weight: 700;
+    color: var(--accent-dark); text-align: right;
+    border: 1px solid #c6d3da; border-radius: 8px; background: #fbfdfe;
+  }
+  .field .unit { font-size: 14px; color: #5d6d75; }
+  .field input[type="range"] { width: 100%; margin-top: 8px; accent-color: var(--accent); height: 22px; }
+
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .chip {
+    flex: 1; min-width: 88px; text-align: center; padding: 9px 4px;
+    background: #f1f5f7; border: 1px solid #dde5ea; border-radius: 10px;
+    font-size: 15px; font-weight: 700; color: #34434b; cursor: pointer;
+  }
+  .chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .chip { position: relative; }
+  .chip:focus-within { outline: 2px solid var(--accent-dark); outline-offset: 2px; }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chips.dimmed .chip { opacity: .4; }
+  .chip .sub { display: block; font-size: 11.5px; font-weight: 400; opacity: .8; }
+
+  details.custom { margin-top: 10px; }
+  details.custom summary { cursor: pointer; font-size: 14px; font-weight: 700; color: var(--accent-dark); list-style-position: inside; }
+  details.custom .inner { display: flex; align-items: baseline; gap: 6px; margin-top: 8px; }
+  details.custom input[type="number"] { width: 110px; }
+  details.custom .hint { font-size: 12.5px; color: #7b8a91; margin-top: 6px; }
+
+  .result { text-align: center; padding-top: 4px; }
+  .result .label { font-size: 14px; color: #5d6d75; }
+  .result .big { font-size: 38px; font-weight: 800; color: var(--accent-dark); letter-spacing: 0.02em; line-height: 1.3; }
+  .result .big small { font-size: 19px; }
+  .stats { display: flex; gap: 8px; margin-top: 12px; }
+  .stat { flex: 1; background: var(--accent-bg); border-radius: 10px; padding: 9px 4px; text-align: center; }
+  .stat .k { font-size: 12.5px; color: #5d6d75; }
+  .stat .v { font-size: 16.5px; font-weight: 700; color: #253239; }
+
+  /* 比較バー */
+  .bars { margin-top: 4px; }
+  .bar-row { margin-bottom: 12px; }
+  .bar-row .bar-label { display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; color: #34434b; margin-bottom: 4px; }
+  .bar-row .bar-label .yen { color: var(--accent-dark); }
+  .bar-track { background: #eef2f5; border-radius: 8px; height: 26px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 8px; background: var(--accent); transition: width .25s; min-width: 2px; }
+  .bar-fill.dim { background: #a8b8c2; }
+  .note {
+    margin-top: 10px; font-size: 13.5px; color: #4c5c64;
+    background: #f6f8f9; border-left: 4px solid #a8b8c2; border-radius: 6px;
+    padding: 8px 10px;
+  }
+
+  .tips { font-size: 14px; color: #34434b; }
+  .tips li { margin: 0 0 8px 20px; }
+  .tips b { color: var(--accent-dark); }
+
+  .disclaimer {
+    font-size: 13.5px; color: #66757c; background: #edf1f3;
+    border-radius: 10px; padding: 12px 14px; margin-top: 2px; line-height: 1.7;
+  }
+  .disclaimer strong { color: #4c5c64; }
+  .disclaimer ul { margin: 6px 0 0 18px; }
+  .disclaimer li { margin-bottom: 4px; }
+
+  @media (max-width: 430px) {
+    .head h1 { font-size: 19px; }
+    .result .big { font-size: 31px; }
+    .stats { flex-wrap: wrap; }
+    .stat { min-width: 45%; }
+    .chip { min-width: 29%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <h1><span id="headIcon">❄️</span> エアコン電気代シミュレーター</h1>
+    <p>つけっぱなしだと1ヶ月いくら？を今すぐ概算</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" id="tabCool" type="button" role="tab" aria-selected="true">❄️ 冷房</button>
+    <button class="tab" id="tabHeat" type="button" role="tab" aria-selected="false">🔥 暖房</button>
+  </div>
+
+  <div class="card">
+    <h2>お部屋と使い方を選んでください</h2>
+    <div class="field">
+      <span class="lbl">部屋の広さ（エアコンの畳数）</span>
+      <div class="chips" id="tatamiChips">
+        <label class="chip"><input type="radio" name="tatami" value="6" checked>6畳</label>
+        <label class="chip"><input type="radio" name="tatami" value="8">8畳</label>
+        <label class="chip"><input type="radio" name="tatami" value="10">10畳</label>
+        <label class="chip"><input type="radio" name="tatami" value="12">12畳</label>
+        <label class="chip"><input type="radio" name="tatami" value="14">14畳</label>
+        <label class="chip"><input type="radio" name="tatami" value="18">18畳</label>
+      </div>
+      <details class="custom" id="customBox">
+        <summary>お使いの機種の消費電力(W)を直接入力する</summary>
+        <div class="inner">
+          <input type="number" id="customW" min="0" max="5000" step="10" placeholder="例: 650">
+          <span class="unit">W（空欄なら畳数の目安で計算）</span>
+        </div>
+        <div class="hint">カタログや本体ラベルの「消費電力（定格）」の値を入れてください。畳数表記は木造/鉄筋で目安が変わります（木造6畳≒鉄筋9畳）。<strong>冷房と暖房で定格は異なる</strong>ため、タブを切り替えたら入れ直してください。入力中は畳数の選択より直接入力が優先されます。</div>
+      </details>
+    </div>
+    <div class="field">
+      <span class="lbl">外の暑さ・効きの強さ <span style="font-weight:400;font-size:12.5px;color:#7b8a91;">（外気温・断熱で変わります）</span></span>
+      <div class="chips" id="loadChips">
+        <label class="chip"><input type="radio" name="load" value="low">控えめ<span class="sub">朝晩だけ・弱運転</span></label>
+        <label class="chip on"><input type="radio" name="load" value="mid" checked>ふつう<span class="sub">標準的な使い方</span></label>
+        <label class="chip"><input type="radio" name="load" value="high" id="loadHighChip"><span id="loadHighLabel">猛暑</span><span class="sub" id="loadHighSub">真夏日・フル稼働気味</span></label>
+      </div>
+    </div>
+    <div class="field">
+      <div class="row">
+        <label for="hours">1日の使用時間</label>
+        <span class="val"><input type="number" id="hours" min="0" max="24" step="0.5" value="9"><span class="unit">時間</span></span>
+      </div>
+      <input type="range" id="hoursR" min="0" max="24" step="0.5" value="9" aria-label="1日の使用時間">
+    </div>
+    <div class="field">
+      <div class="row">
+        <label for="days">月の使用日数</label>
+        <span class="val"><input type="number" id="days" min="1" max="31" step="1" value="30"><span class="unit">日</span></span>
+      </div>
+      <input type="range" id="daysR" min="1" max="31" step="1" value="30" aria-label="月の使用日数">
+    </div>
+    <div class="field">
+      <div class="row">
+        <label for="price">電気の単価</label>
+        <span class="val"><input type="number" id="price" min="10" max="100" step="0.5" value="31"><span class="unit">円/kWh</span></span>
+      </div>
+      <input type="range" id="priceR" min="20" max="50" step="0.5" value="31" aria-label="電力単価">
+    </div>
+  </div>
+
+  <div class="card result">
+    <div class="label">1ヶ月の電気代（概算）</div>
+    <div class="big" id="monthly">—</div>
+    <div class="stats">
+      <div class="stat"><div class="k">1時間あたり</div><div class="v" id="perHour">—</div></div>
+      <div class="stat"><div class="k">1日あたり</div><div class="v" id="perDay">—</div></div>
+      <div class="stat"><div class="k" id="usedWLabel">平均消費電力（概算）</div><div class="v" id="usedW">—</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>もし「24時間つけっぱなし」にしたら？</h2>
+    <div class="bars">
+      <div class="bar-row">
+        <div class="bar-label"><span>いまの使い方（<span id="barHours">9</span>時間/日）</span><span class="yen" id="barNowYen">—</span></div>
+        <div class="bar-track"><div class="bar-fill" id="barNow"></div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label"><span>24時間つけっぱなし</span><span class="yen" id="barFullYen">—</span></div>
+        <div class="bar-track"><div class="bar-fill dim" id="barFull"></div></div>
+      </div>
+    </div>
+    <div class="note">
+      実際のつけっぱなし運転は、設定温度に到達したあとの安定運転で消費が下がるため、差はこの試算より縮まります。
+      また、1〜2時間程度の短い外出なら、再起動時の消費が大きいぶん「つけっぱなしの方が安い」場合もあると言われています（機種・外気温によります）。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>ムリなくできる節約のヒント</h2>
+    <ul class="tips">
+      <li><b>設定温度を1℃ゆるめる</b>（<span id="tempDir">冷房なら+1℃</span>）→ 月あたり<b>約<span id="tempSaving">—</span>円</b>浮く計算です（約10%削減の目安）</li>
+      <li><b>扇風機・サーキュレーター併用</b>: 扇風機は1時間約<span id="fanYen">—</span>円。<span id="fanHint">風があると体感温度が下がり、設定温度をゆるめやすくなります</span></li>
+      <li><b>フィルター掃除（2週間に1回目安）</b>: 目詰まりは効きを悪くして電気代を押し上げます</li>
+      <li><b>室外機のまわりに物を置かない・直射日光を避ける</b>: 排熱がスムーズだと効率が上がります</li>
+    </ul>
+  </div>
+
+  <div class="disclaimer">
+    <strong>ご利用上の注意:</strong>
+    <ul>
+      <li>本ツールは<strong>「定格消費電力×負荷係数」による概算シミュレーション</strong>です。実際の電気代は機種・外気温・部屋の断熱・使い方で大きく変わります。</li>
+      <li>電気の単価の初期値<strong>31円/kWh</strong>は公的な目安単価です。従量電灯プランでは使用量が多いと単価が上がる（第2・第3段階で36〜40円台）ため、<strong>検針票・電力会社アプリの単価に置き換えるとより正確</strong>です。</li>
+      <li>基本料金・燃料費調整額・再エネ賦課金は含みません（使った分の従量料金のみの概算です）。時間帯別プラン（オール電化など）は単価が大きく異なります。</li>
+      <li>畳数別の消費電力は<strong>標準的な普及モデルの目安</strong>です。省エネ上位機種はこれより安く、<strong>10年以上前の機種は目安より高くなる</strong>ことがあります。</li>
+      <li>除湿（ドライ）運転は方式により消費が大きく異なるため、本ツールの対象外です。</li>
+      <li>数値の確認日: <span id="updated"></span></li>
+    </ul>
+  </div>
+
+</div>
+
+<script src="calc.js"></script>
+<script>
+"use strict";
+function $(id) { return document.getElementById(id); }
+function fmtYen(n) { return Math.round(n).toLocaleString() + "円"; }
+
+var mode = "cool";
+
+function readInput() {
+  var hours = parseFloat($("hours").value);
+  var days = parseFloat($("days").value);
+  var price = parseFloat($("price").value);
+  var customW = parseFloat($("customW").value);
+  if (!isFinite(hours)) hours = 0;
+  if (!isFinite(days)) days = 30;
+  if (!isFinite(price) || price <= 0) price = CONFIG.defaultUnitPrice;
+  hours = Math.min(Math.max(hours, 0), 24);
+  days = Math.min(Math.max(days, 1), 31);
+  price = Math.min(Math.max(price, 10), CONFIG.maxUnitPrice);
+  return {
+    mode: mode,
+    tatami: parseInt(document.querySelector('input[name="tatami"]:checked').value, 10),
+    customW: (isFinite(customW) && customW > 0) ? Math.min(customW, CONFIG.maxW) : null,
+    load: document.querySelector('input[name="load"]:checked').value,
+    hoursPerDay: hours,
+    daysPerMonth: days,
+    unitPrice: price
+  };
+}
+
+function update() {
+  var q = readInput();
+  var r = calcCost(q);
+
+  $("monthly").innerHTML = "約 " + Math.round(r.perMonth).toLocaleString() + "<small>円</small>";
+  $("perHour").textContent = "約" + (Math.round(r.perHour * 10) / 10).toLocaleString() + "円";
+  $("perDay").textContent = "約" + fmtYen(r.perDay);
+  $("usedW").textContent = "約" + Math.round(r.ratedW * r.loadFactor).toLocaleString() + "W";
+  // 直接入力が有効なときは畳数チップを淡色化し、計算根拠を明示する
+  var custom = q.customW != null;
+  $("tatamiChips").classList.toggle("dimmed", custom);
+  $("usedWLabel").textContent = custom
+    ? "平均消費電力（直接入力 " + Math.round(q.customW).toLocaleString() + "Wベース）"
+    : "平均消費電力（概算）";
+
+  // 比較バー
+  $("barHours").textContent = q.hoursPerDay;
+  $("barNowYen").textContent = "月 約" + fmtYen(r.perMonth);
+  $("barFullYen").textContent = "月 約" + fmtYen(r.fullDayMonth);
+  var maxBar = Math.max(r.fullDayMonth, 1);
+  $("barNow").style.width = (r.perMonth / maxBar * 100) + "%";
+  $("barFull").style.width = "100%";
+
+  // 節約ヒント
+  $("tempSaving").textContent = Math.round(r.tempSaving).toLocaleString();
+  $("fanYen").textContent = (Math.round(r.fanPerHour * 10) / 10).toLocaleString();
+}
+
+function bindPair(numId, rangeId) {
+  var num = $(numId), rng = $(rangeId);
+  num.addEventListener("input", function () { rng.value = num.value; update(); });
+  rng.addEventListener("input", function () { num.value = rng.value; update(); });
+  num.addEventListener("change", function () {
+    var q = readInput();
+    var v = (numId === "hours") ? q.hoursPerDay : (numId === "days") ? q.daysPerMonth : q.unitPrice;
+    num.value = v;
+    rng.value = Math.min(Math.max(v, parseFloat(rng.min)), parseFloat(rng.max));
+    update();
+  });
+}
+bindPair("hours", "hoursR");
+bindPair("days", "daysR");
+bindPair("price", "priceR");
+$("customW").addEventListener("input", update);
+$("customW").addEventListener("change", function () {
+  // 上限超・負値はクランプして書き戻す（表示と計算の食い違いを防ぐ）
+  var v = parseFloat(this.value);
+  if (isFinite(v) && v > 0) this.value = Math.min(v, CONFIG.maxW);
+  else if (this.value !== "") this.value = "";
+  update();
+});
+
+function bindChips(containerId) {
+  var box = $(containerId);
+  box.addEventListener("change", function () {
+    box.querySelectorAll(".chip").forEach(function (c) {
+      c.classList.toggle("on", c.querySelector("input").checked);
+    });
+    update();
+  });
+  box.querySelectorAll(".chip").forEach(function (c) {
+    c.classList.toggle("on", c.querySelector("input").checked);
+  });
+}
+bindChips("tatamiChips");
+bindChips("loadChips");
+
+function setMode(m) {
+  mode = m;
+  document.body.classList.toggle("heat", m === "heat");
+  $("tabCool").classList.toggle("active", m === "cool");
+  $("tabCool").setAttribute("aria-selected", m === "cool" ? "true" : "false");
+  $("tabHeat").classList.toggle("active", m === "heat");
+  $("tabHeat").setAttribute("aria-selected", m === "heat" ? "true" : "false");
+  $("headIcon").textContent = m === "cool" ? "❄️" : "🔥";
+  // 負荷チップと節約文言のラベルを冷暖で切り替え
+  $("loadHighLabel").textContent = m === "cool" ? "猛暑" : "厳冬";
+  $("loadHighSub").textContent = m === "cool" ? "真夏日・フル稼働気味" : "真冬日・フル稼働気味";
+  $("tempDir").textContent = m === "cool" ? "冷房なら+1℃" : "暖房なら−1℃";
+  $("fanHint").textContent = m === "cool"
+    ? "風があると体感温度が下がり、設定温度をゆるめやすくなります"
+    : "サーキュレーターで天井にたまった暖気を循環させると、設定温度を上げなくても足元まで暖まりやすくなります";
+  update();
+}
+$("tabCool").addEventListener("click", function () { setMode("cool"); });
+$("tabHeat").addEventListener("click", function () { setMode("heat"); });
+
+$("updated").textContent = CONFIG.updated;
+update();
+
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  navigator.serviceWorker.register("sw.js").catch(function () {});
+}
+</script>
+</body>
+</html>
