@@ -1,5 +1,5 @@
 // 存在しない占星術 Service Worker (キャッシュ優先・オフライン動作)
-const CACHE = "maboroshi-seiza-v1";
+const CACHE = "maboroshi-seiza-v2";
 const ASSETS = [
   "./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png",
   "./app.js", "./generator.js", "./koyomi-uranai.jpg",

@@ -130,34 +130,38 @@ function drawCardCanvas(result) {
   ctx.fillText(result.starName, W / 2, y);
   y += 40;
 
-  ctx.font = "16px sans-serif";
+  ctx.font = "17px sans-serif";
   ctx.fillStyle = "#9aa3bf";
   ctx.fillText("あなただけの架空の星座", W / 2, y);
-  y += 46;
+  y += 48;
 
   ctx.textAlign = "left";
-  ctx.font = "15px sans-serif";
+  ctx.font = "16px sans-serif";
   ctx.fillStyle = "#d9b96a";
   ctx.fillText("守護天体", 60, y);
   ctx.fillStyle = "#e8e4d8";
-  ctx.font = "18px serif";
+  ctx.font = "20px serif";
   ctx.fillText(result.guardian, 170, y);
-  y += 44;
+  y += 48;
 
-  ctx.font = "16px sans-serif";
+  ctx.font = "17px sans-serif";
   ctx.fillStyle = "#e8e4d8";
   const lines = wrapText(ctx, result.temper, W - 120);
   for (const line of lines) {
     ctx.fillText(line, 60, y);
-    y += 26;
+    y += 28;
   }
-  y += 16;
+  y += 20;
 
   ctx.fillStyle = "#d9b96a";
-  ctx.font = "15px sans-serif";
+  ctx.font = "17px sans-serif";
   ctx.fillText(`ラッキーカラー: ${result.color}`, 60, y);
-  y += 26;
+  y += 28;
   ctx.fillText(`ラッキーアイテム: ${result.item}`, 60, y);
+  y += 28;
+  ctx.fillText(`ラッキーな刻: ${result.luckyTime}`, 60, y);
+  y += 28;
+  ctx.fillText(`ラッキー方角: ${result.luckyDirection}`, 60, y);
 
   ctx.textAlign = "center";
   ctx.fillStyle = "#6b7390";

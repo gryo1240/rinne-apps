@@ -62,6 +62,14 @@ const SeizaGenerator = (() => {
     "しおり", "貝殻", "万年筆", "丸い石", "小瓶", "羽根ペン", "砂時計",
     "ハンカチ代わりの手ぬぐい", "星の描かれたカード", "ガラスの玉", "小さな鈴虫の音",
   ];
+  const TIMES = [
+    "暁の刻", "宵の口", "黄昏時", "昼下がりの刻", "夜半", "朝凪の刻",
+    "夕凪の刻", "星瞬く刻", "月渡る刻", "風待ちの刻", "未明", "薄明の刻",
+  ];
+  const DIRECTIONS = [
+    "月の昇る方", "星の流れる方", "風上", "陽の沈む方", "霧の立つ方",
+    "潮の満ちる方", "雲の切れる方", "灯りのともる方", "北の窓の方", "旅立ちの方",
+  ];
   const TODAY_MSG = [
     "今日はいつもより少し、空を見上げてみてくださいね。",
     "小さな用事を一つ片付けると、心がすっと軽くなりそうです。",
@@ -90,6 +98,8 @@ const SeizaGenerator = (() => {
     const temper = pick(TEMPER, fnv(base + "|t"));
     const color = pick(COLORS, fnv(base + "|lc"));
     const item = pick(ITEMS, fnv(base + "|li"));
+    const luckyTime = pick(TIMES, fnv(base + "|lt"));
+    const luckyDirection = pick(DIRECTIONS, fnv(base + "|ld"));
 
     // 星図描画用: 5〜8個の星を、種から決定論的に配置する
     const starCount = 5 + (fnv(base + "|n") % 4); // 5-8
@@ -105,7 +115,7 @@ const SeizaGenerator = (() => {
       });
     }
 
-    return { starName, guardian, temper, color, item, stars, base };
+    return { starName, guardian, temper, color, item, luckyTime, luckyDirection, stars, base };
   }
 
   // 「今日のひとこと」は日付だけで決まる(星座に関係なく毎日変わる)
