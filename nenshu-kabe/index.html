@@ -21,82 +21,82 @@
   .wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px 28px; }
 
   .head { text-align: center; padding: 10px 0 14px; }
-  .head h1 { font-size: 22px; letter-spacing: 0.04em; color: #14523a; }
-  .head p { font-size: 12.5px; color: #5c6f66; margin-top: 2px; }
+  .head h1 { font-size: 23px; letter-spacing: 0.04em; color: #14523a; }
+  .head p { font-size: 14px; color: #5c6f66; margin-top: 2px; }
 
   .tabs { display: flex; gap: 8px; margin: 10px 0 14px; }
   .tab {
-    flex: 1; padding: 10px 6px; font-size: 13.5px; font-weight: 700;
+    flex: 1; padding: 10px 6px; font-size: 15px; font-weight: 700;
     color: #4b5f56; background: #e4ece8; border: 1px solid #d2ddd7;
     border-radius: 10px; cursor: pointer; text-align: center;
     transition: background .15s, color .15s;
   }
   .tab.active { background: #0f8a5f; border-color: #0f8a5f; color: #fff; }
-  .tab small { display: block; font-size: 10.5px; font-weight: 400; opacity: .85; }
+  .tab small { display: block; font-size: 12px; font-weight: 400; opacity: .85; }
 
   .card {
     background: #fff; border: 1px solid #e0e8e3; border-radius: 14px;
     padding: 16px 16px 14px; margin-bottom: 14px;
     box-shadow: 0 1px 4px rgba(20, 60, 40, .05);
   }
-  .card h2 { font-size: 14px; color: #14523a; margin-bottom: 10px; }
+  .card h2 { font-size: 15.5px; color: #14523a; margin-bottom: 10px; }
 
   .field { margin-bottom: 14px; }
   .field:last-child { margin-bottom: 2px; }
   .field .row { display: flex; align-items: baseline; justify-content: space-between; }
-  .field label { font-size: 13.5px; font-weight: 700; color: #33463d; }
+  .field label { font-size: 15px; font-weight: 700; color: #33463d; }
   .field .val { display: flex; align-items: baseline; gap: 4px; }
   .field input[type="number"] {
-    width: 90px; padding: 5px 8px; font-size: 16px; font-weight: 700;
+    width: 96px; padding: 5px 8px; font-size: 17px; font-weight: 700;
     color: #0f8a5f; text-align: right;
     border: 1px solid #c9d6d0; border-radius: 8px; background: #fbfdfc;
   }
-  .field .unit { font-size: 13px; color: #5c6f66; }
+  .field .unit { font-size: 14px; color: #5c6f66; }
   .field input[type="range"] { width: 100%; margin-top: 8px; accent-color: #0f8a5f; height: 22px; }
 
   .opts { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
   .opt {
     flex: 1; min-width: 45%; display: flex; align-items: center; gap: 8px;
     background: #f2f7f4; border: 1px solid #dde7e1; border-radius: 10px;
-    padding: 9px 12px; font-size: 13px; font-weight: 700; color: #33463d; cursor: pointer;
+    padding: 9px 12px; font-size: 14.5px; font-weight: 700; color: #33463d; cursor: pointer;
   }
-  .opt input { accent-color: #0f8a5f; width: 17px; height: 17px; }
-  .opt .sub { display: block; font-size: 10.5px; font-weight: 400; color: #7a8a82; }
+  .opt input { accent-color: #0f8a5f; width: 18px; height: 18px; }
+  .opt .sub { display: block; font-size: 12px; font-weight: 400; color: #7a8a82; }
 
   /* 判定バッジ */
   .verdict { text-align: center; padding: 2px 0 6px; }
   .badge {
-    display: inline-block; font-size: 15px; font-weight: 800; letter-spacing: .02em;
+    display: inline-block; font-size: 16.5px; font-weight: 800; letter-spacing: .02em;
     padding: 7px 18px; border-radius: 999px; margin-bottom: 6px;
   }
   .badge.join { background: #e3f0fa; color: #1763a6; }
   .badge.fuyou { background: #e9f6ee; color: #0d7a54; }
   .badge.kokuho { background: #fdeeea; color: #c0392b; }
-  .verdict .why { font-size: 12px; color: #5c6f66; }
+  .verdict .why { font-size: 13.5px; color: #5c6f66; }
 
   .result { text-align: center; padding-top: 4px; }
-  .result .label { font-size: 13px; color: #5c6f66; }
-  .result .big { font-size: 34px; font-weight: 800; color: #0d7a54; letter-spacing: 0.02em; line-height: 1.3; }
-  .result .big small { font-size: 18px; }
+  .result .label { font-size: 14px; color: #5c6f66; }
+  .result .big { font-size: 36px; font-weight: 800; color: #0d7a54; letter-spacing: 0.02em; line-height: 1.3; }
+  .result .big small { font-size: 19px; }
   .stats { display: flex; gap: 8px; margin-top: 12px; }
   .stat { flex: 1; background: #f2f7f4; border-radius: 10px; padding: 8px 4px; text-align: center; }
-  .stat .k { font-size: 11.5px; color: #5c6f66; }
-  .stat .v { font-size: 15px; font-weight: 700; color: #22332c; }
+  .stat .k { font-size: 12.5px; color: #5c6f66; }
+  .stat .v { font-size: 16.5px; font-weight: 700; color: #22332c; }
   .stat .v.minus { color: #b03a2e; }
 
   details summary {
-    cursor: pointer; font-size: 13.5px; font-weight: 700; color: #14523a;
+    cursor: pointer; font-size: 15px; font-weight: 700; color: #14523a;
     padding: 4px 0; list-style-position: inside;
   }
-  table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
   th, td { padding: 6px 4px; text-align: right; border-bottom: 1px solid #eef2ef; }
   th { color: #5c6f66; font-weight: 700; background: #f7faf8; }
   td:first-child, th:first-child { text-align: left; }
-  tr.total td { font-weight: 800; color: #0d7a54; font-size: 13.5px; }
+  tr.total td { font-weight: 800; color: #0d7a54; font-size: 15px; }
 
   .chart-box { position: relative; }
   canvas { width: 100%; height: 260px; display: block; }
-  .legend { display: flex; gap: 14px; justify-content: center; margin-top: 8px; font-size: 12px; color: #4b5f56; flex-wrap: wrap; }
+  .legend { display: flex; gap: 14px; justify-content: center; margin-top: 8px; font-size: 13px; color: #4b5f56; flex-wrap: wrap; }
   .legend span::before {
     content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 3px;
     margin-right: 5px; vertical-align: -1px;
@@ -106,11 +106,11 @@
   .legend .lg-now::before { background: #22332c; border-radius: 50%; }
   .tooltip {
     position: absolute; pointer-events: none; display: none;
-    background: rgba(20, 40, 30, .92); color: #fff; font-size: 11.5px;
+    background: rgba(20, 40, 30, .92); color: #fff; font-size: 12.5px;
     padding: 7px 10px; border-radius: 8px; white-space: nowrap; z-index: 5; line-height: 1.5;
   }
   .cliff-info {
-    margin-top: 12px; font-size: 12.5px; color: #4b5f56;
+    margin-top: 12px; font-size: 14px; color: #4b5f56;
     background: #fdf6ec; border-left: 4px solid #e67e22; border-radius: 6px;
     padding: 8px 10px;
   }
@@ -118,23 +118,23 @@
   .cliff-info .ok { color: #0d7a54; font-weight: 700; }
 
   .pension {
-    font-size: 12.5px; color: #4b5f56;
+    font-size: 14px; color: #4b5f56;
     background: #eef6f1; border-left: 4px solid #0f8a5f; border-radius: 6px;
     padding: 8px 10px;
   }
   .pension b { color: #0d7a54; }
 
   .disclaimer {
-    font-size: 11.5px; color: #7a8a82; background: #eef1ef;
-    border-radius: 10px; padding: 10px 12px; margin-top: 2px;
+    font-size: 13.5px; color: #6d7d75; background: #eef1ef;
+    border-radius: 10px; padding: 12px 14px; margin-top: 2px; line-height: 1.7;
   }
-  .disclaimer strong { color: #5c6f66; }
-  .disclaimer ul { margin: 4px 0 0 18px; }
-  .disclaimer li { margin-bottom: 2px; }
+  .disclaimer strong { color: #4b5f56; }
+  .disclaimer ul { margin: 6px 0 0 18px; }
+  .disclaimer li { margin-bottom: 4px; }
 
   @media (max-width: 430px) {
-    .head h1 { font-size: 18px; }
-    .result .big { font-size: 28px; }
+    .head h1 { font-size: 19px; }
+    .result .big { font-size: 30px; }
     .stats { flex-wrap: wrap; }
     .stat { min-width: 45%; }
     .opt { min-width: 100%; }
@@ -396,7 +396,7 @@ function drawChart() {
   var y = function (v) { return PAD.top + plotH * (1 - v / yMax); };
 
   // グリッドとY軸ラベル
-  ctx.font = "11px sans-serif";
+  ctx.font = "12.5px sans-serif";
   ctx.fillStyle = "#7a8a82";
   ctx.strokeStyle = "#e6ece8";
   ctx.lineWidth = 1;
