@@ -77,7 +77,7 @@ let lastResult = null;
 
 function drawCardCanvas(result) {
   if (!cardCanvasEl) cardCanvasEl = document.createElement("canvas");
-  const W = 720, H = 900;
+  const W = 720, H = 1000;
   cardCanvasEl.width = W;
   cardCanvasEl.height = H;
   const ctx = cardCanvasEl.getContext("2d");
@@ -123,50 +123,50 @@ function drawCardCanvas(result) {
     ctx.shadowBlur = 0;
   }
 
-  let y = chartTop + chartH + 46;
+  let y = chartTop + chartH + 70;
   ctx.textAlign = "center";
   ctx.fillStyle = "#f0dca8";
-  ctx.font = "bold 40px serif";
+  ctx.font = "bold 60px serif";
   ctx.fillText(result.starName, W / 2, y);
-  y += 40;
+  y += 60;
 
-  ctx.font = "17px sans-serif";
+  ctx.font = "25.5px sans-serif";
   ctx.fillStyle = "#9aa3bf";
   ctx.fillText("あなただけの架空の星座", W / 2, y);
-  y += 48;
+  y += 72;
 
   ctx.textAlign = "left";
-  ctx.font = "16px sans-serif";
+  ctx.font = "24px sans-serif";
   ctx.fillStyle = "#d9b96a";
   ctx.fillText("守護天体", 60, y);
   ctx.fillStyle = "#e8e4d8";
-  ctx.font = "20px serif";
-  ctx.fillText(result.guardian, 170, y);
-  y += 48;
+  ctx.font = "30px serif";
+  ctx.fillText(result.guardian, 225, y);
+  y += 72;
 
-  ctx.font = "17px sans-serif";
+  ctx.font = "25.5px sans-serif";
   ctx.fillStyle = "#e8e4d8";
   const lines = wrapText(ctx, result.temper, W - 120);
   for (const line of lines) {
     ctx.fillText(line, 60, y);
-    y += 28;
+    y += 42;
   }
-  y += 20;
+  y += 30;
 
   ctx.fillStyle = "#d9b96a";
-  ctx.font = "17px sans-serif";
+  ctx.font = "25.5px sans-serif";
   ctx.fillText(`ラッキーカラー: ${result.color}`, 60, y);
-  y += 28;
+  y += 42;
   ctx.fillText(`ラッキーアイテム: ${result.item}`, 60, y);
-  y += 28;
+  y += 42;
   ctx.fillText(`ラッキーな刻: ${result.luckyTime}`, 60, y);
-  y += 28;
+  y += 42;
   ctx.fillText(`ラッキー方角: ${result.luckyDirection}`, 60, y);
 
   ctx.textAlign = "center";
   ctx.fillStyle = "#6b7390";
-  ctx.font = "13px sans-serif";
-  ctx.fillText("存在しない占星術 〜 宵乃こよみ 〜", W / 2, H - 30);
+  ctx.font = "19.5px sans-serif";
+  ctx.fillText("存在しない占星術 〜 宵乃こよみ 〜", W / 2, H - 40);
 
   const dataUrl = cardCanvasEl.toDataURL("image/png");
   cardBlob = dataUrlToBlob(dataUrl);
