@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>年収の壁シミュレーター｜2026年10月「週20時間の壁」対応・パート手取り計算</title>
+<meta name="description" content="時給と週の労働時間を入れるだけで、社会保険の加入判定と手取り額をグラフで見える化。2026年10月の106万円の壁撤廃（週20時間の壁）に対応した無料シミュレーターです。">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f8a5f">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
+    background: #f4f7f5;
+    color: #22332c;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px 28px; }
+
+  .head { text-align: center; padding: 10px 0 14px; }
+  .head h1 { font-size: 22px; letter-spacing: 0.04em; color: #14523a; }
+  .head p { font-size: 12.5px; color: #5c6f66; margin-top: 2px; }
+
+  .tabs { display: flex; gap: 8px; margin: 10px 0 14px; }
+  .tab {
+    flex: 1; padding: 10px 6px; font-size: 13.5px; font-weight: 700;
+    color: #4b5f56; background: #e4ece8; border: 1px solid #d2ddd7;
+    border-radius: 10px; cursor: pointer; text-align: center;
+    transition: background .15s, color .15s;
+  }
+  .tab.active { background: #0f8a5f; border-color: #0f8a5f; color: #fff; }
+  .tab small { display: block; font-size: 10.5px; font-weight: 400; opacity: .85; }
+
+  .card {
+    background: #fff; border: 1px solid #e0e8e3; border-radius: 14px;
+    padding: 16px 16px 14px; margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(20, 60, 40, .05);
+  }
+  .card h2 { font-size: 14px; color: #14523a; margin-bottom: 10px; }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 2px; }
+  .field .row { display: flex; align-items: baseline; justify-content: space-between; }
+  .field label { font-size: 13.5px; font-weight: 700; color: #33463d; }
+  .field .val { display: flex; align-items: baseline; gap: 4px; }
+  .field input[type="number"] {
+    width: 90px; padding: 5px 8px; font-size: 16px; font-weight: 700;
+    color: #0f8a5f; text-align: right;
+    border: 1px solid #c9d6d0; border-radius: 8px; background: #fbfdfc;
+  }
+  .field .unit { font-size: 13px; color: #5c6f66; }
+  .field input[type="range"] { width: 100%; margin-top: 8px; accent-color: #0f8a5f; height: 22px; }
+
+  .opts { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  .opt {
+    flex: 1; min-width: 45%; display: flex; align-items: center; gap: 8px;
+    background: #f2f7f4; border: 1px solid #dde7e1; border-radius: 10px;
+    padding: 9px 12px; font-size: 13px; font-weight: 700; color: #33463d; cursor: pointer;
+  }
+  .opt input { accent-color: #0f8a5f; width: 17px; height: 17px; }
+  .opt .sub { display: block; font-size: 10.5px; font-weight: 400; color: #7a8a82; }
+
+  /* 判定バッジ */
+  .verdict { text-align: center; padding: 2px 0 6px; }
+  .badge {
+    display: inline-block; font-size: 15px; font-weight: 800; letter-spacing: .02em;
+    padding: 7px 18px; border-radius: 999px; margin-bottom: 6px;
+  }
+  .badge.join { background: #e3f0fa; color: #1763a6; }
+  .badge.fuyou { background: #e9f6ee; color: #0d7a54; }
+  .badge.kokuho { background: #fdeeea; color: #c0392b; }
+  .verdict .why { font-size: 12px; color: #5c6f66; }
+
+  .result { text-align: center; padding-top: 4px; }
+  .result .label { font-size: 13px; color: #5c6f66; }
+  .result .big { font-size: 34px; font-weight: 800; color: #0d7a54; letter-spacing: 0.02em; line-height: 1.3; }
+  .result .big small { font-size: 18px; }
+  .stats { display: flex; gap: 8px; margin-top: 12px; }
+  .stat { flex: 1; background: #f2f7f4; border-radius: 10px; padding: 8px 4px; text-align: center; }
+  .stat .k { font-size: 11.5px; color: #5c6f66; }
+  .stat .v { font-size: 15px; font-weight: 700; color: #22332c; }
+  .stat .v.minus { color: #b03a2e; }
+
+  details summary {
+    cursor: pointer; font-size: 13.5px; font-weight: 700; color: #14523a;
+    padding: 4px 0; list-style-position: inside;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+  th, td { padding: 6px 4px; text-align: right; border-bottom: 1px solid #eef2ef; }
+  th { color: #5c6f66; font-weight: 700; background: #f7faf8; }
+  td:first-child, th:first-child { text-align: left; }
+  tr.total td { font-weight: 800; color: #0d7a54; font-size: 13.5px; }
+
+  .chart-box { position: relative; }
+  canvas { width: 100%; height: 260px; display: block; }
+  .legend { display: flex; gap: 14px; justify-content: center; margin-top: 8px; font-size: 12px; color: #4b5f56; flex-wrap: wrap; }
+  .legend span::before {
+    content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 3px;
+    margin-right: 5px; vertical-align: -1px;
+  }
+  .legend .lg-net::before { background: #0f8a5f; }
+  .legend .lg-kokuho::before { background: #e67e22; }
+  .legend .lg-now::before { background: #22332c; border-radius: 50%; }
+  .tooltip {
+    position: absolute; pointer-events: none; display: none;
+    background: rgba(20, 40, 30, .92); color: #fff; font-size: 11.5px;
+    padding: 7px 10px; border-radius: 8px; white-space: nowrap; z-index: 5; line-height: 1.5;
+  }
+  .cliff-info {
+    margin-top: 12px; font-size: 12.5px; color: #4b5f56;
+    background: #fdf6ec; border-left: 4px solid #e67e22; border-radius: 6px;
+    padding: 8px 10px;
+  }
+  .cliff-info b { color: #b3611a; }
+  .cliff-info .ok { color: #0d7a54; font-weight: 700; }
+
+  .pension {
+    font-size: 12.5px; color: #4b5f56;
+    background: #eef6f1; border-left: 4px solid #0f8a5f; border-radius: 6px;
+    padding: 8px 10px;
+  }
+  .pension b { color: #0d7a54; }
+
+  .disclaimer {
+    font-size: 11.5px; color: #7a8a82; background: #eef1ef;
+    border-radius: 10px; padding: 10px 12px; margin-top: 2px;
+  }
+  .disclaimer strong { color: #5c6f66; }
+  .disclaimer ul { margin: 4px 0 0 18px; }
+  .disclaimer li { margin-bottom: 2px; }
+
+  @media (max-width: 430px) {
+    .head h1 { font-size: 18px; }
+    .result .big { font-size: 28px; }
+    .stats { flex-wrap: wrap; }
+    .stat { min-width: 45%; }
+    .opt { min-width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <h1>🧱 年収の壁シミュレーター</h1>
+    <p>パートの「いくらまで働くと損？」を手取りグラフで見える化</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" id="tabCurrent" type="button" role="tab" aria-selected="true">現行制度<small>〜2026年9月</small></button>
+    <button class="tab" id="tabNew" type="button" role="tab" aria-selected="false">新制度<small>2026年10月〜（予定）</small></button>
+  </div>
+
+  <div class="card">
+    <h2>働き方を入力（スライダーでも動かせます）</h2>
+    <div class="field">
+      <div class="row">
+        <label for="hourly">時給</label>
+        <span class="val"><input type="number" id="hourly" min="900" max="5000" step="10" value="1100"><span class="unit">円</span></span>
+      </div>
+      <input type="range" id="hourlyR" min="900" max="2500" step="10" value="1100" aria-label="時給">
+    </div>
+    <div class="field">
+      <div class="row">
+        <label for="hours">週の労働時間</label>
+        <span class="val"><input type="number" id="hours" min="1" max="40" step="0.5" value="18"><span class="unit">時間</span></span>
+      </div>
+      <input type="range" id="hoursR" min="1" max="40" step="0.5" value="18" aria-label="週の労働時間">
+    </div>
+    <div class="field">
+      <div class="opts">
+        <label class="opt"><input type="checkbox" id="age40"><span>40〜64歳<span class="sub">介護保険料がかかる年齢</span></span></label>
+        <label class="opt"><input type="radio" name="size" id="size51" checked><span>従業員51人以上<span class="sub">勤務先の企業規模</span></span></label>
+        <label class="opt"><input type="radio" name="size" id="size50"><span>従業員50人以下<span class="sub">規模要件の撤廃は2027年10月から段階的</span></span></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="verdict">
+      <div class="badge fuyou" id="badge">—</div>
+      <div class="why" id="why">—</div>
+    </div>
+    <div class="result">
+      <div class="label">手取り年収（概算）</div>
+      <div class="big" id="net">—</div>
+      <div class="stats">
+        <div class="stat"><div class="k">額面年収</div><div class="v" id="gross">—</div></div>
+        <div class="stat"><div class="k">社会保険料</div><div class="v minus" id="social">—</div></div>
+        <div class="stat"><div class="k">税金</div><div class="v minus" id="tax">—</div></div>
+        <div class="stat"><div class="k">手取り月あたり</div><div class="v" id="netMonthly">—</div></div>
+      </div>
+    </div>
+    <details>
+      <summary>内訳をくわしく見る</summary>
+      <table>
+        <tbody id="breakdown"></tbody>
+      </table>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>働き損カーブ（週の労働時間と手取りの関係）</h2>
+    <div class="chart-box">
+      <canvas id="chart"></canvas>
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+    <div class="legend">
+      <span class="lg-net">手取り年収</span>
+      <span class="lg-kokuho">扶養を外れて国保・国民年金の区間</span>
+      <span class="lg-now">いまの設定</span>
+    </div>
+    <div class="cliff-info" id="cliffInfo"></div>
+  </div>
+
+  <div class="card">
+    <h2>社会保険に入ると、実は増えるもの</h2>
+    <div class="pension" id="pensionInfo"></div>
+  </div>
+
+  <div class="disclaimer">
+    <strong>ご利用上の注意（必ずお読みください）:</strong>
+    <ul>
+      <li>本ツールは<strong>概算シミュレーション</strong>です。実際の保険料・税額を保証するものではなく、税務・社会保険の個別相談は勤務先・年金事務所・市区町村・専門家にご確認ください。</li>
+      <li>想定している方: <strong>会社員・公務員の配偶者の扶養に入っている60歳未満のパート・アルバイトの方</strong>。学生・掛け持ち勤務・60歳以上（扶養基準180万円）・自営業の配偶者の方は前提が異なります。</li>
+      <li>前提: 賞与・残業・通勤手当なし、年収=時給×週時間×52週で換算。実際の<strong>130万円の判定は通勤手当込み</strong>の月額（108,334円以上）で行われます。</li>
+      <li>健康保険料は<strong>協会けんぽ全国平均（9.90%）</strong>で計算（都道府県・健康保険組合により異なります）。<strong>国民健康保険はお住まいの市区町村で大きく異なる</strong>ため、あくまで目安です。</li>
+      <li>住民税は前年の所得に課税されます（本ツールは同じ働き方が続いた場合の年額）。非課税ラインは自治体により若干異なります。</li>
+      <li>税計算はパート収入を想定した簡易式です。<strong>年収190万円を超える範囲では税額の精度が落ちます</strong>（給与所得控除・基礎控除の変動を反映していません）。</li>
+      <li>「2ヶ月超の雇用見込み」「31日以上の雇用見込み」「所定労働日数」などの細かい加入要件は考慮していません。</li>
+      <li>「新制度」は2025年成立の年金制度改正法にもとづく<strong>2026年10月施行予定</strong>の内容です（賃金月8.8万円要件の撤廃）。従業員50人以下への適用拡大は2027年10月から2035年10月にかけて段階的に行われます。施行内容は今後変わる可能性があります。</li>
+      <li>配偶者手当（会社の家族手当）・配偶者控除など<strong>世帯側の影響は含みません</strong>。本人の手取りのみの試算です。</li>
+      <li>制度・料率の確認日: <span id="updated"></span>（2026年度の料率にもとづく）</li>
+    </ul>
+  </div>
+
+</div>
+
+<script src="calc.js"></script>
+<script>
+"use strict";
+function $(id) { return document.getElementById(id); }
+
+function fmtYen(n) { return Math.round(n).toLocaleString() + "円"; }
+function fmtMan(n) {
+  var man = n / 10000;
+  return (Math.round(man * 10) / 10).toLocaleString() + "万円";
+}
+
+var regime = "current";
+var curve = null, cliffs = null, currentInput = null;
+
+function readInput() {
+  var hourly = parseFloat($("hourly").value);
+  var hours = parseFloat($("hours").value);
+  if (!isFinite(hourly)) hourly = 1100;
+  if (!isFinite(hours)) hours = 0;
+  hourly = Math.min(Math.max(hourly, 900), 5000);
+  hours = Math.min(Math.max(hours, 0), 40);
+  return {
+    hourly: hourly,
+    weeklyHours: hours,
+    age40plus: $("age40").checked,
+    regime: regime,
+    companySize: $("size51").checked ? "51+" : "50-"
+  };
+}
+
+/* 入力欄からフォーカスが外れたら、クランプ後の値を書き戻して表示と計算を一致させる */
+function sanitizeOnBlur(numId, rangeId) {
+  var num = $(numId), rng = $(rangeId);
+  num.addEventListener("change", function () {
+    var p = readInput();
+    var v = (numId === "hourly") ? p.hourly : p.weeklyHours;
+    num.value = v;
+    rng.value = Math.min(Math.max(v, parseFloat(rng.min)), parseFloat(rng.max));
+    update();
+  });
+}
+
+var STATUS_LABEL = {
+  shaho: { badge: "社会保険に加入します", cls: "join" },
+  fuyou: { badge: "配偶者の扶養内です（社保の負担なし）", cls: "fuyou" },
+  kokuho: { badge: "扶養を外れて国保・国民年金に自己加入", cls: "kokuho" }
+};
+
+function whyText(p, r) {
+  if (r.status === "shaho") {
+    if (r.fullTime) return "週30時間以上のため、企業規模に関係なく加入します（正社員の3/4ルール）";
+    var parts = ["週20時間以上", "従業員51人以上"];
+    if (p.regime === "current") parts.splice(1, 0, "月収8.8万円以上");
+    return parts.join("・") + " の条件を満たすため加入します";
+  }
+  if (r.status === "kokuho") {
+    return "年収130万円以上なのに勤務先の社会保険に入れないため、国民年金＋国民健康保険を自分で払う必要があります（最も負担が重いゾーン）";
+  }
+  var reasons = [];
+  var monthlyRaw = p.hourly * p.weeklyHours * 52 / 12; // 判定と同じ生の値を使う（丸め誤差対策）
+  if (p.weeklyHours < CONFIG.weeklyHoursThreshold) reasons.push("週20時間未満");
+  else if (p.regime === "current" && monthlyRaw < CONFIG.wageThresholdMonthly) reasons.push("月収8.8万円未満");
+  else if (p.companySize === "50-") reasons.push("従業員50人以下");
+  return (reasons.length ? reasons.join("・") + " のため社会保険の加入対象外。" : "") + "年収130万円未満なので配偶者の扶養に入れます";
+}
+
+function renderBreakdown(r) {
+  var rows = [["額面年収", r.annual, ""]];
+  if (r.kenpo) rows.push(["健康保険料（介護・子育て支援金込）", -r.kenpo, "minus"]);
+  if (r.kousei) rows.push(["厚生年金保険料", -r.kousei, "minus"]);
+  if (r.koyou) rows.push(["雇用保険料", -r.koyou, "minus"]);
+  if (r.kokuminNenkin) rows.push(["国民年金保険料", -r.kokuminNenkin, "minus"]);
+  if (r.kokuho) rows.push(["国民健康保険料（概算・自治体差大）", -r.kokuho, "minus"]);
+  rows.push(["所得税", -r.shotokuzei, "minus"]);
+  rows.push(["住民税", -r.juuminzei, "minus"]);
+  $("breakdown").innerHTML = rows.map(function (row) {
+    var v = row[1];
+    var txt = (v < 0 ? "−" : "") + Math.abs(v).toLocaleString() + "円";
+    return "<tr><td>" + row[0] + "</td><td>" + txt + "</td></tr>";
+  }).join("") + "<tr class='total'><td>手取り年収</td><td>" + r.net.toLocaleString() + "円</td></tr>";
+}
+
+function renderPension(p, r) {
+  if (r.status === "shaho") {
+    $("pensionInfo").innerHTML =
+      "🌙 この働き方を<b>10年</b>続けると、65歳からの厚生年金が<b>年額 約" + r.pensionUp10y.toLocaleString() + "円</b>（終身）増える見込みです。" +
+      "さらに、病気やケガで働けないときの<b>傷病手当金</b>・出産時の<b>出産手当金</b>の対象になり、障害・遺族年金の保障も厚くなります。保険料は「取られるだけ」ではありません。";
+  } else if (r.status === "kokuho") {
+    // 社保に入るために必要な時間は企業規模で異なる（50人以下は週30h、51人以上は週20h）
+    var needHours = (p.companySize === "50-") ? "週30時間以上（50人以下の職場では週20時間では入れません）" : "週20時間以上";
+    $("pensionInfo").innerHTML =
+      "⚠ このゾーンは国民年金＋国保を全額自己負担する一方、<b>厚生年金の上乗せや傷病手当金はありません</b>。" +
+      needHours + "に増やして勤務先の社会保険に入るか、130万円未満に抑えるかの検討をおすすめします。";
+  } else {
+    $("pensionInfo").innerHTML =
+      "🌙 いまは配偶者の扶養内（国民年金の第3号被保険者）で、保険料の負担はありません。" +
+      "参考: 社会保険に加入して働くと、保険料はかかりますが<b>厚生年金の上乗せ（終身）</b>や<b>傷病手当金・出産手当金</b>が付きます。グラフで「崖」を越えた先の手取りも見てみてください。";
+  }
+}
+
+function renderCliffInfo() {
+  var box = $("cliffInfo");
+  if (!cliffs || cliffs.length === 0) {
+    box.innerHTML = "この条件では、手取りが大きく下がる「崖」はありません。";
+    return;
+  }
+  var KIND = {
+    shaho: "社会保険に加入",
+    kokuho: "扶養を外れて国保・国民年金に自己加入"
+  };
+  function fmtH(h) { return (Math.round(h * 10) / 10).toLocaleString(); }
+  box.innerHTML = cliffs.map(function (c) {
+    var s = "<b>週約" + fmtH(c.atHours) + "時間</b>で" + (KIND[c.kind] || "") + "となり、手取りが<b>年約" + (Math.round(c.dropYen / 10000 * 10) / 10).toLocaleString() + "万円</b>下がります。";
+    if (c.recoverHours != null) {
+      s += " <span class='ok'>週" + fmtH(c.recoverHours) + "時間以上働けば、崖の手前の手取りを取り戻せます。</span>";
+    } else {
+      s += " この表示範囲（週40時間まで）では手取りが崖の手前まで戻りません。";
+    }
+    return s;
+  }).join("<br>");
+}
+
+/* ---------- グラフ ---------- */
+var PAD = { top: 14, right: 12, bottom: 28, left: 56 };
+
+function niceStep(max, ticks) {
+  var raw = max / ticks;
+  var mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  var ms = [1, 2, 2.5, 5, 10];
+  for (var i = 0; i < ms.length; i++) if (raw / mag <= ms[i]) return ms[i] * mag;
+  return 10 * mag;
+}
+
+function drawChart() {
+  if (!curve) return;
+  var canvas = $("chart");
+  var dpr = window.devicePixelRatio || 1;
+  var w = canvas.clientWidth, h = canvas.clientHeight;
+  if (w === 0) return;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  var ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  var maxH = 40;
+  var maxNet = 1;
+  curve.forEach(function (pt) { if (pt.r.net > maxNet) maxNet = pt.r.net; });
+  var step = niceStep(maxNet / 10000, 4) * 10000;
+  var yMax = Math.ceil(maxNet / step) * step;
+
+  var plotW = w - PAD.left - PAD.right;
+  var plotH = h - PAD.top - PAD.bottom;
+  var x = function (hh) { return PAD.left + plotW * (hh / maxH); };
+  var y = function (v) { return PAD.top + plotH * (1 - v / yMax); };
+
+  // グリッドとY軸ラベル
+  ctx.font = "11px sans-serif";
+  ctx.fillStyle = "#7a8a82";
+  ctx.strokeStyle = "#e6ece8";
+  ctx.lineWidth = 1;
+  ctx.textAlign = "right";
+  for (var v = 0; v <= yMax; v += step) {
+    ctx.beginPath(); ctx.moveTo(PAD.left, y(v)); ctx.lineTo(w - PAD.right, y(v)); ctx.stroke();
+    ctx.fillText((v / 10000).toLocaleString() + "万", PAD.left - 6, y(v) + 4);
+  }
+  // X軸ラベル
+  ctx.textAlign = "center";
+  for (var hh = 0; hh <= maxH; hh += 5) {
+    ctx.fillText("週" + hh + "h", x(hh), h - 8);
+  }
+
+  // 崖の位置に縦点線
+  ctx.strokeStyle = "#e0a86e";
+  ctx.setLineDash([4, 4]);
+  (cliffs || []).forEach(function (c) {
+    ctx.beginPath(); ctx.moveTo(x(c.atHours), PAD.top); ctx.lineTo(x(c.atHours), h - PAD.bottom); ctx.stroke();
+  });
+  ctx.setLineDash([]);
+
+  // 手取りカーブ（kokuho区間はオレンジで塗り分け）
+  function seg(fromIdx, toIdx, color) {
+    ctx.beginPath();
+    for (var i = fromIdx; i <= toIdx; i++) {
+      var pt = curve[i];
+      if (i === fromIdx) ctx.moveTo(x(pt.h), y(pt.r.net));
+      else ctx.lineTo(x(pt.h), y(pt.r.net));
+    }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+  }
+  var start = 0;
+  for (var i = 1; i <= curve.length; i++) {
+    var end = (i === curve.length);
+    var statusChanged = !end && (curve[i].r.status !== curve[start].r.status);
+    if (end || statusChanged) {
+      seg(start, i - 1, curve[start].r.status === "kokuho" ? "#e67e22" : "#0f8a5f");
+      start = i;
+    }
+  }
+
+  // いまの設定のマーカー
+  if (currentInput) {
+    var cur = CALC.calcCase(currentInput);
+    var cx = x(currentInput.weeklyHours), cy = y(cur.net);
+    ctx.strokeStyle = "rgba(34,51,44,.45)";
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(cx, PAD.top); ctx.lineTo(cx, h - PAD.bottom); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#22332c";
+    ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+/* ---------- ツールチップ ---------- */
+(function setupTooltip() {
+  var canvas = $("chart"), tip = $("tooltip");
+  var STATUS_SHORT = { shaho: "社保加入", fuyou: "扶養内", kokuho: "国保・国民年金" };
+  function onMove(ev) {
+    if (!curve || !currentInput) return;
+    var rect = canvas.getBoundingClientRect();
+    var px = ev.clientX - rect.left;
+    var plotW = rect.width - PAD.left - PAD.right;
+    var hh = (px - PAD.left) / plotW * 40;
+    if (hh < 0 || hh > 40) { tip.style.display = "none"; return; }
+    hh = Math.round(hh * 2) / 2;
+    var r = CALC.calcCase({ hourly: currentInput.hourly, weeklyHours: hh, age40plus: currentInput.age40plus, regime: currentInput.regime, companySize: currentInput.companySize });
+    tip.innerHTML = "<b>週" + hh + "時間</b>（" + STATUS_SHORT[r.status] + "）<br>額面 " + fmtMan(r.annual) + " → 手取り " + fmtMan(r.net);
+    tip.style.display = "block";
+    var tw = tip.offsetWidth;
+    tip.style.left = Math.min(Math.max(px - tw / 2, 0), rect.width - tw) + "px";
+    tip.style.top = "6px";
+  }
+  canvas.addEventListener("pointermove", onMove);
+  canvas.addEventListener("pointerleave", function () { tip.style.display = "none"; });
+})();
+
+/* ---------- メイン更新 ---------- */
+function update() {
+  currentInput = readInput();
+  var r = CALC.calcCase(currentInput);
+
+  var lbl = STATUS_LABEL[r.status];
+  var badge = $("badge");
+  badge.textContent = lbl.badge;
+  badge.className = "badge " + lbl.cls;
+  $("why").textContent = whyText(currentInput, r);
+
+  $("net").innerHTML = fmtMan(r.net).replace("万円", "<small>万円</small>");
+  $("gross").textContent = fmtMan(r.annual);
+  $("social").textContent = r.socialTotal ? "−" + fmtMan(r.socialTotal) : "0円";
+  var taxTotal = r.shotokuzei + r.juuminzei;
+  $("tax").textContent = taxTotal ? "−" + fmtMan(taxTotal) : "0円";
+  $("netMonthly").textContent = fmtYen(r.net / 12);
+
+  renderBreakdown(r);
+  renderPension(currentInput, r);
+
+  curve = CALC.buildCurve(currentInput, 40);
+  cliffs = CALC.findCliffs(curve);
+  renderCliffInfo();
+  drawChart();
+}
+
+/* ---------- バインド ---------- */
+var CALC = { CONFIG: CONFIG, calcCase: calcCase, buildCurve: buildCurve, findCliffs: findCliffs };
+
+function bindPair(numId, rangeId) {
+  var num = $(numId), rng = $(rangeId);
+  num.addEventListener("input", function () { rng.value = num.value; update(); });
+  rng.addEventListener("input", function () { num.value = rng.value; update(); });
+}
+bindPair("hourly", "hourlyR");
+bindPair("hours", "hoursR");
+sanitizeOnBlur("hourly", "hourlyR");
+sanitizeOnBlur("hours", "hoursR");
+$("age40").addEventListener("change", update);
+$("size51").addEventListener("change", update);
+$("size50").addEventListener("change", update);
+
+$("tabCurrent").addEventListener("click", function () {
+  regime = "current";
+  this.classList.add("active"); this.setAttribute("aria-selected", "true");
+  $("tabNew").classList.remove("active"); $("tabNew").setAttribute("aria-selected", "false");
+  update();
+});
+$("tabNew").addEventListener("click", function () {
+  regime = "new2026";
+  this.classList.add("active"); this.setAttribute("aria-selected", "true");
+  $("tabCurrent").classList.remove("active"); $("tabCurrent").setAttribute("aria-selected", "false");
+  update();
+});
+
+$("updated").textContent = CONFIG.updated;
+window.addEventListener("resize", drawChart);
+update();
+
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  navigator.serviceWorker.register("sw.js").catch(function () {});
+}
+</script>
+</body>
+</html>
