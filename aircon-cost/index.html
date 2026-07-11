@@ -362,9 +362,13 @@ function update() {
     $("tempSaving").textContent = Math.round(r.tempSaving).toLocaleString();
   } else {
     $("tempTipNormal").style.display = "none";
-    var clampedMsg = r.loadFactor >= CONFIG.LF_MAX - 0.0001
-      ? "いまの条件はフル稼働に近いため、1℃ゆるめても金額はほぼ変わりません。すだれ・カーテンで日差しを防ぐ、扇風機を併用するなどの対策が効きます"
-      : "いまの条件はもともと消費が少ないため、金額はほぼ変わりません";
+    var setRange = CONFIG.TEMP_RANGE[mode].set;
+    var atEdge = mode === "cool" ? q.setTemp >= setRange[1] : q.setTemp <= setRange[0];
+    var clampedMsg = atEdge
+      ? "設定温度はすでにいちばんゆるい設定です。ここからの節約は扇風機併用・フィルター掃除・日差し対策が効きます"
+      : r.loadFactor >= CONFIG.LF_MAX - 0.0001
+        ? "いまの条件はフル稼働に近いため、1℃ゆるめても金額はほぼ変わりません。すだれ・カーテンで日差しを防ぐ、扇風機を併用するなどの対策が効きます"
+        : "いまの条件はもともと消費が少ないため、金額はほぼ変わりません";
     $("tempTipClamped").textContent = clampedMsg;
     $("tempTipClamped").style.display = "";
   }
