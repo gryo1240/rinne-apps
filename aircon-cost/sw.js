@@ -1,5 +1,5 @@
 // エアコン電気代シミュレーター Service Worker (network-first・オフライン時のみキャッシュ)
-const CACHE = "aircon-cost-v1";
+const CACHE = "aircon-cost-v2";
 const ASSETS = ["./", "./index.html", "./calc.js", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {

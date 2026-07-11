@@ -7,8 +7,7 @@
  *    https://www.eftc.or.jp/qa/qa_one.php?id=290
  * 2. 畳数別の定格消費電力の代表値: 主要メーカー現行カタログ（パナソニック エオリア等）と
  *    エネチェンジ等の比較記事で水準を確認（2026-07-11時点の突合メモは下のRATED_Wコメント）
- * 3. 設定温度緩和の節約目安: 環境省・資源エネルギー庁の省エネポータル
- *    （「冷房28℃を目安に」系の公式数値。約10%はメーカーコラム由来の慣用値）
+ * 3. 設定温度緩和の節約目安: 温度差モデルによる再計算（下のLOAD_MODEL）
  */
 
 var CONFIG = {
@@ -27,11 +26,23 @@ var CONFIG = {
     heat: { 6: 700, 8: 850, 10: 950, 12: 1200, 14: 1500, 18: 2200 }
   },
 
-  // 負荷係数（インバーターの出力変動を3段階で近似。実測では平均消費は定格の4〜6割程度とされる）
-  LOAD_FACTOR: { low: 0.45, mid: 0.65, high: 0.95 },
+  // 温度差→負荷係数の線形モデル（2026-07-11改修: 3択チップ→外気温・設定温度の2入力へ）
+  // 公開初日の旧3段階(控えめ0.45/ふつう0.65/猛暑・厳冬0.95)と数字が連続するよう調整:
+  //   冷房: 初期値 外気33℃/設定27℃(ΔT6)→0.64≒旧ふつう、JIS定格条件 外気35℃/室内27℃(ΔT8)→0.76、
+  //         外気39℃/設定27℃以上で上限1.0（定格連続運転相当）
+  //   暖房: 初期値=JIS定格条件 外気7℃/設定20℃(ΔT13)→0.685≒旧ふつう、外気0℃/設定20℃(ΔT20)→1.0≒旧厳冬
+  LOAD_MODEL: {
+    cool: { base: 0.28, slope: 0.06 },
+    heat: { base: 0.10, slope: 0.045 }
+  },
+  LF_MIN: 0.25, // 下限: 最低出力＋送風相当
+  LF_MAX: 1.0,  // 上限: 定格連続運転相当（暖房の霜取り等による定格超えは画面注記で補足）
 
-  // 設定温度を1℃ゆるめた場合の削減率の目安（冷房+1℃/暖房-1℃で約10%・慣用値）
-  tempSavingRate: 0.10,
+  // 温度入力の範囲（スライダーと同じ。計算側でも同範囲にクランプする）
+  TEMP_RANGE: {
+    cool: { out: [28, 40], set: [24, 30] },
+    heat: { out: [-5, 15], set: [18, 24] }
+  },
 
   // 扇風機の消費電力の目安（W）
   fanW: 25,
@@ -40,6 +51,28 @@ var CONFIG = {
   maxW: 5000,
   maxUnitPrice: 100
 };
+
+function clampRange(v, range) {
+  return Math.min(Math.max(v, range[0]), range[1]);
+}
+
+/**
+ * 外気温と設定温度から負荷係数を求める。
+ * @param {string} mode "cool" | "heat"
+ * @param {number} outdoorTemp 外の気温(℃)。TEMP_RANGEにクランプされる
+ * @param {number} setTemp エアコンの設定温度(℃)。TEMP_RANGEにクランプされる
+ * @returns {number} 負荷係数(LF_MIN〜LF_MAX)
+ */
+function loadFactorFromTemps(mode, outdoorTemp, setTemp) {
+  var range = CONFIG.TEMP_RANGE[mode];
+  var defOut = mode === "cool" ? 33 : 7;
+  var defSet = mode === "cool" ? 27 : 20;
+  var out = clampRange(isFinite(outdoorTemp) ? outdoorTemp : defOut, range.out);
+  var set = clampRange(isFinite(setTemp) ? setTemp : defSet, range.set);
+  var dt = mode === "cool" ? out - set : set - out;
+  var m = CONFIG.LOAD_MODEL[mode];
+  return Math.min(Math.max(m.base + m.slope * dt, CONFIG.LF_MIN), CONFIG.LF_MAX);
+}
 
 /**
  * 1時間あたりの電気代（円）
@@ -59,7 +92,8 @@ function hourlyCost(ratedW, loadFactor, unitPrice) {
  * @param {string} q.mode "cool" | "heat"
  * @param {number} q.tatami 6|8|10|12|14|18（q.customW指定時は無視）
  * @param {number|null} q.customW 消費電力の直接入力(W)。nullなら畳数テーブルを使う
- * @param {string} q.load "low" | "mid" | "high"
+ * @param {number} q.outdoorTemp 外の気温(℃)
+ * @param {number} q.setTemp エアコンの設定温度(℃)
  * @param {number} q.hoursPerDay 1日の使用時間(0〜24)
  * @param {number} q.daysPerMonth 月の使用日数(1〜31)
  * @param {number} q.unitPrice 電力単価(円/kWh)
@@ -69,7 +103,7 @@ function calcCost(q) {
   var ratedW = (q.customW != null && isFinite(q.customW) && q.customW > 0)
     ? q.customW
     : CONFIG.RATED_W[q.mode][q.tatami];
-  var lf = CONFIG.LOAD_FACTOR[q.load];
+  var lf = loadFactorFromTemps(q.mode, q.outdoorTemp, q.setTemp);
   var hours = Math.min(Math.max(q.hoursPerDay, 0), 24);
   var days = Math.min(Math.max(q.daysPerMonth, 1), 31);
 
@@ -78,6 +112,12 @@ function calcCost(q) {
   var perMonth = perDay * days;
   var fullDayMonth = perHour * 24 * days; // 24時間つけっぱなしの月額（単純積算）
 
+  // 設定温度を1℃ゆるめた場合（冷房+1℃/暖房−1℃）を同条件で再計算した差額。
+  // ゆるめた温度もTEMP_RANGEにクランプされるため、範囲端・係数クランプ中は0円になる
+  var easedSet = q.mode === "cool" ? q.setTemp + 1 : q.setTemp - 1;
+  var lfEased = loadFactorFromTemps(q.mode, q.outdoorTemp, easedSet);
+  var perMonthEased = hourlyCost(ratedW, lfEased, q.unitPrice) * hours * days;
+
   return {
     ratedW: ratedW,
     loadFactor: lf,
@@ -85,12 +125,12 @@ function calcCost(q) {
     perDay: perDay,
     perMonth: perMonth,
     fullDayMonth: fullDayMonth,
-    fullDayDiff: fullDayMonth - perMonth,          // つけっぱなしとの差額
-    tempSaving: perMonth * CONFIG.tempSavingRate,  // 設定温度1℃緩和の月間節約目安
+    fullDayDiff: fullDayMonth - perMonth,               // つけっぱなしとの差額
+    tempSaving: Math.max(perMonth - perMonthEased, 0),  // 設定温度1℃緩和の月間節約（再計算差額）
     fanPerHour: hourlyCost(CONFIG.fanW, 1, q.unitPrice) // 扇風機1時間の目安
   };
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { CONFIG: CONFIG, hourlyCost: hourlyCost, calcCost: calcCost };
+  module.exports = { CONFIG: CONFIG, loadFactorFromTemps: loadFactorFromTemps, hourlyCost: hourlyCost, calcCost: calcCost };
 }

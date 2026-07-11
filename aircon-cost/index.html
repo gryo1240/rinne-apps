@@ -79,6 +79,8 @@
   details.custom .inner { display: flex; align-items: baseline; gap: 6px; margin-top: 8px; }
   details.custom input[type="number"] { width: 110px; }
   details.custom .hint { font-size: 12.5px; color: #7b8a91; margin-top: 6px; }
+  .hint-soft { font-size: 12.5px; color: #7b8a91; margin-top: 7px; line-height: 1.6; }
+  .chips button.chip { font-family: inherit; line-height: 1.5; }
 
   .result { text-align: center; padding-top: 4px; }
   .result .label { font-size: 14px; color: #5d6d75; }
@@ -159,12 +161,21 @@
       </details>
     </div>
     <div class="field">
-      <span class="lbl">外の暑さ・効きの強さ <span style="font-weight:400;font-size:12.5px;color:#7b8a91;">（外気温・断熱で変わります）</span></span>
-      <div class="chips" id="loadChips">
-        <label class="chip"><input type="radio" name="load" value="low">控えめ<span class="sub">朝晩だけ・弱運転</span></label>
-        <label class="chip on"><input type="radio" name="load" value="mid" checked>ふつう<span class="sub">標準的な使い方</span></label>
-        <label class="chip"><input type="radio" name="load" value="high" id="loadHighChip"><span id="loadHighLabel">猛暑</span><span class="sub" id="loadHighSub">真夏日・フル稼働気味</span></label>
+      <div class="row">
+        <label for="outT">外の気温（エアコンを使う時間帯）</label>
+        <span class="val"><input type="number" id="outT" min="28" max="40" step="0.5" value="33"><span class="unit">℃</span></span>
       </div>
+      <input type="range" id="outTR" min="28" max="40" step="0.5" value="33" aria-label="外の気温">
+      <div class="chips" id="outPresets"></div>
+      <div class="hint-soft">「エアコンを使う時間帯の、だいたいの気温」でOK。1日の中の暑さの変化はならして大丈夫です（多少ズレても、月額への影響はふつう数百円程度です）。</div>
+    </div>
+    <div class="field">
+      <div class="row">
+        <label for="setT">エアコンの設定温度</label>
+        <span class="val"><input type="number" id="setT" min="24" max="30" step="0.5" value="27"><span class="unit">℃</span></span>
+      </div>
+      <input type="range" id="setTR" min="24" max="30" step="0.5" value="27" aria-label="エアコンの設定温度">
+      <div class="hint-soft" id="dtNote" style="display:none;"></div>
     </div>
     <div class="field">
       <div class="row">
@@ -212,7 +223,7 @@
       </div>
     </div>
     <div class="note">
-      実際のつけっぱなし運転は、設定温度に到達したあとの安定運転で消費が下がるため、差はこの試算より縮まります。
+      実際のつけっぱなし運転は、設定温度に到達したあとの安定運転で消費が下がり、夜間は外の気温も下がるため、差はこの試算より縮まります。
       また、1〜2時間程度の短い外出なら、再起動時の消費が大きいぶん「つけっぱなしの方が安い」場合もあると言われています（機種・外気温によります）。
     </div>
   </div>
@@ -220,7 +231,7 @@
   <div class="card">
     <h2>ムリなくできる節約のヒント</h2>
     <ul class="tips">
-      <li><b>設定温度を1℃ゆるめる</b>（<span id="tempDir">冷房なら+1℃</span>）→ 月あたり<b>約<span id="tempSaving">—</span>円</b>浮く計算です（約10%削減の目安）</li>
+      <li><b>設定温度を1℃ゆるめる</b>（<span id="tempDir">冷房なら+1℃</span>）→ <span id="tempTipNormal">月あたり<b>約<span id="tempSaving">—</span>円</b>浮く計算です（いまの入力条件で再計算した目安）</span><span id="tempTipClamped" style="display:none;"></span></li>
       <li><b>扇風機・サーキュレーター併用</b>: 扇風機は1時間約<span id="fanYen">—</span>円。<span id="fanHint">風があると体感温度が下がり、設定温度をゆるめやすくなります</span></li>
       <li><b>フィルター掃除（2週間に1回目安）</b>: 目詰まりは効きを悪くして電気代を押し上げます</li>
       <li><b>室外機のまわりに物を置かない・直射日光を避ける</b>: 排熱がスムーズだと効率が上がります</li>
@@ -230,7 +241,8 @@
   <div class="disclaimer">
     <strong>ご利用上の注意:</strong>
     <ul>
-      <li>本ツールは<strong>「定格消費電力×負荷係数」による概算シミュレーション</strong>です。実際の電気代は機種・外気温・部屋の断熱・使い方で大きく変わります。</li>
+      <li>本ツールは<strong>「定格消費電力×負荷係数（外の気温と設定温度の差から自動計算）」による概算シミュレーション</strong>です。実際の電気代は機種・湿度・部屋の断熱・日当たり・間取り・在室人数などで変わります（湿度が高い日は同じ気温でも消費が増えます）。</li>
+      <li>暖房で外の気温が0℃前後まで下がる日は、霜取り運転などで目安より高くなることがあります。</li>
       <li>電気の単価の初期値<strong>31円/kWh</strong>は公的な目安単価です。従量電灯プランでは使用量が多いと単価が上がる（第2・第3段階で36〜40円台）ため、<strong>検針票・電力会社アプリの単価に置き換えるとより正確</strong>です。</li>
       <li>基本料金・燃料費調整額・再エネ賦課金は含みません（使った分の従量料金のみの概算です）。時間帯別プラン（オール電化など）は単価が大きく異なります。</li>
       <li>畳数別の消費電力は<strong>標準的な普及モデルの目安</strong>です。省エネ上位機種はこれより安く、<strong>10年以上前の機種は目安より高くなる</strong>ことがあります。</li>
@@ -249,11 +261,42 @@ function fmtYen(n) { return Math.round(n).toLocaleString() + "円"; }
 
 var mode = "cool";
 
+// 冷房・暖房それぞれの直近の温度入力（タブを往復しても値を保持する）
+var temps = {
+  cool: { out: 33, set: 27 },
+  heat: { out: 7, set: 20 }
+};
+
+// 外の気温プリセット（天気予報でおなじみの言葉→スライダー値）
+var PRESETS = {
+  cool: [
+    { label: "夏日", v: 29 },
+    { label: "真夏日", v: 33 },
+    { label: "猛暑日", v: 37 },
+    { label: "危険な暑さ", v: 40 }
+  ],
+  heat: [
+    { label: "暖冬気味", v: 10 },
+    { label: "ふつうの冬", v: 7 },
+    { label: "真冬日", v: 0 }
+  ]
+};
+
+function clampTemp(v, kind) {
+  var range = CONFIG.TEMP_RANGE[mode][kind];
+  if (!isFinite(v)) return temps[mode][kind];
+  return Math.min(Math.max(v, range[0]), range[1]);
+}
+
 function readInput() {
   var hours = parseFloat($("hours").value);
   var days = parseFloat($("days").value);
   var price = parseFloat($("price").value);
   var customW = parseFloat($("customW").value);
+  var outT = clampTemp(parseFloat($("outT").value), "out");
+  var setT = clampTemp(parseFloat($("setT").value), "set");
+  temps[mode].out = outT;
+  temps[mode].set = setT;
   if (!isFinite(hours)) hours = 0;
   if (!isFinite(days)) days = 30;
   if (!isFinite(price) || price <= 0) price = CONFIG.defaultUnitPrice;
@@ -264,7 +307,8 @@ function readInput() {
     mode: mode,
     tatami: parseInt(document.querySelector('input[name="tatami"]:checked').value, 10),
     customW: (isFinite(customW) && customW > 0) ? Math.min(customW, CONFIG.maxW) : null,
-    load: document.querySelector('input[name="load"]:checked').value,
+    outdoorTemp: outT,
+    setTemp: setT,
     hoursPerDay: hours,
     daysPerMonth: days,
     unitPrice: price
@@ -294,8 +338,36 @@ function update() {
   $("barNow").style.width = (r.perMonth / maxBar * 100) + "%";
   $("barFull").style.width = "100%";
 
-  // 節約ヒント
-  $("tempSaving").textContent = Math.round(r.tempSaving).toLocaleString();
+  // プリセットチップの選択表示（スライダー値と一致するものを点灯）
+  document.querySelectorAll("#outPresets .chip").forEach(function (c) {
+    c.classList.toggle("on", parseFloat(c.dataset.v) === q.outdoorTemp);
+  });
+
+  // 温度差が0以下のときの案内（下限係数での計算であることを明示）
+  var dt = mode === "cool" ? q.outdoorTemp - q.setTemp : q.setTemp - q.outdoorTemp;
+  var dtNote = $("dtNote");
+  if (dt <= 0) {
+    dtNote.textContent = mode === "cool"
+      ? "外の気温が設定温度以下のときは、ほぼ送風待機（最低の係数）として計算しています。"
+      : "外の気温が設定温度以上のときは、ほぼ送風待機（最低の係数）として計算しています。";
+    dtNote.style.display = "";
+  } else {
+    dtNote.style.display = "none";
+  }
+
+  // 節約ヒント（1℃緩和の再計算差額。係数がクランプ中で差が出ないときは文言を切り替える）
+  if (r.tempSaving >= 1) {
+    $("tempTipNormal").style.display = "";
+    $("tempTipClamped").style.display = "none";
+    $("tempSaving").textContent = Math.round(r.tempSaving).toLocaleString();
+  } else {
+    $("tempTipNormal").style.display = "none";
+    var clampedMsg = r.loadFactor >= CONFIG.LF_MAX - 0.0001
+      ? "いまの条件はフル稼働に近いため、1℃ゆるめても金額はほぼ変わりません。すだれ・カーテンで日差しを防ぐ、扇風機を併用するなどの対策が効きます"
+      : "いまの条件はもともと消費が少ないため、金額はほぼ変わりません";
+    $("tempTipClamped").textContent = clampedMsg;
+    $("tempTipClamped").style.display = "";
+  }
   $("fanYen").textContent = (Math.round(r.fanPerHour * 10) / 10).toLocaleString();
 }
 
@@ -314,6 +386,42 @@ function bindPair(numId, rangeId) {
 bindPair("hours", "hoursR");
 bindPair("days", "daysR");
 bindPair("price", "priceR");
+
+// 温度入力（数値⇔スライダー連動＋モードごとの範囲でクランプ）
+function bindTemp(numId, rangeId, kind) {
+  var num = $(numId), rng = $(rangeId);
+  num.addEventListener("input", function () { rng.value = num.value; update(); });
+  rng.addEventListener("input", function () { num.value = rng.value; update(); });
+  num.addEventListener("change", function () {
+    var v = clampTemp(parseFloat(num.value), kind);
+    temps[mode][kind] = v;
+    num.value = v;
+    rng.value = v;
+    update();
+  });
+}
+bindTemp("outT", "outTR", "out");
+bindTemp("setT", "setTR", "set");
+
+// 外の気温プリセットチップを現在モードに合わせて描画
+function renderPresets() {
+  var box = $("outPresets");
+  box.innerHTML = "";
+  PRESETS[mode].forEach(function (p) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip";
+    b.dataset.v = p.v;
+    b.innerHTML = p.label + '<span class="sub">' + p.v + "℃で計算</span>";
+    b.addEventListener("click", function () {
+      temps[mode].out = p.v;
+      $("outT").value = p.v;
+      $("outTR").value = p.v;
+      update();
+    });
+    box.appendChild(b);
+  });
+}
 $("customW").addEventListener("input", update);
 $("customW").addEventListener("change", function () {
   // 上限超・負値はクランプして書き戻す（表示と計算の食い違いを防ぐ）
@@ -336,7 +444,6 @@ function bindChips(containerId) {
   });
 }
 bindChips("tatamiChips");
-bindChips("loadChips");
 
 function setMode(m) {
   mode = m;
@@ -346,9 +453,15 @@ function setMode(m) {
   $("tabHeat").classList.toggle("active", m === "heat");
   $("tabHeat").setAttribute("aria-selected", m === "heat" ? "true" : "false");
   $("headIcon").textContent = m === "cool" ? "❄️" : "🔥";
-  // 負荷チップと節約文言のラベルを冷暖で切り替え
-  $("loadHighLabel").textContent = m === "cool" ? "猛暑" : "厳冬";
-  $("loadHighSub").textContent = m === "cool" ? "真夏日・フル稼働気味" : "真冬日・フル稼働気味";
+  // 温度スライダーの範囲と値をモードに合わせて切り替え（モードごとの直近値を復元）
+  [["outT", "outTR", "out"], ["setT", "setTR", "set"]].forEach(function (a) {
+    var num = $(a[0]), rng = $(a[1]), range = CONFIG.TEMP_RANGE[m][a[2]];
+    num.min = range[0]; num.max = range[1];
+    rng.min = range[0]; rng.max = range[1];
+    num.value = temps[m][a[2]];
+    rng.value = temps[m][a[2]];
+  });
+  renderPresets();
   $("tempDir").textContent = m === "cool" ? "冷房なら+1℃" : "暖房なら−1℃";
   $("fanHint").textContent = m === "cool"
     ? "風があると体感温度が下がり、設定温度をゆるめやすくなります"
@@ -359,6 +472,7 @@ $("tabCool").addEventListener("click", function () { setMode("cool"); });
 $("tabHeat").addEventListener("click", function () { setMode("heat"); });
 
 $("updated").textContent = CONFIG.updated;
+renderPresets();
 update();
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
