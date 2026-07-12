@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>宵乃こよみの事件簿 第一夜『十六夜の来客』｜無料ノベルゲーム</title>
+<meta name="description" content="夜だけ開く占いの店。“聞く”占い師・宵乃こよみが、少女の姉の秘密を解き明かす感動ノベル。1周5〜10分・マルチエンディング。無料・登録不要。">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f0b17">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root { --gold:#e8c872; --gold-dim:#b89a55; --ink:#f5efdc; --line:rgba(232,200,114,0.35); --panel:rgba(12,10,20,0.86); }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; background:#0f0b17; }
+  body { font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif; color:var(--ink); overflow:hidden; }
+  #app { position:relative; width:100%; max-width:720px; height:100dvh; margin:0 auto; overflow:hidden; background:#0f0b17; }
+
+  .screen { position:absolute; inset:0; display:none; }
+  .screen.active { display:block; }
+
+  /* ===== タイトル ===== */
+  #title { display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px;
+    background:radial-gradient(circle at 50% 30%, #241d3a 0%, #130f20 60%, #0a0712 100%); }
+  #title.active { display:flex; }
+  #title .moon { width:88px; height:88px; border-radius:50%; margin-bottom:18px;
+    background:radial-gradient(circle at 62% 38%, #f5e6b8, #caa955 72%, #9a7d3e);
+    box-shadow:0 0 34px rgba(232,200,114,0.5); }
+  #title h1 { font-size:1.05rem; color:#c9b7e8; letter-spacing:0.24em; font-weight:400; }
+  #title h2 { font-size:1.55rem; color:var(--gold); letter-spacing:0.14em; margin-top:8px; font-weight:600; }
+  #title .credit { font-size:0.7rem; color:#8a7fa5; margin-top:6px; letter-spacing:0.1em; }
+  #title .menu { margin-top:34px; display:flex; flex-direction:column; gap:12px; width:min(300px,80%); }
+  #title .menu button {
+    padding:13px; border-radius:12px; border:1px solid var(--line); background:rgba(28,22,44,0.7);
+    color:var(--ink); font-family:inherit; font-size:0.98rem; letter-spacing:0.08em; cursor:pointer; }
+  #title .menu button.primary { background:linear-gradient(#caa955,#a8842f); color:#241d0c; font-weight:700; border-color:var(--gold); }
+  #title .menu button:disabled { opacity:0.4; cursor:default; }
+  #title .menu button.hidden-btn { border-color:#c9a6e8; color:#e6d8ff; background:rgba(60,40,90,0.6); }
+  #title .note { font-size:0.64rem; color:#7d7397; margin-top:22px; line-height:1.7; }
+
+  /* ===== ノベル ===== */
+  #novel { display:none; }
+  #novel.active { display:block; }
+  #bg { position:absolute; inset:0; transition:background 0.8s; background:#191324; }
+  #stage { position:absolute; left:0; right:0; bottom:150px; top:0; }
+  .sprite { position:absolute; bottom:0; width:44%; max-width:280px; height:74%;
+    display:flex; align-items:flex-end; justify-content:center; transition:opacity 0.4s, filter 0.4s; }
+  #sprite-left { left:2%; }
+  #sprite-right { right:2%; }
+  .sprite.dim { filter:brightness(0.55) saturate(0.8); }
+  .sprite.empty { opacity:0; }
+  .sprite .ph { width:82%; height:96%; border-radius:20px 20px 0 0; border:2px solid; border-bottom:none;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding-bottom:14%;
+    background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.12)); }
+  .sprite .ph .cn { font-size:1rem; letter-spacing:0.12em; opacity:0.92; }
+  .sprite .ph .em { font-size:0.72rem; opacity:0.6; margin-top:4px; }
+  .sprite img { max-width:100%; max-height:100%; object-fit:contain; }
+
+  #textbox { position:absolute; left:0; right:0; bottom:0; min-height:150px;
+    background:linear-gradient(180deg, rgba(10,8,16,0) 0%, rgba(10,8,16,0.82) 22%, rgba(10,8,16,0.94) 100%);
+    padding:20px 22px 26px; }
+  #speaker { color:var(--gold); font-size:0.92rem; letter-spacing:0.1em; margin-bottom:7px; min-height:1.2em; font-weight:600; }
+  #text { font-size:1.02rem; line-height:1.85; white-space:pre-wrap; letter-spacing:0.02em; }
+  #text.letter { font-style:normal; color:#f3e8d0; background:rgba(245,236,210,0.06);
+    border-left:2px solid var(--gold-dim); padding:8px 12px; border-radius:4px; }
+  #advance { position:absolute; right:16px; bottom:12px; color:var(--gold); font-size:0.8rem; opacity:0.7; animation:blink 1.3s infinite; }
+  @keyframes blink { 0%,100%{opacity:0.2;} 50%{opacity:0.85;} }
+
+  /* 選択肢 */
+  #choices { position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; padding:24px; background:rgba(8,6,14,0.55); }
+  #choices.show { display:flex; }
+  #choices button { width:min(460px,90%); padding:15px 18px; border-radius:12px; border:1px solid var(--line);
+    background:rgba(24,19,38,0.94); color:var(--ink); font-family:inherit; font-size:0.98rem; line-height:1.5; cursor:pointer; letter-spacing:0.04em; }
+  #choices button:active { transform:translateY(1px); }
+
+  /* メニューバー */
+  #menu { position:absolute; top:10px; right:10px; display:flex; gap:8px; z-index:5; }
+  #menu button { padding:6px 11px; border-radius:8px; border:1px solid rgba(232,200,114,0.3);
+    background:rgba(12,10,20,0.7); color:#cdbfe0; font-family:inherit; font-size:0.74rem; cursor:pointer; }
+  #menu button.on { background:var(--gold); color:#241d0c; }
+
+  /* バックログ */
+  #backlog { position:absolute; inset:0; display:none; background:rgba(6,4,12,0.95); padding:20px; overflow-y:auto; z-index:10; }
+  #backlog.show { display:block; }
+  #backlog h3 { color:var(--gold); font-size:0.9rem; margin-bottom:14px; letter-spacing:0.1em; }
+  #backlog .row { margin-bottom:14px; line-height:1.7; font-size:0.9rem; }
+  #backlog .row .sp { color:var(--gold-dim); font-size:0.78rem; }
+  #backlog .close { position:sticky; top:0; float:right; }
+  #backlog .close button { padding:6px 14px; border-radius:8px; border:1px solid var(--line); background:rgba(24,19,38,0.9); color:var(--ink); font-family:inherit; cursor:pointer; }
+
+  /* ===== リザルト ===== */
+  /* justify-content:center は overflow時に上下が切れてボタンが押せなくなるため flex-start + 余白 */
+  #result { display:none; flex-direction:column; align-items:center; text-align:center; padding:44px 26px 40px;
+    background:radial-gradient(circle at 50% 35%, #241d3a 0%, #120e1f 65%, #0a0712 100%); overflow-y:auto; }
+  #result.active { display:flex; }
+  #result .endname { padding-top:min(4vh,40px); }
+  #result .endname { font-size:0.8rem; color:#c9b7e8; letter-spacing:0.2em; }
+  #result .endtitle { font-size:1.5rem; color:var(--gold); margin-top:8px; letter-spacing:0.1em; }
+  #result .stats { margin-top:20px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 22px; font-size:0.9rem; line-height:2; }
+  #result .stats .k { color:var(--gold); letter-spacing:1px; }
+  #result .collect { margin-top:14px; font-size:1.3rem; letter-spacing:3px; color:var(--gold); }
+  #result .foretell { margin-top:18px; font-size:0.82rem; color:#b3a7cc; line-height:1.8; border-top:1px solid rgba(232,200,114,0.2); padding-top:14px; max-width:420px; }
+  #result .btns { margin-top:22px; display:flex; flex-direction:column; gap:11px; width:min(300px,84%); }
+  #result .btns button { padding:12px; border-radius:12px; border:1px solid var(--line); background:rgba(28,22,44,0.7); color:var(--ink); font-family:inherit; font-size:0.94rem; cursor:pointer; }
+  #result .btns button.primary { background:linear-gradient(#caa955,#a8842f); color:#241d0c; font-weight:700; border-color:var(--gold); }
+  #result .note { font-size:0.64rem; color:#7d7397; margin-top:16px; line-height:1.7; }
+
+  @media (max-height:620px){ #stage{ bottom:132px; } #textbox{ min-height:132px; } #text{ font-size:0.95rem; line-height:1.7; } }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- タイトル -->
+  <section id="title" class="screen active">
+    <div class="moon"></div>
+    <h1>宵乃こよみの事件簿</h1>
+    <h2>第一夜『十六夜の来客』</h2>
+    <div class="credit">— 夜に暦を読む、占い師の物語 —</div>
+    <div class="menu">
+      <button id="btnContinue" class="primary">つづきから</button>
+      <button id="btnNew">はじめから</button>
+      <button id="btnChapter">第二幕から（聞き取り）</button>
+      <button id="btnHidden" class="hidden-btn" style="display:none">🌙 こよみの独白（隠し）</button>
+    </div>
+    <div class="note">これはフィクション・エンタメ作品です。<br>データはこの端末のブラウザにだけ保存され、外部送信はありません。</div>
+  </section>
+
+  <!-- ノベル -->
+  <section id="novel" class="screen">
+    <div id="bg"></div>
+    <div id="menu">
+      <button id="btnLog">ログ</button>
+      <button id="btnSkip">スキップ</button>
+      <button id="btnBackTitle">やめる</button>
+    </div>
+    <div id="stage">
+      <div class="sprite empty" id="sprite-left"></div>
+      <div class="sprite empty" id="sprite-right"></div>
+    </div>
+    <div id="textbox">
+      <div id="speaker"></div>
+      <div id="text"></div>
+      <div id="advance">▼</div>
+    </div>
+    <div id="choices"></div>
+    <div id="backlog"><div class="close"><button id="btnLogClose">とじる</button></div><h3>これまでのお話</h3><div id="backlogBody"></div></div>
+  </section>
+
+  <!-- リザルト -->
+  <section id="result" class="screen">
+    <div class="endname" id="resEndName"></div>
+    <div class="endtitle" id="resEndTitle"></div>
+    <div class="stats">
+      <div>この夜の気づき　<span class="k" id="resAware"></span></div>
+    </div>
+    <div class="collect" id="resCollect"></div>
+    <div id="resCollectLabel" style="font-size:0.72rem;color:#b3a7cc;margin-top:4px"></div>
+    <div class="foretell" id="resForetell"></div>
+    <div id="resNext" style="margin-top:12px;font-size:0.82rem;color:#c9b7e8;letter-spacing:0.1em"></div>
+    <div class="btns">
+      <button id="btnShare">結果をXで報告（ネタバレなし）</button>
+      <button id="btnReplay" class="primary">もう一度・ほかの結末を見る</button>
+      <button id="btnToTitle">タイトルへ</button>
+    </div>
+    <div class="note">※結末はまだあります。選び方で、こよみの見えるものが変わります。</div>
+  </section>
+
+</div>
+
+<script src="scenario.js"></script>
+<script src="sprites.js"></script>
+<script src="logic.js"></script>
+<script src="engine.js"></script>
+<script>
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  }
+</script>
+</body>
+</html>
