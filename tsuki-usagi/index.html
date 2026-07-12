@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月うさぎのすみか｜あなただけの月うさぎを育てる【無料】</title>
+<meta name="description" content="りんねブログに住む月うさぎのお世話アプリ。現実の時間と月の満ち欠けに連動して、うさぎの暮らしが変わります。無料・登録不要。">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0c0f1d">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root {
+    --gold: #e8c872;
+    --gold-dim: #b89a55;
+    --ink: #f5efdc;
+    --panel: rgba(20, 26, 48, 0.82);
+    --line: rgba(232, 200, 114, 0.35);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #0c0f1d; }
+  body {
+    font-family: "Hiragino Maru Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
+    color: var(--ink);
+    display: flex; justify-content: center;
+    min-height: 100vh;
+  }
+  #app { width: 100%; max-width: 560px; padding: 10px 12px 24px; }
+
+  header { text-align: center; padding: 6px 0 10px; }
+  header h1 { font-size: 1.15rem; letter-spacing: 0.15em; color: var(--gold); font-weight: 600; }
+  header .sub { font-size: 0.7rem; color: #9aa3c0; margin-top: 2px; }
+
+  /* ===== シーン ===== */
+  #scene {
+    position: relative; border-radius: 18px; overflow: hidden;
+    border: 1px solid var(--line);
+    height: 340px;
+    background: linear-gradient(#0c0f1d, #1a2138);
+    transition: background 1.2s;
+    user-select: none; -webkit-user-select: none;
+  }
+  /* 時間帯別の空 */
+  #scene.morning { background: linear-gradient(#f6b98a 0%, #f9dcae 45%, #cfe3d9 100%); }
+  #scene.noon    { background: linear-gradient(#8ec8ec 0%, #bfe0f2 60%, #e8f2ea 100%); }
+  #scene.evening { background: linear-gradient(#3b3564 0%, #b25b64 55%, #f0a35e 100%); }
+  #scene.night   { background: linear-gradient(#0c0f1d 0%, #17203c 60%, #232c4e 100%); }
+  #scene.latenight { background: linear-gradient(#070910 0%, #0e1326 60%, #141b33 100%); }
+  #scene.full-moon-glow::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(circle at 78% 22%, rgba(232,200,114,0.28), transparent 55%);
+  }
+  #stars { position: absolute; inset: 0; pointer-events: none; }
+  #stars span { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff; opacity: 0.8; animation: tw 3s infinite; }
+  @keyframes tw { 0%,100% { opacity: 0.85; } 50% { opacity: 0.2; } }
+  #moonBox { position: absolute; top: 18px; right: 26px; width: 72px; height: 72px; }
+  #moonBox svg { filter: drop-shadow(0 0 12px rgba(232,200,114,0.45)); }
+
+  /* 丘 */
+  #hill { position: absolute; bottom: -40px; left: -10%; width: 120%; height: 130px; border-radius: 50% 50% 0 0; background: #223055; transition: background 1.2s; }
+  .morning #hill { background: #7ba06f; }
+  .noon #hill { background: #86ac74; }
+  .evening #hill { background: #4a4468; }
+  .night #hill { background: #223055; }
+  .latenight #hill { background: #161d38; }
+
+  /* ===== うさぎ ===== */
+  #rabbitWrap {
+    position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  #rabbitWrap svg { display: block; }
+  #rabbitWrap .breath { animation: breath 3.2s ease-in-out infinite; transform-origin: 60px 100px; }
+  @keyframes breath { 0%,100% { transform: scale(1); } 50% { transform: scale(1.025, 0.985); } }
+  #rabbitWrap.adult svg { transform: scale(1.14); transform-origin: bottom center; }
+  #rabbitWrap.sleeping .breath { animation-duration: 4.6s; }
+  #rabbitWrap.hop .breath { animation: hop 0.5s ease-out; }
+  @keyframes hop { 0%,100% { transform: translateY(0); } 40% { transform: translateY(-22px); } }
+  .earL, .earR { transform-origin: 60px 46px; }
+  .earL { animation: earwig 6s ease-in-out infinite; }
+  @keyframes earwig { 0%, 92%, 100% { transform: rotate(0deg); } 95% { transform: rotate(-6deg); } }
+  #zzz { position: absolute; top: -6px; right: -18px; font-size: 15px; color: #cfd6ee; opacity: 0; }
+  .sleeping #zzz { opacity: 0.9; animation: zfloat 2.6s infinite; }
+  @keyframes zfloat { 0% { transform: translateY(4px); opacity: 0.2; } 50% { opacity: 0.9; } 100% { transform: translateY(-8px); opacity: 0; } }
+  #rabbitWrap.sulky svg { transform: scaleX(-1); filter: saturate(0.75); }
+  #rabbitWrap.adult.sulky svg { transform: scaleX(-1) scale(1.14); }
+
+  /* 吹き出し */
+  #bubble {
+    position: absolute; left: 50%; transform: translateX(-50%); bottom: 168px;
+    max-width: 84%; background: rgba(250, 247, 236, 0.96); color: #3a3428;
+    border-radius: 14px; padding: 9px 13px; font-size: 0.86rem; line-height: 1.55;
+    opacity: 0; transition: opacity 0.25s; pointer-events: none;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.25);
+  }
+  #bubble.show { opacity: 1; }
+  #bubble::after { content: ""; position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); border: 7px solid transparent; border-top-color: rgba(250,247,236,0.96); border-bottom: none; }
+
+  /* だんごアニメ */
+  #flyDango { position: absolute; font-size: 26px; pointer-events: none; opacity: 0; }
+  #flyDango.fly { animation: flyd 0.9s ease-in forwards; }
+  @keyframes flyd { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(0, 120px) scale(0.6); } }
+
+  /* ===== ステータス ===== */
+  #statusRow { display: flex; gap: 8px; margin-top: 10px; }
+  .stat {
+    flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 8px 6px; text-align: center;
+  }
+  .stat .label { font-size: 0.62rem; color: #9aa3c0; }
+  .stat .value { font-size: 0.85rem; margin-top: 3px; color: var(--ink); }
+  .stat .value .hearts { color: #ef8fa3; letter-spacing: 1px; }
+  #nameBtn { background: none; border: none; color: var(--gold); font-size: 0.85rem; cursor: pointer; font-family: inherit; }
+  #nameBtn small { color: #9aa3c0; font-size: 0.6rem; }
+
+  /* アポイントメント */
+  #appointments {
+    margin-top: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 8px 12px; font-size: 0.78rem; line-height: 1.7; color: #d8dcef;
+  }
+  #appointments b { color: var(--gold); font-weight: 600; }
+
+  /* ===== アクション ===== */
+  #actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  #actions button {
+    flex: 1 1 30%; min-height: 48px; border-radius: 12px; border: 1px solid var(--line);
+    background: linear-gradient(#2a3358, #1d2542); color: var(--ink);
+    font-size: 0.88rem; font-family: inherit; cursor: pointer; padding: 8px 4px;
+  }
+  #actions button:active { transform: translateY(1px); }
+  #actions button:disabled { opacity: 0.42; }
+  #actions button.primary { background: linear-gradient(#caa955, #a8842f); color: #241d0c; font-weight: 700; border-color: #e8c872; }
+
+  /* ===== 今夜の月 ===== */
+  #moonPanel {
+    margin-top: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 14px; font-size: 0.82rem; line-height: 1.7;
+  }
+  #moonPanel h2 { font-size: 0.8rem; color: var(--gold); letter-spacing: 0.2em; margin-bottom: 4px; }
+  #moonPanel .phaseName { font-size: 1.05rem; color: var(--ink); }
+  #moonPanel .flavor { color: #c4cbe4; font-size: 0.78rem; margin-top: 4px; }
+
+  /* ===== ツール行 ===== */
+  #tools { display: flex; gap: 8px; margin-top: 10px; }
+  #tools button {
+    flex: 1; border-radius: 10px; border: 1px solid rgba(154,163,192,0.4);
+    background: none; color: #9aa3c0; font-size: 0.74rem; font-family: inherit; padding: 9px 4px; cursor: pointer;
+  }
+
+  footer { margin-top: 14px; font-size: 0.66rem; color: #7d86a5; line-height: 1.8; text-align: center; }
+  footer a { color: #a8b3d6; }
+
+  /* ===== モーダル ===== */
+  .modal {
+    position: fixed; inset: 0; background: rgba(5,7,15,0.72); display: none;
+    align-items: center; justify-content: center; z-index: 50; padding: 18px;
+  }
+  .modal.show { display: flex; }
+  .modal .box {
+    width: 100%; max-width: 420px; background: #171e36; border: 1px solid var(--line);
+    border-radius: 16px; padding: 18px; font-size: 0.86rem; line-height: 1.7;
+  }
+  .modal .box h3 { color: var(--gold); font-size: 0.95rem; margin-bottom: 8px; }
+  .modal .box textarea, .modal .box input {
+    width: 100%; background: #0d1226; color: var(--ink); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px; font-size: 0.85rem; font-family: inherit; margin-top: 8px;
+  }
+  .modal .box textarea { height: 84px; resize: none; }
+  .modal .btnrow { display: flex; gap: 8px; margin-top: 12px; }
+  .modal .btnrow button {
+    flex: 1; min-height: 44px; border-radius: 10px; border: 1px solid var(--line);
+    background: linear-gradient(#2a3358, #1d2542); color: var(--ink); font-family: inherit; font-size: 0.85rem; cursor: pointer;
+  }
+  .modal .btnrow button.primary { background: linear-gradient(#caa955, #a8842f); color: #241d0c; font-weight: 700; }
+  .modal .note { color: #9aa3c0; font-size: 0.72rem; margin-top: 8px; }
+
+  /* チュートリアル */
+  #tutorial .speaker { font-size: 0.72rem; color: var(--gold); margin-bottom: 4px; }
+  #tutorial .koyomi { border-left: 3px solid #b48ae0; padding-left: 10px; }
+  #tutorial .usagi { border-left: 3px solid var(--gold); padding-left: 10px; }
+
+  /* シェアカード */
+  #shareCanvas { width: 100%; border-radius: 10px; border: 1px solid var(--line); margin-top: 8px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>🌙 月うさぎのすみか</h1>
+    <div class="sub">あなたの世界の時間と、月の満ち欠けとつながっています</div>
+  </header>
+
+  <div id="scene" class="night">
+    <div id="stars"></div>
+    <div id="moonBox"></div>
+    <div id="hill"></div>
+    <div id="bubble"></div>
+    <div id="rabbitWrap" aria-label="うさぎをなでる" role="button">
+      <div id="zzz">Z z…</div>
+      <svg class="breath" width="120" height="110" viewBox="0 0 120 110">
+        <!-- 月うさぎ: しっぽ→体→耳→顔の順に重ねる -->
+        <ellipse cx="93" cy="86" rx="9" ry="8" fill="#fdfbf4"/>
+        <ellipse cx="60" cy="84" rx="34" ry="24" fill="#fdfbf4"/>
+        <g class="earL"><ellipse cx="48" cy="30" rx="8" ry="24" fill="#fdfbf4"/><ellipse cx="48" cy="32" rx="4" ry="17" fill="#f3cdd4"/></g>
+        <g class="earR"><ellipse cx="72" cy="30" rx="8" ry="24" fill="#fdfbf4"/><ellipse cx="72" cy="32" rx="4" ry="17" fill="#f3cdd4"/></g>
+        <circle cx="60" cy="62" r="26" fill="#fdfbf4"/>
+        <g id="faceOpen">
+          <circle cx="50" cy="60" r="3.4" fill="#3a3428"/>
+          <circle cx="70" cy="60" r="3.4" fill="#3a3428"/>
+          <circle cx="51.2" cy="58.8" r="1.1" fill="#fff"/>
+          <circle cx="71.2" cy="58.8" r="1.1" fill="#fff"/>
+        </g>
+        <g id="faceClosed" style="display:none">
+          <path d="M46,60 q4,3.5 8,0" stroke="#3a3428" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M66,60 q4,3.5 8,0" stroke="#3a3428" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </g>
+        <g id="faceHappy" style="display:none">
+          <path d="M46,61 q4,-4.5 8,0" stroke="#3a3428" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M66,61 q4,-4.5 8,0" stroke="#3a3428" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </g>
+        <ellipse cx="43" cy="68" rx="4.5" ry="2.6" fill="#f6c8cf" opacity="0.85"/>
+        <ellipse cx="77" cy="68" rx="4.5" ry="2.6" fill="#f6c8cf" opacity="0.85"/>
+        <path d="M58,67 l2,2 l2,-2" stroke="#c98b96" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+        <path id="mouth" d="M57,72 q3,2.5 6,0" stroke="#c98b96" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div id="flyDango">🍡</div>
+  </div>
+
+  <div id="statusRow">
+    <div class="stat"><div class="label">なまえ</div><div class="value"><button id="nameBtn"><span id="nameText">つき</span> <small>✎</small></button></div></div>
+    <div class="stat"><div class="label">なつき度</div><div class="value"><span class="hearts" id="hearts">♥</span><br><span id="affLabel" style="font-size:0.68rem"></span></div></div>
+    <div class="stat"><div class="label">おつきまいり</div><div class="value"><span id="streak">1</span>日目</div></div>
+  </div>
+
+  <div id="appointments"></div>
+
+  <div id="actions">
+    <button id="btnFeed" class="primary">🍡 だんご</button>
+    <button id="btnPet">✋ なでる</button>
+    <button id="btnTalk">💬 はなす</button>
+    <button id="btnNap" style="display:none">😴 寝顔をみる</button>
+    <button id="btnBlanket" style="display:none">🛏 毛布をかけなおす</button>
+    <button id="btnGreet" style="display:none"></button>
+  </div>
+
+  <div id="moonPanel">
+    <h2>今夜の月</h2>
+    <div class="phaseName" id="phaseName"></div>
+    <div id="phaseInfo"></div>
+    <div class="flavor" id="phaseFlavor"></div>
+  </div>
+
+  <div id="tools">
+    <button id="btnShare">📷 きょうの1枚をつくる</button>
+    <button id="btnBackup">📦 ひっこしコード</button>
+  </div>
+
+  <footer>
+    このアプリはエンタメです。データはこの端末のブラウザにだけ保存され、外部送信はありません。<br>
+    <a href="https://rinne-blog.com/tsukimikuji" target="_top">月みくじ</a> ／
+    <a href="https://rinne-blog.com/maboroshi-seiza" target="_top">存在しない占星術</a> ／
+    <a href="https://rinne-blog.com/apps" target="_top">無料Webアプリ一覧</a>
+  </footer>
+</div>
+
+<!-- チュートリアル -->
+<div class="modal" id="tutorial">
+  <div class="box">
+    <div id="tutText"></div>
+    <input id="tutName" style="display:none" maxlength="8" placeholder="なまえ（8文字まで）">
+    <div class="btnrow"><button id="tutNext" class="primary">つぎへ</button></div>
+  </div>
+</div>
+
+<!-- 名前変更 -->
+<div class="modal" id="renameModal">
+  <div class="box">
+    <h3>なまえを変える</h3>
+    <input id="renameInput" maxlength="8" placeholder="あたらしいなまえ（8文字まで）">
+    <div class="btnrow">
+      <button id="renameCancel">やめる</button>
+      <button id="renameOk" class="primary">きめる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ひっこしコード -->
+<div class="modal" id="backupModal">
+  <div class="box">
+    <h3>ひっこしコード</h3>
+    <div style="font-size:0.78rem">このコードで、べつの端末やブラウザにうさぎを連れていけます。</div>
+    <textarea id="backupOut" readonly></textarea>
+    <div class="btnrow"><button id="backupCopy">コードをコピー</button></div>
+    <div style="font-size:0.78rem; margin-top:10px">コードを読み込む:</div>
+    <textarea id="backupIn" placeholder="ここにコードを貼り付け"></textarea>
+    <div class="btnrow">
+      <button id="backupClose">とじる</button>
+      <button id="backupLoad" class="primary">読み込む</button>
+    </div>
+    <div class="note">※読み込むと今のうさぎは上書きされます。機種変更やブラウザ変更の前にコードを控えておくのがおすすめです。</div>
+  </div>
+</div>
+
+<!-- シェアカード -->
+<div class="modal" id="shareModal">
+  <div class="box">
+    <h3>きょうの1枚</h3>
+    <canvas id="shareCanvas" width="1200" height="675"></canvas>
+    <div class="btnrow">
+      <button id="shareClose">とじる</button>
+      <button id="shareSave" class="primary">画像を保存</button>
+    </div>
+    <div class="btnrow"><button id="shareX">Xで報告する（文章のみ）</button></div>
+  </div>
+</div>
+
+<script src="logic.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  }
+</script>
+</body>
+</html>

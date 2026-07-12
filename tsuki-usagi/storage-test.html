@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>保存テスト（月うさぎのすみか 事前検証用）</title>
+<style>
+  body { font-family: "Yu Gothic UI", Meiryo, sans-serif; background: #0c0f1d; color: #f5efdc; padding: 24px; line-height: 2; }
+  .big { font-size: 1.3rem; }
+  .ok { color: #8be28b; } .ng { color: #ff9d9d; }
+  button { font-size: 1rem; padding: 10px 18px; border-radius: 8px; border: 1px solid #e8c872; background: #caa955; color: #241d0c; font-family: inherit; }
+</style>
+</head>
+<body>
+<h1 style="font-size:1.1rem">🌙 保存テスト（うさぎの記憶が消えないかの事前確認）</h1>
+<div id="result" class="big">判定中…</div>
+<div id="detail"></div>
+<p><button id="write">きょうの日付を記憶させる</button></p>
+<p style="font-size:0.85rem; color:#9aa3c0">
+  【確認手順】1. このページで「記憶させる」を押す → 2. ブラウザを完全に終了する（iPhoneはアプリスイッチャーで上にスワイプ）→ 3. あとで（できれば翌日）同じページを開き直す → 4. 上の判定が「おぼえていました」なら合格です。<br>
+  ※このテストはブラウザ内にしか保存せず、外部送信はありません。
+</p>
+<script>
+  var KEY = "tsukiusagi:storage-test";
+  var el = document.getElementById("result");
+  var detail = document.getElementById("detail");
+  try {
+    var prev = localStorage.getItem(KEY);
+    if (prev) {
+      el.innerHTML = '<span class="ok">✅ おぼえていました（合格）</span>';
+      detail.textContent = "記憶した日時: " + prev + " ／ いま: " + new Date().toLocaleString();
+    } else {
+      el.innerHTML = "まだ何も記憶していません。下のボタンで記憶させてください。";
+    }
+  } catch (e) {
+    el.innerHTML = '<span class="ng">❌ この環境では保存できません（要相談）</span>';
+  }
+  document.getElementById("write").addEventListener("click", function () {
+    try {
+      localStorage.setItem(KEY, new Date().toLocaleString());
+      el.innerHTML = "記憶させました。ブラウザを完全終了して、あとで開き直してください。";
+    } catch (e) {
+      el.innerHTML = '<span class="ng">❌ 保存に失敗しました（要相談）</span>';
+    }
+  });
+</script>
+</body>
+</html>
