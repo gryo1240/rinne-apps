@@ -178,6 +178,17 @@ eq("気づき0→truth_none", L.resolve(S, "act3_truth_branch", L.newFlags()).id
   ok("全sprite/bg IDがsprites.jsに存在: " + (bad.length ? bad.join(",") : "OK"), bad.length === 0);
 })();
 
+// ===== 13) シナリオで実際に使われている表情IDは img が設定済み（プレースホルダ化の回帰防止） =====
+// 未使用の表情ID(例: akari系)はimg未設定でもOK。「本編で使うのに絵がない」状態だけを検出する。
+(function () {
+  var missing = [];
+  Object.keys(S.nodes).forEach(function (id) {
+    var sprite = S.nodes[id].sprite;
+    if (sprite && SP.faces[sprite] && !SP.faces[sprite].img) missing.push(id + ".sprite=" + sprite);
+  });
+  ok("シナリオ使用中の表情IDは全てimg設定済み: " + (missing.length ? missing.join(",") : "OK"), missing.length === 0);
+})();
+
 console.log("\n1周(最長ルート)の最大字数（参考）:", maxLen);
 console.log(failed === 0 ? "\nALL PASS (" + pathCount + " paths)" : "\n" + failed + " FAILED");
 process.exit(failed === 0 ? 0 : 1);

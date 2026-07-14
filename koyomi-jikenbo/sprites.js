@@ -9,6 +9,12 @@
  * こよみは chars.koyomi.side="right"(画面右配置)のため左向きのまま使用(中央=左を向く=正しい)。
  * ひなたは chars.hinata.side="left"(画面左配置)のため、中央(右)を向くよう左右反転してassets/へ保存。
  * ひなた画像/ひなた_カンファレンスシート.png は複数アングルの設定資料であり単体スプライトではないため未使用。
+ *
+ * 2026-07-15(2): オーナー指摘「キャラ画像が反映されていない箇所がある」に対応。
+ * koyomi_smile(シナリオ最頻出17回)・koyomi_serious(7回)は、こよみ画像/に該当表情が
+ * 未提供のためimg未設定のままだった(名前ラベルのみのプレースホルダ表示になっていた)。
+ * advisor相談のうえ、正式な差分絵を用意してもらうまでの暫定措置として近い表情を仮流用する
+ * (smile←normal、serious←think)。正式な smile/serious 差分が届き次第、下のimgを差し替えること。
  */
 var SPRITES = {
   chars: {
@@ -20,8 +26,8 @@ var SPRITES = {
   // 表情ID → { char, label, img? }
   faces: {
     koyomi_normal:  { char: "koyomi", label: "", img: "assets/koyomi_normal.png" },
-    koyomi_smile:   { char: "koyomi", label: "" },
-    koyomi_serious: { char: "koyomi", label: "" },
+    koyomi_smile:   { char: "koyomi", label: "", img: "assets/koyomi_normal.png" },  // 暫定: 正式な微笑み差分待ち
+    koyomi_serious: { char: "koyomi", label: "", img: "assets/koyomi_think.png" },   // 暫定: 正式な真剣差分待ち
     koyomi_think:   { char: "koyomi", label: "", img: "assets/koyomi_think.png" },
     koyomi_sad:     { char: "koyomi", label: "", img: "assets/koyomi_sad.png" },
     hinata_worried: { char: "hinata", label: "", img: "assets/hinata_worried.png" },
