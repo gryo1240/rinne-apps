@@ -332,8 +332,8 @@ function save(){
       alert("端末内の保存容量がいっぱいで、変更を保存できませんでした。写真付きのアイテムを減らすか、写真を外してください。"); }
   }
 }
-// 初回公開はローカル保存のみ提供。同期UIはFirebaseの所在・セキュリティルール確認後に解禁予定(2026-07-14)
-const SYNC_UI_ENABLED = false;
+// 同期はBYO方式(各利用者が自分のFirebaseを使う。中央DBなし)。ルール等の詳細はHANDOVER.md(2026-07-15解禁)
+const SYNC_UI_ENABLED = true;
 let ROOM=S.local, fbRef=null, connected=false;
 const syncOn=()=>SYNC_UI_ENABLED && !!(S.settings.cfg && S.settings.rid);
 function names(){ const n=(ROOM.meta&&ROOM.meta.names)||{}; return {a:n.a||"夫", b:n.b||"妻"}; }
@@ -703,7 +703,7 @@ function renderSettings(){
   </div>
 
   <div class="card">
-    <h2 style="margin-top:0">夫婦で同期 <span class="chip">近日公開</span></h2>
+    <h2 style="margin-top:0">夫婦で同期 <span class="chip">任意</span></h2>
     ${SYNC_UI_ENABLED ? (sync?`
       <p class="small">同期は有効です。もう1台では下の招待コードを「招待コードで参加」に貼り付けてください。</p>
       <div class="row" style="margin-top:8px">
@@ -711,7 +711,7 @@ function renderSettings(){
         <button id="btnUnsync" class="ghost" style="color:var(--warn)">同期を解除</button>
       </div>
     `:`
-      <p class="small">「きょうのやること」で作ったFirebaseがあれば、<b>同じconfigを貼るだけ</b>で使い回せます(データは別の場所に保存されます)。</p>
+      <p class="small">「きょうのやること」で作ったFirebaseがあれば、<b>同じconfigを貼るだけ</b>で使い回せます(データは別の場所に保存されます)。初めて作る場合のルール設定は「きょうのやること」の設定タブの手順書を参照してください。</p>
       <div class="f-row" style="margin-top:10px"><div class="lbl">Firebaseの構成(config)を貼り付け</div>
         <textarea id="cfgArea" placeholder='firebaseConfig をまるごと貼り付け'></textarea>
       </div>

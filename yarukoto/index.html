@@ -157,8 +157,9 @@ function load(){
 function save(){ localStorage.setItem(KEY, JSON.stringify(S)); }
 
 /* ============ データ層(ローカル/Firebase共通) ============ */
-// 初回公開はローカル保存のみ提供。同期UIはFirebaseの所在・セキュリティルール確認後に解禁予定(2026-07-14)
-const SYNC_UI_ENABLED = false;
+// 同期はBYO方式(各利用者が自分のFirebaseプロジェクトを使う。中央DBなし)。
+// セキュリティルールはルームID単位の限定ルールを設定タブで案内(2026-07-15解禁。詳細はHANDOVER.md)
+const SYNC_UI_ENABLED = true;
 let ROOM = S.local;          // 同期時は最新スナップショット
 let fbRef = null, connected = false;
 const syncOn = ()=>SYNC_UI_ENABLED && !!(S.settings.cfg && S.settings.rid);
@@ -620,7 +621,7 @@ function renderSettings(){
   </div>
 
   <div class="card">
-    <h2 style="margin-top:0">夫婦で同期 <span class="chip">近日公開</span></h2>
+    <h2 style="margin-top:0">夫婦で同期 <span class="chip">任意</span></h2>
     ${SYNC_UI_ENABLED ? (sync ? `
       <p class="small">同期は有効です。もう1台のスマホでは、下の招待コードを「招待コードで参加」に貼り付けてください。</p>
       <div class="row" style="margin-top:8px">
@@ -645,7 +646,13 @@ function renderSettings(){
           <li>console.firebase.google.com を開き、Googleアカウントでログイン</li>
           <li>「プロジェクトを作成」→ 名前は何でもOK(例: yarukoto)→ アナリティクスはオフでOK</li>
           <li>左メニューの「構築」→「Realtime Database」→「データベースを作成」→ ロケーションはそのまま →「テストモードで開始」</li>
-          <li>「ルール」タブを開き、".read" と ".write" を両方 true にして公開(テストモードは30日で切れるため)</li>
+          <li>「ルール」タブを開き、中身を次の内容にそっくり置き換えて「公開」を押す:<br>
+<code style="display:block;white-space:pre-wrap;font-size:11px;background:var(--chip);border-radius:6px;padding:6px;margin-top:4px">{ "rules": {
+  "rooms":  { "$rid": { ".read": true, ".write": true } },
+  "closet": { "$rid": { ".read": true, ".write": true } },
+  "souji":  { "$rid": { ".read": true, ".write": true } }
+} }</code>
+<span class="small">ルームID(招待コードに入っている長いランダムな文字列)を知っている家族だけが読み書きできる設定です。一覧をのぞくことはできません。「せんたくタグ」「そうじナビ」と同じプロジェクトを使い回せます</span></li>
           <li>⚙(プロジェクトの設定)→「マイアプリ」→ ウェブ(&lt;/&gt;)を追加 → 表示される firebaseConfig をまるごとコピー</li>
           <li>このアプリの上の欄に貼り付けて「同期を開始」→ 出てきた招待コードを相手に送る</li>
         </ol>
@@ -698,7 +705,7 @@ function renderSettings(){
           if(!firebase.apps.length) firebase.initializeApp(S.settings.cfg);
           firebase.database().ref("rooms/"+S.settings.rid).update(seed).then(()=>{
             connect(); alert("同期を開始しました。招待コードをコピーして相手に送ってください。"); render();
-          }).catch(e=>{ alert("書き込みに失敗しました: "+e.message+"\nRealtime Databaseのルールが read/write: true になっているか確認してください。"); });
+          }).catch(e=>{ alert("書き込みに失敗しました: "+e.message+"\nRealtime Databaseの「ルール」が手順どおり設定されているか確認してください。"); });
         }catch(e){ alert("接続に失敗しました: "+e.message); }
       });
     };
