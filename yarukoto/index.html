@@ -161,7 +161,7 @@ function save(){ localStorage.setItem(KEY, JSON.stringify(S)); }
 const SYNC_UI_ENABLED = false;
 let ROOM = S.local;          // 同期時は最新スナップショット
 let fbRef = null, connected = false;
-const syncOn = ()=>!!(S.settings.cfg && S.settings.rid);
+const syncOn = ()=>SYNC_UI_ENABLED && !!(S.settings.cfg && S.settings.rid);
 
 function names(){ const n=(ROOM.meta&&ROOM.meta.names)||{}; return {a:n.a||"夫", b:n.b||"妻"}; }
 function whoLabel(w){ const n=names(); return w==="a"?n.a : w==="b"?n.b : w==="ab"?"2人":""; }

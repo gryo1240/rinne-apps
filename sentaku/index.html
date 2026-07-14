@@ -335,7 +335,7 @@ function save(){
 // 初回公開はローカル保存のみ提供。同期UIはFirebaseの所在・セキュリティルール確認後に解禁予定(2026-07-14)
 const SYNC_UI_ENABLED = false;
 let ROOM=S.local, fbRef=null, connected=false;
-const syncOn=()=>!!(S.settings.cfg && S.settings.rid);
+const syncOn=()=>SYNC_UI_ENABLED && !!(S.settings.cfg && S.settings.rid);
 function names(){ const n=(ROOM.meta&&ROOM.meta.names)||{}; return {a:n.a||"夫", b:n.b||"妻"}; }
 function items(){ return ROOM.items||{}; }
 function mutate(pathArr,val){
