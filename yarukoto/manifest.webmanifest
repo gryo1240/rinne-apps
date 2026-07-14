@@ -1,0 +1,16 @@
+{
+  "name": "きょうのやること",
+  "short_name": "やること",
+  "description": "夫婦で共有できる毎日のやることリスト。定番タスクの自動展開と時間決めをサポート",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F5F4F0",
+  "theme_color": "#34558B",
+  "lang": "ja",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

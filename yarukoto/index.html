@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#34558B">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="やること">
+</head>
+<body>
+<title>きょうのやること</title>
+<style>
+:root{
+  --bg:#F5F4F0; --surface:#FFFFFF; --ink:#262A33; --muted:#6E7380;
+  --line:#E1E0DA; --accent:#34558B; --accent-ink:#FFFFFF; --accent-soft:#E7EDF6;
+  --warn:#A85B32; --warn-soft:#F5E8DF; --chip:#EDECE6; --ok:#3E7A52;
+  --whoA:#B4643C; --whoB:#4A7FA5; --shadow:0 1px 3px rgba(35,40,50,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#15181E; --surface:#1E222A; --ink:#E5E7EA; --muted:#9AA0AB;
+    --line:#32363F; --accent:#7FA3D8; --accent-ink:#101725; --accent-soft:#25304A;
+    --warn:#D89468; --warn-soft:#3A2C22; --chip:#2A2E37; --ok:#7FBE97;
+    --whoA:#D89468; --whoB:#83AECE; --shadow:0 1px 3px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="light"]{
+  --bg:#F5F4F0; --surface:#FFFFFF; --ink:#262A33; --muted:#6E7380;
+  --line:#E1E0DA; --accent:#34558B; --accent-ink:#FFFFFF; --accent-soft:#E7EDF6;
+  --warn:#A85B32; --warn-soft:#F5E8DF; --chip:#EDECE6; --ok:#3E7A52;
+  --whoA:#B4643C; --whoB:#4A7FA5; --shadow:0 1px 3px rgba(35,40,50,.08);
+}
+:root[data-theme="dark"]{
+  --bg:#15181E; --surface:#1E222A; --ink:#E5E7EA; --muted:#9AA0AB;
+  --line:#32363F; --accent:#7FA3D8; --accent-ink:#101725; --accent-soft:#25304A;
+  --warn:#D89468; --warn-soft:#3A2C22; --chip:#2A2E37; --ok:#7FBE97;
+  --whoA:#D89468; --whoB:#83AECE; --shadow:0 1px 3px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{background:var(--bg); color:var(--ink);
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Noto Sans JP",Meiryo,sans-serif;
+  font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;}
+#app{max-width:720px; margin:0 auto; padding:0 14px 84px;}
+header.top{position:sticky; top:0; z-index:20; background:var(--bg);
+  padding:14px 2px 10px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--line);}
+header.top h1{font-size:18px; font-weight:700; letter-spacing:.02em;}
+header.top .sub{color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums;}
+.dot{width:9px; height:9px; border-radius:50%; background:var(--muted); margin-left:auto; flex-shrink:0;}
+.dot.on{background:var(--ok);}
+main{padding-top:14px;}
+h2{font-size:15px; font-weight:700; letter-spacing:.04em; margin:18px 0 8px;}
+.small{font-size:12.5px; color:var(--muted);}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); padding:12px 14px; margin-bottom:10px;}
+button{font:inherit; cursor:pointer; border:none; border-radius:8px; padding:8px 14px; background:var(--chip); color:var(--ink);}
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+button.primary{background:var(--accent); color:var(--accent-ink); font-weight:700;}
+button.ghost{background:transparent; border:1px solid var(--line);}
+button.icon{padding:6px 10px; font-size:14px; line-height:1;}
+button:disabled{opacity:.45; cursor:default;}
+select,input[type=text],input[type=number],input[type=time],textarea{font:inherit; color:var(--ink); background:var(--surface);
+  border:1px solid var(--line); border-radius:8px; padding:7px 10px; max-width:100%;}
+textarea{width:100%; min-height:100px;}
+.row{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+.grow{flex:1 1 auto; min-width:0;}
+nav.tabs{position:fixed; bottom:0; left:0; right:0; z-index:30; background:var(--surface); border-top:1px solid var(--line); display:flex; justify-content:center;}
+nav.tabs .inner{display:flex; width:100%; max-width:720px;}
+nav.tabs button{flex:1; background:none; border-radius:0; padding:10px 0 12px; font-size:12px; color:var(--muted); display:flex; flex-direction:column; gap:2px; align-items:center;}
+nav.tabs button .ic{font-size:18px; line-height:1;}
+nav.tabs button.on{color:var(--accent); font-weight:700;}
+/* tasks */
+.band-title{font-size:12.5px; font-weight:700; color:var(--muted); letter-spacing:.08em; margin:14px 0 2px; display:flex; align-items:center; gap:8px;}
+.band-title::after{content:""; flex:1; height:1px; background:var(--line);}
+.task{display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid var(--line);}
+.task:last-child{border-bottom:none;}
+.task input[type=checkbox]{width:22px; height:22px; accent-color:var(--accent); flex-shrink:0;}
+.task .nm{flex:1; min-width:0; text-align:left; background:none; border:none; border-radius:0; padding:0; font:inherit; color:var(--ink);}
+.task.done .nm{text-decoration:line-through; color:var(--muted);}
+.task .chips{display:flex; gap:5px; align-items:center; flex-shrink:0;}
+.chip{display:inline-block; font-size:11.5px; padding:2px 8px; border-radius:999px; background:var(--chip); color:var(--muted); letter-spacing:.02em; font-variant-numeric:tabular-nums;}
+.chip.time{background:var(--accent-soft); color:var(--accent); font-weight:700;}
+.chip.carry{background:var(--warn-soft); color:var(--warn); font-weight:700;}
+.who{width:10px; height:10px; border-radius:50%; flex-shrink:0;}
+.who.a{background:var(--whoA);} .who.b{background:var(--whoB);}
+.who.ab{background:linear-gradient(90deg,var(--whoA) 50%,var(--whoB) 50%);}
+.progress{font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums;}
+.done-card{opacity:.75;}
+.notice{background:var(--warn-soft); border-radius:8px; padding:10px 12px; font-size:13.5px; margin-bottom:10px;}
+.notice .row{margin-top:6px;}
+.tray-chip{display:inline-flex; align-items:center; gap:6px; background:var(--chip); border-radius:999px; padding:5px 6px 5px 12px; font-size:13px; margin:0 6px 6px 0;}
+.tray-chip .cnt{color:var(--muted); font-size:11.5px; font-variant-numeric:tabular-nums;}
+.tray-chip button{padding:3px 10px; font-size:12px; border-radius:999px;}
+/* segmented chips */
+.seg{display:flex; flex-wrap:wrap; gap:6px;}
+.seg button{padding:6px 12px; font-size:13px; border:1px solid var(--line); background:var(--surface);}
+.seg button.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent); font-weight:700;}
+/* templates */
+.tpl{display:flex; align-items:center; gap:10px; padding:10px 2px; border-bottom:1px solid var(--line);}
+.tpl:last-child{border-bottom:none;}
+.tpl .nm{flex:1; min-width:0; background:none; border:none; padding:0; font:inherit; text-align:left; color:var(--ink); font-weight:600;}
+.tpl .s{font-size:12px; color:var(--muted);}
+.tpl.offed .nm{color:var(--muted); text-decoration:line-through;}
+/* modal */
+.overlay{position:fixed; inset:0; background:rgba(12,15,20,.45); z-index:40; display:flex; align-items:flex-end; justify-content:center;}
+.sheet{background:var(--surface); width:100%; max-width:720px; max-height:85vh; border-radius:14px 14px 0 0; padding:16px 16px 24px; overflow-y:auto;}
+.sheet h3{font-size:15px; margin-bottom:10px;}
+.f-row{margin-bottom:12px;}
+.f-row .lbl{font-size:12.5px; color:var(--muted); font-weight:700; letter-spacing:.05em; margin-bottom:5px;}
+details{margin-top:8px;}
+details summary{cursor:pointer; font-size:13px; color:var(--muted); padding:4px 0;}
+@media (prefers-reduced-motion: no-preference){ .card{transition:border-color .15s;} }
+</style>
+
+<div id="app">
+  <header class="top"><h1 id="hTitle">きょうのやること</h1><span class="sub" id="hSub"></span><span class="dot" id="syncDot" title="同期状態"></span></header>
+  <main>
+    <section id="tab-today"></section>
+    <section id="tab-tomorrow" hidden></section>
+    <section id="tab-templates" hidden></section>
+    <section id="tab-settings" hidden></section>
+  </main>
+</div>
+<nav class="tabs"><div class="inner">
+  <button data-tab="today" class="on"><span class="ic">☀️</span>今日</button>
+  <button data-tab="tomorrow"><span class="ic">🌙</span>明日</button>
+  <button data-tab="templates"><span class="ic">🔁</span>定番</button>
+  <button data-tab="settings"><span class="ic">⚙️</span>設定</button>
+</div></nav>
+<div id="modal"></div>
+
+<script>
+"use strict";
+/* ============ 基本 ============ */
+const KEY = "yarukoto-v1";
+const BANDS = [["morning","朝"],["noon","昼"],["evening","夕方"],["night","夜"],["anytime","時間未定"]];
+const bandLabel = id => (BANDS.find(b=>b[0]===id)||["","時間未定"])[1];
+const DOW = ["日","月","火","水","木","金","土"];
+const $ = s=>document.querySelector(s);
+function esc(s){ return String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function fmtDate(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function parseDate(s){ const [y,m,dd]=s.split("-").map(Number); return new Date(y,m-1,dd); }
+function todayStr(){ return fmtDate(new Date()); }
+function addDays(s,n){ const d=parseDate(s); d.setDate(d.getDate()+n); return fmtDate(d); }
+function bandFromTime(t){ if(!t) return null; const h=+t.split(":")[0];
+  return h<11?"morning":h<16?"noon":h<19?"evening":"night"; }
+
+let S = load();
+function load(){
+  try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON.parse(raw); if(s&&s.settings) return s; } }catch(e){}
+  return { settings:{cfg:null, rid:null, myRole:"", theme:""},
+           local:{meta:{names:{a:"夫",b:"妻"}}, templates:{}, days:{}},
+           mirror:null };
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(S)); }
+
+/* ============ データ層(ローカル/Firebase共通) ============ */
+// 初回公開はローカル保存のみ提供。同期UIはFirebaseの所在・セキュリティルール確認後に解禁予定(2026-07-14)
+const SYNC_UI_ENABLED = false;
+let ROOM = S.local;          // 同期時は最新スナップショット
+let fbRef = null, connected = false;
+const syncOn = ()=>!!(S.settings.cfg && S.settings.rid);
+
+function names(){ const n=(ROOM.meta&&ROOM.meta.names)||{}; return {a:n.a||"夫", b:n.b||"妻"}; }
+function whoLabel(w){ const n=names(); return w==="a"?n.a : w==="b"?n.b : w==="ab"?"2人":""; }
+
+function mutate(pathArr, val){
+  if(syncOn() && fbRef){
+    fbRef.child(pathArr.join("/")).set(val===undefined?null:val);
+    // ローカルイベントは即時発火するので描画はon(value)経由
+  } else {
+    let o = ROOM;
+    for(let i=0;i<pathArr.length-1;i++){ const k=pathArr[i]; if(typeof o[k]!=="object"||o[k]===null) o[k]={}; o=o[k]; }
+    const last = pathArr[pathArr.length-1];
+    if(val===null||val===undefined) delete o[last]; else o[last]=val;
+    save(); render();
+  }
+}
+function taskPath(date,id){ return ["days",date,"tasks",id]; }
+function dayObj(date){ return (ROOM.days&&ROOM.days[date])||{}; }
+function tasksOf(date){ return dayObj(date).tasks||{}; }
+function templates(){ return ROOM.templates||{}; }
+
+/* ============ Firebase ============ */
+function loadFirebaseSdk(cb){
+  if(window.firebase && firebase.database){ cb(); return; }
+  const s1=document.createElement("script");
+  s1.src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js";
+  s1.onload=()=>{ const s2=document.createElement("script");
+    s2.src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js";
+    s2.onload=cb; s2.onerror=()=>setStatus(false,"SDK読込失敗");
+    document.head.appendChild(s2); };
+  s1.onerror=()=>setStatus(false,"SDK読込失敗(オフライン?)");
+  document.head.appendChild(s1);
+}
+function connect(){
+  if(!syncOn()) return;
+  loadFirebaseSdk(()=>{
+    try{
+      if(!firebase.apps.length) firebase.initializeApp(S.settings.cfg);
+      const db = firebase.database();
+      fbRef = db.ref("rooms/"+S.settings.rid);
+      fbRef.on("value", snap=>{
+        ROOM = snap.val()||{};
+        if(!ROOM.meta) ROOM.meta={names:{a:"夫",b:"妻"}};
+        S.mirror = ROOM; save();
+        render();
+      });
+      db.ref(".info/connected").on("value", s=>{ connected=!!s.val(); setStatus(connected); });
+      pruneOldDays();
+    }catch(e){ alert("同期の接続に失敗しました: "+e.message); }
+  });
+}
+function setStatus(on,msg){
+  const d=$("#syncDot");
+  d.className = "dot"+(on?" on":"");
+  d.title = syncOn() ? (on?"同期中":"オフライン("+(msg||"接続待ち")+")") : "同期未設定(この端末のみ)";
+}
+function parseConfig(text){
+  const cfg={};
+  const re=/["']?(\w+)["']?\s*:\s*["']([^"']+)["']/g; let m;
+  while((m=re.exec(text))) cfg[m[1]]=m[2];
+  const need=["apiKey","projectId"];
+  if(need.some(k=>!cfg[k])) return null;
+  if(!cfg.databaseURL){
+    const u=text.match(/https:\/\/[\w.-]+firebasedatabase\.app/);
+    if(u) cfg.databaseURL=u[0]; else return {noDb:true,cfg};
+  }
+  return {cfg};
+}
+function inviteCode(){
+  return btoa(unescape(encodeURIComponent(JSON.stringify({c:S.settings.cfg, r:S.settings.rid}))));
+}
+function pruneOldDays(){
+  const limit = addDays(todayStr(),-14);
+  const days = ROOM.days||{};
+  Object.keys(days).forEach(d=>{ if(d<limit) mutate(["days",d], null); });
+}
+
+/* ============ その日のタスク生成 ============ */
+function ruleMatches(rule, dateStr){
+  if(rule==="daily") return true;
+  if(rule && rule.days) return rule.days.includes(parseDate(dateStr).getDay());
+  return false; // flexは自動では入れない
+}
+function ruleText(rule){
+  if(rule==="daily") return "毎日";
+  if(rule && rule.days) return rule.days.slice().sort().map(d=>DOW[d]).join("・")+"曜";
+  if(rule && rule.flex==="week") return "週に"+rule.n+"回";
+  if(rule && rule.flex==="month") return "月に"+rule.n+"回";
+  return "";
+}
+function materialize(date){
+  const day = dayObj(date), tasks = tasksOf(date), skip = day.skip||{};
+  const adds = {};
+  Object.entries(templates()).forEach(([tid,t])=>{
+    if(t.off) return;
+    if(!ruleMatches(t.rule,date)) return;
+    const key = "t_"+tid;
+    if(tasks[key] || skip[key]) return;
+    adds[key] = {name:t.name, band:t.band||bandFromTime(t.time)||"anytime", time:t.time||"", who:t.who||"", done:false, kind:"tpl", tplId:tid};
+  });
+  const keys = Object.keys(adds);
+  if(!keys.length) return 0;
+  if(syncOn() && fbRef){
+    const upd = {};
+    keys.forEach(k=>{ upd["days/"+date+"/tasks/"+k] = adds[k]; });
+    fbRef.update(upd);            // 描画はon(value)経由(冪等なので2重実行しても安全)
+  } else {
+    // 描画中に呼ばれるため再帰renderせず直接書く
+    if(!ROOM.days) ROOM.days={};
+    if(!ROOM.days[date]) ROOM.days[date]={};
+    if(!ROOM.days[date].tasks) ROOM.days[date].tasks={};
+    keys.forEach(k=>{ ROOM.days[date].tasks[k]=adds[k]; });
+    save();
+  }
+  return keys.length;
+}
+/* 週(月曜始まり)/月のflex実施回数 */
+function flexCount(tid, dateStr, mode){
+  const d = parseDate(dateStr);
+  let from, to;
+  if(mode==="week"){ const dow=(d.getDay()+6)%7; from=addDays(dateStr,-dow); to=addDays(from,6); }
+  else { from=dateStr.slice(0,8)+"01"; const nd=new Date(d.getFullYear(),d.getMonth()+1,0); to=fmtDate(nd); }
+  let c=0;
+  Object.entries(ROOM.days||{}).forEach(([ds,day])=>{
+    if(ds<from||ds>to) return;
+    const t=(day.tasks||{})["f_"+tid];
+    if(t && t.done) c++;
+  });
+  return c;
+}
+
+/* ============ タブと描画 ============ */
+let tab = "today";
+document.querySelectorAll("nav.tabs button").forEach(b=>{
+  b.addEventListener("click",()=>{ tab=b.dataset.tab; render(); });
+});
+function render(){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
+  ["today","tomorrow","templates","settings"].forEach(t=>{ $("#tab-"+t).hidden=(t!==tab); });
+  const today = todayStr();
+  if(tab==="today") renderDay($("#tab-today"), today, true);
+  if(tab==="tomorrow") renderDay($("#tab-tomorrow"), addDays(today,1), false);
+  if(tab==="templates") renderTemplates();
+  if(tab==="settings") renderSettings();
+  const d = parseDate(tab==="tomorrow"?addDays(today,1):today);
+  $("#hSub").textContent = (d.getMonth()+1)+"/"+d.getDate()+"("+DOW[d.getDay()]+")";
+  setStatus(connected);
+}
+
+let mineOnly = false;
+function renderDay(el, date, isToday){
+  materialize(date);
+  const tasks = tasksOf(date);
+  const me = S.settings.myRole;
+  const entries = Object.entries(tasks)
+    .filter(([,t])=>!mineOnly || !me || !t.who || t.who===me || t.who==="ab");
+  const doneN = entries.filter(([,t])=>t.done).length;
+  let html = "";
+
+  /* 昨日の繰り越し確認(今日タブのみ) */
+  if(isToday){
+    const y = addDays(date,-1);
+    const yTasks = tasksOf(y);
+    const handled = dayObj(date).carryDone||{};
+    const pend = Object.entries(yTasks).filter(([k,t])=>!t.done && (t.kind==="one"||t.kind==="carry"||t.kind==="flex") && !handled[k]);
+    if(pend.length){
+      html += `<div class="notice">昨日終わらなかった予定が ${pend.length} 件あります。今日に繰り越しますか?`;
+      pend.forEach(([k,t])=>{
+        html += `<div class="row"><span class="grow">・${esc(t.name)}</span>
+          <button class="icon primary" data-carry="${esc(k)}">繰り越す</button>
+          <button class="icon ghost" data-uncarry="${esc(k)}">消す</button></div>`;
+      });
+      html += `</div>`;
+    }
+  }
+
+  html += `<div class="row" style="margin-bottom:6px">
+    <span class="progress grow">${entries.length?`${doneN} / ${entries.length} 完了`:""}</span>
+    ${S.settings.myRole?`<button class="icon ${mineOnly?"primary":"ghost"}" id="mineBtn">👤 自分の分</button>`:""}
+  </div>
+  <div class="card"><div class="row">
+    <input type="text" id="addName-${date}" placeholder="予定を追加(例: 病院 10:00)" class="grow">
+    <button class="primary" data-add="${date}">追加</button>
+  </div></div>`;
+
+  const sortTasks = (x,y)=>((x[1].time||"99")+x[1].name).localeCompare((y[1].time||"99")+y[1].name,"ja");
+  const taskRow = (k,t)=>`<div class="task ${t.done?"done":""}">
+      <input type="checkbox" data-done="${esc(k)}" ${t.done?"checked":""}>
+      <button class="nm" data-edit="${esc(k)}">${esc(t.name)}</button>
+      <span class="chips">
+        ${t.kind==="carry"?`<span class="chip carry">繰越</span>`:""}
+        ${t.time?`<span class="chip time">${esc(t.time)}</span>`:""}
+        ${t.who?`<span class="who ${t.who}" title="${esc(whoLabel(t.who))}"></span>`:""}
+      </span>
+    </div>`;
+  const pending = entries.filter(([,t])=>!t.done);
+  const doneList = entries.filter(([,t])=>t.done).sort(sortTasks);
+
+  if(!entries.length){
+    html += `<div class="card"><p class="small">まだ予定がありません。「定番」タブに毎日のやることを登録すると、毎日自動でここに並びます。</p></div>`;
+  } else if(!pending.length){
+    html += `<div class="card"><p style="text-align:center">今日の予定はぜんぶ完了しました 🎉</p></div>`;
+  } else {
+    html += `<div class="card">`;
+    BANDS.forEach(([bid,blabel])=>{
+      const its = pending.filter(([,t])=>(t.band||"anytime")===bid).sort(sortTasks);
+      if(!its.length) return;
+      html += `<div class="band-title">${blabel}</div>`;
+      its.forEach(([k,t])=>{ html += taskRow(k,t); });
+    });
+    html += `</div>`;
+  }
+
+  if(doneList.length){
+    html += `<h2>完了 (${doneList.length})</h2><div class="card done-card">`;
+    doneList.forEach(([k,t])=>{ html += taskRow(k,t); });
+    html += `</div>`;
+  }
+
+  /* flex候補トレイ */
+  const flex = Object.entries(templates()).filter(([,t])=>!t.off && t.rule && t.rule.flex);
+  if(flex.length){
+    html += `<h2>そろそろやる?(週に○回・月に○回)</h2><div class="card">`;
+    flex.forEach(([tid,t])=>{
+      const added = !!tasks["f_"+tid];
+      const c = flexCount(tid, date, t.rule.flex);
+      html += `<span class="tray-chip">${esc(t.name)}
+        <span class="cnt">${t.rule.flex==="week"?"今週":"今月"} ${c}/${t.rule.n}</span>
+        ${added?`<span class="cnt">✔ 追加済</span>`:`<button data-flexadd="${tid}" data-date="${date}">やる</button>`}
+      </span>`;
+    });
+    html += `<p class="small" style="margin-top:4px">「やる」を押した日のリストに入ります。回数は完了ベースで数えます。</p></div>`;
+  }
+
+  el.innerHTML = html;
+
+  el.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{
+    const inp = $("#addName-"+CSS.escape(date)) || el.querySelector("input[type=text]");
+    let v = inp.value.trim(); if(!v) return;
+    let time=""; const tm=v.match(/(\d{1,2}):(\d{2})/);
+    if(tm){ time=String(tm[1]).padStart(2,"0")+":"+tm[2]; v=v.replace(tm[0],"").trim(); }
+    const id = "o_"+Date.now()+Math.floor(Math.random()*1e4);
+    mutate(taskPath(date,id), {name:v||"予定", band:bandFromTime(time)||"anytime", time, who:"", done:false, kind:"one"});
+    inp.value="";
+  });
+  el.querySelectorAll("[data-done]").forEach(c=>c.onchange=()=>{
+    mutate([...taskPath(date,c.dataset.done),"done"], c.checked);
+  });
+  el.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openTaskSheet(date, b.dataset.edit));
+  el.querySelectorAll("[data-flexadd]").forEach(b=>b.onclick=()=>{
+    const tid=b.dataset.flexadd, t=templates()[tid]; if(!t) return;
+    mutate(taskPath(b.dataset.date,"f_"+tid), {name:t.name, band:t.band||"anytime", time:t.time||"", who:t.who||"", done:false, kind:"flex", tplId:tid});
+  });
+  el.querySelectorAll("[data-carry]").forEach(b=>b.onclick=()=>{
+    const k=b.dataset.carry, y=addDays(date,-1), t=tasksOf(y)[k]; if(!t) return;
+    mutate(taskPath(date,"c_"+k), {...t, done:false, kind:"carry"});
+    mutate(["days",date,"carryDone",k], true);
+  });
+  el.querySelectorAll("[data-uncarry]").forEach(b=>b.onclick=()=>{
+    mutate(["days",date,"carryDone",b.dataset.uncarry], true);
+  });
+  const mb = el.querySelector("#mineBtn");
+  if(mb) mb.onclick = ()=>{ mineOnly=!mineOnly; render(); };
+}
+
+/* ============ タスク編集シート ============ */
+function openTaskSheet(date, id){
+  const t = tasksOf(date)[id]; if(!t) return;
+  const n = names();
+  const m = $("#modal");
+  m.innerHTML = `<div class="overlay" id="ov"><div class="sheet">
+    <h3>予定の編集</h3>
+    <div class="f-row"><div class="lbl">名前</div><input type="text" id="eName" value="${esc(t.name)}" style="width:100%"></div>
+    <div class="f-row"><div class="lbl">時間帯</div><div class="seg" id="eBand">
+      ${BANDS.map(([bid,bl])=>`<button data-b="${bid}" class="${(t.band||"anytime")===bid?"on":""}">${bl}</button>`).join("")}
+    </div></div>
+    <div class="f-row"><div class="lbl">時刻(決まっているものだけ)</div>
+      <div class="row"><input type="time" id="eTime" value="${esc(t.time||"")}">
+      <button class="ghost icon" id="eTimeClr">クリア</button></div></div>
+    <div class="f-row"><div class="lbl">担当</div><div class="seg" id="eWho">
+      <button data-w="" class="${!t.who?"on":""}">なし</button>
+      <button data-w="a" class="${t.who==="a"?"on":""}">${esc(n.a)}</button>
+      <button data-w="b" class="${t.who==="b"?"on":""}">${esc(n.b)}</button>
+      <button data-w="ab" class="${t.who==="ab"?"on":""}">2人</button>
+    </div></div>
+    <div class="row">
+      <button class="primary grow" id="eSave">保存</button>
+      <button class="ghost" id="eDel" style="color:var(--warn)">${t.kind==="tpl"?"今日は外す":"削除"}</button>
+    </div>
+    ${t.kind==="tpl"?`<p class="small" style="margin-top:8px">この予定は定番から来ています。毎日の内容を変えるには「定番」タブで編集してください。</p>`:""}
+  </div></div>`;
+  let band = t.band||"anytime", who = t.who||"";
+  m.querySelectorAll("#eBand button").forEach(b=>b.onclick=()=>{ band=b.dataset.b;
+    m.querySelectorAll("#eBand button").forEach(x=>x.classList.toggle("on",x===b)); });
+  m.querySelectorAll("#eWho button").forEach(b=>b.onclick=()=>{ who=b.dataset.w;
+    m.querySelectorAll("#eWho button").forEach(x=>x.classList.toggle("on",x===b)); });
+  $("#eTime").onchange = ()=>{ const bb=bandFromTime($("#eTime").value); if(bb){ band=bb;
+    m.querySelectorAll("#eBand button").forEach(x=>x.classList.toggle("on",x.dataset.b===bb)); } };
+  $("#eTimeClr").onclick = ()=>{ $("#eTime").value=""; };
+  $("#eSave").onclick = ()=>{
+    const upd = {...t, name:$("#eName").value.trim()||t.name, band, time:$("#eTime").value||"", who};
+    mutate(taskPath(date,id), upd); m.innerHTML="";
+  };
+  $("#eDel").onclick = ()=>{
+    // skipを先に記録しないと、削除直後の再描画で定番が復活してしまう
+    if(t.kind==="tpl") mutate(["days",date,"skip",id], true);
+    mutate(taskPath(date,id), null);
+    m.innerHTML="";
+  };
+  $("#ov").onclick = e=>{ if(e.target.id==="ov") m.innerHTML=""; };
+}
+
+/* ============ 定番(テンプレート) ============ */
+const SAMPLES = [
+ {name:"洗濯", rule:"daily", band:"morning"},
+ {name:"食器洗い", rule:"daily", band:"night"},
+ {name:"風呂掃除", rule:"daily", band:"evening"},
+ {name:"ゴミ出し", rule:{days:[1,4]}, band:"morning"},
+ {name:"掃除機がけ", rule:{flex:"week",n:3}, band:"anytime"},
+ {name:"トイレ掃除", rule:{flex:"week",n:2}, band:"anytime"},
+ {name:"買い出し", rule:{days:[6]}, band:"noon"},
+ {name:"献立決め", rule:{days:[5]}, band:"night"},
+ {name:"シーツ洗濯", rule:{flex:"month",n:2}, band:"morning"},
+ {name:"植物の水やり", rule:"daily", band:"morning"}
+];
+function renderTemplates(){
+  const el = $("#tab-templates");
+  const tpls = Object.entries(templates()).sort((a,b)=>(a[1].order||0)-(b[1].order||0));
+  let html = `<div class="row" style="margin-bottom:10px">
+    <p class="small grow">毎日・毎週の「定番」をここに登録しておくと、毎朝自動でリストに並びます。</p>
+    <button class="primary" id="tplAdd">+ 定番を追加</button></div>`;
+  if(tpls.length){
+    html += `<div class="card">`;
+    tpls.forEach(([tid,t])=>{
+      html += `<div class="tpl ${t.off?"offed":""}">
+        <button class="nm" data-tedit="${tid}">${esc(t.name)}
+          <div class="s">${ruleText(t.rule)}${t.band&&t.band!=="anytime"?" / "+bandLabel(t.band):""}${t.time?" "+esc(t.time):""}${t.who?" / "+esc(whoLabel(t.who)):""}</div>
+        </button>
+        <button class="icon ${t.off?"primary":"ghost"}" data-toff="${tid}">${t.off?"再開":"休"}</button>
+      </div>`;
+    });
+    html += `</div>`;
+  } else {
+    html += `<div class="card"><p class="small">まだ定番がありません。下の「よくある例」からワンタップで追加できます。</p></div>`;
+  }
+  const existing = new Set(Object.values(templates()).map(t=>t.name));
+  const rest = SAMPLES.filter(s=>!existing.has(s.name));
+  if(rest.length){
+    html += `<h2>よくある例から追加</h2><div class="card">`;
+    rest.forEach((s,i)=>{
+      html += `<span class="tray-chip">${esc(s.name)} <span class="cnt">${ruleText(s.rule)}</span>
+        <button data-sample="${i}">追加</button></span>`;
+    });
+    html += `</div>`;
+  }
+  el.innerHTML = html;
+  $("#tplAdd").onclick = ()=>openTplSheet(null);
+  el.querySelectorAll("[data-tedit]").forEach(b=>b.onclick=()=>openTplSheet(b.dataset.tedit));
+  el.querySelectorAll("[data-toff]").forEach(b=>b.onclick=()=>{
+    const tid=b.dataset.toff, t=templates()[tid];
+    mutate(["templates",tid,"off"], !t.off);
+  });
+  el.querySelectorAll("[data-sample]").forEach(b=>b.onclick=()=>{
+    const s = rest[+b.dataset.sample];
+    const tid = "tp"+Date.now()+Math.floor(Math.random()*1e3);
+    mutate(["templates",tid], {name:s.name, rule:s.rule, band:s.band||"anytime", time:"", who:"", order:Date.now()});
+  });
+}
+function openTplSheet(tid){
+  const t = tid ? templates()[tid] : {name:"", rule:"daily", band:"anytime", time:"", who:""};
+  if(!t) return;
+  const n = names();
+  const ruleType = t.rule==="daily"?"daily" : t.rule.days?"days" : t.rule.flex==="week"?"week":"month";
+  const m = $("#modal");
+  m.innerHTML = `<div class="overlay" id="ov"><div class="sheet">
+    <h3>${tid?"定番の編集":"定番の追加"}</h3>
+    <div class="f-row"><div class="lbl">名前</div><input type="text" id="tName" value="${esc(t.name)}" placeholder="例: 洗濯" style="width:100%"></div>
+    <div class="f-row"><div class="lbl">繰り返し</div><div class="seg" id="tRule">
+      <button data-r="daily" class="${ruleType==="daily"?"on":""}">毎日</button>
+      <button data-r="days" class="${ruleType==="days"?"on":""}">曜日を選ぶ</button>
+      <button data-r="week" class="${ruleType==="week"?"on":""}">週に○回</button>
+      <button data-r="month" class="${ruleType==="month"?"on":""}">月に○回</button>
+    </div></div>
+    <div class="f-row" id="tDaysRow" ${ruleType==="days"?"":"hidden"}><div class="lbl">曜日</div><div class="seg" id="tDays">
+      ${DOW.map((d,i)=>`<button data-d="${i}" class="${t.rule.days&&t.rule.days.includes(i)?"on":""}">${d}</button>`).join("")}
+    </div></div>
+    <div class="f-row" id="tNRow" ${ruleType==="week"||ruleType==="month"?"":"hidden"}>
+      <div class="lbl">回数</div><input type="number" id="tN" min="1" max="20" value="${t.rule.n||2}" style="width:80px"> 回</div>
+    <div class="f-row"><div class="lbl">いつもの時間帯</div><div class="seg" id="tBand">
+      ${BANDS.map(([bid,bl])=>`<button data-b="${bid}" class="${(t.band||"anytime")===bid?"on":""}">${bl}</button>`).join("")}
+    </div></div>
+    <div class="f-row"><div class="lbl">いつもの時刻(あれば)</div>
+      <div class="row"><input type="time" id="tTime" value="${esc(t.time||"")}"><button class="ghost icon" id="tTimeClr">クリア</button></div></div>
+    <div class="f-row"><div class="lbl">いつもの担当</div><div class="seg" id="tWho">
+      <button data-w="" class="${!t.who?"on":""}">なし</button>
+      <button data-w="a" class="${t.who==="a"?"on":""}">${esc(n.a)}</button>
+      <button data-w="b" class="${t.who==="b"?"on":""}">${esc(n.b)}</button>
+      <button data-w="ab" class="${t.who==="ab"?"on":""}">2人</button>
+    </div></div>
+    <div class="row">
+      <button class="primary grow" id="tSave">保存</button>
+      ${tid?`<button class="ghost" id="tDel" style="color:var(--warn)">削除</button>`:""}
+    </div>
+  </div></div>`;
+  let rule=ruleType, band=t.band||"anytime", who=t.who||"";
+  const days = new Set(t.rule.days||[]);
+  m.querySelectorAll("#tRule button").forEach(b=>b.onclick=()=>{
+    rule=b.dataset.r;
+    m.querySelectorAll("#tRule button").forEach(x=>x.classList.toggle("on",x===b));
+    $("#tDaysRow").hidden = rule!=="days";
+    $("#tNRow").hidden = !(rule==="week"||rule==="month");
+  });
+  m.querySelectorAll("#tDays button").forEach(b=>b.onclick=()=>{
+    const d=+b.dataset.d; if(days.has(d)) days.delete(d); else days.add(d);
+    b.classList.toggle("on", days.has(d));
+  });
+  m.querySelectorAll("#tBand button").forEach(b=>b.onclick=()=>{ band=b.dataset.b;
+    m.querySelectorAll("#tBand button").forEach(x=>x.classList.toggle("on",x===b)); });
+  m.querySelectorAll("#tWho button").forEach(b=>b.onclick=()=>{ who=b.dataset.w;
+    m.querySelectorAll("#tWho button").forEach(x=>x.classList.toggle("on",x===b)); });
+  $("#tTimeClr").onclick=()=>{ $("#tTime").value=""; };
+  $("#tSave").onclick = ()=>{
+    const name = $("#tName").value.trim();
+    if(!name){ alert("名前を入れてください"); return; }
+    let r;
+    if(rule==="daily") r="daily";
+    else if(rule==="days"){ if(!days.size){ alert("曜日を選んでください"); return; } r={days:[...days].sort()}; }
+    else r={flex:rule, n:Math.max(1,+$("#tN").value||2)};
+    const id = tid || "tp"+Date.now()+Math.floor(Math.random()*1e3);
+    mutate(["templates",id], {name, rule:r, band, time:$("#tTime").value||"", who, off:templates()[id]?.off||false, order:tid?(templates()[tid].order||Date.now()):Date.now()});
+    m.innerHTML="";
+  };
+  const del=$("#tDel"); if(del) del.onclick=()=>{
+    if(confirm("この定番を削除しますか?(過去の日の予定はそのまま残ります)")){ mutate(["templates",tid], null); m.innerHTML=""; }
+  };
+  $("#ov").onclick=e=>{ if(e.target.id==="ov") m.innerHTML=""; };
+}
+
+/* ============ 設定 ============ */
+function renderSettings(){
+  const el = $("#tab-settings");
+  const n = names();
+  const sync = syncOn();
+  el.innerHTML = `
+  <div class="card">
+    <h2 style="margin-top:0">ふたりの名前</h2>
+    <div class="row">
+      <span class="who a"></span><input type="text" id="nameA" value="${esc(n.a)}" style="width:110px">
+      <span class="who b"></span><input type="text" id="nameB" value="${esc(n.b)}" style="width:110px">
+      <button id="nameSave">保存</button>
+    </div>
+    <div class="f-row" style="margin-top:10px"><div class="lbl">この端末を使うのは</div><div class="seg" id="meSeg">
+      <button data-m="a" class="${S.settings.myRole==="a"?"on":""}">${esc(n.a)}</button>
+      <button data-m="b" class="${S.settings.myRole==="b"?"on":""}">${esc(n.b)}</button>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">夫婦で同期 <span class="chip">近日公開</span></h2>
+    ${SYNC_UI_ENABLED ? (sync ? `
+      <p class="small">同期は有効です。もう1台のスマホでは、下の招待コードを「招待コードで参加」に貼り付けてください。</p>
+      <div class="row" style="margin-top:8px">
+        <button id="btnInvite" class="primary">📋 招待コードをコピー</button>
+        <button id="btnUnsync" class="ghost" style="color:var(--warn)">同期を解除</button>
+      </div>
+    ` : `
+      <p class="small">それぞれのスマホで同じリストを見るには、無料のFirebaseの設定が1回だけ必要です(手順は下の「設定のしかた」)。</p>
+      <div class="f-row" style="margin-top:10px"><div class="lbl">① Firebaseの構成(config)を貼り付け</div>
+        <textarea id="cfgArea" placeholder='const firebaseConfig = { apiKey: "..." など、コピーしたものをそのまま貼り付け'></textarea>
+        <input type="text" id="dbUrlArea" placeholder="(configにdatabaseURLが無い場合のみ) https://〜firebasedatabase.app" style="width:100%;margin-top:6px">
+      </div>
+      <div class="row">
+        <button class="primary" id="btnNewRoom">同期を開始(新しい家族ルーム)</button>
+      </div>
+      <div class="f-row" style="margin-top:12px"><div class="lbl">② もう1台のスマホはこちら</div>
+        <textarea id="joinArea" placeholder="1台目でコピーした招待コードを貼り付け" style="min-height:70px"></textarea>
+        <button id="btnJoin" style="margin-top:6px">招待コードで参加</button>
+      </div>
+      <details><summary>Firebaseの設定のしかた(1台目・約10分)</summary>
+        <ol style="padding-left:1.4em;font-size:13px;margin-top:6px">
+          <li>console.firebase.google.com を開き、Googleアカウントでログイン</li>
+          <li>「プロジェクトを作成」→ 名前は何でもOK(例: yarukoto)→ アナリティクスはオフでOK</li>
+          <li>左メニューの「構築」→「Realtime Database」→「データベースを作成」→ ロケーションはそのまま →「テストモードで開始」</li>
+          <li>「ルール」タブを開き、".read" と ".write" を両方 true にして公開(テストモードは30日で切れるため)</li>
+          <li>⚙(プロジェクトの設定)→「マイアプリ」→ ウェブ(&lt;/&gt;)を追加 → 表示される firebaseConfig をまるごとコピー</li>
+          <li>このアプリの上の欄に貼り付けて「同期を開始」→ 出てきた招待コードを相手に送る</li>
+        </ol>
+        <p class="small">※データは自分のFirebase(無料枠)に保存されます。ルームIDが実質のパスワードなので、招待コードは家族以外に送らないでください。</p>
+      </details>
+    `) : `
+      <p class="small">夫婦・家族で同じリストを共有できる同期機能を準備中です。もうしばらくお待ちください。今のところは、この端末だけでご利用いただけます。</p>
+    `}
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">データ</h2>
+    <div class="row">
+      <button id="btnExport" class="ghost">書き出す(コピー)</button>
+      <button id="btnImport" class="ghost">貼り付けて読み込む</button>
+      <button id="btnReset" class="ghost" style="color:var(--warn)">全データ初期化</button>
+    </div>
+    <textarea id="ioArea" placeholder="書き出し結果 / 読み込み時はここに貼り付け" style="margin-top:8px"></textarea>
+    <p class="small" style="margin-top:6px">書き出し対象はこの端末のローカルデータです(同期中はFirebase側が正)。</p>
+  </div>`;
+
+  $("#nameSave").onclick = ()=>{
+    mutate(["meta","names"], {a:$("#nameA").value.trim()||"夫", b:$("#nameB").value.trim()||"妻"});
+  };
+  el.querySelectorAll("#meSeg button").forEach(b=>b.onclick=()=>{
+    S.settings.myRole=b.dataset.m; save(); renderSettings();
+  });
+  if(SYNC_UI_ENABLED && sync){
+    $("#btnInvite").onclick = ()=>{
+      copyText(inviteCode(), $("#btnInvite"), "✅ コピーしました(相手に送る)");
+    };
+    $("#btnUnsync").onclick = ()=>{
+      if(!confirm("同期を解除しますか?(データはFirebase側に残り、この端末はローカル動作に戻ります)")) return;
+      if(fbRef){ fbRef.off(); fbRef=null; }
+      S.settings.cfg=null; S.settings.rid=null; connected=false;
+      ROOM = S.local; save(); render();
+    };
+  } else if(SYNC_UI_ENABLED){
+    $("#btnNewRoom").onclick = ()=>{
+      const p = parseConfig($("#cfgArea").value + " " + $("#dbUrlArea").value);
+      if(!p){ alert("構成(config)を読み取れませんでした。firebaseConfig 全体を貼り付けてください。"); return; }
+      if(p.noDb){ alert("databaseURL が見つかりません。先に Realtime Database を作成するか、データベースのURL(https://〜firebasedatabase.app)を下の欄に貼ってください。"); return; }
+      S.settings.cfg = p.cfg;
+      S.settings.rid = "r" + Math.random().toString(36).slice(2,10) + Math.random().toString(36).slice(2,6);
+      save();
+      // 既存のローカルデータを持ち込む
+      const seed = JSON.parse(JSON.stringify(S.local));
+      loadFirebaseSdk(()=>{
+        try{
+          if(!firebase.apps.length) firebase.initializeApp(S.settings.cfg);
+          firebase.database().ref("rooms/"+S.settings.rid).update(seed).then(()=>{
+            connect(); alert("同期を開始しました。招待コードをコピーして相手に送ってください。"); render();
+          }).catch(e=>{ alert("書き込みに失敗しました: "+e.message+"\nRealtime Databaseのルールが read/write: true になっているか確認してください。"); });
+        }catch(e){ alert("接続に失敗しました: "+e.message); }
+      });
+    };
+    $("#btnJoin").onclick = ()=>{
+      try{
+        const o = JSON.parse(decodeURIComponent(escape(atob($("#joinArea").value.trim()))));
+        if(!o.c || !o.r) throw 0;
+        S.settings.cfg=o.c; S.settings.rid=o.r; save();
+        connect(); alert("参加しました。数秒でリストが同期されます。"); render();
+      }catch(e){ alert("招待コードを読み取れませんでした。コピーしたものを全部貼り付けてください。"); }
+    };
+  }
+  $("#btnExport").onclick = ()=>{
+    const t = JSON.stringify({settings:{myRole:S.settings.myRole}, local:syncOn()?ROOM:S.local});
+    $("#ioArea").value=t; copyText(t, $("#btnExport"), "✅ コピーしました");
+  };
+  $("#btnImport").onclick = ()=>{
+    try{
+      const o = JSON.parse($("#ioArea").value);
+      if(!o.local) throw 0;
+      if(syncOn()){ alert("同期中は読み込みできません。先に同期を解除してください。"); return; }
+      S.local = o.local; ROOM=S.local; save(); render(); alert("読み込みました");
+    }catch(e){ alert("読み込めませんでした。"); }
+  };
+  $("#btnReset").onclick = ()=>{
+    if(confirm("この端末のデータと設定をすべて消します。よろしいですか?(Firebase側のデータは消えません)")){
+      localStorage.removeItem(KEY); location.reload();
+    }
+  };
+}
+
+function copyText(t, btn, doneLabel, after){
+  const ok = ()=>{ if(btn) btn.textContent=doneLabel; if(after) setTimeout(after,1200); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(ok).catch(()=>fb());
+  } else fb();
+  function fb(){
+    const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); ok(); }catch(e){ alert("コピーできませんでした"); }
+    ta.remove();
+  }
+}
+
+/* ============ 起動 ============ */
+if(syncOn()){
+  if(S.mirror){ ROOM = S.mirror; }   // オフラインでも直近の状態を表示
+  connect();
+} else {
+  ROOM = S.local;
+  pruneOldDays();
+}
+render();
+</script>
+<script>
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
+</script>
+</body>
+</html>

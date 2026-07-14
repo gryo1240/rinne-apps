@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#2E7A5B">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="献立">
+</head>
+<body>
+<title>週の献立プランナー</title>
+<style>
+:root{
+  --bg:#F6F5F1; --surface:#FFFFFF; --ink:#242B26; --muted:#6B746D;
+  --line:#E2E1DA; --accent:#2E7A5B; --accent-ink:#FFFFFF; --accent-soft:#E4F0E9;
+  --warn:#B4562F; --warn-soft:#F6E7DE; --chip:#EEEDE6; --shadow:0 1px 3px rgba(30,40,32,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#161B18; --surface:#1F2521; --ink:#E6E9E5; --muted:#98A29A;
+    --line:#333B35; --accent:#5BB48D; --accent-ink:#10211A; --accent-soft:#24352C;
+    --warn:#D98A62; --warn-soft:#3A2A21; --chip:#2A312C; --shadow:0 1px 3px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="light"]{
+  --bg:#F6F5F1; --surface:#FFFFFF; --ink:#242B26; --muted:#6B746D;
+  --line:#E2E1DA; --accent:#2E7A5B; --accent-ink:#FFFFFF; --accent-soft:#E4F0E9;
+  --warn:#B4562F; --warn-soft:#F6E7DE; --chip:#EEEDE6; --shadow:0 1px 3px rgba(30,40,32,.08);
+}
+:root[data-theme="dark"]{
+  --bg:#161B18; --surface:#1F2521; --ink:#E6E9E5; --muted:#98A29A;
+  --line:#333B35; --accent:#5BB48D; --accent-ink:#10211A; --accent-soft:#24352C;
+  --warn:#D98A62; --warn-soft:#3A2A21; --chip:#2A312C; --shadow:0 1px 3px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{background:var(--bg); color:var(--ink);
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Noto Sans JP",Meiryo,sans-serif;
+  font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;}
+#app{max-width:720px; margin:0 auto; padding:0 14px 84px;}
+header.top{position:sticky; top:0; z-index:20; background:var(--bg);
+  padding:14px 2px 10px; display:flex; align-items:baseline; gap:10px; border-bottom:1px solid var(--line);}
+header.top h1{font-size:18px; font-weight:700; letter-spacing:.02em;}
+header.top .range{color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums;}
+main{padding-top:14px;}
+h2{font-size:15px; font-weight:700; letter-spacing:.04em; margin:18px 0 8px;}
+.small{font-size:12.5px; color:var(--muted);}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); padding:12px 14px; margin-bottom:10px;}
+button{font:inherit; cursor:pointer; border:none; border-radius:8px; padding:8px 14px; background:var(--chip); color:var(--ink);}
+button:focus-visible, input:focus-visible, select:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+button.primary{background:var(--accent); color:var(--accent-ink); font-weight:700;}
+button.ghost{background:transparent; border:1px solid var(--line);}
+button.icon{padding:6px 10px; font-size:14px; line-height:1;}
+button:disabled{opacity:.45; cursor:default;}
+select,input[type=text],input[type=number],textarea{font:inherit; color:var(--ink); background:var(--surface);
+  border:1px solid var(--line); border-radius:8px; padding:7px 10px; max-width:100%;}
+textarea{width:100%; min-height:110px;}
+.row{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+.grow{flex:1 1 auto;}
+/* tabs */
+nav.tabs{position:fixed; bottom:0; left:0; right:0; z-index:30; background:var(--surface);
+  border-top:1px solid var(--line); display:flex; justify-content:center;}
+nav.tabs .inner{display:flex; width:100%; max-width:720px;}
+nav.tabs button{flex:1; background:none; border-radius:0; padding:10px 0 12px; font-size:12px; color:var(--muted); display:flex; flex-direction:column; gap:2px; align-items:center;}
+nav.tabs button .ic{font-size:18px; line-height:1;}
+nav.tabs button.on{color:var(--accent); font-weight:700;}
+/* day cards */
+.day{display:flex; gap:12px; align-items:flex-start;}
+.day .date{min-width:52px; text-align:center; padding-top:2px;}
+.day .date .dow{font-weight:700; font-size:15px;}
+.day .date .md{font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums;}
+.day .body{flex:1; min-width:0;}
+.day .name{font-weight:700; font-size:15.5px;}
+button.linklike{background:none; border:none; border-radius:0; padding:0; text-align:left;
+  font-weight:700; color:var(--ink); text-decoration:underline;
+  text-decoration-color:var(--accent); text-decoration-thickness:1.5px; text-underline-offset:3px;}
+.steps{margin:6px 0 0; padding-left:1.5em;}
+.steps li{margin-bottom:6px;}
+.sealist{margin:4px 0 2px; padding-left:1.3em; columns:2; column-gap:18px;}
+.sealist li{margin-bottom:3px; break-inside:avoid; font-variant-numeric:tabular-nums;}
+@media (max-width:480px){ .sealist{columns:1;} }
+.day .meta{display:flex; flex-wrap:wrap; gap:6px; margin-top:5px;}
+.chip{display:inline-block; font-size:11.5px; padding:2px 8px; border-radius:999px; background:var(--chip); color:var(--muted); letter-spacing:.03em;}
+.chip.fresh{background:var(--warn-soft); color:var(--warn); font-weight:700;}
+.chip.keep{background:var(--accent-soft); color:var(--accent); font-weight:700;}
+.day .ings{font-size:12.5px; color:var(--muted); margin-top:4px; overflow:hidden; text-overflow:ellipsis;}
+.day .ops{display:flex; flex-direction:column; gap:6px;}
+.day.locked{border-color:var(--accent);}
+.sat .dow{color:var(--accent);} .sun .dow{color:var(--warn);}
+/* shopping */
+.shop-item{display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid var(--line);}
+.shop-item:last-child{border-bottom:none;}
+.shop-item input[type=checkbox]{width:20px; height:20px; accent-color:var(--accent); flex-shrink:0;}
+.shop-item .nm{flex:1; min-width:0;}
+.shop-item .qty{font-variant-numeric:tabular-nums; color:var(--muted); font-size:13.5px; white-space:nowrap;}
+.shop-item.done .nm{ text-decoration:line-through; color:var(--muted);}
+.cat-title{font-size:12.5px; font-weight:700; color:var(--muted); letter-spacing:.08em; margin:14px 0 2px;}
+details{margin-top:8px;}
+details summary{cursor:pointer; font-size:13px; color:var(--muted); padding:4px 0;}
+/* recipes */
+.rec{display:flex; align-items:center; gap:10px; padding:10px 2px; border-bottom:1px solid var(--line);}
+.rec:last-child{border-bottom:none;}
+.rec .nm{flex:1; min-width:0;}
+.rec .nm .t{font-weight:600;}
+.rec .nm .s{font-size:12px; color:var(--muted);}
+.rec.off .nm .t{color:var(--muted); text-decoration:line-through;}
+/* modal */
+.overlay{position:fixed; inset:0; background:rgba(10,14,12,.45); z-index:40; display:flex; align-items:flex-end; justify-content:center;}
+.sheet{background:var(--surface); width:100%; max-width:720px; max-height:82vh; border-radius:14px 14px 0 0; padding:16px 16px 24px; overflow-y:auto;}
+.sheet h3{font-size:15px; margin-bottom:10px;}
+.pick{display:block; width:100%; text-align:left; background:none; border-bottom:1px solid var(--line); border-radius:0; padding:10px 2px;}
+.pick .s{font-size:12px; color:var(--muted);}
+.ing-row{display:grid; grid-template-columns:1fr 64px 64px 96px 96px 34px; gap:6px; margin-bottom:6px;}
+@media (max-width:560px){ .ing-row{grid-template-columns:1fr 56px 56px; }
+  .ing-row select{grid-column:span 1;} }
+.notice{background:var(--accent-soft); color:var(--ink); border-radius:8px; padding:8px 12px; font-size:13px; margin-bottom:10px;}
+.tablewrap{overflow-x:auto;}
+@media (prefers-reduced-motion: no-preference){
+  .card{transition:border-color .15s;}
+}
+</style>
+
+<div id="app">
+  <header class="top"><h1>週の献立</h1><span class="range" id="weekRange"></span></header>
+  <main>
+    <section id="tab-plan"></section>
+    <section id="tab-shop" hidden></section>
+    <section id="tab-recipes" hidden></section>
+    <section id="tab-settings" hidden></section>
+  </main>
+</div>
+<nav class="tabs"><div class="inner">
+  <button data-tab="plan" class="on"><span class="ic">🗓️</span>献立</button>
+  <button data-tab="shop"><span class="ic">🛒</span>買い物</button>
+  <button data-tab="recipes"><span class="ic">📖</span>レシピ帳</button>
+  <button data-tab="settings"><span class="ic">⚙️</span>設定</button>
+</div></nav>
+<div id="modal"></div>
+
+<script>
+"use strict";
+/* ---------- 内蔵レシピ ----------
+   分量は「2人 × 1食」あたり。d = 日持ち日数(小さいほど早く使う), 99 = 常備可 */
+const CAT = {NIKU:"肉・魚", YASAI:"野菜・きのこ", TAMAGO:"卵・豆腐・乳製品", MEN:"麺・米・パン", SONOTA:"その他"};
+function ing(n,q,u,c,d){return {n,q,u,c,d};}
+const BUILTIN = [
+ {id:"b01",name:"豚こまとキャベツの回鍋肉風",time:15,main:"豚",ing:[ing("豚こま切れ肉",200,"g",CAT.NIKU,3),ing("キャベツ",0.25,"玉",CAT.YASAI,8),ing("ピーマン",2,"個",CAT.YASAI,7)],sea:["味噌","豆板醤","砂糖","醤油","にんにく"]},
+ {id:"b02",name:"鶏むねの照り焼き",time:20,main:"鶏",ing:[ing("鶏むね肉",1,"枚",CAT.NIKU,3),ing("長ねぎ",0.5,"本",CAT.YASAI,7)],sea:["醤油","みりん","砂糖","片栗粉"]},
+ {id:"b03",name:"豚の生姜焼き",time:15,main:"豚",ing:[ing("豚こま切れ肉",200,"g",CAT.NIKU,3),ing("玉ねぎ",1,"個",CAT.YASAI,21),ing("キャベツ",0.15,"玉",CAT.YASAI,8)],sea:["生姜","醤油","みりん","酒"]},
+ {id:"b04",name:"鶏ももとキャベツのにんにく塩炒め",time:15,main:"鶏",ing:[ing("鶏もも肉",1,"枚",CAT.NIKU,3),ing("キャベツ",0.25,"玉",CAT.YASAI,8)],sea:["にんにく","塩こしょう","鶏ガラスープの素","ごま油"]},
+ {id:"b05",name:"麻婆豆腐",time:15,main:"ひき肉",ing:[ing("豚ひき肉",150,"g",CAT.NIKU,2),ing("木綿豆腐",1,"丁",CAT.TAMAGO,5),ing("長ねぎ",0.5,"本",CAT.YASAI,7)],sea:["豆板醤","味噌","醤油","鶏ガラスープの素","片栗粉","ごま油"]},
+ {id:"b06",name:"キーマカレー",time:25,main:"ひき肉",ing:[ing("合いびき肉",200,"g",CAT.NIKU,2),ing("玉ねぎ",1,"個",CAT.YASAI,21),ing("にんじん",0.5,"本",CAT.YASAI,14),ing("カレールー",2,"皿分",CAT.SONOTA,99)],sea:["ケチャップ","ウスターソース"]},
+ {id:"b07",name:"鮭のムニエル",time:20,main:"魚",ing:[ing("生鮭",2,"切れ",CAT.NIKU,1),ing("ブロッコリー",0.5,"株",CAT.YASAI,4)],sea:["小麦粉","バター","塩こしょう","レモン汁"]},
+ {id:"b08",name:"さばの味噌煮",time:20,main:"魚",ing:[ing("さば",2,"切れ",CAT.NIKU,1),ing("生姜",1,"かけ",CAT.YASAI,10)],sea:["味噌","砂糖","みりん","酒"]},
+ {id:"b09",name:"親子丼",time:15,main:"鶏",ing:[ing("鶏もも肉",1,"枚",CAT.NIKU,3),ing("玉ねぎ",0.5,"個",CAT.YASAI,21),ing("卵",3,"個",CAT.TAMAGO,14)],sea:["めんつゆ","砂糖"]},
+ {id:"b10",name:"豚丼",time:15,main:"豚",ing:[ing("豚こま切れ肉",250,"g",CAT.NIKU,3),ing("玉ねぎ",1,"個",CAT.YASAI,21)],sea:["醤油","みりん","砂糖","生姜"]},
+ {id:"b11",name:"野菜たっぷり焼きそば",time:15,main:"麺",ing:[ing("焼きそば麺",2,"玉",CAT.MEN,5),ing("豚こま切れ肉",120,"g",CAT.NIKU,3),ing("キャベツ",0.2,"玉",CAT.YASAI,8),ing("もやし",1,"袋",CAT.YASAI,2)],sea:["付属ソース","青のり"]},
+ {id:"b12",name:"焼きうどん",time:15,main:"麺",ing:[ing("ゆでうどん",2,"玉",CAT.MEN,4),ing("豚こま切れ肉",120,"g",CAT.NIKU,3),ing("キャベツ",0.2,"玉",CAT.YASAI,8),ing("長ねぎ",0.5,"本",CAT.YASAI,7)],sea:["醤油","ウスターソース","かつお節"]},
+ {id:"b13",name:"スタミナ肉野菜炒め",time:10,main:"豚",ing:[ing("豚こま切れ肉",180,"g",CAT.NIKU,3),ing("もやし",1,"袋",CAT.YASAI,2),ing("にら",1,"束",CAT.YASAI,3)],sea:["にんにく","醤油","オイスターソース","塩こしょう"]},
+ {id:"b14",name:"鶏むねともやしのレンジ蒸し ねぎだれ",time:15,main:"鶏",ing:[ing("鶏むね肉",1,"枚",CAT.NIKU,3),ing("もやし",1,"袋",CAT.YASAI,2),ing("長ねぎ",0.5,"本",CAT.YASAI,7)],sea:["ごま油","ポン酢","鶏ガラスープの素"]},
+ {id:"b15",name:"オムライス",time:20,main:"卵・豆腐",ing:[ing("卵",4,"個",CAT.TAMAGO,14),ing("玉ねぎ",0.5,"個",CAT.YASAI,21),ing("ウインナー",4,"本",CAT.NIKU,10),ing("ご飯",2,"膳",CAT.MEN,99)],sea:["ケチャップ","バター","塩こしょう"]},
+ {id:"b16",name:"ねぎ玉チャーハン",time:10,main:"卵・豆腐",ing:[ing("卵",3,"個",CAT.TAMAGO,14),ing("長ねぎ",1,"本",CAT.YASAI,7),ing("ハム",4,"枚",CAT.NIKU,8),ing("ご飯",2,"膳",CAT.MEN,99)],sea:["醤油","鶏ガラスープの素","ごま油"]},
+ {id:"b17",name:"麻婆なす",time:20,main:"ひき肉",ing:[ing("豚ひき肉",150,"g",CAT.NIKU,2),ing("なす",3,"本",CAT.YASAI,5),ing("長ねぎ",0.5,"本",CAT.YASAI,7)],sea:["豆板醤","味噌","醤油","片栗粉","ごま油"]},
+ {id:"b18",name:"なすと豚こまの味噌炒め",time:15,main:"豚",ing:[ing("豚こま切れ肉",180,"g",CAT.NIKU,3),ing("なす",3,"本",CAT.YASAI,5),ing("ピーマン",2,"個",CAT.YASAI,7)],sea:["味噌","みりん","砂糖","醤油"]},
+ {id:"b19",name:"ガパオ風ひき肉ごはん",time:15,main:"ひき肉",ing:[ing("鶏ひき肉",200,"g",CAT.NIKU,2),ing("ピーマン",2,"個",CAT.YASAI,7),ing("玉ねぎ",0.5,"個",CAT.YASAI,21),ing("卵",2,"個",CAT.TAMAGO,14),ing("ご飯",2,"膳",CAT.MEN,99)],sea:["オイスターソース","ナンプラーか醤油","にんにく"]},
+ {id:"b20",name:"キャベツとベーコンのペペロン風パスタ",time:15,main:"麺",ing:[ing("パスタ",200,"g",CAT.MEN,99),ing("ベーコン",80,"g",CAT.NIKU,10),ing("キャベツ",0.15,"玉",CAT.YASAI,8)],sea:["にんにく","唐辛子","オリーブオイル","塩"]},
+ {id:"b21",name:"ナポリタン",time:20,main:"麺",ing:[ing("パスタ",200,"g",CAT.MEN,99),ing("ウインナー",4,"本",CAT.NIKU,10),ing("ピーマン",2,"個",CAT.YASAI,7),ing("玉ねぎ",0.5,"個",CAT.YASAI,21)],sea:["ケチャップ","バター","塩こしょう"]},
+ {id:"b22",name:"具だくさん豚汁定食",time:25,main:"豚",ing:[ing("豚こま切れ肉",150,"g",CAT.NIKU,3),ing("大根",0.25,"本",CAT.YASAI,10),ing("にんじん",0.5,"本",CAT.YASAI,14),ing("木綿豆腐",0.5,"丁",CAT.TAMAGO,5),ing("長ねぎ",0.5,"本",CAT.YASAI,7)],sea:["味噌","だしの素"]},
+ {id:"b23",name:"鶏と大根のこってり煮",time:30,main:"鶏",ing:[ing("鶏もも肉",1,"枚",CAT.NIKU,3),ing("大根",0.4,"本",CAT.YASAI,10),ing("生姜",1,"かけ",CAT.YASAI,10)],sea:["醤油","みりん","砂糖","酒"]},
+ {id:"b24",name:"カレーライス",time:30,main:"豚",ing:[ing("豚こま切れ肉",200,"g",CAT.NIKU,3),ing("じゃがいも",2,"個",CAT.YASAI,21),ing("にんじん",1,"本",CAT.YASAI,14),ing("玉ねぎ",1,"個",CAT.YASAI,21),ing("カレールー",4,"皿分",CAT.SONOTA,99)],sea:[]},
+ {id:"b25",name:"ハヤシライス",time:20,main:"牛",ing:[ing("牛こま切れ肉",200,"g",CAT.NIKU,3),ing("玉ねぎ",1,"個",CAT.YASAI,21),ing("しめじ",1,"株",CAT.YASAI,5),ing("ハヤシルー",2,"皿分",CAT.SONOTA,99)],sea:[]},
+ {id:"b26",name:"肉じゃが",time:25,main:"豚",ing:[ing("豚こま切れ肉",150,"g",CAT.NIKU,3),ing("じゃがいも",3,"個",CAT.YASAI,21),ing("玉ねぎ",1,"個",CAT.YASAI,21),ing("にんじん",0.5,"本",CAT.YASAI,14)],sea:["醤油","みりん","砂糖","だしの素"]},
+ {id:"b27",name:"鶏の唐揚げ(揚げ焼き)",time:25,main:"鶏",ing:[ing("鶏もも肉",1.5,"枚",CAT.NIKU,3),ing("キャベツ",0.1,"玉",CAT.YASAI,8)],sea:["醤油","にんにく","生姜","片栗粉","サラダ油"]},
+ {id:"b28",name:"豆腐とひき肉のそぼろ丼",time:15,main:"ひき肉",ing:[ing("豚ひき肉",150,"g",CAT.NIKU,2),ing("木綿豆腐",0.5,"丁",CAT.TAMAGO,5),ing("卵",2,"個",CAT.TAMAGO,14),ing("ご飯",2,"膳",CAT.MEN,99)],sea:["醤油","みりん","砂糖","生姜"]},
+ {id:"b29",name:"卵とトマトの中華炒め",time:10,main:"卵・豆腐",ing:[ing("卵",4,"個",CAT.TAMAGO,14),ing("トマト",2,"個",CAT.YASAI,5)],sea:["鶏ガラスープの素","塩こしょう","ごま油"]},
+ {id:"b30",name:"鮭ときのこのホイル焼き",time:20,main:"魚",ing:[ing("生鮭",2,"切れ",CAT.NIKU,1),ing("しめじ",1,"株",CAT.YASAI,5),ing("玉ねぎ",0.5,"個",CAT.YASAI,21)],sea:["バター","ポン酢","塩こしょう"]},
+ {id:"b31",name:"ぶりの照り焼き",time:15,main:"魚",ing:[ing("ぶり",2,"切れ",CAT.NIKU,1),ing("長ねぎ",0.5,"本",CAT.YASAI,7)],sea:["醤油","みりん","砂糖"]},
+ {id:"b32",name:"冷しゃぶサラダ",time:15,main:"豚",ing:[ing("豚しゃぶしゃぶ用肉",200,"g",CAT.NIKU,3),ing("レタス",0.5,"玉",CAT.YASAI,4),ing("トマト",1,"個",CAT.YASAI,5)],sea:["ごまだれかポン酢"]},
+ {id:"b33",name:"八宝菜風あんかけ",time:20,main:"豚",ing:[ing("豚こま切れ肉",150,"g",CAT.NIKU,3),ing("白菜",0.2,"株",CAT.YASAI,8),ing("にんじん",0.5,"本",CAT.YASAI,14),ing("しめじ",0.5,"株",CAT.YASAI,5)],sea:["オイスターソース","鶏ガラスープの素","片栗粉","ごま油"]},
+ {id:"b34",name:"鶏ももの塩ねぎだれ焼き",time:20,main:"鶏",ing:[ing("鶏もも肉",1,"枚",CAT.NIKU,3),ing("長ねぎ",1,"本",CAT.YASAI,7)],sea:["塩","ごま油","レモン汁","鶏ガラスープの素"]},
+ {id:"b35",name:"ツナと小松菜の卵炒め",time:10,main:"卵・豆腐",ing:[ing("ツナ缶",1,"缶",CAT.SONOTA,99),ing("小松菜",1,"束",CAT.YASAI,4),ing("卵",3,"個",CAT.TAMAGO,14)],sea:["醤油","塩こしょう","ごま油"]},
+ {id:"b36",name:"厚揚げとピーマンの甘辛炒め",time:12,main:"卵・豆腐",ing:[ing("厚揚げ",2,"枚",CAT.TAMAGO,5),ing("ピーマン",3,"個",CAT.YASAI,7),ing("豚こま切れ肉",100,"g",CAT.NIKU,3)],sea:["醤油","みりん","砂糖","かつお節"]}
+];
+
+/* ---------- 作り方(内蔵レシピ) ---------- */
+const STEPS = {
+ b01:["キャベツはざく切り、ピーマンは乱切りにする。","フライパンで豚こまを炒め、色が変わったら野菜を加えて強火でさっと炒める。","味噌・砂糖・醤油・豆板醤・おろしにんにくを混ぜたタレを絡める。"],
+ b02:["鶏むねはそぎ切りにして片栗粉をまぶす。ねぎは3cmに切る。","油を熱して鶏とねぎを両面焼く。","醤油・みりん・砂糖を加えて煮絡める。"],
+ b03:["玉ねぎは薄切り、キャベツは千切りにする。","豚こまと玉ねぎを炒める。","おろし生姜・醤油・みりん・酒を加えて絡め、キャベツを添えて盛る。"],
+ b04:["鶏ももは一口大、キャベツはざく切りにする。","鶏を皮目から焼き、火が通ったらキャベツを加えて炒める。","おろしにんにく・鶏ガラ・塩こしょうで調味し、仕上げにごま油を回しかける。"],
+ b05:["豆腐はさいの目、ねぎはみじん切りにする。","ひき肉を炒め、豆板醤と味噌を加えて香りを出す。","水150mlと鶏ガラ・醤油、豆腐を加えて2〜3分煮る。","水溶き片栗粉でとろみをつけ、ねぎとごま油を加える。"],
+ b06:["玉ねぎ・にんじんはみじん切りにする。","ひき肉と野菜をしんなりするまで炒める。","水100mlとルーを加えて溶かし、ケチャップ・ウスターで味を調えてご飯にのせる。"],
+ b07:["鮭に塩こしょうして小麦粉をまぶす。ブロッコリーはレンジ600Wで2分。","バターで鮭を両面こんがり焼く。","レモン汁をかけ、ブロッコリーを添える。"],
+ b08:["さばの皮に切り込みを入れる。生姜は薄切りにする。","フライパンに水150ml・酒・砂糖・みりん・生姜を煮立て、さばを皮を上にして入れる。","アルミの落とし蓋で7〜8分煮て、味噌を溶き入れ軽く煮詰める。"],
+ b09:["鶏ももは一口大、玉ねぎは薄切りにする。","めんつゆ+水(丼つゆの濃さ)を煮立て、鶏と玉ねぎを4〜5分煮る。","溶き卵を回し入れ、半熟で火を止めてご飯にのせる。"],
+ b10:["玉ねぎは薄切りにする。","豚こまと玉ねぎを炒める。","醤油・みりん・砂糖・おろし生姜を加えて煮絡め、ご飯にのせる。"],
+ b11:["豚こまを炒め、ざく切りキャベツともやしを加える。","麺と水大さじ2を加えてほぐしながら炒める。","付属ソースを絡め、青のりをふる。"],
+ b12:["豚こまとざく切りキャベツ・斜め切りねぎを炒める。","うどんと水大さじ2を加えてほぐす。","醤油・ウスターで調味し、かつお節をかける。"],
+ b13:["にらは5cmに切る。","強火で豚こまを炒め、もやしとにらを加えてさっと炒める。","おろしにんにく・オイスター・醤油・塩こしょうで手早く調味する。"],
+ b14:["鶏むねはそぎ切りにして耐熱皿に並べ、もやしをのせて酒をふり、ラップして600Wで6〜7分。","刻みねぎ・ごま油・ポン酢・鶏ガラを混ぜてたれを作る。","蒸し上がりにたれをかける。"],
+ b15:["玉ねぎとウインナーを刻んで炒め、ご飯とケチャップを加えてチキンライス風にして皿に盛る。","バターで溶き卵を半熟のオムレツ状に焼く。","ご飯にのせてケチャップをかける。"],
+ b16:["ねぎとハムを刻む。溶き卵を用意する。","強火で卵→ご飯の順に炒めてほぐす。","ねぎ・ハムを加え、鶏ガラ・醤油・ごま油で調味する。"],
+ b17:["なすは乱切りにし、多めの油で焼き色をつけて取り出す。","ひき肉を炒め、豆板醤・味噌を加えて香りを出す。","水100ml・醤油・なすを戻して煮て、水溶き片栗粉でとろみをつけ、ねぎを散らす。"],
+ b18:["なすは乱切り、ピーマンは細切りにする。","豚こまを炒め、なすを加えて焼き色をつける。","ピーマンを加え、味噌・みりん・砂糖・醤油を絡める。"],
+ b19:["玉ねぎ・ピーマンは粗みじんにする。","ひき肉と野菜を炒め、オイスター・ナンプラー(か醤油)・にんにくで調味する。","目玉焼きを焼き、ご飯に肉と一緒にのせる。"],
+ b20:["パスタを表示時間どおり茹でる(最後の1分でざく切りキャベツも一緒に)。","オリーブオイルでにんにく・唐辛子・ベーコンを弱火で炒める。","パスタと茹で汁お玉半分を加えて和え、塩で調える。"],
+ b21:["パスタを茹でる。","斜め切りウインナー・薄切り玉ねぎ・細切りピーマンを炒める。","ケチャップを加えて軽く煮詰め、パスタとバターを絡める。"],
+ b22:["大根・にんじんは薄いいちょう切り、ねぎは小口切りにする。","豚こまと野菜を軽く炒め、水600mlとだしの素を加えて7〜8分煮る。","豆腐をちぎり入れ、味噌を溶いてねぎを散らす。ご飯を添える。"],
+ b23:["大根は小さめの乱切りにして耐熱容器でレンジ600Wで5分。","鶏ももを一口大に切って焼き、大根を加える。","水150ml・醤油・みりん・砂糖・生姜を加えて10分ほど煮る。"],
+ b24:["野菜と豚こまは一口大に切る。","全部を炒めて水600mlを加え、10分煮る。","火を止めてルーを溶かし、とろみが出るまで弱火で煮る。"],
+ b25:["玉ねぎは薄切り、しめじはほぐす。","牛こまと一緒に炒める。","水400mlで5分煮て、ルーを溶かしてとろみをつける。ご飯にかける。"],
+ b26:["じゃがいもは一口大に切ってレンジ600Wで4分。","豚こま・くし切り玉ねぎ・乱切りにんじんを炒める。","じゃがいも・水200ml・醤油・みりん・砂糖・だしを加え、汁が少なくなるまで煮る。"],
+ b27:["鶏ももは大きめ一口大に切り、醤油・にんにく・生姜で10分漬ける。","汁気を切って片栗粉をまぶす。","フライパンに1cmの油を熱し、両面カリッと揚げ焼きにする。千切りキャベツを添える。"],
+ b28:["ひき肉と水切りした豆腐を崩しながら炒める。","醤油・みりん・砂糖・生姜を加えて汁気がなくなるまで炒める。","別で炒り卵を作り、ご飯に2色のせる。"],
+ b29:["トマトはくし切り。卵は塩少々を加えて溶く。","多めの油で卵を大きく半熟に炒めて取り出す。","トマトをさっと炒め、卵を戻して鶏ガラ・塩こしょうで調味し、ごま油を垂らす。"],
+ b30:["アルミホイルに薄切り玉ねぎ→鮭→ほぐしたしめじ→バターの順にのせて包む。","フライパンに水1cmを張り、蓋をして中火で10分蒸し焼きにする。","開けてポン酢をかける。"],
+ b31:["ぶりに小麦粉を薄くまぶす。ねぎは3cmに切る。","ぶりとねぎを両面焼く。","余分な油を拭き、醤油・みりん・砂糖を加えて照りが出るまで絡める。"],
+ b32:["レタスをちぎり、トマトを切って皿に敷く。","湯を沸かして火を止め、豚肉を1枚ずつ色が変わるまでくぐらせる。","水気を切って野菜にのせ、ごまだれかポン酢をかける。"],
+ b33:["白菜・にんじんは細切り、しめじはほぐす。","豚こまを炒め、野菜を加えてしんなりさせる。","水100ml・オイスター・鶏ガラで1〜2分煮て、水溶き片栗粉でとろみをつけ、ごま油を回す。"],
+ b34:["ねぎをみじん切りにし、塩・ごま油・レモン汁・鶏ガラと混ぜてたれを作る。","鶏ももを皮目から動かさずじっくり焼き、返して火を通す。","食べやすく切り、ねぎだれをかける。"],
+ b35:["小松菜は4cmに切る。","ごま油で小松菜を炒め、ツナを油ごと加える。","溶き卵を回し入れてふんわり炒め、醤油・塩こしょうで調味する。"],
+ b36:["厚揚げは一口大、ピーマンは乱切りにする。","豚こまを炒め、厚揚げ・ピーマンを加えて焼き色をつける。","醤油・みりん・砂糖を絡め、かつお節をふる。"]
+};
+function stepsOf(r){ return r.st || STEPS[r.id] || []; }
+
+/* ---------- 調味料の分量(2人×1食分) ---------- */
+const SEAQ = {
+ b01:["味噌 大さじ1","豆板醤 小さじ1/2","砂糖 大さじ1/2","醤油 小さじ1","おろしにんにく 小さじ1/2"],
+ b02:["醤油 大さじ1.5","みりん 大さじ1.5","砂糖 小さじ1","片栗粉 大さじ1(まぶす用)"],
+ b03:["おろし生姜 小さじ1","醤油 大さじ1.5","みりん 大さじ1.5","酒 大さじ1"],
+ b04:["おろしにんにく 小さじ1/2","塩こしょう 少々","鶏ガラスープの素 小さじ1","ごま油 小さじ1"],
+ b05:["豆板醤 小さじ1","味噌 大さじ1/2","醤油 大さじ1/2","鶏ガラスープの素 小さじ1(+水150ml)","片栗粉 大さじ1/2(水大さじ1で溶く)","ごま油 小さじ1"],
+ b06:["ケチャップ 大さじ1","ウスターソース 小さじ1(+水100ml)"],
+ b07:["小麦粉 適量","バター 10g","塩こしょう 少々","レモン汁 小さじ1"],
+ b08:["味噌 大さじ1.5","砂糖 大さじ1","みりん 大さじ1","酒 大さじ2(+水150ml)"],
+ b09:["めんつゆ(3倍濃縮) 大さじ2(+水100ml)","砂糖 小さじ1"],
+ b10:["醤油 大さじ1.5","みりん 大さじ1.5","砂糖 大さじ1/2","おろし生姜 小さじ1/2"],
+ b11:["付属ソース 2袋","青のり 適量"],
+ b12:["醤油 大さじ1","ウスターソース 大さじ1/2","かつお節 適量"],
+ b13:["おろしにんにく 小さじ1/2","醤油 大さじ1/2","オイスターソース 大さじ1/2","塩こしょう 少々"],
+ b14:["ごま油 大さじ1/2","ポン酢 大さじ1.5","鶏ガラスープの素 小さじ1/2","酒 大さじ1(蒸し用)"],
+ b15:["ケチャップ 大さじ3(ご飯用)+仕上げ適量","バター 10g","塩こしょう 少々"],
+ b16:["醤油 小さじ1","鶏ガラスープの素 小さじ1","ごま油 小さじ1"],
+ b17:["豆板醤 小さじ1","味噌 大さじ1/2","醤油 大さじ1/2(+水100ml)","片栗粉 大さじ1/2(水大さじ1で溶く)","ごま油 大さじ1(なす焼き用に別途多め)"],
+ b18:["味噌 大さじ1","みりん 大さじ1","砂糖 大さじ1/2","醤油 小さじ1"],
+ b19:["オイスターソース 大さじ1","ナンプラーか醤油 大さじ1/2","おろしにんにく 小さじ1/2"],
+ b20:["にんにく 1かけ","唐辛子(輪切り) 1本分","オリーブオイル 大さじ1.5","塩 少々(茹で湯は湯1Lに塩小さじ2)"],
+ b21:["ケチャップ 大さじ4","バター 10g","塩こしょう 少々"],
+ b22:["味噌 大さじ2","だしの素 小さじ1(+水600ml)"],
+ b23:["醤油 大さじ2","みりん 大さじ2","砂糖 大さじ1","酒 大さじ1(+水150ml)"],
+ b26:["醤油 大さじ2","みりん 大さじ2","砂糖 大さじ1","だしの素 小さじ1/2(+水200ml)"],
+ b27:["醤油 大さじ1.5","おろしにんにく 小さじ1/2","おろし生姜 小さじ1/2","片栗粉 大さじ3","サラダ油 適量(深さ1cm)"],
+ b28:["醤油 大さじ1.5","みりん 大さじ1","砂糖 大さじ1","おろし生姜 小さじ1/2"],
+ b29:["鶏ガラスープの素 小さじ1/2","塩こしょう 少々","ごま油 小さじ1"],
+ b30:["バター 10g","ポン酢 大さじ1","塩こしょう 少々"],
+ b31:["醤油 大さじ1.5","みりん 大さじ1.5","砂糖 大さじ1/2"],
+ b32:["ごまだれかポン酢 適量"],
+ b33:["オイスターソース 大さじ1","鶏ガラスープの素 小さじ1(+水100ml)","片栗粉 大さじ1/2(水大さじ1で溶く)","ごま油 小さじ1"],
+ b34:["塩 小さじ1/4","ごま油 大さじ1","レモン汁 小さじ1","鶏ガラスープの素 小さじ1/2"],
+ b35:["醤油 小さじ1","塩こしょう 少々","ごま油 大さじ1/2"],
+ b36:["醤油 大さじ1","みりん 大さじ1","砂糖 大さじ1/2","かつお節 適量"]
+};
+function seaOf(r){ return SEAQ[r.id] || r.sea || []; }
+
+/* ---------- 状態 ---------- */
+const KEY = "kondate-v1";
+let S = load();
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){ const s = JSON.parse(raw); if(s && s.settings) return s; }
+  }catch(e){}
+  return {
+    settings:{factor:2},
+    custom:[], off:{},            // off[id]=true → 提案から除外
+    week:null,                    // {start:"YYYY-MM-DD", days:[{rid,locked}], decided:false}
+    shop:null,                    // {checked:{}, have:{}, extra:[{n,done}]}
+    history:[]                    // 直近の週の rid 配列(最大2週分)
+  };
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(S)); }
+function allRecipes(){ return BUILTIN.concat(S.custom); }
+function byId(id){ return allRecipes().find(r=>r.id===id); }
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function copyText(t, btn, doneLabel, after){
+  const ok = ()=>{ if(btn) btn.textContent = doneLabel; if(after) setTimeout(after,1200); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(ok).catch(()=>fallback());
+  } else fallback();
+  function fallback(){
+    const ta = document.createElement("textarea");
+    ta.value = t; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); ok(); }catch(e){ alert("コピーできませんでした"); }
+    ta.remove();
+  }
+}
+
+/* ---------- 週の日付(土曜始まり) ---------- */
+function nextSaturday(){
+  const d = new Date(); d.setHours(0,0,0,0);
+  const diff = (6 - d.getDay() + 7) % 7;   // 今日が土曜なら 0
+  d.setDate(d.getDate()+diff); return d;
+}
+function fmtDate(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function parseDate(s){ const [y,m,dd]=s.split("-").map(Number); return new Date(y,m-1,dd); }
+const DOW = ["日","月","火","水","木","金","土"];
+
+/* ---------- 提案アルゴリズム ---------- */
+function freshScore(r){ // 小さいほど傷みやすい食材を含む
+  return Math.min(...r.ing.map(i=>i.d));
+}
+function overlap(r, pool){ // pool: すでに選んだレシピ群との食材共有スコア
+  const names = new Map();
+  pool.forEach(p=>p.ing.forEach(i=>names.set(i.n, Math.min(names.get(i.n)??99, i.d))));
+  let sc = 0;
+  r.ing.forEach(i=>{
+    if(names.has(i.n)) sc += (i.d<=10 ? 2 : 0.5);  // 生鮮の使い回しを高評価
+  });
+  return sc;
+}
+function generateWeek(opts){
+  const {timeLimit=0, focus="", keepLocked=true} = opts||{};
+  const recentIds = new Set([].concat(...S.history.map(h=>h.ids||h)));
+  let pool = allRecipes().filter(r=>!S.off[r.id]);
+  if(timeLimit) pool = pool.filter(r=>r.time<=timeLimit);
+  let fresh = pool.filter(r=>!recentIds.has(r.id));
+  if(fresh.length >= 10) pool = fresh;           // 候補が足りる時だけ直近の重複を避ける
+
+  const days = (keepLocked && S.week && S.week.days) ? S.week.days.map(d=>({...d})) :
+               Array.from({length:7},()=>({rid:null,locked:false}));
+  const chosen = days.filter(d=>d.locked && byId(d.rid)).map(d=>byId(d.rid));
+  const mainCount = {};
+  chosen.forEach(r=>mainCount[r.main]=(mainCount[r.main]||0)+1);
+  let focusLeft = focus ? Math.max(0, 3 - chosen.filter(r=>r.main===focus).length) : 0;
+
+  const need = days.filter(d=>!d.locked).length;
+  const picked = [];
+  for(let k=0;k<need;k++){
+    const used = new Set(chosen.concat(picked).map(r=>r.id));
+    let cands = pool.filter(r=>!used.has(r.id) && (mainCount[r.main]||0) < 2);
+    if(!cands.length) cands = pool.filter(r=>!used.has(r.id) && (mainCount[r.main]||0) < 3);
+    if(!cands.length) cands = allRecipes().filter(r=>!used.has(r.id) && !S.off[r.id]);
+    if(!cands.length) break;
+    let best=null, bestSc=-1;
+    cands.forEach(r=>{
+      let sc = overlap(r, chosen.concat(picked)) + Math.random()*2.2;
+      if(focusLeft>0 && r.main===focus) sc += 5;
+      if(sc>bestSc){ bestSc=sc; best=r; }
+    });
+    picked.push(best);
+    mainCount[best.main]=(mainCount[best.main]||0)+1;
+    if(focus && best.main===focus && focusLeft>0) focusLeft--;
+  }
+  // 鮮度順に未ロック枠へ配置(傷みやすい→週前半)
+  picked.sort((a,b)=>freshScore(a)-freshScore(b));
+  let pi=0;
+  days.forEach(d=>{ if(!d.locked){ d.rid = picked[pi] ? picked[pi].id : null; pi++; } });
+
+  // ロック日がある = 今の週を手直し中 → 開始日を維持。全とっかえなら次の土曜から
+  const hasLock = days.some(d=>d.locked);
+  const start = (hasLock && S.week && S.week.start) ? S.week.start : fmtDate(nextSaturday());
+  S.week = { start, days, decided:false };
+  save();
+}
+function rerollDay(idx){
+  const others = S.week.days.filter((d,i)=>i!==idx && d.rid).map(d=>byId(d.rid)).filter(Boolean);
+  const used = new Set(others.map(r=>r.id));
+  const cur = S.week.days[idx].rid;
+  let cands = allRecipes().filter(r=>!S.off[r.id] && !used.has(r.id) && r.id!==cur);
+  if(!cands.length) return;
+  let best=null,bestSc=-1;
+  cands.forEach(r=>{
+    const sc = overlap(r, others) + Math.random()*3;
+    if(sc>bestSc){bestSc=sc;best=r;}
+  });
+  S.week.days[idx].rid = best.id;
+  S.week.decided = false;
+  save(); renderPlan();
+}
+
+/* ---------- 買い物リスト ---------- */
+function buildShop(){
+  // 同じ週の再決定では家にある/チェック済みを維持し、履歴も二重登録しない
+  if(!S.shop) S.shop = {checked:{}, have:{}, extra:[]};
+  const ids = S.week.days.map(d=>d.rid).filter(Boolean);
+  S.history = S.history.filter(h=>(h.start||"")!==S.week.start);
+  S.history.push({start:S.week.start, ids});
+  while(S.history.length>2) S.history.shift();
+  S.week.decided = true;
+  save();
+}
+function aggIngredients(){
+  const map = new Map(); // key n|u
+  if(!S.week) return {items:[],sea:[]};
+  const f = S.settings.factor || 2;
+  const seaSet = new Set();
+  S.week.days.forEach(d=>{
+    const r = byId(d.rid); if(!r) return;
+    r.ing.forEach(i=>{
+      const k = i.n+"|"+i.u;
+      if(!map.has(k)) map.set(k,{n:i.n,u:i.u,c:i.c,q:0});
+      map.get(k).q += i.q*f;
+    });
+    (r.sea||[]).forEach(s=>seaSet.add(s));
+  });
+  const items = [...map.values()];
+  items.forEach(it=>{ it.q = Math.round(it.q*100)/100; });
+  return {items, sea:[...seaSet].sort()};
+}
+function fmtQty(q){
+  if(Math.abs(q-Math.round(q))<0.01) return String(Math.round(q));
+  return String(q);
+}
+
+/* ---------- 描画 ---------- */
+const $ = s=>document.querySelector(s);
+let tab = "plan";
+document.querySelectorAll("nav.tabs button").forEach(b=>{
+  b.addEventListener("click",()=>{ tab=b.dataset.tab; syncTabs(); });
+});
+function syncTabs(){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
+  ["plan","shop","recipes","settings"].forEach(t=>{ $("#tab-"+t).hidden = (t!==tab); });
+  if(tab==="plan") renderPlan();
+  if(tab==="shop") renderShop();
+  if(tab==="recipes") renderRecipes();
+  if(tab==="settings") renderSettings();
+}
+function weekRangeText(){
+  if(!S.week) return "";
+  const s = parseDate(S.week.start), e = new Date(s); e.setDate(e.getDate()+6);
+  return `${s.getMonth()+1}/${s.getDate()}(${DOW[s.getDay()]}) 〜 ${e.getMonth()+1}/${e.getDate()}(${DOW[e.getDay()]})`;
+}
+
+function renderPlan(){
+  $("#weekRange").textContent = weekRangeText();
+  const el = $("#tab-plan");
+  let html = `
+  <div class="card">
+    <div class="row">
+      <label class="small">調理時間の上限
+        <select id="optTime">
+          <option value="0">指定なし</option><option value="15">15分以内</option>
+          <option value="20">20分以内</option><option value="30">30分以内</option>
+        </select></label>
+      <label class="small">今週多めに使いたい食材
+        <select id="optFocus">
+          <option value="">指定なし</option><option value="鶏">鶏肉</option>
+          <option value="豚">豚肉</option><option value="ひき肉">ひき肉</option>
+          <option value="牛">牛肉</option><option value="魚">魚</option>
+          <option value="卵・豆腐">卵・豆腐</option><option value="麺">麺</option>
+        </select></label>
+      <button class="primary grow" id="btnGen">${S.week?"提案しなおす":"1週間の献立を提案"}</button>
+    </div>
+    <p class="small" style="margin-top:6px">🔒でロックした日はそのまま残ります。傷みやすい食材の料理は週の前半(土曜寄り)に置かれます。</p>
+  </div>`;
+
+  if(S.week){
+    const start = parseDate(S.week.start);
+    S.week.days.forEach((d,i)=>{
+      const dt = new Date(start); dt.setDate(dt.getDate()+i);
+      const r = byId(d.rid);
+      const dowCls = dt.getDay()===6?"sat":dt.getDay()===0?"sun":"";
+      let body = `<span class="small">未定 — 「選ぶ」から決められます</span>`;
+      if(r){
+        const fs = freshScore(r);
+        const chip = fs<=2 ? `<span class="chip fresh">鮮度優先・早めに</span>` :
+                     fs<=5 ? `<span class="chip">〜${fs}日目安</span>` :
+                             `<span class="chip keep">日持ちOK</span>`;
+        body = `<button class="name linklike" data-detail="${r.id}">${esc(r.name)}</button>
+          <div class="meta"><span class="chip">${r.time}分</span><span class="chip">${esc(r.main)}</span>${chip}</div>
+          <div class="ings">${r.ing.map(x=>esc(x.n)).join("・")}</div>`;
+      }
+      html += `<div class="card day ${d.locked?"locked":""} ${dowCls}">
+        <div class="date"><div class="dow ${dowCls}">${DOW[dt.getDay()]}</div><div class="md">${dt.getMonth()+1}/${dt.getDate()}</div></div>
+        <div class="body">${body}</div>
+        <div class="ops">
+          <button class="icon ${d.locked?"primary":"ghost"}" data-lock="${i}" title="ロック">${d.locked?"🔒":"🔓"}</button>
+          <button class="icon ghost" data-roll="${i}" title="別の料理に">🎲</button>
+          <button class="icon ghost" data-pick="${i}" title="一覧から選ぶ">選ぶ</button>
+        </div>
+      </div>`;
+    });
+    const filled = S.week.days.every(d=>byId(d.rid));
+    html += `<button class="primary" style="width:100%;padding:13px" id="btnDecide" ${filled?"":"disabled"}>
+      ${S.week.decided?"買い物リストを更新する":"この献立で決定 → 買い物リストを作る"}</button>
+      <p class="small" style="margin:8px 2px">決定すると今週の料理が履歴に残り、来週の提案で同じ料理が出にくくなります。</p>`;
+  } else {
+    html += `<div class="card"><p>まだ今週の献立がありません。上の「1週間の献立を提案」を押すと、土曜始まりの7日分がひとまとめに提案されます。</p></div>`;
+  }
+  el.innerHTML = html;
+  if($("#optTime")) $("#optTime").value = el.dataset.time||"0";
+  if($("#optFocus")) $("#optFocus").value = el.dataset.focus||"";
+  $("#btnGen").onclick = ()=>{
+    el.dataset.time = $("#optTime").value; el.dataset.focus = $("#optFocus").value;
+    generateWeek({timeLimit:+$("#optTime").value, focus:$("#optFocus").value, keepLocked:!!S.week});
+    renderPlan();
+  };
+  el.querySelectorAll("[data-lock]").forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.lock; S.week.days[i].locked=!S.week.days[i].locked; save(); renderPlan();
+  });
+  el.querySelectorAll("[data-roll]").forEach(b=>b.onclick=()=>rerollDay(+b.dataset.roll));
+  el.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>openPicker(+b.dataset.pick));
+  el.querySelectorAll("[data-detail]").forEach(b=>b.onclick=()=>openDetail(b.dataset.detail));
+  const bd = $("#btnDecide");
+  if(bd) bd.onclick = ()=>{ buildShop(); tab="shop"; syncTabs(); };
+}
+
+function openDetail(id){
+  const r = byId(id); if(!r) return;
+  const m = $("#modal");
+  const f = S.settings.factor || 2;
+  const steps = stepsOf(r);
+  m.innerHTML = `<div class="overlay" id="ovd"><div class="sheet">
+    <h3>${esc(r.name)}</h3>
+    <div class="meta" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+      <span class="chip">${r.time}分</span><span class="chip">${esc(r.main)}</span></div>
+    <div class="cat-title">材料(2人 × 1食分)</div>
+    <p style="margin:4px 0 2px">${r.ing.map(i=>`${esc(i.n)} ${fmtQty(i.q)}${esc(i.u)}`).join("、")}</p>
+    <p class="small">1日分(×${f}食)なら: ${r.ing.map(i=>`${esc(i.n)} ${fmtQty(Math.round(i.q*f*100)/100)}${esc(i.u)}`).join("、")}</p>
+    ${seaOf(r).length?`<div class="cat-title">調味料(2人 × 1食分)</div>
+      <ul class="sealist">${seaOf(r).map(s=>`<li>${esc(s)}</li>`).join("")}</ul>
+      ${f>1?`<p class="small">1日分(${f}食)をまとめて作るときは調味料も×${f}に。</p>`:""}`:""}
+    <div class="cat-title">作り方</div>
+    ${steps.length?`<ol class="steps">${steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol>`
+      :`<p class="small" style="margin-top:4px">このレシピには手順が登録されていません。</p>`}
+    <button style="width:100%;margin-top:14px" id="dClose">閉じる</button>
+  </div></div>`;
+  $("#dClose").onclick = ()=>m.innerHTML="";
+  $("#ovd").onclick = e=>{ if(e.target.id==="ovd") m.innerHTML=""; };
+}
+
+function openPicker(idx){
+  const m = $("#modal");
+  const list = allRecipes();
+  m.innerHTML = `<div class="overlay" id="ov"><div class="sheet">
+    <h3>料理を選ぶ</h3>
+    <input type="text" id="pickSearch" placeholder="料理名・食材で検索" style="width:100%;margin-bottom:8px">
+    <div id="pickList"></div>
+  </div></div>`;
+  function draw(q){
+    const ql=(q||"").trim();
+    $("#pickList").innerHTML = list
+      .filter(r=>!ql || r.name.includes(ql) || r.ing.some(i=>i.n.includes(ql)))
+      .map(r=>`<button class="pick" data-id="${r.id}"><span>${esc(r.name)}</span>
+        <div class="s">${r.time}分 / ${r.ing.map(x=>esc(x.n)).join("・")}</div></button>`).join("")
+      || `<p class="small">見つかりませんでした</p>`;
+    m.querySelectorAll(".pick").forEach(b=>b.onclick=()=>{
+      S.week.days[idx].rid=b.dataset.id; S.week.decided=false; save();
+      m.innerHTML=""; renderPlan();
+    });
+  }
+  draw("");
+  $("#pickSearch").oninput = e=>draw(e.target.value);
+  $("#ov").onclick = e=>{ if(e.target.id==="ov") m.innerHTML=""; };
+}
+
+function renderShop(){
+  const el = $("#tab-shop");
+  if(!S.week || !S.week.decided){
+    el.innerHTML = `<div class="card"><p>献立タブで「この献立で決定」を押すと、1週間分の食材がここに集計されます。</p></div>`;
+    return;
+  }
+  const {items, sea} = aggIngredients();
+  const shop = S.shop || (S.shop={checked:{},have:{},extra:[]});
+  const key = it=>it.n+"|"+it.u;
+  const buy = items.filter(it=>!shop.have[key(it)]);
+  const have = items.filter(it=>shop.have[key(it)]);
+  const order = [CAT.NIKU,CAT.YASAI,CAT.TAMAGO,CAT.MEN,CAT.SONOTA];
+  const remaining = buy.filter(it=>!shop.checked[key(it)]).length + shop.extra.filter(x=>!x.done).length;
+
+  let html = `<div class="notice">残り <b>${remaining}</b> 品(${weekRangeText()} の7食 × ${S.settings.factor==2?"昼夜2食分":S.settings.factor+"食分"}・2人)</div>
+  <div class="row" style="margin-bottom:10px">
+    <button id="btnCopy" class="ghost grow">📋 リストをテキストでコピー</button>
+    <button id="btnUncheck" class="ghost">チェックを全部外す</button>
+  </div><div class="card">`;
+  order.forEach(cat=>{
+    const its = buy.filter(it=>it.c===cat);
+    if(!its.length) return;
+    html += `<div class="cat-title">${cat}</div>`;
+    its.forEach(it=>{
+      const k=key(it), done=!!shop.checked[k];
+      html += `<div class="shop-item ${done?"done":""}">
+        <input type="checkbox" data-chk="${esc(k)}" ${done?"checked":""}>
+        <span class="nm">${esc(it.n)}</span><span class="qty">${fmtQty(it.q)}${esc(it.u)}</span>
+        <button class="icon ghost" data-have="${esc(k)}" title="家にあるので外す">家🏠</button>
+      </div>`;
+    });
+  });
+  // 自由追加
+  html += `<div class="cat-title">その他・追加(パン、牛乳など)</div>`;
+  shop.extra.forEach((x,i)=>{
+    html += `<div class="shop-item ${x.done?"done":""}">
+      <input type="checkbox" data-exchk="${i}" ${x.done?"checked":""}>
+      <span class="nm">${esc(x.n)}</span>
+      <button class="icon ghost" data-exdel="${i}">✕</button></div>`;
+  });
+  html += `<div class="row" style="margin-top:8px">
+    <input type="text" id="extraName" placeholder="追加するもの" class="grow">
+    <button id="btnExtra">追加</button></div></div>`;
+
+  if(sea.length){
+    html += `<details class="card"><summary>調味料チェック(${sea.length}種 — 切らしていないか確認)</summary>
+      <p class="small" style="margin-top:6px">${sea.map(esc).join(" ・ ")}</p></details>`;
+  }
+  if(have.length){
+    html += `<details class="card" open><summary>家にあるもの(リストから除外中)</summary>`;
+    have.forEach(it=>{
+      const k=key(it);
+      html += `<div class="shop-item"><span class="nm small">${esc(it.n)} ${fmtQty(it.q)}${esc(it.u)}</span>
+        <button class="icon ghost" data-unhave="${esc(k)}">リストに戻す</button></div>`;
+    });
+    html += `</details>`;
+  }
+  el.innerHTML = html;
+  el.querySelectorAll("[data-chk]").forEach(c=>c.onchange=()=>{ shop.checked[c.dataset.chk]=c.checked; save(); renderShop(); });
+  el.querySelectorAll("[data-have]").forEach(b=>b.onclick=()=>{ shop.have[b.dataset.have]=true; save(); renderShop(); });
+  el.querySelectorAll("[data-unhave]").forEach(b=>b.onclick=()=>{ delete shop.have[b.dataset.unhave]; save(); renderShop(); });
+  el.querySelectorAll("[data-exchk]").forEach(c=>c.onchange=()=>{ shop.extra[+c.dataset.exchk].done=c.checked; save(); renderShop(); });
+  el.querySelectorAll("[data-exdel]").forEach(b=>b.onclick=()=>{ shop.extra.splice(+b.dataset.exdel,1); save(); renderShop(); });
+  $("#btnExtra").onclick = ()=>{
+    const v=$("#extraName").value.trim(); if(!v) return;
+    shop.extra.push({n:v,done:false}); save(); renderShop();
+  };
+  $("#btnUncheck").onclick = ()=>{ shop.checked={}; shop.extra.forEach(x=>x.done=false); save(); renderShop(); };
+  $("#btnCopy").onclick = ()=>{
+    let t = `【買い物リスト ${weekRangeText()}】\n`;
+    order.forEach(cat=>{
+      const its = buy.filter(it=>it.c===cat && !shop.checked[key(it)]);
+      if(!its.length) return;
+      t += `■${cat}\n` + its.map(it=>`・${it.n} ${fmtQty(it.q)}${it.u}`).join("\n") + "\n";
+    });
+    const ex = shop.extra.filter(x=>!x.done);
+    if(ex.length) t += "■その他\n" + ex.map(x=>"・"+x.n).join("\n") + "\n";
+    copyText(t, $("#btnCopy"), "✅ コピーしました", renderShop);
+  };
+}
+
+function renderRecipes(){
+  const el = $("#tab-recipes");
+  const q = el.dataset.q||"";
+  const list = allRecipes().filter(r=>!q || r.name.includes(q) || r.ing.some(i=>i.n.includes(q)));
+  let html = `<div class="row" style="margin-bottom:10px">
+    <input type="text" id="recSearch" placeholder="検索" value="${esc(q)}" class="grow">
+    <button class="primary" id="btnAdd">+ 自分のレシピを追加</button></div>
+    <p class="small" style="margin-bottom:8px">「休」を押すと提案の候補から一時的に外れます(${list.filter(r=>S.off[r.id]).length}件を休止中)。</p>
+    <div class="card">`;
+  list.forEach(r=>{
+    html += `<div class="rec ${S.off[r.id]?"off":""}">
+      <div class="nm"><button class="t linklike" data-detail="${r.id}">${esc(r.name)}</button>
+      <div class="s">${r.time}分 / ${r.ing.map(i=>esc(i.n)+" "+fmtQty(i.q)+esc(i.u)).join("・")}${r.sea&&r.sea.length?` / 調味料: ${r.sea.map(esc).join("、")}`:""}</div></div>
+      <button class="icon ${S.off[r.id]?"primary":"ghost"}" data-off="${r.id}">${S.off[r.id]?"再開":"休"}</button>
+      ${r.id.startsWith("c") ? `<button class="icon ghost" data-del="${r.id}">✕</button>`:""}
+    </div>`;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+  $("#recSearch").oninput = e=>{ el.dataset.q=e.target.value; renderRecipes(); const s=$("#recSearch"); s.focus(); s.setSelectionRange(s.value.length,s.value.length); };
+  el.querySelectorAll("[data-detail]").forEach(b=>b.onclick=()=>openDetail(b.dataset.detail));
+  el.querySelectorAll("[data-off]").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.off; if(S.off[id]) delete S.off[id]; else S.off[id]=true; save(); renderRecipes();
+  });
+  el.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
+    if(!confirm("このレシピを削除しますか?")) return;
+    S.custom = S.custom.filter(r=>r.id!==b.dataset.del); save(); renderRecipes();
+  });
+  $("#btnAdd").onclick = openRecipeForm;
+}
+
+function openRecipeForm(){
+  const m = $("#modal");
+  m.innerHTML = `<div class="overlay" id="ov"><div class="sheet">
+    <h3>レシピを追加(2人 × 1食分の量で入力)</h3>
+    <div class="row" style="margin-bottom:8px">
+      <input type="text" id="fName" placeholder="料理名" class="grow">
+      <input type="number" id="fTime" placeholder="分" min="1" style="width:76px">
+      <select id="fMain"><option value="鶏">鶏</option><option value="豚">豚</option><option value="ひき肉">ひき肉</option>
+        <option value="牛">牛</option><option value="魚">魚</option><option value="卵・豆腐">卵・豆腐</option><option value="麺">麺</option></select>
+    </div>
+    <div id="fIngs"></div>
+    <button class="ghost" id="fAddIng" style="margin:6px 0">+ 食材を追加</button>
+    <input type="text" id="fSea" placeholder="調味料と量(読点、で区切り。例: 醤油 大さじ1、みりん 大さじ1)" style="width:100%;margin:6px 0">
+    <textarea id="fSteps" placeholder="作り方(1行に1手順。例:&#10;野菜を切る&#10;肉と一緒に炒める&#10;調味料を絡める)" style="min-height:90px;margin:0 0 6px"></textarea>
+    <div class="row"><button class="primary grow" id="fSave">保存</button><button id="fCancel">キャンセル</button></div>
+  </div></div>`;
+  const catOpts = Object.values(CAT).map(c=>`<option>${c}</option>`).join("");
+  const dOpts = `<option value="2">すぐ使う(〜2日)</option><option value="5" selected>数日OK(〜5日)</option><option value="14">日持ちする</option><option value="99">常備品</option>`;
+  function addRow(){
+    const div = document.createElement("div"); div.className="ing-row";
+    div.innerHTML = `<input type="text" placeholder="食材名" class="fi-n">
+      <input type="number" placeholder="量" step="0.1" class="fi-q">
+      <input type="text" placeholder="単位" class="fi-u">
+      <select class="fi-c">${catOpts}</select><select class="fi-d">${dOpts}</select>
+      <button class="icon ghost fi-x">✕</button>`;
+    div.querySelector(".fi-x").onclick=()=>div.remove();
+    $("#fIngs").appendChild(div);
+  }
+  addRow(); addRow();
+  $("#fAddIng").onclick = addRow;
+  $("#fCancel").onclick = ()=>m.innerHTML="";
+  $("#ov").onclick = e=>{ if(e.target.id==="ov") m.innerHTML=""; };
+  $("#fSave").onclick = ()=>{
+    const name = $("#fName").value.trim();
+    const time = +$("#fTime").value || 20;
+    if(!name){ alert("料理名を入れてください"); return; }
+    const ings = [...m.querySelectorAll(".ing-row")].map(row=>({
+      n: row.querySelector(".fi-n").value.trim(),
+      q: +row.querySelector(".fi-q").value || 1,
+      u: row.querySelector(".fi-u").value.trim() || "個",
+      c: row.querySelector(".fi-c").value,
+      d: +row.querySelector(".fi-d").value
+    })).filter(i=>i.n);
+    if(!ings.length){ alert("食材を1つ以上入れてください"); return; }
+    const sea = $("#fSea").value.split(/[、,]/).map(s=>s.trim()).filter(Boolean);
+    const st = $("#fSteps").value.split(/\n/).map(s=>s.trim().replace(/^\d+[.、)]\s*/,"")).filter(Boolean);
+    S.custom.push({id:"c"+Date.now(), name, time, main:$("#fMain").value, ing:ings, sea, st});
+    save(); m.innerHTML=""; renderRecipes();
+  };
+}
+
+function renderSettings(){
+  const el = $("#tab-settings");
+  el.innerHTML = `
+  <div class="card">
+    <h2 style="margin-top:0">分量の設定</h2>
+    <label class="small">1日に作る食数(レシピは2人×1食が基準)
+      <select id="setFactor">
+        <option value="1">1食分(夜だけ)</option>
+        <option value="2">2食分(昼+夜)</option>
+        <option value="3">3食分</option>
+      </select></label>
+    <p class="small" style="margin-top:6px">現在は「2人 × ${S.settings.factor}食」で買い物リストを計算しています。</p>
+  </div>
+  <div class="card">
+    <h2 style="margin-top:0">データの持ち出し</h2>
+    <p class="small">データはこのブラウザの中だけに保存されます。別の端末に移すときは、書き出したテキストを貼り付けてください。</p>
+    <div class="row" style="margin-top:8px">
+      <button id="btnExport" class="ghost">書き出す(コピー)</button>
+      <button id="btnImport" class="ghost">貼り付けて読み込む</button>
+      <button id="btnReset" class="ghost" style="color:var(--warn)">全データ初期化</button>
+    </div>
+    <textarea id="ioArea" placeholder="ここに書き出し結果が出ます / 読み込み時はここに貼り付け" style="margin-top:8px"></textarea>
+  </div>
+  <div class="card small">
+    レシピ ${allRecipes().length} 品(内蔵 ${BUILTIN.length} + 自作 ${S.custom.length})/ 履歴 ${S.history.length} 週分
+  </div>`;
+  $("#setFactor").value = String(S.settings.factor||2);
+  $("#setFactor").onchange = e=>{ S.settings.factor=+e.target.value; save(); renderSettings(); };
+  $("#btnExport").onclick = ()=>{
+    const t = JSON.stringify(S);
+    $("#ioArea").value = t;
+    copyText(t, $("#btnExport"), "✅ コピーしました");
+  };
+  $("#btnImport").onclick = ()=>{
+    try{
+      const s = JSON.parse($("#ioArea").value);
+      if(!s || !s.settings) throw 0;
+      S = s; save(); alert("読み込みました"); syncTabs();
+    }catch(e){ alert("読み込めませんでした。書き出したテキスト全体を貼り付けてください。"); }
+  };
+  $("#btnReset").onclick = ()=>{
+    if(confirm("献立・自作レシピ・履歴をすべて消します。よろしいですか?")){
+      localStorage.removeItem(KEY); S = load(); syncTabs();
+    }
+  };
+}
+
+syncTabs();
+</script>
+<script>
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
+</script>
+</body>
+</html>

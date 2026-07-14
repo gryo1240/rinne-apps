@@ -1,0 +1,16 @@
+{
+  "name": "せんたくタグ",
+  "short_name": "せんたく",
+  "description": "洗濯表示タグをカメラや記号選びで読み取り、洗い方と仕分けを案内するアプリ",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F3F6F5",
+  "theme_color": "#2E7381",
+  "lang": "ja",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
