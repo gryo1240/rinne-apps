@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#6C5FA7">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="そうじ">
+</head>
+<body>
+<title>そうじナビ</title>
+<style>
+:root{
+  --bg:#F5F4F7; --surface:#FFFFFF; --ink:#292633; --muted:#716D80;
+  --line:#E1DFE8; --accent:#6C5FA7; --accent-ink:#FFFFFF; --accent-soft:#ECE9F5;
+  --warn:#B0563B; --warn-soft:#F6E9E3; --chip:#EDEBF2; --ok:#3E7A52; --okbg:#E5F0E9;
+  --whoA:#B4643C; --whoB:#4A7FA5; --shadow:0 1px 3px rgba(40,35,60,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#17151D; --surface:#211E2A; --ink:#E7E5EC; --muted:#9B97A8;
+    --line:#363242; --accent:#A79BD6; --accent-ink:#191430; --accent-soft:#2C2741;
+    --warn:#D69073; --warn-soft:#3A2A21; --chip:#2C2937; --ok:#7FBE97; --okbg:#233A2C;
+    --whoA:#D89468; --whoB:#83AECE; --shadow:0 1px 3px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="light"]{
+  --bg:#F5F4F7; --surface:#FFFFFF; --ink:#292633; --muted:#716D80;
+  --line:#E1DFE8; --accent:#6C5FA7; --accent-ink:#FFFFFF; --accent-soft:#ECE9F5;
+  --warn:#B0563B; --warn-soft:#F6E9E3; --chip:#EDEBF2; --ok:#3E7A52; --okbg:#E5F0E9;
+  --whoA:#B4643C; --whoB:#4A7FA5; --shadow:0 1px 3px rgba(40,35,60,.08);
+}
+:root[data-theme="dark"]{
+  --bg:#17151D; --surface:#211E2A; --ink:#E7E5EC; --muted:#9B97A8;
+  --line:#363242; --accent:#A79BD6; --accent-ink:#191430; --accent-soft:#2C2741;
+  --warn:#D69073; --warn-soft:#3A2A21; --chip:#2C2937; --ok:#7FBE97; --okbg:#233A2C;
+  --whoA:#D89468; --whoB:#83AECE; --shadow:0 1px 3px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{background:var(--bg); color:var(--ink);
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Noto Sans JP",Meiryo,sans-serif;
+  font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;}
+#app{max-width:720px; margin:0 auto; padding:0 14px 84px;}
+header.top{position:sticky; top:0; z-index:20; background:var(--bg);
+  padding:14px 2px 10px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--line);}
+header.top h1{font-size:18px; font-weight:700; letter-spacing:.02em;}
+header.top .sub{color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums;}
+.dot{width:9px; height:9px; border-radius:50%; background:var(--muted); margin-left:auto; flex-shrink:0;}
+.dot.on{background:var(--ok);}
+main{padding-top:14px;}
+h2{font-size:15px; font-weight:700; letter-spacing:.04em; margin:18px 0 8px;}
+.small{font-size:12.5px; color:var(--muted);}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); padding:12px 14px; margin-bottom:10px;}
+button{font:inherit; cursor:pointer; border:none; border-radius:8px; padding:8px 14px; background:var(--chip); color:var(--ink);}
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+button.primary{background:var(--accent); color:var(--accent-ink); font-weight:700;}
+button.ghost{background:transparent; border:1px solid var(--line);}
+button.icon{padding:6px 10px; font-size:14px; line-height:1;}
+select,input[type=text],input[type=date],textarea{font:inherit; color:var(--ink); background:var(--surface);
+  border:1px solid var(--line); border-radius:8px; padding:7px 10px; max-width:100%;}
+textarea{width:100%; min-height:90px;}
+.row{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+.grow{flex:1 1 auto; min-width:0;}
+nav.tabs{position:fixed; bottom:0; left:0; right:0; z-index:30; background:var(--surface); border-top:1px solid var(--line); display:flex; justify-content:center;}
+nav.tabs .inner{display:flex; width:100%; max-width:720px;}
+nav.tabs button{flex:1; background:none; border-radius:0; padding:10px 0 12px; font-size:11.5px; color:var(--muted); display:flex; flex-direction:column; gap:2px; align-items:center;}
+nav.tabs button .ic{font-size:18px; line-height:1;}
+nav.tabs button.on{color:var(--accent); font-weight:700;}
+/* place chips */
+.placebar{display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:8px;}
+.placebar button{white-space:nowrap; border:1px solid var(--line); background:var(--surface); font-size:13px; padding:6px 13px; border-radius:999px;}
+.placebar button.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent); font-weight:700;}
+/* stain rows */
+.stain{display:flex; align-items:center; gap:10px; padding:10px 2px; border-bottom:1px solid var(--line);}
+.stain:last-child{border-bottom:none;}
+.stain input[type=checkbox]{width:22px; height:22px; accent-color:var(--accent); flex-shrink:0;}
+.stain .nm{flex:1; min-width:0; background:none; border:none; padding:0; font:inherit; text-align:left; color:var(--ink);}
+.stain .nm .t{font-weight:600;}
+.stain .nm .s{font-size:12px; color:var(--muted);}
+.stain.done .nm .t{text-decoration:line-through; color:var(--muted);}
+.stain.skipped .nm .t{color:var(--muted); opacity:.6;}
+.star{color:var(--accent); font-size:12px; letter-spacing:1px;}
+.who{display:inline-block; width:10px; height:10px; border-radius:50%; flex-shrink:0;}
+.who.a{background:var(--whoA);} .who.b{background:var(--whoB);}
+.who.ab{background:linear-gradient(90deg,var(--whoA) 50%,var(--whoB) 50%);}
+.chip{display:inline-block; font-size:12px; padding:3px 10px; border-radius:999px; background:var(--chip); color:var(--ink);}
+.chip.ng{background:var(--warn-soft); color:var(--warn); font-weight:700;}
+.chip.ok{background:var(--okbg); color:var(--ok); font-weight:700;}
+/* progress */
+.pbar{height:10px; background:var(--chip); border-radius:999px; overflow:hidden;}
+.pbar>div{height:100%; background:var(--accent); border-radius:999px; transition:width .3s;}
+@media (prefers-reduced-motion: reduce){ .pbar>div{transition:none;} }
+.pnum{font-variant-numeric:tabular-nums;}
+/* detail sheet */
+.overlay{position:fixed; inset:0; background:rgba(16,12,24,.45); z-index:40; display:flex; align-items:flex-end; justify-content:center;}
+.sheet{background:var(--surface); width:100%; max-width:720px; max-height:88vh; border-radius:14px 14px 0 0; padding:16px 16px 24px; overflow-y:auto;}
+.sheet h3{font-size:16px; margin-bottom:4px;}
+.steps{margin:6px 0 0; padding-left:1.5em;}
+.steps li{margin-bottom:8px; font-size:14px;}
+.warnbox{background:var(--warn-soft); border-radius:8px; padding:9px 12px; font-size:13px; margin-top:10px; color:var(--ink);}
+.warnbox b{color:var(--warn);}
+.depbox{background:var(--okbg); border-radius:8px; padding:9px 12px; font-size:13px; margin-top:8px;}
+.toolchips{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;}
+.f-row{margin:12px 0;}
+.f-row .lbl{font-size:12.5px; color:var(--muted); font-weight:700; letter-spacing:.05em; margin-bottom:5px;}
+.seg{display:flex; flex-wrap:wrap; gap:6px;}
+.seg button{padding:6px 12px; font-size:13px; border:1px solid var(--line); background:var(--surface);}
+.seg button.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent); font-weight:700;}
+/* before/after photos */
+.ba{display:flex; gap:10px; margin-top:6px;}
+.ba .slot{flex:1; text-align:center;}
+.ba .slot .cap{font-size:11.5px; color:var(--muted); margin-bottom:3px;}
+.ba img{width:100%; max-width:150px; aspect-ratio:1; object-fit:cover; border-radius:10px; border:1px solid var(--line);}
+.ba button{width:100%; max-width:150px; aspect-ratio:1; border:1.5px dashed var(--line); border-radius:10px; background:none; color:var(--muted); font-size:12.5px;}
+/* plan */
+.weekcard{border-left:4px solid var(--line); padding-left:10px; margin-bottom:12px;}
+.weekcard.now{border-left-color:var(--accent);}
+.weekcard .wt{font-weight:700; font-size:14px;}
+.notice{background:var(--warn-soft); border-radius:8px; padding:10px 12px; font-size:13.5px; margin-bottom:10px;}
+/* shopping */
+.shop-item{display:flex; align-items:center; gap:10px; padding:8px 2px; border-bottom:1px solid var(--line);}
+.shop-item:last-child{border-bottom:none;}
+.shop-item input[type=checkbox]{width:20px; height:20px; accent-color:var(--accent);}
+.shop-item.done .nm2{text-decoration:line-through; color:var(--muted);}
+details{margin-top:8px;}
+details summary{cursor:pointer; font-size:13.5px; padding:4px 0; font-weight:600;}
+.article h4{font-size:14px; margin:12px 0 4px;}
+.article p,.article li{font-size:13.5px;}
+.article ul,.article ol{padding-left:1.4em;}
+</style>
+
+<div id="app">
+  <header class="top"><h1>そうじナビ</h1><span class="sub" id="hSub"></span><span class="dot" id="syncDot"></span></header>
+  <main>
+    <section id="tab-find"></section>
+    <section id="tab-check" hidden></section>
+    <section id="tab-plan" hidden></section>
+    <section id="tab-know" hidden></section>
+    <section id="tab-settings" hidden></section>
+  </main>
+</div>
+<nav class="tabs"><div class="inner">
+  <button data-tab="find" class="on"><span class="ic">🔍</span>調べる</button>
+  <button data-tab="check"><span class="ic">✅</span>チェック</button>
+  <button data-tab="plan"><span class="ic">📅</span>計画</button>
+  <button data-tab="know"><span class="ic">💡</span>知識</button>
+  <button data-tab="settings"><span class="ic">⚙️</span>設定</button>
+</div></nav>
+<div id="modal"></div>
+<input type="file" id="photoInput" accept="image/*" hidden>
+
+<script>
+"use strict";
+/* ============ 汚れ図鑑(退去掃除・敷金の現実ライン) ============
+   pr: 立会いで見られやすさ(3=最重要) / time: 目安分 / phase: early=週前半(つけ置き・カビ系), mid, late=最終週(ほこり・仕上げ)
+   danger: "cl"=塩素系, "ac"=酸性 (混ぜるな危険の警告表示) */
+const PLACES=["キッチン","風呂","洗面所","トイレ","部屋(壁・床)","窓・ベランダ","玄関・収納"];
+const ST=[
+ {id:"k1",place:"キッチン",name:"コンロ周りのベトベト油",look:"茶色くベタベタ・ヌルヌルする",pr:3,time:30,phase:"early",
+  tools:["セスキ炭酸ソーダスプレー","キッチンペーパー","ゴム手袋","スポンジ","マイクロファイバークロス"],
+  steps:["窓を開けて換気し、ゴム手袋をつける","セスキスプレーを汚れに直接たっぷり吹きかける","上からキッチンペーパーを貼り付けて10分待つ(湿布にすると汚れがゆるむ)","ペーパーごと拭き取り、残りをスポンジでこする","水拭き→乾いた布で仕上げ拭き"],
+  danger:"",dep:"油汚れは「掃除を怠った汚れ」として借主負担になりやすい代表格。ここは頑張りどころ!"},
+ {id:"k2",place:"キッチン",name:"換気扇・レンジフードの固まった油",look:"茶色く固まってカチカチ/ホコリと混ざってベタベタ",pr:3,time:60,phase:"early",
+  tools:["セスキ炭酸ソーダ(粉)","大きめゴミ袋かバケツ","ゴム手袋","古歯ブラシ","キッチンペーパー"],
+  steps:["ゴム手袋をつけ、フィルターや羽根(シロッコファン)を外す(ネジ式が多い。外し方は機種名で検索)","シンクにゴミ袋を広げ、40〜50℃のお湯にセスキを大さじ3ほど溶かす","部品を入れて30分〜1時間つけ置き","古歯ブラシでこすって油を落とす","水で流してよく乾かしてから戻す"],
+  danger:"",dep:"換気扇は立会いで必ず見られる場所。分解が怖ければ表面とフィルターだけでも"},
+ {id:"k3",place:"キッチン",name:"シンクの白いくもり(水垢)",look:"白いウロコ状・ザラザラ",pr:2,time:20,phase:"mid",
+  tools:["クエン酸スプレー","キッチンペーパー","スポンジ","マイクロファイバークロス"],
+  steps:["クエン酸スプレーをシンク全体に吹きかける","キッチンペーパーを貼って30分パック","スポンジでこすって水で流す","乾いた布で拭き上げると水垢がつきにくい"],
+  danger:"ac",dep:"ピカピカのシンクは印象UP。仕上げの乾拭きが効く"},
+ {id:"k4",place:"キッチン",name:"シンクのぬめり・排水口",look:"ヌルヌル・黒ずみ・におい",pr:2,time:15,phase:"late",
+  tools:["塩素系漂白剤(キッチンハイター等)","ゴム手袋","古歯ブラシ"],
+  steps:["ゴム手袋をつけ、換気扇を回す","ゴミ受けのゴミを取り、塩素系漂白剤を吹きかけて5分待つ","古歯ブラシでこすり、水でよく流す"],
+  danger:"cl",dep:"においの元。退去直前にもう一度やると◎"},
+ {id:"k5",place:"キッチン",name:"魚焼きグリル・コンロの五徳",look:"黒い焦げつき",pr:2,time:40,phase:"early",
+  tools:["重曹(粉)","ゴミ袋かバケツ","ゴム手袋","古歯ブラシ","スポンジ"],
+  steps:["40〜50℃のお湯に重曹を大さじ3溶かす","五徳・網を入れて1時間つけ置き","浮いた焦げを古歯ブラシでこする","落ちない焦げは重曹ペースト(重曹+少量の水)を塗って30分置いてこする"],
+  danger:"",dep:"焦げつきも借主負担になりやすい。つけ置きなら放置でOKなのでラク"},
+ {id:"k6",place:"キッチン",name:"冷蔵庫まわり・家電裏のほこり",look:"黒ずんだほこり・ベタつき",pr:1,time:20,phase:"late",
+  tools:["フローリングワイパー","ウェットシート","中性洗剤(ウタマロ等)"],
+  steps:["冷蔵庫・レンジ台を少し動かす(引っ越しで動かすタイミングでもOK)","ワイパーやシートでほこりを取る","ベタつきは中性洗剤を薄めて拭き、水拭きで仕上げ"],
+  danger:"",dep:"引っ越しで家具を出した後に見える場所。最終週でOK"},
+ {id:"b1",place:"風呂",name:"ゴムパッキン・目地の黒カビ",look:"黒い点々・スジ状の黒ずみ",pr:3,time:40,phase:"early",
+  tools:["塩素系カビ取り剤(カビキラー等)","ラップ","キッチンペーパー","ゴム手袋","マスク"],
+  steps:["換気扇を回し、ゴム手袋とマスクをつける(できればメガネも)","カビに直接スプレーし、キッチンペーパー+ラップで覆う(湿布)","30分〜1時間待つ(頑固なら数時間)","シャワーの水でよく流す。残ったら繰り返す","目より上には直接スプレーせず、スポンジにつけて塗る"],
+  danger:"cl",dep:"カビは借主負担になりやすい代表格。1回で落ちなくても数日かけて繰り返せばかなり薄くなる"},
+ {id:"b2",place:"風呂",name:"鏡の白いウロコ(水垢)",look:"白い輪じみ・くもりで顔が映らない",pr:2,time:30,phase:"mid",
+  tools:["クエン酸スプレー","キッチンペーパー","ラップ","ダイヤモンドパッド(100均)"],
+  steps:["クエン酸スプレーを鏡全体に吹きかける","キッチンペーパー+ラップで1時間パック","ラップを丸めたものでこすって流す","残るウロコはダイヤモンドパッドを水に濡らして優しくこする(強くこすると傷がつくので注意)"],
+  danger:"ac",dep:"完璧を目指さなくてOK。パッと見きれいなら十分"},
+ {id:"b3",place:"風呂",name:"浴槽のザラつき・湯垢",look:"喫水線の輪じみ・ザラザラ",pr:2,time:20,phase:"mid",
+  tools:["風呂用中性洗剤","スポンジ","クエン酸スプレー"],
+  steps:["浴槽全体を風呂用洗剤とスポンジでこすり洗い","ザラつきが残る所はクエン酸スプレー→30分置いてこする","水で流して完了"],
+  danger:"ac",dep:"ふだんの洗剤で落ちる範囲で十分"},
+ {id:"b4",place:"風呂",name:"蛇口・シャワーヘッドの白い塊",look:"白くガリガリした塊",pr:2,time:30,phase:"mid",
+  tools:["クエン酸","ビニール袋","輪ゴム","古歯ブラシ"],
+  steps:["ビニール袋にお湯とクエン酸小さじ2を入れる","蛇口やシャワーヘッドに袋をかぶせて輪ゴムで留め、1時間つけ置き","古歯ブラシでこすって流す"],
+  danger:"ac",dep:"金具がピカピカだと全体の印象が良くなるコスパの高い箇所"},
+ {id:"b5",place:"風呂",name:"排水口の髪・ぬめり",look:"髪の毛・ピンクや黒のぬめり",pr:2,time:10,phase:"late",
+  tools:["ゴム手袋","塩素系カビ取り剤","古歯ブラシ","ゴミ袋"],
+  steps:["ゴム手袋で髪の毛やゴミを取り、袋に捨てる","部品を外して塩素系スプレーをかけ、5分待つ","古歯ブラシでこすり、水でよく流す"],
+  danger:"cl",dep:"退去直前にもう一度サッとやると◎"},
+ {id:"b6",place:"風呂",name:"天井・壁の全体ふき",look:"うっすらピンク・黒ずみ",pr:1,time:20,phase:"late",
+  tools:["フローリングワイパー","キッチンペーパーかドライシート","消毒用エタノール(あれば)"],
+  steps:["ワイパーにペーパーをつけ、薄めた浴室洗剤かエタノールを軽く含ませる","天井→壁の順に拭く(液だれに注意、目に入らないよう真下に立たない)","乾いたペーパーで仕上げ拭き"],
+  danger:"",dep:"見た目に効く割にすぐ終わる"},
+ {id:"s1",place:"洗面所",name:"洗面ボウルの黄ばみ・水垢",look:"うっすら黄ばみ・蛇口まわりの白い汚れ",pr:2,time:15,phase:"mid",
+  tools:["クエン酸スプレー","メラミンスポンジ","クロス"],
+  steps:["クエン酸スプレーをボウル全体に吹きかけ10分待つ","メラミンスポンジでこする(蛇口まわりも)","水で流して乾拭き"],
+  danger:"ac",dep:"毎日見る場所なので立会いでも目につきやすい"},
+ {id:"s2",place:"洗面所",name:"洗濯機置き場・防水パンのほこり",look:"ほこり+髪の毛のかたまり",pr:1,time:15,phase:"late",
+  tools:["ハンディワイパーか掃除機","ウェットシート"],
+  steps:["洗濯機を運び出した後(または隙間から)ほこりを掃除機で吸う","ウェットシートで拭く","排水口のゴミも取っておく"],
+  danger:"",dep:"洗濯機を動かした後でOK。引っ越し当日でも間に合う"},
+ {id:"t1",place:"トイレ",name:"便器フチ裏の黄ばみ・尿石",look:"フチ裏の黄色〜茶色のこびりつき・におい",pr:3,time:30,phase:"early",
+  tools:["酸性トイレ洗剤(サンポール等)","トイレットペーパー","ゴム手袋","トイレブラシ"],
+  steps:["ゴム手袋をつけ、換気する","フチ裏に酸性洗剤をかけ、トイレットペーパーを貼って湿布","30分〜1時間待つ","ブラシでこすって流す。頑固なら数日繰り返す"],
+  danger:"ac",dep:"においの元は尿石。ここが落ちるとトイレ全体の印象が変わる"},
+ {id:"t2",place:"トイレ",name:"便器の黒ずみ(水たまりの輪)",look:"水面の高さに黒い輪じみ",pr:2,time:15,phase:"mid",
+  tools:["塩素系トイレ洗剤(トイレハイター等)","トイレブラシ"],
+  steps:["塩素系洗剤を黒ずみにかけて10分待つ","ブラシでこすって流す","※酸性洗剤(サンポール)と同じ日に使わない"],
+  danger:"cl",dep:"つけて待つだけでだいたい落ちる"},
+ {id:"t3",place:"トイレ",name:"床・壁・便器外側の黄ばみ",look:"便器まわりの床や壁の黄ばみ・におい",pr:2,time:15,phase:"mid",
+  tools:["クエン酸スプレー","トイレシート","ゴム手袋"],
+  steps:["クエン酸スプレーを床・壁の腰の高さまで吹きかける","トイレシートで拭き取る(飛び散りは意外と壁に多い)","便器の外側・タンクも拭く"],
+  danger:"ac",dep:"におい対策に一番効く場所"},
+ {id:"h1",place:"部屋(壁・床)",name:"壁紙の黒ずみ・手垢",look:"スイッチまわり・ドアノブ周辺の黒ずみ",pr:2,time:20,phase:"mid",
+  tools:["セスキ炭酸ソーダスプレー(薄め)","マイクロファイバークロス","メラミンスポンジ"],
+  steps:["セスキスプレーをクロスに吹きかける(壁に直接かけない。シミ防止)","黒ずみを優しく拭く","落ちない所はメラミンスポンジを軽く。強くこすると壁紙の柄が消えるので注意","水拭きで洗剤分を取る"],
+  danger:"",dep:"日焼けによる変色は経年劣化なので落とせなくてOK(知識タブ参照)"},
+ {id:"h2",place:"部屋(壁・床)",name:"キッチン近くの壁のベタつき・ヤニ",look:"黄ばみ・ベタベタする壁",pr:2,time:30,phase:"mid",
+  tools:["セスキ炭酸ソーダスプレー","キッチンペーパー","クロス"],
+  steps:["セスキをクロスに含ませて拭く","ひどい所はペーパー湿布を5分","上から下へ拭くとタレ跡がつきにくい","水拭きで仕上げ"],
+  danger:"",dep:"タバコのヤニ汚れは借主負担になりやすいので、吸っていた場合は特に念入りに"},
+ {id:"h3",place:"部屋(壁・床)",name:"フローリングのベタつき・黒ずみ",look:"素足の跡・食べこぼしのシミ",pr:2,time:30,phase:"late",
+  tools:["フローリング用ウェットシート","中性洗剤(ウタマロ等)","クロス"],
+  steps:["掃除機かワイパーでほこりを取る","ウェットシートで全体を拭く","ベタつく所は中性洗剤を薄めた水で固く絞ったクロスで拭く","乾拭きで仕上げ(水分残りは床を傷める)"],
+  danger:"",dep:"家具のへこみ跡は経年劣化なので気にしなくてOK"},
+ {id:"h4",place:"部屋(壁・床)",name:"巾木・ドア枠・照明のほこり",look:"白い縁にたまった黒いほこり",pr:1,time:20,phase:"late",
+  tools:["ハンディワイパー","ウェットシート"],
+  steps:["部屋の上(照明・カーテンレール)から下(巾木)の順にほこりを取る","黒ずみはウェットシートで拭く"],
+  danger:"",dep:"地味だが立会いの人は結構見ている"},
+ {id:"h5",place:"部屋(壁・床)",name:"エアコンのフィルターほこり",look:"フィルターの灰色のほこり・吹き出し口の黒い点",pr:2,time:20,phase:"mid",
+  tools:["掃除機","中性洗剤","古歯ブラシ"],
+  steps:["電源を切ってフロントパネルを開け、フィルターを外す","掃除機で表からほこりを吸う","汚れがひどければ水洗いして完全に乾かして戻す","吹き出し口の見える範囲を固く絞ったクロスで拭く(内部の分解は業者領域)"],
+  danger:"",dep:"内部クリーニングまでは借主の義務ではないことが多い。フィルターだけで十分"},
+ {id:"w1",place:"窓・ベランダ",name:"窓ガラス・サッシの黒ずみ",look:"ガラスのくもり・レールの黒い泥ほこり",pr:2,time:30,phase:"late",
+  tools:["ガラス用洗剤か水+クロス2枚","古歯ブラシ","ウェットシート"],
+  steps:["サッシのレールのゴミを古歯ブラシでかき出し、シートで拭く","ガラスは濡れクロスで拭いてから乾いたクロスで拭くとスジが残らない","くもりの日にやるとスジが見えやすくてきれいに仕上がる"],
+  danger:"",dep:"結露カビがゴムにあればカビ取り剤を湿布(風呂と同じやり方)"},
+ {id:"w2",place:"窓・ベランダ",name:"網戸のほこり",look:"網が灰色・触ると手が汚れる",pr:1,time:20,phase:"late",
+  tools:["フローリングワイパー+ウェットシート","または掃除機"],
+  steps:["網戸を外さず、ウェットシートをつけたワイパーで内側から拭く","反対側も同様に","ひどければ外してシャワーで洗う"],
+  danger:"",dep:"ほどほどでOK"},
+ {id:"w3",place:"窓・ベランダ",name:"ベランダの土ぼこり・鳥フン",look:"土ぼこり・黒ずみ・フン跡",pr:1,time:20,phase:"late",
+  tools:["ほうき","ちりとり","デッキブラシか古雑巾","水"],
+  steps:["ゴミと土ぼこりをほうきで掃く","フン跡は水をかけてふやかし、古雑巾で拭く(乾いたまま削らない)","排水溝のゴミを取る"],
+  danger:"",dep:"私物を全部撤去しておくことが一番大事"},
+ {id:"g1",place:"玄関・収納",name:"玄関たたきの黒ずみ",look:"靴跡・泥の黒ずみ",pr:1,time:15,phase:"late",
+  tools:["ほうき","ブラシ","中性洗剤","古雑巾"],
+  steps:["砂ぼこりを掃く","水+中性洗剤でブラシ洗い(水が流せない玄関は固く絞った雑巾で)","乾拭きして完了"],
+  danger:"",dep:"第一印象の場所。最後にサッとやるだけで見違える"},
+ {id:"g2",place:"玄関・収納",name:"下駄箱・収納内のほこり・におい",look:"棚のほこり・砂・カビ臭",pr:1,time:15,phase:"late",
+  tools:["ハンディワイパー","ウェットシート","消毒用エタノール(あれば)"],
+  steps:["中身を全部出してほこりと砂を取る","ウェットシートで棚板を拭く","カビ臭があればエタノールを含ませたクロスで拭いて乾かす"],
+  danger:"",dep:"収納の中も立会いで開けられることが多い"}
+];
+const STMAP={}; ST.forEach(s=>STMAP[s.id]=s);
+const PHASE_LABEL={early:"前半(つけ置き・カビ・油)",mid:"中盤(水回り・壁)",late:"最終週(ほこり・床・仕上げ)"};
+
+/* ============ 知識記事 ============ */
+const ARTICLES=[
+ {t:"敷金と原状回復の基本 — やらなくていい掃除",b:`<p>国土交通省の「原状回復ガイドライン」では、<b>普通に生活してできた汚れ・傷み(経年劣化・通常損耗)は大家さん負担</b>、<b>掃除をサボってできた汚れや不注意の傷は借主負担</b>と整理されています。</p>
+ <h4>気にしなくてよいもの(大家さん負担)</h4>
+ <ul><li>日焼けによる壁紙・床の変色</li><li>家具を置いていた床のへこみ・設置跡</li><li>画鋲・ピンの穴(ポスター等の通常の範囲)</li><li>テレビ・冷蔵庫の後ろの壁の黒ずみ(電気ヤケ)</li><li>設備の寿命による故障</li></ul>
+ <h4>掃除しておくべきもの(借主負担になりやすい)</h4>
+ <ul><li>キッチンの油汚れ・すす</li><li>風呂・洗面のカビ、水垢(掃除を怠ったと判断されやすい)</li><li>トイレの黄ばみ・尿石</li><li>タバコのヤニ・におい</li><li>結露を放置してできたカビ・シミ</li></ul>
+ <p>つまり<b>「油・カビ・水垢・ヤニ」に集中するのが敷金の現実ライン</b>。このアプリの★が多い箇所ほど優先です。</p>`},
+ {t:"混ぜるな危険 — 洗剤の超基本",b:`<ul>
+ <li><b>塩素系(カビキラー・ハイター類)と酸性(サンポール・クエン酸)は絶対に混ぜない</b>。有毒ガスが出ます。</li>
+ <li>同じ場所で使いたいときは<b>日を分ける</b>か、間によく水で流して時間を空ける。</li>
+ <li>塩素系を使うときは必ず<b>換気+ゴム手袋</b>、できればマスクとメガネ。目より上にスプレーしない。</li>
+ <li>迷ったら「中性洗剤(ウタマロ等)」が一番安全。まず中性で試すのが基本。</li></ul>`},
+ {t:"そろえる道具は7つだけ(100均・ドラッグストアでOK)",b:`<ol>
+ <li><b>セスキ炭酸ソーダ</b>(スプレー) — 油・手垢・ヤニのアルカリ担当</li>
+ <li><b>クエン酸</b>(スプレー) — 水垢・尿石・石鹸カスの酸性担当</li>
+ <li><b>塩素系カビ取り剤</b> — 黒カビ専用</li>
+ <li><b>中性洗剤</b>(ウタマロクリーナー等) — 迷ったらこれ</li>
+ <li><b>メラミンスポンジ</b> — 黒ずみ消し(壁紙・くもり鏡には優しく)</li>
+ <li><b>ゴム手袋・マスク</b> — 手荒れ防止と安全</li>
+ <li><b>マイクロファイバークロス数枚+古歯ブラシ</b> — 拭き上げとスキマ</li></ol>
+ <p>「汚れが酸性(油・手垢)ならアルカリで、アルカリ性(水垢・尿石)なら酸で中和する」— これだけ覚えれば十分です。</p>`},
+ {t:"退去立会いの心得",b:`<ul>
+ <li>掃除の<b>ビフォー/アフター写真</b>を残しておく(このアプリの📷機能)。「入居時からあった傷」の主張にも写真が効く。</li>
+ <li>賃貸契約書の<b>「クリーニング特約」</b>を確認。特約でクリーニング代が決まっている場合、過度な掃除をしても金額は変わらないことが多い。</li>
+ <li>立会いでは<b>その場でサインを急がない</b>。納得できない請求は「ガイドラインを確認したい」と持ち帰ってOK。</li>
+ <li>私物・ゴミを完全に撤去しておくことが最優先(残置物は処分費を請求される)。</li></ul>`},
+ {t:"プロに頼む・あきらめる判断",b:`<ul>
+ <li><b>エアコン内部</b>(送風ファンの奥のカビ)、<b>換気扇の完全分解</b>は無理せず業者かそのままでOK。壊すと逆に高くつく。</li>
+ <li>何年も蓄積した風呂の黒カビが1〜2回で落ちなくても、<b>数日おきに湿布を繰り返す</b>と薄くなる。それでも残る分は仕方なし。</li>
+ <li>壁紙の中まで染みたシミ・カビは表面掃除では落ちない。無理にこすって壁紙を破らない方が損しない。</li></ul>`}
+];
+
+/* ============ 状態 ============ */
+const KEY="souji-v1";
+const $=s=>document.querySelector(s);
+function esc(s){ return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function thumbBtn(src,cap,act){ return `<div class="slot"><div class="cap">${cap}</div>${src?`<img src="${esc(src)}" alt="${cap}の写真" data-photo="${act}">`:`<button data-photo="${act}">📷 撮る/選ぶ</button>`}</div>`; }
+function fmtDate(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function parseDate(s){ const [y,m,dd]=s.split("-").map(Number); return new Date(y,m-1,dd); }
+
+let S=load();
+function load(){
+  try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON.parse(raw); if(s&&s.settings) return s; } }catch(e){}
+  return { settings:{cfg:null, rid:null},
+           local:{meta:{names:{a:"夫",b:"妻"},due:""}, items:{}, tools:{}}, mirror:null };
+}
+let saveFailWarned=false;
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch(e){ if(!saveFailWarned){ saveFailWarned=true;
+    alert("端末内の保存容量がいっぱいで、変更を保存できませんでした。写真を減らしてください。"); } }
+}
+let ROOM=S.local, fbRef=null, connected=false;
+const syncOn=()=>!!(S.settings.cfg && S.settings.rid);
+function names(){ const n=(ROOM.meta&&ROOM.meta.names)||{}; return {a:n.a||"夫", b:n.b||"妻"}; }
+function itemState(id){ return (ROOM.items&&ROOM.items[id])||{}; }
+function due(){ return (ROOM.meta&&ROOM.meta.due)||""; }
+function mutate(pathArr,val){
+  if(syncOn()&&fbRef){ fbRef.child(pathArr.join("/")).set(val===undefined?null:val); }
+  else{
+    let o=ROOM;
+    for(let i=0;i<pathArr.length-1;i++){ const k=pathArr[i]; if(typeof o[k]!=="object"||o[k]===null) o[k]={}; o=o[k]; }
+    const last=pathArr[pathArr.length-1];
+    if(val===null||val===undefined) delete o[last]; else o[last]=val;
+    save(); render();
+  }
+}
+/* ---- Firebase(他アプリと同じ仕組み) ---- */
+function loadFirebaseSdk(cb){
+  if(window.firebase&&firebase.database){ cb(); return; }
+  const s1=document.createElement("script");
+  s1.src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js";
+  s1.onload=()=>{ const s2=document.createElement("script");
+    s2.src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js";
+    s2.onload=cb; s2.onerror=()=>setStatus(false); document.head.appendChild(s2); };
+  s1.onerror=()=>setStatus(false);
+  document.head.appendChild(s1);
+}
+function connect(){
+  if(!syncOn()) return;
+  loadFirebaseSdk(()=>{
+    try{
+      if(!firebase.apps.length) firebase.initializeApp(S.settings.cfg);
+      const db=firebase.database();
+      fbRef=db.ref("souji/"+S.settings.rid);
+      fbRef.on("value",snap=>{ ROOM=snap.val()||{}; if(!ROOM.meta) ROOM.meta={names:{a:"夫",b:"妻"},due:""};
+        S.mirror=ROOM; save(); render(); });
+      db.ref(".info/connected").on("value",s=>{ connected=!!s.val(); setStatus(connected); });
+    }catch(e){ alert("同期の接続に失敗しました: "+e.message); }
+  });
+}
+function setStatus(on){
+  const d=$("#syncDot"); if(!d) return;
+  d.className="dot"+(on?" on":"");
+  d.title=syncOn()?(on?"同期中":"オフライン"):"同期未設定(この端末のみ)";
+}
+function parseConfig(text){
+  const cfg={}; const re=/["']?(\w+)["']?\s*:\s*["']([^"']+)["']/g; let m;
+  while((m=re.exec(text))) cfg[m[1]]=m[2];
+  if(!cfg.apiKey||!cfg.projectId) return null;
+  if(!cfg.databaseURL){ const u=text.match(/https:\/\/[\w.-]+firebasedatabase\.app/); if(u) cfg.databaseURL=u[0]; else return {noDb:true}; }
+  return {cfg};
+}
+function inviteCode(){ return btoa(unescape(encodeURIComponent(JSON.stringify({app:"souji", c:S.settings.cfg, r:S.settings.rid})))); }
+
+/* ============ 写真(端末内で縮小保存) ============ */
+function fileToThumb(file, max){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const sc=Math.min(1, max/Math.max(img.width,img.height));
+      const cv=document.createElement("canvas");
+      cv.width=Math.max(1,Math.round(img.width*sc)); cv.height=Math.max(1,Math.round(img.height*sc));
+      cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);
+      URL.revokeObjectURL(img.src);
+      resolve(cv.toDataURL("image/jpeg",0.65));
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(img.src); reject(new Error("画像を読み込めませんでした")); };
+    img.src=URL.createObjectURL(file);
+  });
+}
+let photoTarget=null; // {id, slot:"bphoto"|"aphoto"}
+function pickPhoto(id,slot){ photoTarget={id,slot}; $("#photoInput").click(); }
+$("#photoInput").addEventListener("change", async e=>{
+  const f=e.target.files[0]; e.target.value="";
+  const target=photoTarget; photoTarget=null;
+  if(!f||!target) return;
+  try{
+    const url=await fileToThumb(f, 480);
+    mutate(["items",target.id,target.slot],url);
+    setTimeout(()=>openDetail(target.id),100);
+  }catch(err){ alert(err.message||"写真を読み込めませんでした"); }
+});
+
+/* ============ 進捗ヘルパー ============ */
+function activeStains(){ return ST.filter(s=>!itemState(s.id).skip); }
+function doneCount(list){ return list.filter(s=>itemState(s.id).done).length; }
+function stars(n){ return "★".repeat(n)+"☆".repeat(3-n); }
+
+/* ============ 調べる ============ */
+function renderFind(){
+  const el=$("#tab-find");
+  const place=el.dataset.place||PLACES[0];
+  const q=el.dataset.q||"";
+  let list = q ? ST.filter(s=>s.name.includes(q)||s.look.includes(q)||s.place.includes(q))
+               : ST.filter(s=>s.place===place);
+  let html=`<div class="card">
+    <input type="text" id="findQ" placeholder="汚れの見た目で検索(例: 黒い、ベタベタ、白い塊)" value="${esc(q)}" style="width:100%">
+  </div>`;
+  if(!q){
+    html+=`<div class="placebar">${PLACES.map(p=>`<button data-place="${esc(p)}" class="${p===place?"on":""}">${esc(p)}</button>`).join("")}</div>`;
+  }
+  html+=`<div class="card">`;
+  if(!list.length) html+=`<p class="small">見つかりませんでした。場所タブから探してみてください。</p>`;
+  list.forEach(s=>{
+    const st=itemState(s.id);
+    html+=`<div class="stain ${st.done?"done":""} ${st.skip?"skipped":""}">
+      <button class="nm" data-open="${s.id}">
+        <div class="t">${esc(s.name)} ${st.done?"✅":""}</div>
+        <div class="s"><span class="star">${stars(s.pr)}</span> ${esc(s.look)} / 約${s.time}分</div>
+      </button>
+    </div>`;
+  });
+  html+=`</div><p class="small">★が多いほど退去立会いで見られやすい箇所。名前をタップすると落とし方が出ます。</p>`;
+  el.innerHTML=html;
+  $("#findQ").oninput=e=>{ el.dataset.q=e.target.value; renderFind(); const i=$("#findQ"); i.focus(); i.setSelectionRange(i.value.length,i.value.length); };
+  el.querySelectorAll("[data-place]").forEach(b=>b.onclick=()=>{ el.dataset.place=b.dataset.place; renderFind(); });
+  el.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openDetail(b.dataset.open));
+}
+
+/* ============ 詳細シート ============ */
+function openDetail(id){
+  const s=STMAP[id]; if(!s) return;
+  const st=itemState(id);
+  const n=names();
+  const m=$("#modal");
+  const dangerBox = s.danger==="cl" ? `<div class="warnbox"><b>⚠ 塩素系を使います:</b> 酸性のもの(クエン酸・サンポール等)と絶対に併用しない(有毒ガス)。必ず換気+ゴム手袋。目より上に直接スプレーしない。</div>`
+                  : s.danger==="ac" ? `<div class="warnbox"><b>⚠ 酸性を使います:</b> 塩素系(カビキラー・ハイター等)と絶対に併用しない(有毒ガス)。同じ場所で使うなら日を分ける。</div>` : "";
+  m.innerHTML=`<div class="overlay" id="ov"><div class="sheet">
+    <h3>${esc(s.name)}</h3>
+    <p class="small"><span class="star">${stars(s.pr)}</span> ${esc(s.place)} / 目安 ${s.time}分 / ${PHASE_LABEL[s.phase]}</p>
+    <div class="f-row"><div class="lbl">用意するもの</div>
+      <div class="toolchips">${s.tools.map(t=>`<span class="chip">${esc(t)}</span>`).join("")}</div></div>
+    <div class="f-row"><div class="lbl">手順</div>
+      <ol class="steps">${s.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol></div>
+    ${dangerBox}
+    ${s.dep?`<div class="depbox">💰 ${esc(s.dep)}</div>`:""}
+    <div class="f-row"><div class="lbl">ビフォー / アフター写真(立会いの味方)</div>
+      <div class="ba">${thumbBtn(st.bphoto,"そうじ前","b")}${thumbBtn(st.aphoto,"そうじ後","a")}</div></div>
+    <div class="f-row"><div class="lbl">担当</div><div class="seg" id="dWho">
+      <button data-w="" class="${!st.who?"on":""}">なし</button>
+      <button data-w="a" class="${st.who==="a"?"on":""}">${esc(n.a)}</button>
+      <button data-w="b" class="${st.who==="b"?"on":""}">${esc(n.b)}</button>
+      <button data-w="ab" class="${st.who==="ab"?"on":""}">2人</button>
+    </div></div>
+    <div class="row" style="margin-top:6px">
+      <button class="primary grow" id="dDone">${st.done?"↩ 未完了に戻す":"✅ 完了にする"}</button>
+      <button class="ghost" id="dSkip">${st.skip?"対象に戻す":"うちには無い"}</button>
+      <button id="dClose">閉じる</button>
+    </div>
+  </div></div>`;
+  m.querySelectorAll("#dWho button").forEach(b=>b.onclick=()=>{
+    mutate(["items",id,"who"],b.dataset.w||null);
+    m.querySelectorAll("#dWho button").forEach(x=>x.classList.toggle("on",x===b));
+  });
+  m.querySelectorAll("[data-photo]").forEach(b=>b.onclick=()=>pickPhoto(id, b.dataset.photo==="b"?"bphoto":"aphoto"));
+  $("#dDone").onclick=()=>{ mutate(["items",id,"done"],!st.done); m.innerHTML=""; };
+  $("#dSkip").onclick=()=>{ mutate(["items",id,"skip"],!st.skip||null); m.innerHTML=""; };
+  $("#dClose").onclick=()=>m.innerHTML="";
+  $("#ov").onclick=e=>{ if(e.target.id==="ov") m.innerHTML=""; };
+}
+
+/* ============ チェック(進捗) ============ */
+function renderCheck(){
+  const el=$("#tab-check");
+  const act=activeStains();
+  const dn=doneCount(act);
+  const pct=act.length?Math.round(dn/act.length*100):0;
+  let html=`<div class="card">
+    <div class="row"><b class="grow">全体の進捗</b><span class="pnum">${dn} / ${act.length} (${pct}%)</span></div>
+    <div class="pbar" style="margin-top:6px"><div style="width:${pct}%"></div></div>
+  </div>`;
+  PLACES.forEach(p=>{
+    const items=ST.filter(s=>s.place===p);
+    const actP=items.filter(s=>!itemState(s.id).skip);
+    const dnP=doneCount(actP);
+    html+=`<h2>${esc(p)} <span class="small pnum">${dnP}/${actP.length}</span></h2><div class="card">`;
+    items.forEach(s=>{
+      const st=itemState(s.id);
+      html+=`<div class="stain ${st.done?"done":""} ${st.skip?"skipped":""}">
+        <input type="checkbox" data-done="${s.id}" ${st.done?"checked":""} ${st.skip?"disabled":""}>
+        <button class="nm" data-open="${s.id}">
+          <div class="t">${esc(s.name)}${st.skip?"(対象外)":""}</div>
+          <div class="s"><span class="star">${stars(s.pr)}</span> 約${s.time}分 ${st.bphoto||st.aphoto?"📷":""}</div>
+        </button>
+        ${st.who?`<span class="who ${st.who}"></span>`:""}
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  el.innerHTML=html;
+  el.querySelectorAll("[data-done]").forEach(c=>c.onchange=()=>mutate(["items",c.dataset.done,"done"],c.checked||null));
+  el.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openDetail(b.dataset.open));
+}
+
+/* ============ 計画 ============ */
+function weekPlan(){
+  const d=due(); if(!d) return null;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const dueD=parseDate(d);
+  const daysLeft=Math.ceil((dueD-today)/86400000);
+  const weeks=Math.max(1, Math.ceil(daysLeft/7));
+  const plan=Array.from({length:weeks},()=>[]);
+  activeStains().forEach(s=>{
+    let w;
+    if(weeks===1) w=0;
+    else if(s.phase==="early") w=0;
+    else if(s.phase==="late") w=weeks-1;
+    else w=Math.min(1, weeks-1);
+    plan[w].push(s);
+  });
+  // 中盤が多すぎるときは空いている週に分散
+  if(weeks>=4){
+    const mid=plan[1];
+    if(mid.length>10){
+      const half=Math.ceil(mid.length/2);
+      plan[2]=mid.slice(half).concat(plan[2]);
+      plan[1]=mid.slice(0,half);
+    }
+  }
+  const curWeek=Math.min(weeks-1, Math.max(0, Math.floor((today-addWeeks(dueD,-weeks))/(7*86400000))));
+  return {daysLeft, weeks, plan, curWeek};
+}
+function addWeeks(d,n){ const x=new Date(d); x.setDate(x.getDate()+n*7); return x; }
+function renderPlan(){
+  const el=$("#tab-plan");
+  const d=due();
+  let html=`<div class="card"><div class="row">
+    <label class="small grow">退去日(立会い日)
+      <input type="date" id="dueInput" value="${esc(d)}" style="width:100%"></label>
+    <button id="dueSave" class="primary">保存</button>
+  </div></div>`;
+  const wp=weekPlan();
+  if(!wp){
+    html+=`<div class="card"><p class="small">退去日を入れると、残り週数に合わせて「今週やること」を自動で組みます。落ちにくいカビ・油(つけ置き系)を先に、ほこり・床の仕上げを最終週に配置します。</p></div>`;
+  } else if(wp.daysLeft<0){
+    html+=`<div class="notice">退去日を過ぎています。日付を確認してください。</div>`;
+  } else {
+    html+=`<div class="card"><p>退去まで <b class="pnum">あと${wp.daysLeft}日</b>(残り${wp.weeks}週)</p></div>`;
+    // 遅れチェック
+    const behind=[];
+    wp.plan.forEach((list,i)=>{ if(i<wp.curWeek) list.forEach(s=>{ if(!itemState(s.id).done) behind.push(s); }); });
+    if(behind.length) html+=`<div class="notice">⚠ 予定より遅れています(${behind.length}件): ${behind.slice(0,5).map(s=>esc(s.name)).join("、")}${behind.length>5?" ほか":""}。今週に回しましょう。</div>`;
+    wp.plan.forEach((list,i)=>{
+      const dnW=list.filter(s=>itemState(s.id).done).length;
+      html+=`<div class="card weekcard ${i===wp.curWeek?"now":""}">
+        <div class="wt">${i===wp.curWeek?"📍 今週":"第"+(i+1)+"週"} <span class="small pnum">${dnW}/${list.length}</span></div>`;
+      if(!list.length) html+=`<p class="small">予備週(遅れた分をここで)</p>`;
+      list.forEach(s=>{
+        const st=itemState(s.id);
+        html+=`<div class="stain ${st.done?"done":""}">
+          <input type="checkbox" data-done="${s.id}" ${st.done?"checked":""}>
+          <button class="nm" data-open="${s.id}"><div class="t">${esc(s.name)}</div>
+          <div class="s">${esc(s.place)} / 約${s.time}分</div></button>
+        </div>`;
+      });
+      html+=`</div>`;
+    });
+  }
+  /* 道具の買い物リスト */
+  const needTools=new Map();
+  activeStains().filter(s=>!itemState(s.id).done).forEach(s=>s.tools.forEach(t=>{
+    const base=t.replace(/(スプレー|\(粉\)|\(あれば\)|\(100均\)|等\)|\(.*?\))/g,"").trim()||t;
+    if(!needTools.has(base)) needTools.set(base,t);
+  }));
+  const haveMap=(ROOM.tools)||{};
+  html+=`<h2>必要な道具・洗剤(残りの掃除ぶん)</h2><div class="card">
+    <p class="small" style="margin-bottom:4px">だいたい100均・ドラッグストアで揃います。持っているものにチェック。</p>`;
+  [...needTools.keys()].sort().forEach(t=>{
+    const havek=t;
+    html+=`<div class="shop-item ${haveMap[havek]?"done":""}">
+      <input type="checkbox" data-tool="${esc(havek)}" ${haveMap[havek]?"checked":""}>
+      <span class="nm2 grow">${esc(t)}</span></div>`;
+  });
+  html+=`<button class="ghost" id="toolCopy" style="margin-top:8px;width:100%">📋 未購入分をテキストでコピー</button></div>`;
+
+  el.innerHTML=html;
+  $("#dueSave").onclick=()=>{ mutate(["meta","due"],$("#dueInput").value||null); };
+  el.querySelectorAll("[data-done]").forEach(c=>c.onchange=()=>mutate(["items",c.dataset.done,"done"],c.checked||null));
+  el.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openDetail(b.dataset.open));
+  el.querySelectorAll("[data-tool]").forEach(c=>c.onchange=()=>mutate(["tools",c.dataset.tool],c.checked||null));
+  $("#toolCopy").onclick=()=>{
+    const t="【そうじの買い物リスト】\n"+[...needTools.keys()].sort().filter(k=>!haveMap[k]).map(k=>"・"+k).join("\n");
+    copyText(t,$("#toolCopy"),"✅ コピーしました");
+  };
+}
+
+/* ============ 知識 ============ */
+function renderKnow(){
+  const el=$("#tab-know");
+  el.innerHTML=`<p class="small" style="margin-bottom:8px">頑張りすぎて損しないための知識です。</p>`+
+    ARTICLES.map((a,i)=>`<div class="card article"><details ${i===0?"open":""}><summary>${esc(a.t)}</summary>${a.b}</details></div>`).join("");
+}
+
+/* ============ 設定 ============ */
+function renderSettings(){
+  const el=$("#tab-settings");
+  const n=names(); const sync=syncOn();
+  el.innerHTML=`
+  <div class="card">
+    <h2 style="margin-top:0">ふたりの名前(担当表示用)</h2>
+    <div class="row">
+      <span class="who a"></span><input type="text" id="nameA" value="${esc(n.a)}" style="width:110px">
+      <span class="who b"></span><input type="text" id="nameB" value="${esc(n.b)}" style="width:110px">
+      <button id="nameSave">保存</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2 style="margin-top:0">夫婦で同期 ${sync?`<span class="chip ${connected?"ok":""}">${connected?"接続OK":"オフライン"}</span>`:`<span class="chip">未設定</span>`}</h2>
+    ${sync?`
+      <p class="small">同期は有効です。もう1台では下の招待コードを「招待コードで参加」に貼り付けてください。</p>
+      <div class="row" style="margin-top:8px">
+        <button id="btnInvite" class="primary">📋 招待コードをコピー</button>
+        <button id="btnUnsync" class="ghost" style="color:var(--warn)">同期を解除</button>
+      </div>
+    `:`
+      <p class="small">「きょうのやること」等で作ったFirebaseがあれば、<b>同じconfigを貼るだけ</b>で使い回せます(データは別の場所に保存されます)。初めて作る場合のルール設定は「きょうのやること」の設定タブの手順書を参照してください。</p>
+      <div class="f-row" style="margin-top:10px"><div class="lbl">Firebaseの構成(config)を貼り付け</div>
+        <textarea id="cfgArea" placeholder='firebaseConfig をまるごと貼り付け'></textarea>
+      </div>
+      <div class="row"><button class="primary" id="btnNewRoom">同期を開始</button></div>
+      <div class="f-row" style="margin-top:12px"><div class="lbl">もう1台のスマホはこちら</div>
+        <textarea id="joinArea" placeholder="1台目でコピーした招待コードを貼り付け" style="min-height:70px"></textarea>
+        <button id="btnJoin" style="margin-top:6px">招待コードで参加</button>
+      </div>
+    `}
+  </div>
+  <div class="card">
+    <h2 style="margin-top:0">データ</h2>
+    <div class="row">
+      <button id="btnExport" class="ghost">書き出す(コピー)</button>
+      <button id="btnImport" class="ghost">貼り付けて読み込む</button>
+      <button id="btnReset" class="ghost" style="color:var(--warn)">全データ初期化</button>
+    </div>
+    <textarea id="ioArea" placeholder="書き出し結果 / 読み込み時はここに貼り付け" style="margin-top:8px"></textarea>
+  </div>`;
+  $("#nameSave").onclick=()=>{ mutate(["meta","names"],{a:$("#nameA").value.trim()||"夫", b:$("#nameB").value.trim()||"妻"}); if(!syncOn()) renderSettings(); };
+  if(sync){
+    $("#btnInvite").onclick=()=>copyText(inviteCode(), $("#btnInvite"), "✅ コピーしました(相手に送る)");
+    $("#btnUnsync").onclick=()=>{
+      if(!confirm("同期を解除しますか?(データはFirebase側に残ります)")) return;
+      if(fbRef){ fbRef.off(); fbRef=null; }
+      S.settings.cfg=null; S.settings.rid=null; connected=false; ROOM=S.local; save(); render();
+    };
+  }else{
+    $("#btnNewRoom").onclick=()=>{
+      const p=parseConfig($("#cfgArea").value);
+      if(!p){ alert("構成(config)を読み取れませんでした。firebaseConfig 全体を貼り付けてください。"); return; }
+      if(p.noDb){ alert("databaseURL が見つかりません。Realtime Database作成後のconfigを貼ってください。"); return; }
+      S.settings.cfg=p.cfg;
+      S.settings.rid="j"+Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);
+      save();
+      const seed=JSON.parse(JSON.stringify(S.local));
+      loadFirebaseSdk(()=>{
+        try{
+          if(!firebase.apps.length) firebase.initializeApp(S.settings.cfg);
+          firebase.database().ref("souji/"+S.settings.rid).update(seed).then(()=>{
+            connect(); alert("同期を開始しました。招待コードをコピーして相手に送ってください。"); render();
+          }).catch(e=>alert("書き込みに失敗しました: "+e.message));
+        }catch(e){ alert("接続に失敗しました: "+e.message); }
+      });
+    };
+    $("#btnJoin").onclick=()=>{
+      try{
+        const o=JSON.parse(decodeURIComponent(escape(atob($("#joinArea").value.trim()))));
+        if(!o.c||!o.r) throw 0;
+        if(o.app && o.app!=="souji"){ alert("これは別のアプリの招待コードのようです。"); return; }
+        S.settings.cfg=o.c; S.settings.rid=o.r; save(); connect();
+        alert("参加しました。数秒で同期されます。"); render();
+      }catch(e){ alert("招待コードを読み取れませんでした。"); }
+    };
+  }
+  $("#btnExport").onclick=()=>{
+    const t=JSON.stringify({local:syncOn()?ROOM:S.local});
+    $("#ioArea").value=t; copyText(t,$("#btnExport"),"✅ コピーしました");
+  };
+  $("#btnImport").onclick=()=>{
+    try{
+      const o=JSON.parse($("#ioArea").value); if(!o.local) throw 0;
+      if(syncOn()){ alert("同期中は読み込みできません。先に同期を解除してください。"); return; }
+      S.local=o.local; ROOM=S.local; save(); render(); alert("読み込みました");
+    }catch(e){ alert("読み込めませんでした。"); }
+  };
+  $("#btnReset").onclick=()=>{
+    if(confirm("この端末のデータと設定をすべて消します。よろしいですか?")){
+      localStorage.removeItem(KEY); location.reload();
+    }
+  };
+}
+
+function copyText(t,btn,doneLabel,after){
+  const ok=()=>{ if(btn) btn.textContent=doneLabel; if(after) setTimeout(after,1200); };
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(ok).catch(()=>fb()); } else fb();
+  function fb(){ const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); ok(); }catch(e){ alert("コピーできませんでした"); } ta.remove(); }
+}
+
+/* ============ タブ・起動 ============ */
+let tab="find";
+document.querySelectorAll("nav.tabs button").forEach(b=>{
+  b.addEventListener("click",()=>{ tab=b.dataset.tab; render(); });
+});
+function render(){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
+  ["find","check","plan","know","settings"].forEach(t=>{ $("#tab-"+t).hidden=(t!==tab); });
+  if(tab==="find") renderFind();
+  if(tab==="check") renderCheck();
+  if(tab==="plan") renderPlan();
+  if(tab==="know") renderKnow();
+  if(tab==="settings") renderSettings();
+  const act=activeStains();
+  $("#hSub").textContent=`${doneCount(act)}/${act.length} 完了`;
+  setStatus(connected);
+}
+if(syncOn()){ if(S.mirror) ROOM=S.mirror; connect(); }
+else ROOM=S.local;
+render();
+</script>
+<script>
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
+</script>
+</body>
+</html>
