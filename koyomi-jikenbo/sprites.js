@@ -11,10 +11,10 @@
  * ひなた画像/ひなた_カンファレンスシート.png は複数アングルの設定資料であり単体スプライトではないため未使用。
  *
  * 2026-07-15(2): オーナー指摘「キャラ画像が反映されていない箇所がある」に対応。
- * koyomi_smile(シナリオ最頻出17回)・koyomi_serious(7回)は、こよみ画像/に該当表情が
- * 未提供のためimg未設定のままだった(名前ラベルのみのプレースホルダ表示になっていた)。
- * advisor相談のうえ、正式な差分絵を用意してもらうまでの暫定措置として近い表情を仮流用する
- * (smile←normal、serious←think)。正式な smile/serious 差分が届き次第、下のimgを差し替えること。
+ * koyomi_smile(シナリオ最頻出17回)・koyomi_serious(7回)は当時未提供のため暫定流用にしていた。
+ * 2026-07-15(3): オーナーが正式差分(こよみ画像/こよみ_笑顔.png・こよみ_真剣.png)を生成。
+ * 肌のハイライトが背景白とほぼ同色(色距離7未満)でremove_bg.py標準処理では手が欠けたため、
+ * 幾何連結ベースの透過処理(tools/remove_bg.py --geometric)で変換しassetsへ配置、暫定流用を解消。
  */
 var SPRITES = {
   chars: {
@@ -26,8 +26,8 @@ var SPRITES = {
   // 表情ID → { char, label, img? }
   faces: {
     koyomi_normal:  { char: "koyomi", label: "", img: "assets/koyomi_normal.png" },
-    koyomi_smile:   { char: "koyomi", label: "", img: "assets/koyomi_normal.png" },  // 暫定: 正式な微笑み差分待ち
-    koyomi_serious: { char: "koyomi", label: "", img: "assets/koyomi_think.png" },   // 暫定: 正式な真剣差分待ち
+    koyomi_smile:   { char: "koyomi", label: "", img: "assets/koyomi_smile.png" },
+    koyomi_serious: { char: "koyomi", label: "", img: "assets/koyomi_serious.png" },
     koyomi_think:   { char: "koyomi", label: "", img: "assets/koyomi_think.png" },
     koyomi_sad:     { char: "koyomi", label: "", img: "assets/koyomi_sad.png" },
     hinata_worried: { char: "hinata", label: "", img: "assets/hinata_worried.png" },
