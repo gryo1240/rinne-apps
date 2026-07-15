@@ -711,7 +711,7 @@ function renderSettings(){
         <button id="btnUnsync" class="ghost" style="color:var(--warn)">同期を解除</button>
       </div>
     `:`
-      <p class="small">「きょうのやること」で作ったFirebaseがあれば、<b>同じconfigを貼るだけ</b>で使い回せます(データは別の場所に保存されます)。初めて作る場合のルール設定は「きょうのやること」の設定タブの手順書を参照してください。</p>
+      <p class="small">「きょうのやること」「そうじナビ」等で作ったFirebaseがあれば、<b>同じconfigを貼るだけ</b>で使い回せます(データは同じプロジェクト内の別の場所に保存されます)。</p>
       <div class="f-row" style="margin-top:10px"><div class="lbl">Firebaseの構成(config)を貼り付け</div>
         <textarea id="cfgArea" placeholder='firebaseConfig をまるごと貼り付け'></textarea>
       </div>
@@ -720,6 +720,25 @@ function renderSettings(){
         <textarea id="joinArea" placeholder="1台目でコピーした招待コードを貼り付け" style="min-height:70px"></textarea>
         <button id="btnJoin" style="margin-top:6px">招待コードで参加</button>
       </div>
+      <!-- FIREBASE-SETUP-GUIDE v2026-07-15: yarukoto/sentaku/souji 3アプリで内容同一。変更時は3ファイルとも同期すること -->
+      <details><summary>Firebaseの設定のしかた(初めての場合・約10分)</summary>
+        <ol style="padding-left:1.4em;font-size:13px;margin-top:6px">
+          <li>console.firebase.google.com を開き、Googleアカウントでログイン</li>
+          <li>「プロジェクトを作成」→ 名前は何でもOK(例: sentaku)→ アナリティクスはオフでOK</li>
+          <li>左メニューの「構築」→「Realtime Database」→「データベースを作成」→ ロケーションはそのまま →「テストモードで開始」</li>
+          <li>「ルール」タブを開き、中身を次の内容にそっくり置き換えて「公開」を押す:<br>
+<code style="display:block;white-space:pre-wrap;font-size:11px;background:var(--chip);border-radius:6px;padding:6px;margin-top:4px">{ "rules": {
+  "rooms":  { "$rid": { ".read": true, ".write": true } },
+  "closet": { "$rid": { ".read": true, ".write": true } },
+  "souji":  { "$rid": { ".read": true, ".write": true } }
+} }</code>
+<span class="small">ルームID(招待コードに入っている長いランダムな文字列)を知っている家族だけが読み書きできる設定です。一覧をのぞくことはできません。「きょうのやること」「そうじナビ」と同じプロジェクトを使い回せます</span></li>
+          <li>⚙(プロジェクトの設定)→「マイアプリ」→ ウェブ(&lt;/&gt;)を追加 → 表示される firebaseConfig をまるごとコピー</li>
+          <li>このアプリの上の欄に貼り付けて「同期を開始」→ 出てきた招待コードを相手に送る</li>
+        </ol>
+        <p class="small">※データは自分のFirebase(無料枠)に保存されます。ルームIDが実質のパスワードなので、招待コードは家族以外に送らないでください。</p>
+      </details>
+      <!-- /FIREBASE-SETUP-GUIDE -->
     `) : `
       <p class="small">夫婦・家族でクローゼットを共有できる同期機能を準備中です。今のところは、この端末だけでご利用いただけます。</p>
     `}

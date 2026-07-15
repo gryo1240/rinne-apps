@@ -641,6 +641,7 @@ function renderSettings(){
         <textarea id="joinArea" placeholder="1台目でコピーした招待コードを貼り付け" style="min-height:70px"></textarea>
         <button id="btnJoin" style="margin-top:6px">招待コードで参加</button>
       </div>
+      <!-- FIREBASE-SETUP-GUIDE v2026-07-15: yarukoto/sentaku/souji 3アプリで内容同一。変更時は3ファイルとも同期すること -->
       <details><summary>Firebaseの設定のしかた(1台目・約10分)</summary>
         <ol style="padding-left:1.4em;font-size:13px;margin-top:6px">
           <li>console.firebase.google.com を開き、Googleアカウントでログイン</li>
@@ -658,6 +659,7 @@ function renderSettings(){
         </ol>
         <p class="small">※データは自分のFirebase(無料枠)に保存されます。ルームIDが実質のパスワードなので、招待コードは家族以外に送らないでください。</p>
       </details>
+      <!-- /FIREBASE-SETUP-GUIDE -->
     `) : `
       <p class="small">夫婦・家族で同じリストを共有できる同期機能を準備中です。もうしばらくお待ちください。今のところは、この端末だけでご利用いただけます。</p>
     `}
