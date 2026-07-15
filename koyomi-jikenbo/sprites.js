@@ -15,6 +15,13 @@
  * 2026-07-15(3): オーナーが正式差分(こよみ画像/こよみ_笑顔.png・こよみ_真剣.png)を生成。
  * 肌のハイライトが背景白とほぼ同色(色距離7未満)でremove_bg.py標準処理では手が欠けたため、
  * 幾何連結ベースの透過処理(tools/remove_bg.py --geometric)で変換しassetsへ配置、暫定流用を解消。
+ * 2026-07-15(4): オーナーがあかり(あかり画像/akari_normal.png・akari_cry.png)を追加生成、任意キャラの
+ * akari_normal/akari_cryを新規に組み込んだ(以前はプレースホルダのみ)。akari_normalは既に透過済みで
+ * そのまま使用、akari_cryは背景が不均一なグラデーション(色距離ベースの自動透過が困難)だったため
+ * ポーズがほぼ同一なakari_normalのアルファチャンネルを転用(市松合成で境界のズレ無しを確認)。
+ * akari.side="left"(hinataと同じ)のため、koyomi/hinataの慣例(左向き原画→中央=右向きへ反転)に
+ * 合わせて2枚とも左右反転して保存。原画の向きが実際に左だったかは未確認のため、実際のゲーム画面で
+ * 不自然に見えたら反転を戻すこと。
  */
 var SPRITES = {
   chars: {
@@ -35,8 +42,8 @@ var SPRITES = {
     hinata_surprise:{ char: "hinata", label: "", img: "assets/hinata_surprise.png" },
     hinata_talk:    { char: "hinata", label: "", img: "assets/hinata_talk.png" },
     hinata_smile:   { char: "hinata", label: "", img: "assets/hinata_smile.png" },
-    akari_normal:   { char: "akari",  label: "" },
-    akari_cry:      { char: "akari",  label: "" }
+    akari_normal:   { char: "akari",  label: "", img: "assets/akari_normal.png" },
+    akari_cry:      { char: "akari",  label: "", img: "assets/akari_cry.png" }
   },
   // 背景ID → CSS背景（プレースホルダ。画像化する場合もここを差し替え）
   bgs: {
