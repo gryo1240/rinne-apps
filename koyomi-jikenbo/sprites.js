@@ -30,6 +30,11 @@
  * ため、end_true_letter(母の手紙)にakari_normal・end_true_04(号泣→笑う場面)にakari_cryのみ設定し、
  * 前後のend_true_03/05はnullのまま(ステージ掃除役)として残した。こよみ・ひなたの残像が別シーンに
  * 持ち越される描画バグを避けるための最小変更。NORMALエンド側は同種の構造だが今回はスコープ外(要判断ならオーナー確認)。
+ *
+ * 2026-07-17: こよみ(全身フルショット)がひなた(バストアップ)より顔が小さく見えるサイズ感不一致を修正。
+ * tools/koyomi_bustup_crop.py でキャンバス上部55%をバストアップ相当に切り出して再拡大した
+ * *_bustup.png を新規生成し、こちらを参照するよう差し替えた。オーナー指示により既存のassets/koyomi_*.png
+ * (全身フルショット原版)は上書きせずそのまま温存している(未参照だが将来別用途で使う可能性を残す)。
  */
 var SPRITES = {
   chars: {
@@ -40,11 +45,11 @@ var SPRITES = {
   },
   // 表情ID → { char, label, img? }
   faces: {
-    koyomi_normal:  { char: "koyomi", label: "", img: "assets/koyomi_normal.png" },
-    koyomi_smile:   { char: "koyomi", label: "", img: "assets/koyomi_smile.png" },
-    koyomi_serious: { char: "koyomi", label: "", img: "assets/koyomi_serious.png" },
-    koyomi_think:   { char: "koyomi", label: "", img: "assets/koyomi_think.png" },
-    koyomi_sad:     { char: "koyomi", label: "", img: "assets/koyomi_sad.png" },
+    koyomi_normal:  { char: "koyomi", label: "", img: "assets/koyomi_normal_bustup.png" },
+    koyomi_smile:   { char: "koyomi", label: "", img: "assets/koyomi_smile_bustup.png" },
+    koyomi_serious: { char: "koyomi", label: "", img: "assets/koyomi_serious_bustup.png" },
+    koyomi_think:   { char: "koyomi", label: "", img: "assets/koyomi_think_bustup.png" },
+    koyomi_sad:     { char: "koyomi", label: "", img: "assets/koyomi_sad_bustup.png" },
     hinata_worried: { char: "hinata", label: "", img: "assets/hinata_worried.png" },
     hinata_cry:     { char: "hinata", label: "", img: "assets/hinata_cry.png" },
     hinata_surprise:{ char: "hinata", label: "", img: "assets/hinata_surprise.png" },
