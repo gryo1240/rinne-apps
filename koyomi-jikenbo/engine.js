@@ -7,6 +7,8 @@
 (function () {
   var KEY_RUN = "koyomi-jikenbo:run", KEY_META = "koyomi-jikenbo:meta";
   var $ = function (id) { return document.getElementById(id); };
+  // audio.js読み込み失敗時もノベル本体を止めないためのno-opフォールバック（BGMは無くてもよい機能）
+  var AUDIO = window.AUDIO || { prepare:function(){}, startOnGesture:function(){}, toggleMute:function(){return false;}, isMuted:function(){return false;}, suspend:function(){}, resume:function(){} };
 
   // ===== 保存 =====
   function loadMeta() {
@@ -216,10 +218,10 @@
   });
 
   // タイトル
-  $("btnNew").addEventListener("click", function () { startAt(SCENARIO.meta.startId); });
-  $("btnContinue").addEventListener("click", function () { var s = loadRun(); if (s && !s.cleared) resume(s); });
-  $("btnChapter").addEventListener("click", function () { var cs = LOGIC.chapterStart(SCENARIO, "act2"); startAt(cs.nodeId, cs.flags); });
-  $("btnHidden").addEventListener("click", function () { startAt(SCENARIO.meta.hiddenStartId); });
+  $("btnNew").addEventListener("click", function () { AUDIO.startOnGesture(); startAt(SCENARIO.meta.startId); });
+  $("btnContinue").addEventListener("click", function () { AUDIO.startOnGesture(); var s = loadRun(); if (s && !s.cleared) resume(s); });
+  $("btnChapter").addEventListener("click", function () { AUDIO.startOnGesture(); var cs = LOGIC.chapterStart(SCENARIO, "act2"); startAt(cs.nodeId, cs.flags); });
+  $("btnHidden").addEventListener("click", function () { AUDIO.startOnGesture(); startAt(SCENARIO.meta.hiddenStartId); });
 
   // メニュー
   $("btnLog").addEventListener("click", openLog);
@@ -242,7 +244,21 @@
 
   // 複数タブ: 復帰時にmetaを読み直す（既読・回収の最新化）
   window.addEventListener("focus", function () { meta = loadMeta(); });
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) meta = loadMeta(); });
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) { meta = loadMeta(); AUDIO.resume(); }
+    else { AUDIO.suspend(); }
+  });
+
+  // 音量ボタン（全画面共通・タイトルの操作を待たずフェッチだけ先行開始）
+  function refreshSoundBtn() {
+    var b = $("btnSound");
+    var on = !AUDIO.isMuted();
+    b.textContent = on ? "音 ON" : "音 OFF";
+    b.classList.toggle("on", on);
+  }
+  $("btnSound").addEventListener("click", function () { AUDIO.toggleMute(); refreshSoundBtn(); });
+  refreshSoundBtn();
+  AUDIO.prepare();
 
   // 起動
   refreshTitle();
