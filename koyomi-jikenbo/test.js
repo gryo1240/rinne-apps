@@ -128,6 +128,14 @@ eq("気づき0→truth_none", L.resolve(S, "act3_truth_branch", L.newFlags()).id
   ok("隠しエントリからHIDDEN到達", v.kind === "end" && v.end === "HIDDEN");
 })();
 
+// ===== 7.5) letterフィールドがresolveで透過される（手紙演出のUI判定はノードIDではなくこのフィールドで行う） =====
+(function () {
+  var v = L.resolve(S, "end_true_letter", L.newFlags());
+  ok("end_true_letterはletter:trueで解決される", v.kind === "text" && v.letter === true);
+  var v2 = L.resolve(S, "act1_02", L.newFlags());
+  ok("通常ノードはletter:false", v2.kind === "text" && v2.letter === false);
+})();
+
 // ===== 8) スキップ: 未読は停止・既読は継続・選択肢では停止 =====
 (function () {
   var read = {}; read["act1_02"] = true;

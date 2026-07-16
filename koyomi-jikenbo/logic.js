@@ -51,7 +51,7 @@ var LOGIC = (function () {
       }
       if (node.type === "text") {
         return { kind: "text", id: node.id, speaker: node.speaker || "", sprite: node.sprite || null,
-                 bg: node.bg || null, text: node.text, next: node.next };
+                 bg: node.bg || null, text: node.text, next: node.next, letter: !!node.letter };
       }
       if (node.type === "choice") {
         var opts = [];

@@ -32,15 +32,24 @@
  * 持ち越される描画バグを避けるための最小変更。NORMALエンド側は同種の構造だが今回はスコープ外(要判断ならオーナー確認)。
  *
  * 2026-07-17: こよみ(全身フルショット)がひなた(バストアップ)より顔が小さく見えるサイズ感不一致を修正。
- * tools/koyomi_bustup_crop.py でキャンバス上部55%をバストアップ相当に切り出して再拡大した
+ * tools/koyomi_bustup_crop.py でキャンバス上部をバストアップ相当に切り出して再拡大した
  * *_bustup.png を新規生成し、こちらを参照するよう差し替えた。オーナー指示により既存のassets/koyomi_*.png
  * (全身フルショット原版)は上書きせずそのまま温存している(未参照だが将来別用途で使う可能性を残す)。
+ * 同日、オーナー指摘「こよみが大きすぎる」を受けCROP_RATIOを0.55→0.6111(倍率-10%)に変更し再生成。
+ *
+ * 2026-07-17(2): オーナー指示でakariをside="left"→"right"に変更(koyomiと同じ側)。
+ * 2026-07-15(4)の反転(左配置前提で中央=右向きに反転済み)を前提にside だけ変えると画面外(右)を向いて
+ * しまうため、akari_normal_right.png/akari_cry_right.pngとして再反転(=原画の向きに戻す)した別ファイルを
+ * 新規生成しこちらを参照(オーナー指示により既存のakari_normal.png/akari_cry.pngは上書きしていない)。
+ * 【重要な制約】koyomiもside="right"のため、akariとkoyomiは同一スロットを取り合い同時表示できない
+ * (renderSpriteは1ノード1立ち絵・対面演出は前ノードの反対側dim描画に依存する設計のため)。将来
+ * akari×koyomiの対話シーンを書く場合はsideの再検討かengineの複数立ち絵対応が必要(advisor指摘)。
  */
 var SPRITES = {
   chars: {
     koyomi: { name: "宵乃こよみ", color: "#c9a6e8", side: "right" },
     hinata: { name: "ひなた",   color: "#e8c07a", side: "left" },
-    akari:  { name: "あかり",   color: "#86c0ac", side: "left" },
+    akari:  { name: "あかり",   color: "#86c0ac", side: "right" },
     mother: { name: "母",       color: "#d8a6a6", side: "left" }
   },
   // 表情ID → { char, label, img? }
@@ -55,8 +64,8 @@ var SPRITES = {
     hinata_surprise:{ char: "hinata", label: "", img: "assets/hinata_surprise.png" },
     hinata_talk:    { char: "hinata", label: "", img: "assets/hinata_talk.png" },
     hinata_smile:   { char: "hinata", label: "", img: "assets/hinata_smile.png" },
-    akari_normal:   { char: "akari",  label: "", img: "assets/akari_normal.png" },
-    akari_cry:      { char: "akari",  label: "", img: "assets/akari_cry.png" }
+    akari_normal:   { char: "akari",  label: "", img: "assets/akari_normal_right.png" },
+    akari_cry:      { char: "akari",  label: "", img: "assets/akari_cry_right.png" }
   },
   // 背景ID → CSS背景（プレースホルダ。画像化する場合もここを差し替え）
   bgs: {

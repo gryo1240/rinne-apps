@@ -10,22 +10,26 @@
  * 音量差でループ地点にポップ音が出た問題を、ffmpegで始点1.8秒フェードイン+
  * 終端0.35秒フェードアウトを焼き込むことで解消した別ファイル(自動生成・要ffmpeg)。
  * 両端が無音に収束するため、単純な loopStart=0/loopEnd=duration で十分シームレス。
+ *
+ * 2026-07-16: ミュートON/OFFのトグルボタンから、0〜100のスライダーによる音量調整に変更。
  */
 var AUDIO = (function () {
   var KEY_SETTINGS = "koyomi-jikenbo:settings"; // KEY_METAとは別キー(mergeMetaのunionマージ対象にしない)
   var BGM_URL = "assets/bgm_amaoto.mp3";
-  var FADE_SEC = 1.2;
+  var DEFAULT_VOLUME = 0.6;
 
   var ctx = null, gainNode = null, buffer = null, source = null;
-  var muted = loadMuted();
+  var volume = loadVolume();
   var fetchPromise = null, started = false;
 
-  function loadMuted() {
-    try { return JSON.parse(localStorage.getItem(KEY_SETTINGS) || "{}").muted === true; }
-    catch (e) { return false; }
+  function loadVolume() {
+    try {
+      var v = JSON.parse(localStorage.getItem(KEY_SETTINGS) || "{}").volume;
+      return typeof v === "number" && v >= 0 && v <= 1 ? v : DEFAULT_VOLUME;
+    } catch (e) { return DEFAULT_VOLUME; }
   }
-  function saveMuted(v) {
-    try { localStorage.setItem(KEY_SETTINGS, JSON.stringify({ muted: v })); } catch (e) {}
+  function saveVolume(v) {
+    try { localStorage.setItem(KEY_SETTINGS, JSON.stringify({ volume: v })); } catch (e) {}
   }
 
   // ページ読込直後からフェッチ&デコードだけ先行させる(ユーザー操作を待たない)。
@@ -51,7 +55,7 @@ var AUDIO = (function () {
     source.buffer = buffer;
     source.loop = true;
     gainNode = ctx.createGain();
-    gainNode.gain.value = muted ? 0 : 1;
+    gainNode.gain.value = volume;
     source.connect(gainNode).connect(ctx.destination);
     source.start(0);
   }
@@ -67,19 +71,16 @@ var AUDIO = (function () {
     });
   }
 
-  function setMuted(v) {
-    muted = v; saveMuted(v);
-    if (gainNode && ctx) {
-      gainNode.gain.cancelScheduledValues(ctx.currentTime);
-      gainNode.gain.setTargetAtTime(muted ? 0 : 1, ctx.currentTime, FADE_SEC / 4);
-    }
+  function setVolume(v) {
+    volume = Math.max(0, Math.min(1, v));
+    saveVolume(volume);
+    if (gainNode) gainNode.gain.value = volume; // スライダー操作への追従優先(即時反映)
   }
-  function toggleMute() { setMuted(!muted); return muted; }
-  function isMuted() { return muted; }
+  function getVolume() { return volume; }
 
   function suspend() { if (ctx && ctx.state === "running") ctx.suspend(); }
   function resume() { if (ctx && ctx.state === "suspended" && started) ctx.resume(); }
 
-  return { prepare: prepare, startOnGesture: startOnGesture, toggleMute: toggleMute, isMuted: isMuted, suspend: suspend, resume: resume };
+  return { prepare: prepare, startOnGesture: startOnGesture, setVolume: setVolume, getVolume: getVolume, suspend: suspend, resume: resume };
 })();
 if (typeof module !== "undefined") module.exports = AUDIO;

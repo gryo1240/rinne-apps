@@ -8,7 +8,7 @@
   var KEY_RUN = "koyomi-jikenbo:run", KEY_META = "koyomi-jikenbo:meta";
   var $ = function (id) { return document.getElementById(id); };
   // audio.js読み込み失敗時もノベル本体を止めないためのno-opフォールバック（BGMは無くてもよい機能）
-  var AUDIO = window.AUDIO || { prepare:function(){}, startOnGesture:function(){}, toggleMute:function(){return false;}, isMuted:function(){return false;}, suspend:function(){}, resume:function(){} };
+  var AUDIO = window.AUDIO || { prepare:function(){}, startOnGesture:function(){}, setVolume:function(){}, getVolume:function(){return 0.6;}, suspend:function(){}, resume:function(){} };
 
   // ===== 保存 =====
   function loadMeta() {
@@ -112,7 +112,7 @@
   function typeText(t) {
     fullText = t; typing = true;
     var el = $("text");
-    el.classList.toggle("letter", view.speaker === "母の手紙");
+    el.classList.toggle("letter", !!view.letter);
     $("speaker").textContent = view.speaker || "";
     $("advance").style.display = "none";
     clearInterval(typeTimer);
@@ -249,15 +249,10 @@
     else { AUDIO.suspend(); }
   });
 
-  // 音量ボタン（全画面共通・タイトルの操作を待たずフェッチだけ先行開始）
-  function refreshSoundBtn() {
-    var b = $("btnSound");
-    var on = !AUDIO.isMuted();
-    b.textContent = on ? "音 ON" : "音 OFF";
-    b.classList.toggle("on", on);
-  }
-  $("btnSound").addEventListener("click", function () { AUDIO.toggleMute(); refreshSoundBtn(); });
-  refreshSoundBtn();
+  // 音量スライダー（全画面共通・タイトルの操作を待たずフェッチだけ先行開始）
+  var volSlider = $("volSlider");
+  volSlider.value = Math.round(AUDIO.getVolume() * 100);
+  volSlider.addEventListener("input", function () { AUDIO.setVolume(volSlider.value / 100); });
   AUDIO.prepare();
 
   // 起動
