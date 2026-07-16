@@ -44,6 +44,9 @@
  * 【重要な制約】koyomiもside="right"のため、akariとkoyomiは同一スロットを取り合い同時表示できない
  * (renderSpriteは1ノード1立ち絵・対面演出は前ノードの反対側dim描画に依存する設計のため)。将来
  * akari×koyomiの対話シーンを書く場合はsideの再検討かengineの複数立ち絵対応が必要(advisor指摘)。
+ *
+ * 2026-07-17(3): オーナー指摘「ひなたが(こよみ比で)小さい」を受け、ひなた5表情を10%拡大した
+ * *_big.png を tools/sprite_zoom.py --zoom 1.1 で新規生成し参照を差し替え(原版は上書きせず温存)。
  */
 var SPRITES = {
   chars: {
@@ -59,11 +62,11 @@ var SPRITES = {
     koyomi_serious: { char: "koyomi", label: "", img: "assets/koyomi_serious_bustup.png" },
     koyomi_think:   { char: "koyomi", label: "", img: "assets/koyomi_think_bustup.png" },
     koyomi_sad:     { char: "koyomi", label: "", img: "assets/koyomi_sad_bustup.png" },
-    hinata_worried: { char: "hinata", label: "", img: "assets/hinata_worried.png" },
-    hinata_cry:     { char: "hinata", label: "", img: "assets/hinata_cry.png" },
-    hinata_surprise:{ char: "hinata", label: "", img: "assets/hinata_surprise.png" },
-    hinata_talk:    { char: "hinata", label: "", img: "assets/hinata_talk.png" },
-    hinata_smile:   { char: "hinata", label: "", img: "assets/hinata_smile.png" },
+    hinata_worried: { char: "hinata", label: "", img: "assets/hinata_worried_big.png" },
+    hinata_cry:     { char: "hinata", label: "", img: "assets/hinata_cry_big.png" },
+    hinata_surprise:{ char: "hinata", label: "", img: "assets/hinata_surprise_big.png" },
+    hinata_talk:    { char: "hinata", label: "", img: "assets/hinata_talk_big.png" },
+    hinata_smile:   { char: "hinata", label: "", img: "assets/hinata_smile_big.png" },
     akari_normal:   { char: "akari",  label: "", img: "assets/akari_normal_right.png" },
     akari_cry:      { char: "akari",  label: "", img: "assets/akari_cry_right.png" }
   },
