@@ -139,7 +139,16 @@
     var box = $("choices"); box.innerHTML = "";
     $("speaker").textContent = ""; $("text").textContent = ""; $("advance").style.display = "none";
     v.options.forEach(function (o) {
-      var b = document.createElement("button"); b.textContent = o.label;
+      var b = document.createElement("button");
+      // 末尾の「（踏み込む）」等のタグは途中で折り返さず、収まらない時は丸ごと次の行へ落とす
+      var m = /^(.*?)(（[^（）]+）)$/.exec(o.label);
+      if (m) {
+        b.appendChild(document.createTextNode(m[1]));
+        var tag = document.createElement("span"); tag.className = "ctag"; tag.textContent = m[2];
+        b.appendChild(tag);
+      } else {
+        b.textContent = o.label;
+      }
       b.addEventListener("click", function () {
         if (Date.now() < inputLockUntil) return;
         var r = LOGIC.applyChoice(SCENARIO, v.id, run.flags, o.index);

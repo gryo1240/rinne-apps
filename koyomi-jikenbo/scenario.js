@@ -97,7 +97,9 @@ var SCENARIO = {
     act2_topicA_dig2: { id:"act2_topicA_dig2", type:"text", speaker:"宵乃こよみ", sprite:"koyomi_serious", bg:"bg_shop",
       text:"（そっと目を伏せる）……今のお給料と、別の会社の求人。それを、見比べていた。……なるほど。ありがとう、ひなたさん。", next:"act2_topicB_01" },
     act2_topicA_skip: { id:"act2_topicA_skip", type:"text", speaker:"宵乃こよみ", sprite:"koyomi_smile", bg:"bg_shop",
-      text:"お仕事、大変だったのね。……あまり、根を詰めていなければいいけれど。\n（ひなた「はい……たぶん、仕事のことだと思います」）", next:"act2_topicB_01" },
+      text:"お仕事、大変だったのね。……あまり、根を詰めていなければいいけれど。", next:"act2_topicA_skip2" },
+    act2_topicA_skip2: { id:"act2_topicA_skip2", type:"text", speaker:"ひなた", sprite:"hinata_talk", bg:"bg_shop",
+      text:"はい……たぶん、仕事のことだと思います。", next:"act2_topicB_01" },
 
     // 話題B（気づき②）
     act2_topicB_01: { id:"act2_topicB_01", type:"text", speaker:"ひなた", sprite:"hinata_worried", bg:"bg_shop",
@@ -115,7 +117,9 @@ var SCENARIO = {
     act2_topicB_dig4: { id:"act2_topicB_dig4", type:"text", speaker:"宵乃こよみ", sprite:"koyomi_serious", bg:"bg_window_moon",
       text:"（窓の外の月を、ちらりと見る）……大切なものを挟む癖。そして、十六夜の頁の、折り目。……覚えておきますね、ひなたさん。", next:"act2_topicC_01" },
     act2_topicB_skip: { id:"act2_topicB_skip", type:"text", speaker:"宵乃こよみ", sprite:"koyomi_smile", bg:"bg_shop",
-      text:"お母さまは、あなたたちにとって、大切な方だったのね。\n（ひなた「はい。でも、あまり話すと、姉が悲しむので」）", next:"act2_topicC_01" },
+      text:"お母さまは、あなたたちにとって、大切な方だったのね。", next:"act2_topicB_skip2" },
+    act2_topicB_skip2: { id:"act2_topicB_skip2", type:"text", speaker:"ひなた", sprite:"hinata_talk", bg:"bg_shop",
+      text:"はい。でも、あまり話すと、姉が悲しむので。", next:"act2_topicC_01" },
 
     // 話題C（気づき③）
     act2_topicC_01: { id:"act2_topicC_01", type:"text", speaker:"ひなた", sprite:"hinata_worried", bg:"bg_shop",
@@ -129,7 +133,9 @@ var SCENARIO = {
     act2_topicC_dig2: { id:"act2_topicC_dig2", type:"text", speaker:"宵乃こよみ", sprite:"koyomi_smile", bg:"bg_shop",
       text:"（やさしく微笑む）……そう。あなたも、大事なことを、ひとりで抱えていたのね。", next:"act3_intro" },
     act2_topicC_skip: { id:"act2_topicC_skip", type:"text", speaker:"宵乃こよみ", sprite:"koyomi_smile", bg:"bg_shop",
-      text:"そうね。今は、お姉さんのことが心配よね。\n（ひなた「はい。わたしのことは、後でいいんです」）", next:"act3_intro" },
+      text:"そうね。今は、お姉さんのことが心配よね。", next:"act2_topicC_skip2" },
+    act2_topicC_skip2: { id:"act2_topicC_skip2", type:"text", speaker:"ひなた", sprite:"hinata_talk", bg:"bg_shop",
+      text:"はい。わたしのことは、後でいいんです。", next:"act3_intro" },
 
     // ========== 第3幕 真相 ==========
     act3_intro: { id:"act3_intro", type:"text", speaker:"宵乃こよみ", sprite:"koyomi_think", bg:"bg_shop",
@@ -206,11 +212,13 @@ var SCENARIO = {
     end_bad_02: { id:"end_bad_02", type:"text", speaker:"宵乃こよみ", sprite:"koyomi_normal", bg:"bg_shop",
       text:"（少し、間があって）……お姉さんは、あなたを想っています。だから、大丈夫。きっと、うまくいきますよ。", next:"end_bad_03" },
     end_bad_03: { id:"end_bad_03", type:"text", speaker:"ひなた", sprite:null, bg:"bg_black",
-      text:"（ひなた「……そう、ですか。ありがとうございました」）\n家に帰っても、わたしは、何も言えませんでした。\n翌朝、姉は、行ってしまいました。理由も、行き先も、分からないまま。\nお母さんが何を遺したのかも、姉が何を抱えていたのかも——きっと、一生、分からないままです。", next:"end_bad_04" },
+      text:"「……そう、ですか。ありがとうございました」\nそう答えるのが、精いっぱいでした。家に帰っても、わたしは、何も言えませんでした。\n翌朝、姉は、行ってしまいました。理由も、行き先も、分からないまま。\nお母さんが何を遺したのかも、姉が何を抱えていたのかも——きっと、一生、分からないままです。", next:"end_bad_04" },
     end_bad_04: { id:"end_bad_04", type:"text", speaker:"宵乃こよみ", sprite:"koyomi_sad", bg:"bg_shop_dim",
       text:"……わたしは、占い師です。当ててみせることは、できます。\nけれど、いちばん大事なことは、いつも、水晶玉の中にはないんですよ。それは、相手の言葉の中にしか、ない。\n今夜、わたしは——もう一歩だけ、踏み込んで聞くことを、しませんでした。", next:"end_bad_05" },
     end_bad_05: { id:"end_bad_05", type:"text", speaker:"宵乃こよみ", sprite:"koyomi_sad", bg:"bg_shop_dim",
-      text:"あの夜、もう一歩だけ、聞く勇気があれば。……そう悔やむことが、わたしにも、あるんです。ずっと昔に。\n（画面の隅に、そっと文字が浮かぶ——「宵乃こよみには、まだ語られていない夜がある」）", next:"end_bad" },
+      text:"あの夜、もう一歩だけ、聞く勇気があれば。……そう悔やむことが、わたしにも、あるんです。ずっと昔に。", next:"end_bad_06" },
+    end_bad_06: { id:"end_bad_06", type:"text", speaker:"", sprite:null, bg:"bg_shop_dim",
+      text:"——宵乃こよみには、まだ語られていない夜がある。", next:"end_bad" },
     end_bad: { id:"end_bad", type:"end", end:"BAD" },
 
     // ========== 隠し（startからは到達不能。タイトルの解禁ボタンからのみ） ==========

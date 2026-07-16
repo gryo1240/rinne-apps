@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>新NISA取り崩しシミュレーター｜資産はいつまで・いくら使える？</title>
+<meta name="description" content="貯めた資産を毎月取り崩すと何年もつ？を無料でシミュレーション。定額・定率の受け取り方比較、「毎月10万円を30年」に必要な元本の逆算もできます。新NISA対応・登録不要。">
+<meta name="theme-color" content="#f3f6fa">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
+    background: #f3f6fa;
+    color: #26303e;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px 28px; }
+
+  .head { text-align: center; padding: 10px 0 14px; }
+  .head h1 { font-size: 22px; letter-spacing: 0.04em; color: #234e85; }
+  .head h1 .sun { font-size: 20px; }
+  .head p { font-size: 12.5px; color: #5c6a7d; margin-top: 2px; }
+
+  .tabs { display: flex; gap: 8px; margin: 10px 0 14px; }
+  .tab {
+    flex: 1; padding: 10px 6px; font-size: 14px; font-weight: 700;
+    color: #47576b; background: #e4ebf4; border: 1px solid #d2dce9;
+    border-radius: 10px; cursor: pointer; text-align: center;
+    transition: background .15s, color .15s;
+  }
+  .tab.active { background: #2b5c9e; border-color: #2b5c9e; color: #fff; }
+
+  .card {
+    background: #fff; border: 1px solid #e2e9f2; border-radius: 14px;
+    padding: 16px 16px 14px; margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(30, 60, 100, .05);
+  }
+  .card h2 { font-size: 14px; color: #234e85; margin-bottom: 10px; }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 2px; }
+  .field .row { display: flex; align-items: baseline; justify-content: space-between; }
+  .field label { font-size: 13.5px; font-weight: 700; color: #34404f; }
+  .field .val { display: flex; align-items: baseline; gap: 4px; }
+  .field input[type="number"] {
+    width: 96px; padding: 5px 8px; font-size: 16px; font-weight: 700;
+    color: #2b5c9e; text-align: right;
+    border: 1px solid #c9d6e6; border-radius: 8px; background: #fafcfe;
+  }
+  .field .unit { font-size: 13px; color: #5c6a7d; }
+  .field input[type="range"] {
+    width: 100%; margin-top: 8px; accent-color: #2b5c9e; height: 22px;
+  }
+
+  .method { display: flex; gap: 8px; margin-top: 6px; }
+  .method button {
+    flex: 1; padding: 9px 6px; font-size: 13px; font-weight: 700;
+    color: #47576b; background: #eef3f9; border: 1px solid #d2dce9;
+    border-radius: 10px; cursor: pointer; line-height: 1.4;
+  }
+  .method button.active { background: #2b5c9e; border-color: #2b5c9e; color: #fff; }
+  .method button small { display: block; font-size: 10.5px; font-weight: 400; opacity: .85; }
+
+  details.adv { margin-top: 4px; }
+  details.adv summary { cursor: pointer; font-size: 13px; font-weight: 700; color: #46618a; padding: 4px 0; }
+  details.adv .inner { padding-top: 8px; }
+
+  .result { text-align: center; padding-top: 4px; }
+  .result .label { font-size: 13px; color: #5c6a7d; }
+  .result .big { font-size: 32px; font-weight: 800; color: #2b5c9e; letter-spacing: 0.02em; line-height: 1.3; }
+  .result .big small { font-size: 17px; }
+  .result .sub { font-size: 13.5px; color: #34404f; margin-top: 4px; font-weight: 700; }
+  .result .range { font-size: 12px; color: #6a7789; margin-top: 4px; }
+  .stats { display: flex; gap: 8px; margin-top: 12px; }
+  .stat { flex: 1; background: #eef3f9; border-radius: 10px; padding: 8px 4px; text-align: center; }
+  .stat .k { font-size: 11.5px; color: #5c6a7d; }
+  .stat .v { font-size: 15px; font-weight: 700; color: #26303e; }
+  .stat .v.plus { color: #2b6e46; }
+
+  .idea {
+    margin-top: 12px; font-size: 12.5px; color: #4f4a33;
+    background: #faf6e8; border-left: 4px solid #c9a23c; border-radius: 6px;
+    padding: 8px 10px; text-align: left;
+  }
+  .idea strong { color: #6b5010; }
+  .nisa {
+    margin-top: 12px; font-size: 12.5px; color: #33465e;
+    background: #eaf1f9; border-left: 4px solid #2b5c9e; border-radius: 6px;
+    padding: 8px 10px; text-align: left;
+  }
+
+  .chart-box { position: relative; }
+  canvas { width: 100%; height: 240px; display: block; }
+  .legend { display: flex; gap: 16px; justify-content: center; margin-top: 8px; font-size: 12px; color: #47576b; }
+  .legend .lg-bal::before {
+    content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 3px;
+    margin-right: 5px; vertical-align: -1px; background: #3a72c0;
+  }
+
+  details.tbl summary {
+    cursor: pointer; font-size: 13.5px; font-weight: 700; color: #234e85;
+    padding: 4px 0; list-style-position: inside;
+  }
+  .table-scroll { max-height: 320px; overflow-y: auto; margin-top: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { padding: 6px 4px; text-align: right; border-bottom: 1px solid #edf1f7; }
+  th { color: #5c6a7d; font-weight: 700; background: #f6f9fc; position: sticky; top: 0; }
+  th:first-child, td:first-child { text-align: center; }
+
+  .disclaimer {
+    font-size: 11.5px; color: #6a7789; background: #e9eef5;
+    border-radius: 10px; padding: 10px 12px; margin-top: 2px;
+  }
+  .disclaimer strong { color: #47576b; }
+
+  .hidden { display: none; }
+
+  @media (max-width: 430px) {
+    .head h1 { font-size: 19px; }
+    .result .big { font-size: 26px; }
+    .stats { flex-wrap: wrap; }
+    .stat { min-width: 45%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <h1><span class="sun">🌅</span> 新NISA取り崩しシミュレーター</h1>
+    <p>貯めた資産、いつまで・いくら使える？</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" id="tabFwd" type="button">いつまで使える？</button>
+    <button class="tab" id="tabRev" type="button">必要な元本を逆算</button>
+  </div>
+
+  <!-- ===== 順算 ===== -->
+  <section id="paneFwd">
+    <div class="card">
+      <h2>条件を入れてください</h2>
+      <div class="field">
+        <div class="row">
+          <label for="fwP">最初の資産額</label>
+          <span class="val"><input type="number" id="fwP" value="2000" min="1" max="100000" step="10"><span class="unit">万円</span></span>
+        </div>
+        <input type="range" id="fwPR" value="2000" min="100" max="5000" step="50" aria-label="最初の資産額">
+      </div>
+      <div class="field">
+        <label>受け取り方</label>
+        <div class="method">
+          <button type="button" id="mFixed" class="active" aria-pressed="true">定額<small>毎月決まった額</small></button>
+          <button type="button" id="mRate" aria-pressed="false">定率<small>毎年の残高の◯%</small></button>
+        </div>
+      </div>
+      <div class="field" id="fieldAmount">
+        <div class="row">
+          <label for="fwW">毎月受け取る額</label>
+          <span class="val"><input type="number" id="fwW" value="10" min="0.5" max="100" step="0.5"><span class="unit">万円</span></span>
+        </div>
+        <input type="range" id="fwWR" value="10" min="1" max="30" step="0.5" aria-label="毎月受け取る額">
+      </div>
+      <div class="field hidden" id="fieldRate">
+        <div class="row">
+          <label for="fwRt">年間の取り崩し率</label>
+          <span class="val"><input type="number" id="fwRt" value="4" min="0.5" max="20" step="0.5"><span class="unit">%</span></span>
+        </div>
+        <input type="range" id="fwRtR" value="4" min="1" max="10" step="0.5" aria-label="年間の取り崩し率">
+      </div>
+      <div class="field">
+        <div class="row">
+          <label for="fwR">想定利回り（年率）</label>
+          <span class="val"><input type="number" id="fwR" value="3" min="0" max="20" step="0.1"><span class="unit">%</span></span>
+        </div>
+        <input type="range" id="fwRR" value="3" min="0" max="7" step="0.1" aria-label="想定利回り">
+      </div>
+      <details class="adv">
+        <summary>詳細設定（開始年齢・物価対応）</summary>
+        <div class="inner">
+          <div class="field">
+            <div class="row">
+              <label for="fwAge">受け取りを始める年齢</label>
+              <span class="val"><input type="number" id="fwAge" value="65" min="40" max="90" step="1"><span class="unit">歳</span></span>
+            </div>
+            <input type="range" id="fwAgeR" value="65" min="50" max="80" step="1" aria-label="受け取りを始める年齢">
+          </div>
+          <div class="field" id="fieldInc">
+            <div class="row">
+              <label for="fwG">受け取り額を毎年増やす（物価上昇にあわせる）</label>
+              <span class="val"><input type="number" id="fwG" value="0" min="0" max="5" step="0.5"><span class="unit">%</span></span>
+            </div>
+            <input type="range" id="fwGR" value="0" min="0" max="3" step="0.5" aria-label="受け取り額を毎年増やす率">
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <div class="result" aria-live="polite">
+        <div class="label" id="fwLabel">資産が支えてくれる期間</div>
+        <div class="big" id="fwBig">—</div>
+        <div class="sub" id="fwSub"></div>
+        <div class="range" id="fwRange"></div>
+      </div>
+      <div class="stats" id="fwStats"></div>
+      <div class="idea" id="fwIdea"></div>
+      <div class="nisa">🌱 <strong>新NISAなら</strong>売却して受け取るお金に税金がかかりません。課税口座（特定口座など）では売却益に約20%の税金がかかるため、実際に使える額はこの試算より少なくなります。</div>
+    </div>
+
+    <div class="card chart-box">
+      <h2>残高の推移</h2>
+      <canvas id="chart" width="680" height="240" role="img" aria-label="資産残高の推移グラフ（数値は「年ごとの明細を見る」で確認できます）"></canvas>
+      <div class="legend"><span class="lg-bal">資産残高</span></div>
+    </div>
+
+    <div class="card">
+      <details class="tbl">
+        <summary>年ごとの明細を見る</summary>
+        <div class="table-scroll">
+          <table id="tblYear"><thead><tr><th>年</th><th>年初残高</th><th>年間受取</th><th>年末残高</th></tr></thead><tbody></tbody></table>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ===== 逆算 ===== -->
+  <section id="paneRev" class="hidden">
+    <div class="card">
+      <h2>目標から必要な元本を逆算</h2>
+      <div class="field">
+        <div class="row">
+          <label for="rvW">毎月受け取りたい額</label>
+          <span class="val"><input type="number" id="rvW" value="10" min="0.5" max="100" step="0.5"><span class="unit">万円</span></span>
+        </div>
+        <input type="range" id="rvWR" value="10" min="1" max="30" step="0.5" aria-label="毎月受け取りたい額">
+      </div>
+      <div class="field">
+        <div class="row">
+          <label for="rvY">続けたい年数</label>
+          <span class="val"><input type="number" id="rvY" value="30" min="1" max="50" step="1"><span class="unit">年</span></span>
+        </div>
+        <input type="range" id="rvYR" value="30" min="5" max="50" step="1" aria-label="続けたい年数">
+      </div>
+      <div class="field">
+        <div class="row">
+          <label for="rvR">想定利回り（年率）</label>
+          <span class="val"><input type="number" id="rvR" value="3" min="0" max="20" step="0.1"><span class="unit">%</span></span>
+        </div>
+        <input type="range" id="rvRR" value="3" min="0" max="7" step="0.1" aria-label="想定利回り">
+      </div>
+    </div>
+    <div class="card">
+      <div class="result">
+        <div class="label">必要な元本のめやす</div>
+        <div class="big" id="rvBig">—</div>
+        <div class="sub" id="rvSub"></div>
+      </div>
+      <div class="stats" id="rvStats"></div>
+      <div class="nisa">🌱 運用しながら取り崩すと、必要な元本は「受取総額」より少なくて済みます。これが出口でも運用を続ける効果です。</div>
+    </div>
+  </section>
+
+  <div class="disclaimer">
+    <strong>ご注意</strong>: 本ツールは毎年一定の利回りを仮定した<strong>概算シミュレーション</strong>です。実際の運用では価格が変動し、特に取り崩し初期に大きな下落があると、同じ平均利回りでも資産がもつ期間は短くなることがあります。物価上昇を0%のままにすると、将来のお金の価値が今と同じという前提になります。将来の成果を保証するものではなく、特定の金融商品の勧誘・投資助言を行うものでもありません。投資の最終判断はご自身でお願いします。
+  </div>
+
+</div>
+
+<script src="calc.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var MAN = 10000;
+
+  // number入力のmin/maxは手入力には効かないため、計算前に必ずクランプする
+  function num(id) {
+    var el = $(id);
+    var v = parseFloat(el.value);
+    if (isNaN(v)) v = parseFloat(el.min) || 0;
+    return Math.min(Math.max(v, parseFloat(el.min)), parseFloat(el.max));
+  }
+
+  // ---- 入力の相互同期（number ⇔ range） ----
+  function pair(numId, rngId, onChange) {
+    var n = $(numId), r = $(rngId);
+    n.addEventListener("input", function () { r.value = n.value; onChange(); });
+    r.addEventListener("input", function () { n.value = r.value; onChange(); });
+  }
+
+  function fmtMan(yen) {
+    var man = yen / MAN;
+    if (man >= 10000) return (Math.round(man / 100) / 100).toLocaleString() + "億円";
+    return Math.round(man).toLocaleString() + "万円";
+  }
+  function fmtManDetail(yen) { return (Math.round(yen / MAN * 10) / 10).toLocaleString() + "万円"; }
+  function fmtYm(months) {
+    var y = Math.floor(months / 12), m = months % 12;
+    return m === 0 ? ("約" + y + "年") : ("約" + y + "年" + m + "ヶ月");
+  }
+
+  var method = "fixed"; // fixed | rate
+
+  // ---- 順算 ----
+  function calcFwd() {
+    var P = num("fwP") * MAN;
+    var R = num("fwR");
+    var age = Math.round(num("fwAge"));
+
+    if (method === "fixed") {
+      var W = num("fwW") * MAN;
+      var G = num("fwG");
+      var res = CALC.simulateFixed(P, W, R, G);
+
+      $("fwLabel").textContent = "資産が支えてくれる期間";
+      if (!res.depleted) {
+        // 50年キャップ到達には「運用益>=受取で減らない」と「減るが50年では無くならない」の2種類がある
+        var lastBal = res.series[res.series.length - 1].balance;
+        var growing = lastBal >= P;
+        $("fwBig").textContent = "50年以上";
+        $("fwSub").textContent = age + "歳から始めても" + (age + 50) + "歳を超えて続きます"
+          + (growing ? "（運用益が受け取り額を上回っています）" : "（残高は少しずつ減りますが、50年たっても残る計算です）");
+        $("fwRange").textContent = "";
+      } else {
+        $("fwBig").textContent = fmtYm(res.months);
+        var endAge = age + Math.floor(res.months / 12);
+        $("fwSub").textContent = age + "歳から始めると " + endAge + "歳ごろまで";
+        // 参考幅: 利回り±2%（0〜7%にクランプ）の決定論シナリオ
+        var lo = Math.max(0, R - 2), hi = Math.min(7, R + 2);
+        var rLo = CALC.simulateFixed(P, W, lo, G), rHi = CALC.simulateFixed(P, W, hi, G);
+        $("fwRange").textContent = "参考: 利回り" + lo + "%なら" + (rLo.depleted ? fmtYm(rLo.months) : "50年以上")
+          + "・" + hi + "%なら" + (rHi.depleted ? fmtYm(rHi.months) : "50年以上");
+      }
+      $("fwStats").innerHTML =
+        '<div class="stat"><div class="k">受け取り総額</div><div class="v">' + fmtMan(res.totalWithdrawn) + '</div></div>' +
+        '<div class="stat"><div class="k">うち運用でふえた分</div><div class="v plus">+' + fmtMan(Math.max(0, res.totalGain)) + '</div></div>';
+
+      // 前向きな代替案
+      var targetMonths = Math.max(60, (95 - age) * 12); // 95歳ごろまで
+      if (res.depleted && res.months < targetMonths) {
+        var w2 = CALC.sustainableMonthly(P, targetMonths, R);
+        var r2 = CALC.simulateFixed(P, W, Math.min(7, R + 1), G);
+        $("fwIdea").innerHTML = "💡 <strong>こうすると長持ちします</strong>: 毎月の受け取りを<strong>約" + fmtManDetail(w2)
+          + "</strong>に抑えると、" + "95歳ごろまで続けられる計算です。利回りがあと1%高いと"
+          + (r2.depleted ? fmtYm(r2.months) : "50年以上") + "になります。";
+      } else {
+        var lastBal2 = res.series[res.series.length - 1].balance;
+        $("fwIdea").innerHTML = "💡 今の条件なら、" + (res.depleted ? "95歳ごろまで続く計算です。"
+          : (lastBal2 >= P ? "受け取りを続けても資産が減らないペースです。" : "50年以上もつ計算です。"))
+          + "余裕があれば、少し多めに受け取る選択もできます。";
+      }
+      drawChart(res.series, res.depleted ? res.months : null);
+      renderTable(res.yearly);
+
+    } else {
+      var rt = num("fwRt");
+      var res2 = CALC.simulateRate(P, rt, R, 50);
+      $("fwLabel").textContent = "受け取れる額（毎年の残高の" + rt + "%）";
+      $("fwBig").innerHTML = "はじめの1年: 月あたり約" + fmtManDetail(res2.yearly[0].monthlyReceipt);
+      $("fwBig").style.fontSize = "24px";
+      var y10 = res2.yearly[9], y20 = res2.yearly[19], y30 = res2.yearly[29];
+      $("fwSub").textContent = "";
+      $("fwRange").textContent = "";
+      $("fwStats").innerHTML =
+        '<div class="stat"><div class="k">10年後</div><div class="v">月' + fmtManDetail(y10.monthlyReceipt) + '</div></div>' +
+        '<div class="stat"><div class="k">20年後</div><div class="v">月' + fmtManDetail(y20.monthlyReceipt) + '</div></div>' +
+        '<div class="stat"><div class="k">30年後</div><div class="v">月' + fmtManDetail(y30.monthlyReceipt) + '</div></div>';
+      $("fwIdea").innerHTML = "💡 <strong>定率のとくちょう</strong>: 残高がゼロにはなりませんが、受け取れる額は残高しだいで増えたり減ったりします。「毎月決まった額がほしい」なら定額を選んでください。";
+      drawChart(res2.series, null);
+      renderTable(res2.yearly);
+    }
+    if (method === "fixed") $("fwBig").style.fontSize = "";
+  }
+
+  // ---- 逆算 ----
+  function calcRev() {
+    var W = num("rvW") * MAN;
+    var Y = Math.round(num("rvY"));
+    var R = num("rvR");
+    var months = Y * 12;
+    var p = CALC.requiredPrincipal(W, months, R);
+    var pZero = W * months;
+    $("rvBig").textContent = "約" + fmtMan(p);
+    $("rvSub").textContent = "毎月" + (W / MAN) + "万円を" + Y + "年間受け取る場合";
+    $("rvStats").innerHTML =
+      '<div class="stat"><div class="k">受け取り総額</div><div class="v">' + fmtMan(pZero) + '</div></div>' +
+      '<div class="stat"><div class="k">運用益に頼れる分</div><div class="v plus">' + fmtMan(Math.max(0, pZero - p)) + '</div></div>';
+  }
+
+  // ---- グラフ ----
+  function drawChart(series, depletedMonth) {
+    var cv = $("chart");
+    var dpr = window.devicePixelRatio || 1;
+    var cssW = cv.clientWidth || 680, cssH = 240;
+    cv.width = cssW * dpr; cv.height = cssH * dpr;
+    var ctx = cv.getContext("2d");
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    var padL = 46, padR = 12, padT = 12, padB = 26;
+    var w = cssW - padL - padR, h = cssH - padT - padB;
+    var maxBal = 0, maxM = series[series.length - 1].month;
+    for (var k = 0; k < series.length; k++) if (series[k].balance > maxBal) maxBal = series[k].balance;
+    if (maxBal <= 0) maxBal = 1;
+    if (maxM <= 0) maxM = 1;
+
+    // 目盛り
+    ctx.strokeStyle = "#e2e9f2"; ctx.fillStyle = "#8a96a6";
+    ctx.font = "10.5px sans-serif"; ctx.lineWidth = 1;
+    var steps = 4;
+    for (var s = 0; s <= steps; s++) {
+      var y = padT + h - (h * s / steps);
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + w, y); ctx.stroke();
+      ctx.textAlign = "right";
+      ctx.fillText(Math.round(maxBal * s / steps / MAN).toLocaleString() + "万", padL - 5, y + 3.5);
+    }
+    var yearStep = Math.max(1, Math.ceil(maxM / 12 / 6));
+    ctx.textAlign = "center";
+    for (var yy = 0; yy * 12 <= maxM; yy += yearStep) {
+      var x = padL + w * (yy * 12) / maxM;
+      ctx.fillText(yy + "年", x, padT + h + 16);
+    }
+
+    // 残高ライン + 塗り
+    ctx.beginPath();
+    for (var j = 0; j < series.length; j++) {
+      var px = padL + w * series[j].month / maxM;
+      var py = padT + h - h * Math.max(0, series[j].balance) / maxBal;
+      if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = "#3a72c0"; ctx.lineWidth = 2.2; ctx.stroke();
+    ctx.lineTo(padL + w * series[series.length - 1].month / maxM, padT + h);
+    ctx.lineTo(padL, padT + h);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(58,114,192,.10)"; ctx.fill();
+
+    // 残高0マーカー
+    if (depletedMonth) {
+      var mx = padL + w * depletedMonth / maxM;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = "#c96f2b"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(mx, padT); ctx.lineTo(mx, padT + h); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#c96f2b"; ctx.textAlign = mx > cssW - 90 ? "right" : "left";
+      ctx.fillText("ここで残高0", mx + (mx > cssW - 90 ? -6 : 6), padT + 14);
+    }
+  }
+
+  // ---- 年次テーブル ----
+  function renderTable(yearly) {
+    var tb = $("tblYear").querySelector("tbody");
+    tb.innerHTML = "";
+    for (var k = 0; k < yearly.length; k++) {
+      var y = yearly[k];
+      var tr = document.createElement("tr");
+      function td(t) { var d = document.createElement("td"); d.textContent = t; tr.appendChild(d); }
+      td(y.year + "年目");
+      td(fmtManDetail(y.startBalance));
+      td(fmtManDetail(y.withdrawn));
+      td(fmtManDetail(y.endBalance));
+      tb.appendChild(tr);
+    }
+  }
+
+  // ---- タブ・方式切替 ----
+  $("tabFwd").addEventListener("click", function () {
+    this.classList.add("active"); $("tabRev").classList.remove("active");
+    $("paneFwd").classList.remove("hidden"); $("paneRev").classList.add("hidden");
+    calcFwd();
+  });
+  $("tabRev").addEventListener("click", function () {
+    this.classList.add("active"); $("tabFwd").classList.remove("active");
+    $("paneRev").classList.remove("hidden"); $("paneFwd").classList.add("hidden");
+    calcRev();
+  });
+  $("mFixed").addEventListener("click", function () {
+    method = "fixed";
+    this.classList.add("active"); $("mRate").classList.remove("active");
+    $("fieldAmount").classList.remove("hidden"); $("fieldRate").classList.add("hidden");
+    $("fieldInc").classList.remove("hidden");
+    calcFwd();
+  });
+  $("mRate").addEventListener("click", function () {
+    method = "rate";
+    this.classList.add("active"); $("mFixed").classList.remove("active");
+    $("fieldRate").classList.remove("hidden"); $("fieldAmount").classList.add("hidden");
+    $("fieldInc").classList.add("hidden"); // 増額オプションは定額専用
+    calcFwd();
+  });
+
+  pair("fwP", "fwPR", calcFwd);
+  pair("fwW", "fwWR", calcFwd);
+  pair("fwRt", "fwRtR", calcFwd);
+  pair("fwR", "fwRR", calcFwd);
+  pair("fwAge", "fwAgeR", calcFwd);
+  pair("fwG", "fwGR", calcFwd);
+  pair("rvW", "rvWR", calcRev);
+  pair("rvY", "rvYR", calcRev);
+  pair("rvR", "rvRR", calcRev);
+  window.addEventListener("resize", function () { if (!$("paneFwd").classList.contains("hidden")) calcFwd(); });
+
+  calcFwd();
+  calcRev();
+})();
+</script>
+<script>
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  }
+</script>
+</body>
+</html>
