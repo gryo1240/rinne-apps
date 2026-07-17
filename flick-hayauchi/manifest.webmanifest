@@ -1,0 +1,15 @@
+{
+  "name": "フリック早撃ち",
+  "short_name": "フリック早撃ち",
+  "description": "スマホのフリック入力の速さを競う無料ゲーム。60秒で何文字打てる？登録不要・完全無料。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef3fb",
+  "theme_color": "#2f6df6",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

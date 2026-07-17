@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>フリック早撃ち｜60秒スコアアタック</title>
+<meta name="description" content="スマホのフリック入力の速さを競う無料ゲーム。60秒で何文字打てる？登録不要・完全無料。">
+<meta name="theme-color" content="#eef3fb">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{
+  --bg:#eef3fb; --panel:#ffffff; --ink:#1a2330; --sub:#6b7688;
+  --accent:#2f6df6; --accent-d:#1f52c8; --line:#dce3ef;
+  --done:#2f6df6; --cur:#1a2330; --yet:#b6c0d0; --pending:#f0a020;
+  --key:#ffffff; --keyline:#c9d3e3; --keyactive:#2f6df6; --miss:#e5384d;
+  --gold:#f0a628;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141a24; --panel:#1e2632; --ink:#eaf0f8; --sub:#9aa7ba;
+    --accent:#4d86ff; --accent-d:#2f6df6; --line:#2c3644;
+    --done:#4d86ff; --cur:#eaf0f8; --yet:#5a6678; --pending:#f0b040;
+    --key:#273140; --keyline:#3a4656; --keyactive:#4d86ff; --miss:#ff5a6e;
+    --gold:#f0b84a;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#eef3fb; --panel:#ffffff; --ink:#1a2330; --sub:#6b7688; --accent:#2f6df6; --accent-d:#1f52c8; --line:#dce3ef; --done:#2f6df6; --cur:#1a2330; --yet:#b6c0d0; --pending:#f0a020; --key:#ffffff; --keyline:#c9d3e3; --keyactive:#2f6df6; --miss:#e5384d; --gold:#f0a628;
+}
+:root[data-theme="dark"]{
+  --bg:#141a24; --panel:#1e2632; --ink:#eaf0f8; --sub:#9aa7ba; --accent:#4d86ff; --accent-d:#2f6df6; --line:#2c3644; --done:#4d86ff; --cur:#eaf0f8; --yet:#5a6678; --pending:#f0b040; --key:#273140; --keyline:#3a4656; --keyactive:#4d86ff; --miss:#ff5a6e; --gold:#f0b84a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;overflow-x:hidden}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  line-height:1.5;
+}
+#app{max-width:520px;margin:0 auto;padding:12px 12px 20px;min-height:100vh}
+.hidden{display:none !important}
+h1{font-size:22px;margin:6px 0 2px;text-align:center;letter-spacing:.02em}
+.tagline{text-align:center;color:var(--sub);font-size:12.5px;margin:0 0 14px}
+.bolt{color:var(--accent)}
+
+/* タイトル画面 */
+.courses{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0 14px}
+.course-card{
+  background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--accent);
+  border-radius:14px;padding:12px 12px;text-align:left;cursor:pointer;font:inherit;color:inherit;
+  transition:transform .08s, box-shadow .12s; box-shadow:0 1px 4px rgba(30,40,70,.06);
+}
+.course-card:active{transform:scale(.97)}
+.course-card .cname{font-size:16px;font-weight:800;margin-bottom:2px}
+.course-card .cdesc{font-size:11px;color:var(--sub);line-height:1.4;min-height:2.6em}
+.course-card .cbest{font-size:11px;color:var(--accent);font-weight:700;margin-top:6px}
+.row{display:flex;align-items:center;justify-content:center;gap:14px;margin:10px 0}
+.toggle{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--sub);cursor:pointer;user-select:none}
+.toggle input{width:18px;height:18px;accent-color:var(--accent)}
+details.how{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:2px 14px;margin-top:8px;font-size:13px}
+details.how summary{cursor:pointer;font-weight:700;padding:10px 0;color:var(--accent)}
+details.how ol{margin:0 0 12px;padding-left:1.3em;color:var(--ink)}
+details.how li{margin:4px 0}
+
+/* プレイ画面 */
+.hud{display:flex;align-items:center;gap:10px;margin:2px 0 8px}
+.timer-wrap{flex:1;height:14px;background:var(--line);border-radius:8px;overflow:hidden}
+.timer-bar{height:100%;width:100%;background:var(--accent);border-radius:8px;transition:background .2s}
+.timer-num{font-size:15px;font-weight:800;min-width:2.4em;text-align:right}
+.hud2{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.score-now{font-size:26px;font-weight:900}
+.score-now small{font-size:12px;color:var(--sub);font-weight:600;margin-left:3px}
+.combo{font-size:14px;font-weight:800;color:var(--accent)}
+.combo.hot{color:var(--gold)}
+.prompt{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:14px 12px;text-align:center;margin-bottom:10px;min-height:104px;
+  display:flex;flex-direction:column;justify-content:center;
+}
+.prompt.miss-flash{animation:missflash .3s}
+@keyframes missflash{0%{background:var(--miss)}100%{background:var(--panel)}}
+.prompt .label{font-size:14px;color:var(--sub);margin-bottom:6px;min-height:1.2em}
+.prompt .kana{font-size:34px;font-weight:800;letter-spacing:.04em;word-break:break-all}
+.kana .k-done{color:var(--done)}
+.kana .k-cur{color:var(--cur);border-bottom:4px solid var(--accent);padding-bottom:1px}
+.kana .k-yet{color:var(--yet)}
+.kana .k-pending{color:var(--pending);opacity:.85;border-bottom:4px dashed var(--pending)}
+
+/* キーボード */
+.kbd{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+  touch-action:none;user-select:none;-webkit-user-select:none;
+}
+.key{
+  position:relative;background:var(--key);border:1px solid var(--keyline);border-radius:12px;
+  height:66px;display:flex;align-items:center;justify-content:center;
+  font-size:24px;font-weight:800;cursor:pointer;
+}
+.key.pressed{background:var(--keyactive);color:#fff;border-color:var(--keyactive)}
+.key.dummy{opacity:.35;cursor:default}
+.key.mod{font-size:18px}
+.key .hint{position:absolute;font-size:9px;color:var(--sub);font-weight:600;pointer-events:none}
+.key .hint.l{left:5px;top:50%;transform:translateY(-50%)}
+.key .hint.u{top:3px;left:50%;transform:translateX(-50%)}
+.key .hint.r{right:5px;top:50%;transform:translateY(-50%)}
+.key .hint.d{bottom:3px;left:50%;transform:translateX(-50%)}
+.key.pressed .hint{color:#dbe6ff}
+/* フリックポップ（十字ガイド） */
+.popup{position:absolute;inset:0;pointer-events:none;z-index:5}
+.pop{position:absolute;width:38px;height:38px;border-radius:10px;background:var(--accent-d);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;opacity:.0;transition:opacity .05s}
+.pop.show{opacity:.96}
+.pop.hit{background:var(--gold)}
+.pop.c{left:50%;top:50%;transform:translate(-50%,-50%)}
+.pop.l{left:-42px;top:50%;transform:translateY(-50%)}
+.pop.u{left:50%;top:-42px;transform:translateX(-50%)}
+.pop.r{right:-42px;top:50%;transform:translateY(-50%)}
+.pop.d{left:50%;bottom:-42px;transform:translateX(-50%)}
+
+/* カウントダウン */
+.countdown{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:88px;font-weight:900;color:var(--accent);background:rgba(0,0,0,.04);z-index:20;border-radius:14px}
+
+/* リザルト */
+.result{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 16px;text-align:center}
+.result .rtitle{font-size:15px;color:var(--sub)}
+.result .rscore{font-size:52px;font-weight:900;line-height:1.1;margin:2px 0}
+.result .rmedal{font-size:20px;font-weight:900;color:var(--gold);margin-bottom:4px}
+.result .rbest{font-size:12px;color:var(--accent);font-weight:700;margin-bottom:10px;min-height:1.2em}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 14px}
+.stat{background:var(--bg);border-radius:10px;padding:8px}
+.stat .sv{font-size:20px;font-weight:800}
+.stat .sl{font-size:11px;color:var(--sub)}
+.btns{display:flex;flex-direction:column;gap:8px}
+.btn{font:inherit;font-weight:800;border:none;border-radius:12px;padding:13px;cursor:pointer}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.sub{background:var(--panel);color:var(--accent);border:1px solid var(--accent)}
+.btn:active{transform:scale(.98)}
+.copied{font-size:12px;color:var(--accent);height:1.2em;margin-top:4px}
+.foot{text-align:center;color:var(--sub);font-size:11px;margin-top:14px}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1><span class="bolt">⚡</span>フリック早撃ち</h1>
+  <p class="tagline">60秒で何文字フリックできる？</p>
+
+  <!-- タイトル画面 -->
+  <section id="screen-title">
+    <div class="courses" id="courseList"></div>
+    <div class="row">
+      <label class="toggle"><input type="checkbox" id="soundToggle" checked>音を鳴らす</label>
+    </div>
+    <details class="how">
+      <summary>あそびかた</summary>
+      <ol>
+        <li>コースを選ぶと「3・2・1」のあとスタート。制限時間は<b>60秒</b>です。</li>
+        <li>お題のかなを、下のキーボードで順番に入力します。</li>
+        <li>キーを<b>タップ</b>すると中央の文字、上下左右に<b>フリック</b>すると周りの文字が入ります。</li>
+        <li>濁点・半濁点・小さい文字は、文字を入れたあと左下の<b>「゛゜小」</b>キーで切り替えます（つ→っ→づ など）。</li>
+        <li>正解が続くほどコンボでスコアアップ。ミスしても時間は減りません。気楽にどうぞ。</li>
+      </ol>
+    </details>
+    <p class="foot">登録不要・完全無料／データはこの端末内にのみ保存されます</p>
+  </section>
+
+  <!-- プレイ画面 -->
+  <section id="screen-play" class="hidden">
+    <div class="hud">
+      <div class="timer-wrap"><div class="timer-bar" id="timerBar"></div></div>
+      <div class="timer-num" id="timerNum">60</div>
+    </div>
+    <div class="hud2">
+      <div class="score-now"><span id="scoreNow">0</span><small>点</small></div>
+      <div class="combo" id="comboNow"></div>
+    </div>
+    <div class="prompt" id="prompt" style="position:relative">
+      <div class="label" id="promptLabel"></div>
+      <div class="kana" id="promptKana"></div>
+      <div class="countdown hidden" id="countdown">3</div>
+    </div>
+    <div class="kbd" id="kbd"></div>
+  </section>
+
+  <!-- リザルト画面 -->
+  <section id="screen-result" class="hidden">
+    <div class="result">
+      <div class="rtitle">スコア</div>
+      <div class="rscore" id="rScore">0</div>
+      <div class="rmedal" id="rMedal">称号</div>
+      <div class="rbest" id="rBest"></div>
+      <div class="stats">
+        <div class="stat"><div class="sv" id="rKpm">0</div><div class="sl">文字／分</div></div>
+        <div class="stat"><div class="sv" id="rCombo">0</div><div class="sl">最大コンボ</div></div>
+        <div class="stat"><div class="sv" id="rKana">0</div><div class="sl">入力かな数</div></div>
+        <div class="stat"><div class="sv" id="rMiss">0</div><div class="sl">ミス</div></div>
+      </div>
+      <div class="btns">
+        <button class="btn primary" id="btnCopy">結果をコピー</button>
+        <a class="btn sub" id="btnShare" target="_blank" rel="noopener">Xでシェア</a>
+        <button class="btn sub" id="btnRetry">もういちど</button>
+        <button class="btn sub" id="btnHome">コースをえらぶ</button>
+      </div>
+      <div class="copied" id="copiedMsg"></div>
+    </div>
+  </section>
+</div>
+
+<script src="engine.js"></script>
+<script src="words.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var E = window.FlickEngine;
+  var COURSES = window.FLICK_COURSES;
+  var LSKEY = "flick-hayauchi-v1";
+  var DURATION_MS = 60000;
+
+  // URLの ?debugTime=5 でテスト用に短縮（検証専用・仕様§9）
+  var qs = new URLSearchParams(location.search);
+  var dbgTime = parseInt(qs.get("debugTime"), 10);
+  if (!isNaN(dbgTime) && dbgTime > 0) DURATION_MS = dbgTime * 1000;
+
+  /* ---- localStorage ---- */
+  function loadStore() {
+    try { return JSON.parse(localStorage.getItem(LSKEY)) || {}; } catch (e) { return {}; }
+  }
+  function saveStore(s) { try { localStorage.setItem(LSKEY, JSON.stringify(s)); } catch (e) {} }
+  var store = loadStore();
+  // localStorage破損対策: bestがオブジェクトでない値だと finish() でTypeErrorになるため型で確認
+  if (!store.best || typeof store.best !== "object") store.best = {};
+  if (typeof store.sound !== "boolean") store.sound = true;
+
+  /* ---- 音（WebAudio・自前オシレーター） ---- */
+  var actx = null;
+  function initAudio() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } }
+  function beep(freq, dur, type, vol) {
+    if (!store.sound || !actx) return;
+    try {
+      var o = actx.createOscillator(), g = actx.createGain();
+      o.type = type || "sine"; o.frequency.value = freq;
+      g.gain.value = vol == null ? 0.06 : vol;
+      o.connect(g); g.connect(actx.destination);
+      var t = actx.currentTime;
+      o.start(t); g.gain.setValueAtTime(g.gain.value, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.stop(t + dur);
+    } catch (e) {}
+  }
+  var sndTap = function () { beep(440, 0.04, "square", 0.03); };
+  var sndOk = function () { beep(880, 0.07, "sine", 0.05); };
+  var sndMiss = function () { beep(160, 0.12, "sawtooth", 0.05); };
+  var sndEnd = function () { beep(660, 0.12, "sine", 0.06); setTimeout(function () { beep(880, 0.12, "sine", 0.06); }, 130); setTimeout(function () { beep(1174, 0.2, "sine", 0.06); }, 270); };
+
+  /* ---- 画面切替 ---- */
+  function show(name) {
+    $("screen-title").classList.toggle("hidden", name !== "title");
+    $("screen-play").classList.toggle("hidden", name !== "play");
+    $("screen-result").classList.toggle("hidden", name !== "result");
+  }
+
+  /* ---- タイトル画面構築 ---- */
+  function fmtBest(cid) {
+    var b = store.best[cid];
+    return b ? ("自己ベスト " + b.score + "点") : "まだ記録なし";
+  }
+  function buildTitle() {
+    var list = $("courseList");
+    list.innerHTML = "";
+    COURSES.forEach(function (c) {
+      var btn = document.createElement("button");
+      btn.className = "course-card";
+      btn.innerHTML = '<div class="cname">' + esc(c.name) + '</div>' +
+        '<div class="cdesc">' + esc(c.desc) + '</div>' +
+        '<div class="cbest">' + esc(fmtBest(c.id)) + '</div>';
+      btn.addEventListener("click", function () { startGame(c); });
+      list.appendChild(btn);
+    });
+    $("soundToggle").checked = store.sound;
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (m) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[m]; }); }
+
+  $("soundToggle").addEventListener("change", function () {
+    store.sound = this.checked; saveStore(store);
+    if (this.checked) { initAudio(); sndOk(); }
+  });
+
+  /* ---- キーボード構築 ---- */
+  var HINT_DIRS = [["left", "l"], ["up", "u"], ["right", "r"], ["down", "d"]];
+  function buildKbd() {
+    var kbd = $("kbd");
+    kbd.innerHTML = "";
+    E.KEY_LAYOUT.forEach(function (key) {
+      var el = document.createElement("div");
+      if (key === "dummy") {
+        el.className = "key dummy"; el.textContent = "";
+      } else if (key === "mod") {
+        el.className = "key mod"; el.textContent = "゛゜小";
+        el.dataset.key = "mod";
+      } else {
+        el.className = "key"; el.dataset.key = key;
+        el.appendChild(document.createTextNode(key));
+        HINT_DIRS.forEach(function (d) {
+          var ch = E.resolveFlick(key, d[0]);
+          if (ch) { var h = document.createElement("span"); h.className = "hint " + d[1]; h.textContent = ch; el.appendChild(h); }
+        });
+        // フリックポップ
+        var pop = document.createElement("div"); pop.className = "popup";
+        ["c", "l", "u", "r", "d"].forEach(function (pos) {
+          var p = document.createElement("div"); p.className = "pop " + pos; p.dataset.pos = pos;
+          var dir = pos === "c" ? "tap" : (pos === "l" ? "left" : pos === "u" ? "up" : pos === "r" ? "right" : "down");
+          var ch = E.resolveFlick(key, dir);
+          p.textContent = ch || "";
+          pop.appendChild(p);
+        });
+        el.appendChild(pop);
+      }
+      attachKey(el);
+      kbd.appendChild(el);
+    });
+  }
+
+  var game = null, playing = false, curCourse = null;
+  var startTime = 0, rafId = 0;
+
+  /* ---- 入力ハンドラ（タッチ＆マウス共通） ---- */
+  function attachKey(el) {
+    var key = el.dataset.key;
+    if (!key) return; // dummy
+    var startX = 0, startY = 0, active = false;
+
+    function down(x, y, e) {
+      if (!playing) return;
+      if (e) e.preventDefault();
+      active = true; startX = x; startY = y;
+      el.classList.add("pressed");
+      initAudio();
+      if (key !== "mod") showPop(el, "c");
+    }
+    function move(x, y) {
+      if (!active || key === "mod") return;
+      var dir = dirOf(x - startX, y - startY, el);
+      showPop(el, dirToPos(dir));
+    }
+    function up(x, y, e) {
+      if (!active) return;
+      if (e) e.preventDefault();
+      active = false;
+      el.classList.remove("pressed");
+      hidePop(el);
+      if (key === "mod") { onModifier(); sndTap(); return; }
+      var dir = dirOf(x - startX, y - startY, el);
+      var ch = E.resolveFlick(key, dir);
+      if (ch) { onInput(ch); }
+    }
+    function cancel() { active = false; el.classList.remove("pressed"); hidePop(el); }
+
+    el.addEventListener("touchstart", function (e) { var t = e.changedTouches[0]; down(t.clientX, t.clientY, e); }, { passive: false });
+    el.addEventListener("touchmove", function (e) { var t = e.changedTouches[0]; move(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+    el.addEventListener("touchend", function (e) { var t = e.changedTouches[0]; up(t.clientX, t.clientY, e); }, { passive: false });
+    el.addEventListener("touchcancel", cancel);
+    // マウス
+    el.addEventListener("mousedown", function (e) { down(e.clientX, e.clientY, e); });
+    window.addEventListener("mousemove", function (e) { if (active) move(e.clientX, e.clientY); });
+    el.addEventListener("mouseup", function (e) { up(e.clientX, e.clientY, e); });
+    el.addEventListener("mouseleave", function () { if (active) { /* keep active until mouseup on window */ } });
+    window.addEventListener("mouseup", function (e) { if (active) up(e.clientX, e.clientY, e); });
+  }
+
+  function dirOf(dx, dy, el) {
+    var w = el.offsetWidth || 90;
+    var thr = Math.max(16, w * 0.28);
+    if (Math.abs(dx) < thr && Math.abs(dy) < thr) return "tap";
+    if (Math.abs(dx) > Math.abs(dy)) return dx < 0 ? "left" : "right";
+    return dy < 0 ? "up" : "down";
+  }
+  function dirToPos(dir) { return dir === "tap" ? "c" : (dir === "left" ? "l" : dir === "up" ? "u" : dir === "right" ? "r" : "d"); }
+  function showPop(el, pos) {
+    var pops = el.querySelectorAll(".pop");
+    for (var i = 0; i < pops.length; i++) {
+      var on = pops[i].dataset.pos === pos && pops[i].textContent !== "";
+      pops[i].classList.toggle("show", on);
+      pops[i].classList.toggle("hit", on && pos !== "c");
+    }
+  }
+  function hidePop(el) {
+    var pops = el.querySelectorAll(".pop");
+    for (var i = 0; i < pops.length; i++) pops[i].classList.remove("show", "hit");
+  }
+
+  /* ---- ゲーム進行 ---- */
+  function startGame(course) {
+    curCourse = course;
+    game = E.createGame({ words: course.words });
+    show("play");
+    renderPrompt();
+    $("scoreNow").textContent = "0";
+    $("comboNow").textContent = "";
+    // カウントダウン
+    playing = false;
+    var cd = $("countdown"); cd.classList.remove("hidden");
+    var n = 3; cd.textContent = n;
+    initAudio();
+    var iv = setInterval(function () {
+      n--;
+      if (n <= 0) {
+        clearInterval(iv); cd.classList.add("hidden");
+        beginTimer();
+      } else { cd.textContent = n; beep(520, 0.08, "sine", 0.05); }
+    }, 700);
+  }
+
+  function beginTimer() {
+    playing = true;
+    startTime = performance.now();
+    beep(880, 0.15, "sine", 0.06);
+    loop();
+  }
+
+  function loop() {
+    var elapsed = performance.now() - startTime;
+    var remain = Math.max(0, DURATION_MS - elapsed);
+    var ratio = remain / DURATION_MS;
+    $("timerBar").style.width = (ratio * 100) + "%";
+    $("timerBar").style.background = ratio < 0.2 ? "var(--miss)" : "var(--accent)";
+    $("timerNum").textContent = Math.ceil(remain / 1000);
+    if (remain <= 0) { finish(); return; }
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function onInput(ch) {
+    if (!playing) return;
+    var r = game.inputChar(ch);
+    if (r.type === "miss") { flashMiss(); sndMiss(); }
+    else if (r.type === "commit") { sndOk(); }
+    else if (r.type === "pending") { sndTap(); }
+    updateHud();
+    renderPrompt();
+  }
+  function onModifier() {
+    if (!playing) return;
+    var r = game.applyModifier();
+    if (r.type === "commit") sndOk();
+    updateHud();
+    renderPrompt();
+  }
+
+  function flashMiss() {
+    var p = $("prompt");
+    p.classList.remove("miss-flash"); void p.offsetWidth; p.classList.add("miss-flash");
+  }
+
+  function updateHud() {
+    var s = game.snapshot();
+    $("scoreNow").textContent = s.score;
+    var combo = s.combo;
+    var cEl = $("comboNow");
+    if (combo >= 2) { cEl.textContent = combo + " コンボ"; cEl.classList.toggle("hot", combo >= 10); }
+    else { cEl.textContent = ""; cEl.classList.remove("hot"); }
+  }
+
+  function renderPrompt() {
+    var s = game.snapshot();
+    $("promptLabel").textContent = s.word ? s.word.l : "";
+    var html = "";
+    for (var i = 0; i < s.chars.length; i++) {
+      var c = s.chars[i], cls;
+      if (i < s.index) cls = "k-done";
+      else if (i === s.index) {
+        if (s.pending) { html += '<span class="k-pending">' + esc(s.pending) + '</span>'; continue; }
+        cls = "k-cur";
+      } else cls = "k-yet";
+      html += '<span class="' + cls + '">' + esc(c) + '</span>';
+    }
+    $("promptKana").innerHTML = html;
+  }
+
+  function finish() {
+    playing = false;
+    cancelAnimationFrame(rafId);
+    sndEnd();
+    var res = game.result(DURATION_MS / 60000);
+    // 自己ベスト
+    var prev = store.best[curCourse.id];
+    var isBest = !prev || typeof prev.score !== "number" || res.score > prev.score;
+    if (isBest) {
+      store.best[curCourse.id] = { score: res.score, kpm: res.kpm, date: todayStr() };
+      saveStore(store);
+    }
+    // 表示
+    $("rScore").textContent = res.score;
+    $("rMedal").textContent = "「" + res.title + "」";
+    $("rBest").textContent = isBest ? "★自己ベスト更新！" : ("自己ベスト " + (prev ? prev.score : res.score) + "点");
+    $("rKpm").textContent = res.kpm;
+    $("rCombo").textContent = res.maxCombo;
+    $("rKana").textContent = res.kanaCount;
+    $("rMiss").textContent = res.miss;
+    $("copiedMsg").textContent = "";
+    // シェア
+    var shareText = buildShareText(res);
+    $("btnShare").href = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(shareText);
+    $("btnCopy").onclick = function () { copyText(shareText); };
+    show("result");
+  }
+
+  function buildShareText(res) {
+    return "フリック早撃ち⚡ スコア" + res.score + "点「" + res.title + "」\n" +
+      curCourse.name + "コース／" + res.kpm + "文字/分・最大" + res.maxCombo + "コンボ・ミス" + res.miss + "回\n" +
+      "#フリック早撃ち #りんねブログ\n" +
+      "https://rinne-blog.com/flick-hayauchi";
+  }
+
+  function copyText(text) {
+    function done() { $("copiedMsg").textContent = "コピーしました！"; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else { fallback(); }
+    function fallback() {
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text; ta.style.position = "absolute"; ta.style.top = "-9999px"; ta.style.left = "-9999px";
+        document.body.appendChild(ta); ta.select();
+        document.execCommand("copy"); document.body.removeChild(ta); done();
+      } catch (e) { $("copiedMsg").textContent = "コピーできませんでした"; }
+    }
+  }
+
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+  }
+
+  /* ---- リザルトのボタン ---- */
+  $("btnRetry").addEventListener("click", function () { startGame(curCourse); });
+  $("btnHome").addEventListener("click", function () { buildTitle(); show("title"); });
+
+  /* ---- 初期化 ---- */
+  buildTitle();
+  buildKbd();
+  show("title");
+
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  }
+})();
+</script>
+</body>
+</html>
