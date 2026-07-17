@@ -65,6 +65,9 @@ details.how li{margin:4px 0}
 
 /* プレイ画面 */
 .hud{display:flex;align-items:center;gap:10px;margin:2px 0 8px}
+.quit-btn{flex:0 0 auto;font:inherit;font-size:12px;font-weight:700;color:var(--sub);
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.quit-btn:active{transform:scale(.96)}
 .timer-wrap{flex:1;height:14px;background:var(--line);border-radius:8px;overflow:hidden}
 .timer-bar{height:100%;width:100%;background:var(--accent);border-radius:8px;transition:background .2s}
 .timer-num{font-size:15px;font-weight:800;min-width:2.4em;text-align:right}
@@ -168,6 +171,7 @@ details.how li{margin:4px 0}
   <!-- プレイ画面 -->
   <section id="screen-play" class="hidden">
     <div class="hud">
+      <button class="quit-btn" id="btnQuit" type="button" aria-label="やめてコース選択に戻る">やめる</button>
       <div class="timer-wrap"><div class="timer-bar" id="timerBar"></div></div>
       <div class="timer-num" id="timerNum">60</div>
     </div>
@@ -323,7 +327,7 @@ details.how li{margin:4px 0}
   }
 
   var game = null, playing = false, curCourse = null;
-  var startTime = 0, rafId = 0;
+  var startTime = 0, rafId = 0, cdIv = 0;
 
   /* ---- 入力ハンドラ（タッチ＆マウス共通） ---- */
   function attachKey(el) {
@@ -392,24 +396,42 @@ details.how li{margin:4px 0}
 
   /* ---- ゲーム進行 ---- */
   function startGame(course) {
+    clearInterval(cdIv); // 前ゲームのカウントダウンが残っていれば止める（多重発火の保険）
     curCourse = course;
     game = E.createGame({ words: course.words });
     show("play");
     renderPrompt();
     $("scoreNow").textContent = "0";
-    $("comboNow").textContent = "";
+    $("comboNow").textContent = ""; $("comboNow").classList.remove("hot");
+    // タイマー表示を初期状態へ（途中棄権→再開時にカウントダウン中の残像を防ぐ）
+    $("timerBar").style.width = "100%";
+    $("timerBar").style.background = "var(--accent)";
+    $("timerNum").textContent = Math.ceil(DURATION_MS / 1000);
     // カウントダウン
     playing = false;
     var cd = $("countdown"); cd.classList.remove("hidden");
     var n = 3; cd.textContent = n;
     initAudio();
-    var iv = setInterval(function () {
+    cdIv = setInterval(function () {
       n--;
       if (n <= 0) {
-        clearInterval(iv); cd.classList.add("hidden");
+        clearInterval(cdIv); cdIv = 0; cd.classList.add("hidden");
         beginTimer();
       } else { cd.textContent = n; beep(520, 0.08, "sine", 0.05); }
     }, 700);
+  }
+
+  /* ---- 途中でタイトルへ戻る（棄権・記録は保存しない） ---- */
+  function quitToTitle() {
+    playing = false;
+    cancelAnimationFrame(rafId);
+    clearInterval(cdIv); cdIv = 0;
+    $("countdown").classList.add("hidden");
+    // 指を置いたまま押された場合のキー残像（pressed／フリックポップ）を解除
+    var keys = $("kbd").querySelectorAll(".key");
+    for (var i = 0; i < keys.length; i++) { keys[i].classList.remove("pressed"); hidePop(keys[i]); }
+    buildTitle();
+    show("title");
   }
 
   function beginTimer() {
@@ -535,6 +557,9 @@ details.how li{margin:4px 0}
   /* ---- リザルトのボタン ---- */
   $("btnRetry").addEventListener("click", function () { startGame(curCourse); });
   $("btnHome").addEventListener("click", function () { buildTitle(); show("title"); });
+
+  /* ---- プレイ中「やめる」ボタン ---- */
+  $("btnQuit").addEventListener("click", quitToTitle);
 
   /* ---- 初期化 ---- */
   buildTitle();
