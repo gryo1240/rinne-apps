@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#3E7A6E">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="持ち物リスト">
+<title>旅行持ち物チェックリスト</title>
+<style>
+:root{
+  --bg:#F4F6F5; --surface:#FFFFFF; --ink:#242A28; --muted:#6B7570;
+  --line:#DEE4E1; --accent:#3E7A6E; --accent-ink:#FFFFFF; --accent-soft:#E3EEEC;
+  --warn:#B4643C; --warn-soft:#F5E8DF; --chip:#EAEFEC; --ok:#3E7A52;
+  --shadow:0 1px 3px rgba(30,40,36,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#15191A; --surface:#1E2422; --ink:#E4E9E6; --muted:#9AA6A0;
+    --line:#313A37; --accent:#7FC0AF; --accent-ink:#0F1917; --accent-soft:#233A34;
+    --warn:#D89468; --warn-soft:#3A2C22; --chip:#293330; --ok:#7FBE97;
+    --shadow:0 1px 3px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="light"]{
+  --bg:#F4F6F5; --surface:#FFFFFF; --ink:#242A28; --muted:#6B7570;
+  --line:#DEE4E1; --accent:#3E7A6E; --accent-ink:#FFFFFF; --accent-soft:#E3EEEC;
+  --warn:#B4643C; --warn-soft:#F5E8DF; --chip:#EAEFEC; --ok:#3E7A52;
+  --shadow:0 1px 3px rgba(30,40,36,.08);
+}
+:root[data-theme="dark"]{
+  --bg:#15191A; --surface:#1E2422; --ink:#E4E9E6; --muted:#9AA6A0;
+  --line:#313A37; --accent:#7FC0AF; --accent-ink:#0F1917; --accent-soft:#233A34;
+  --warn:#D89468; --warn-soft:#3A2C22; --chip:#293330; --ok:#7FBE97;
+  --shadow:0 1px 3px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{background:var(--bg); color:var(--ink);
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Noto Sans JP",Meiryo,sans-serif;
+  font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;}
+#app{max-width:640px; margin:0 auto; padding:14px 14px 40px;}
+header.top{padding:4px 2px 12px;}
+header.top h1{font-size:18px; font-weight:700; letter-spacing:.02em;}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); padding:14px; margin-bottom:12px;}
+h2{font-size:14.5px; font-weight:700; letter-spacing:.03em; margin:0 0 10px;}
+.small{font-size:12.5px; color:var(--muted);}
+.row{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+.grow{flex:1 1 auto; min-width:0;}
+button{font:inherit; cursor:pointer; border:none; border-radius:8px; padding:8px 14px; background:var(--chip); color:var(--ink);}
+button:focus-visible, input:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+button.primary{background:var(--accent); color:var(--accent-ink); font-weight:700;}
+button.ghost{background:transparent; border:1px solid var(--line);}
+button:disabled{opacity:.45; cursor:default;}
+input[type=text],input[type=number]{font:inherit; color:var(--ink); background:var(--surface);
+  border:1px solid var(--line); border-radius:8px; padding:7px 10px; max-width:100%;}
+.seg{display:flex; flex-wrap:wrap; gap:6px;}
+.seg button{padding:7px 14px; font-size:13.5px; border:1px solid var(--line); background:var(--surface);}
+.seg button.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent); font-weight:700;}
+.toggle{display:flex; align-items:center; gap:8px; padding:8px 2px;}
+.toggle input[type=checkbox]{width:20px; height:20px; accent-color:var(--accent);}
+.field{margin-bottom:10px;}
+.field .lbl{font-size:12.5px; color:var(--muted); font-weight:700; letter-spacing:.03em; margin-bottom:5px;}
+.progress-wrap{background:var(--chip); border-radius:999px; height:10px; overflow:hidden; margin:4px 0 2px;}
+.progress-bar{background:var(--accent); height:100%; border-radius:999px; transition:width .25s;}
+.progress-txt{font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums;}
+.cat-title{font-size:13px; font-weight:700; color:var(--muted); letter-spacing:.06em; margin:16px 0 4px; display:flex; align-items:center; gap:8px;}
+.cat-title:first-child{margin-top:0;}
+.cat-title::after{content:""; flex:1; height:1px; background:var(--line);}
+.item{display:flex; align-items:center; gap:10px; padding:8px 2px; border-bottom:1px solid var(--line);}
+.item:last-child{border-bottom:none;}
+.item input[type=checkbox]{width:21px; height:21px; accent-color:var(--accent); flex-shrink:0;}
+.item .nm{flex:1; min-width:0;}
+.item.done .nm{text-decoration:line-through; color:var(--muted);}
+.item .tag{font-size:11px; padding:1px 7px; border-radius:999px; background:var(--accent-soft); color:var(--accent); flex-shrink:0;}
+.item .del{padding:4px 9px; font-size:12px; flex-shrink:0;}
+.footer-actions{display:flex; gap:8px; margin-top:6px;}
+.notice{background:var(--warn-soft); border-radius:8px; padding:10px 12px; font-size:13px; margin-bottom:12px;}
+@media print{
+  body{background:#fff;}
+  #settings-card, #add-card, #action-card, .no-print{display:none !important;}
+  .card{box-shadow:none; border:1px solid #ccc;}
+  .item input[type=checkbox]{width:16px; height:16px;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <h1>旅行持ち物チェックリスト</h1>
+    <p class="small">条件を選ぶと、必要な持ち物が自動で並びます。チェックした内容はこの端末に保存されます。</p>
+  </header>
+
+  <div class="card" id="settings-card">
+    <h2>旅行の条件</h2>
+    <div class="field">
+      <div class="lbl">旅行タイプ</div>
+      <div class="seg" id="segType">
+        <button data-type="domestic">国内旅行</button>
+        <button data-type="overseas">海外旅行</button>
+      </div>
+    </div>
+    <div class="toggle">
+      <input type="checkbox" id="chkKids">
+      <label for="chkKids">子ども連れ（子ども用品を追加）</label>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <div class="field grow" style="margin-bottom:0">
+        <div class="lbl">泊数</div>
+        <input type="number" id="nights" min="1" max="30" value="2" style="width:90px"> 泊
+      </div>
+      <div class="field grow" style="margin-bottom:0">
+        <div class="lbl">人数</div>
+        <input type="number" id="people" min="1" max="10" value="1" style="width:90px"> 人
+      </div>
+    </div>
+    <p class="small" style="margin-top:6px">「着替え」「下着・靴下」などは泊数×人数分をご用意ください。</p>
+  </div>
+
+  <div class="card no-print" id="add-card">
+    <div class="row">
+      <input type="text" id="customName" placeholder="リストにないものを追加" class="grow">
+      <button class="primary" id="btnAddCustom">追加</button>
+    </div>
+  </div>
+
+  <div class="card" id="list-card">
+    <div class="row" style="margin-bottom:2px">
+      <span class="progress-txt grow" id="progressTxt"></span>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+    <div id="listBody" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card no-print" id="action-card">
+    <div class="footer-actions">
+      <button class="ghost grow" id="btnPrint">🖨️ 印刷する</button>
+      <button class="ghost" id="btnReset" style="color:var(--warn)">チェックをリセット</button>
+    </div>
+    <p class="small" style="margin-top:8px">次の旅行に備えて、リストの内容と条件はこの端末に自動保存されます。</p>
+  </div>
+</div>
+
+<script>
+"use strict";
+const KEY = "mochimono-v1";
+const $ = s => document.querySelector(s);
+function esc(s){ return String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ============ 持ち物データ ============
+   tag: なし=common(常に表示) / "overseas"=海外選択時のみ / "kids"=子連れ選択時のみ */
+const CATEGORIES = [
+  { name:"貴重品・書類", items:[
+    {id:"wallet", label:"現金・お財布"},
+    {id:"card", label:"クレジットカード"},
+    {id:"phone", label:"スマホ・充電器"},
+    {id:"battery", label:"モバイルバッテリー"},
+    {id:"ic", label:"交通系ICカード"},
+    {id:"insurance", label:"健康保険証"},
+    {id:"passport", label:"パスポート", tag:"overseas"},
+    {id:"passport-copy", label:"パスポートのコピー（原本と別に保管）", tag:"overseas"},
+    {id:"visa", label:"ビザ・入国書類の控え", tag:"overseas"},
+    {id:"overseas-insurance", label:"海外旅行保険の証券", tag:"overseas"},
+  ]},
+  { name:"衣類", items:[
+    {id:"clothes", label:"着替え（泊数×人数分）"},
+    {id:"underwear", label:"下着・靴下（泊数×人数分）"},
+    {id:"outer", label:"羽織るもの（上着・カーディガン）"},
+    {id:"sleepwear", label:"寝巻き・部屋着"},
+    {id:"shoes", label:"歩きやすい靴"},
+    {id:"swimwear", label:"水着（必要な場合）"},
+  ]},
+  { name:"洗面用具・健康", items:[
+    {id:"toothbrush", label:"歯ブラシセット"},
+    {id:"shampoo", label:"シャンプー・ボディソープ（旅行用ミニボトル）"},
+    {id:"skincare", label:"基礎化粧品・スキンケア"},
+    {id:"medicine", label:"常備薬・絆創膏"},
+    {id:"sanitary", label:"生理用品"},
+    {id:"sunscreen", label:"日焼け止め"},
+  ]},
+  { name:"電子機器", items:[
+    {id:"charger", label:"充電ケーブル一式"},
+    {id:"earphone", label:"イヤホン"},
+    {id:"camera", label:"カメラ"},
+    {id:"plug", label:"変換プラグ・変圧器", tag:"overseas"},
+    {id:"wifi", label:"モバイルWi-Fi・海外用SIM", tag:"overseas"},
+  ]},
+  { name:"海外旅行の持ち物", tag:"overseas", items:[
+    {id:"phrase", label:"簡単な現地語フレーズ・翻訳アプリ", tag:"overseas"},
+    {id:"foreign-cash", label:"現地通貨・国際キャッシュカード", tag:"overseas"},
+    {id:"adapter-battery", label:"変換プラグ用のモバイルバッテリー残量確認", tag:"overseas"},
+  ]},
+  { name:"子ども用品", tag:"kids", items:[
+    {id:"diaper", label:"おむつ・おしりふき", tag:"kids"},
+    {id:"kid-clothes", label:"子どもの着替え（多めに）", tag:"kids"},
+    {id:"carrier", label:"抱っこ紐・ベビーカー", tag:"kids"},
+    {id:"toy", label:"お気に入りのおもちゃ・絵本", tag:"kids"},
+    {id:"baby-food", label:"離乳食・ミルク用品", tag:"kids"},
+    {id:"boshi-techo", label:"母子健康手帳・子どもの保険証", tag:"kids"},
+    {id:"kid-medicine", label:"体温計・子ども用の常備薬", tag:"kids"},
+  ]},
+  { name:"そのほか", items:[
+    {id:"ecobag", label:"折りたたみエコバッグ"},
+    {id:"laundry-bag", label:"ビニール袋（洗濯物・ゴミ用）"},
+    {id:"pen", label:"筆記用具"},
+    {id:"umbrella", label:"折りたたみ傘"},
+  ]},
+];
+
+/* ============ 状態 ============ */
+let S = load();
+function load(){
+  try{ const raw = localStorage.getItem(KEY); if(raw){ const s = JSON.parse(raw); if(s) return normalize(s); } }catch(e){}
+  return normalize({});
+}
+function normalize(s){
+  return {
+    type: s.type === "overseas" ? "overseas" : "domestic",
+    kids: !!s.kids,
+    nights: s.nights || 2,
+    people: s.people || 1,
+    checked: s.checked || {},
+    custom: Array.isArray(s.custom) ? s.custom : [],
+  };
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(S)); }
+
+/* ============ 表示対象の判定 ============ */
+function visible(tag){
+  if(!tag) return true;
+  if(tag === "overseas") return S.type === "overseas";
+  if(tag === "kids") return S.kids;
+  return true;
+}
+
+/* ============ 描画 ============ */
+function render(){
+  $("#segType").querySelectorAll("button").forEach(b=>b.classList.toggle("on", b.dataset.type===S.type));
+  $("#chkKids").checked = S.kids;
+  $("#nights").value = S.nights;
+  $("#people").value = S.people;
+
+  let html = "";
+  let total = 0, done = 0;
+
+  CATEGORIES.forEach(cat=>{
+    if(!visible(cat.tag)) return;
+    const items = cat.items.filter(it=>visible(it.tag));
+    if(!items.length) return;
+    html += `<div class="cat-title">${esc(cat.name)}</div>`;
+    items.forEach(it=>{
+      total++;
+      const on = !!S.checked[it.id];
+      if(on) done++;
+      html += itemRow(it.id, it.label, on, it.tag, false);
+    });
+  });
+
+  if(S.custom.length){
+    html += `<div class="cat-title">追加したもの</div>`;
+    S.custom.forEach(it=>{
+      total++;
+      const on = !!S.checked[it.id];
+      if(on) done++;
+      html += itemRow(it.id, it.label, on, null, true);
+    });
+  }
+
+  $("#listBody").innerHTML = html || `<p class="small">条件を選ぶと持ち物が表示されます。</p>`;
+  $("#progressTxt").textContent = total ? `${done} / ${total} 準備完了` : "";
+  $("#progressBar").style.width = total ? Math.round(done/total*100)+"%" : "0%";
+
+  $("#listBody").querySelectorAll("[data-chk]").forEach(c=>{
+    c.onchange = ()=>{ S.checked[c.dataset.chk] = c.checked; save(); render(); };
+  });
+  $("#listBody").querySelectorAll("[data-delcustom]").forEach(b=>{
+    b.onclick = ()=>{
+      const id = b.dataset.delcustom;
+      S.custom = S.custom.filter(x=>x.id!==id);
+      delete S.checked[id];
+      save(); render();
+    };
+  });
+}
+function itemRow(id, label, checked, tag, isCustom){
+  const tagLabel = tag === "overseas" ? "海外" : tag === "kids" ? "子連れ" : "";
+  const cbId = "chk-" + esc(id);
+  return `<div class="item ${checked?"done":""}">
+    <input type="checkbox" id="${cbId}" data-chk="${esc(id)}" ${checked?"checked":""}>
+    <label class="nm" for="${cbId}">${esc(label)}</label>
+    ${tagLabel?`<span class="tag">${tagLabel}</span>`:""}
+    ${isCustom?`<button class="del ghost no-print" data-delcustom="${esc(id)}">削除</button>`:""}
+  </div>`;
+}
+
+/* ============ イベント ============ */
+$("#segType").querySelectorAll("button").forEach(b=>{
+  b.onclick = ()=>{ S.type = b.dataset.type; save(); render(); };
+});
+$("#chkKids").onchange = ()=>{ S.kids = $("#chkKids").checked; save(); render(); };
+$("#nights").onchange = ()=>{ S.nights = Math.max(1, +$("#nights").value || 1); save(); };
+$("#people").onchange = ()=>{ S.people = Math.max(1, +$("#people").value || 1); save(); };
+
+$("#btnAddCustom").onclick = ()=>{
+  const inp = $("#customName");
+  const v = inp.value.trim();
+  if(!v) return;
+  const id = "c_" + Date.now() + Math.floor(Math.random()*1e4);
+  S.custom.push({id, label:v});
+  inp.value = "";
+  save(); render();
+};
+$("#customName").addEventListener("keydown", e=>{ if(e.key==="Enter") $("#btnAddCustom").click(); });
+
+$("#btnPrint").onclick = ()=>window.print();
+$("#btnReset").onclick = ()=>{
+  if(confirm("チェックした内容をすべてリセットしますか？（条件設定と追加したものは残ります）")){
+    S.checked = {};
+    save(); render();
+  }
+};
+
+render();
+</script>
+<script>
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
+</script>
+</body>
+</html>
