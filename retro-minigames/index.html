@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>りんねの8bitミニゲーム集｜無料・登録不要のレトロミニゲーム</title>
+<meta name="description" content="なつかしい操作×完全オリジナル題材の8bit風ミニゲーム3本。ぴったり満月・ほたる集め・ちょうちん暗記。無料・登録不要・インストール不要。">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b0e1d">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  [hidden] { display: none !important; }
+  html, body { background: #0b0e1d; color: #e8e6dd; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 10px 10px 18px; }
+
+  .apphead { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 2px 10px; }
+  .apphead h1 { font-size: 17px; letter-spacing: .04em; color: #f2e3b3; }
+  .apphead h1 .bit { color: #d9b96a; }
+  .iconbtn { background: #1a2140; color: #e8e6dd; border: 2px solid #2c3a6e; border-radius: 8px; font-size: 15px; padding: 6px 10px; cursor: pointer; touch-action: manipulation; }
+  .iconbtn:active { transform: translateY(1px); }
+
+  .screen { animation: fadein .18s ease; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+  .lead { font-size: 13px; color: #b9c0d8; line-height: 1.8; margin-bottom: 12px; }
+
+  .gcard { display: block; width: 100%; text-align: left; background: #141a33; border: 2px solid #2c3a6e; border-left-width: 6px; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer; color: #e8e6dd; touch-action: manipulation; }
+  .gcard:active { transform: translateY(1px); }
+  .gcard .gt { display: block; font-size: 15px; font-weight: 800; margin-bottom: 3px; }
+  .gcard .gd { display: block; font-size: 12px; color: #9aa3c0; line-height: 1.6; }
+  .gcard .gb { font-size: 11px; color: #d9b96a; margin-top: 5px; display: block; }
+
+  .note { font-size: 11px; color: #6c7492; line-height: 1.7; margin-top: 12px; }
+
+  .gamebar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .gamebar .gname { font-size: 13px; color: #b9c0d8; }
+  #canvasBox { position: relative; display: flex; justify-content: center; }
+  #cv { image-rendering: pixelated; image-rendering: crisp-edges; background: #0b0e1d; border: 2px solid #2c3a6e; border-radius: 6px; touch-action: none; display: block; }
+
+  .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 14px; }
+  .obox { background: #10152b; border: 2px solid #4a5aa8; border-radius: 14px; padding: 18px 16px; max-width: 340px; width: 100%; text-align: center; }
+  .obox h2 { font-size: 16px; color: #f2e3b3; margin-bottom: 10px; }
+  .obox p { font-size: 13px; color: #b9c0d8; line-height: 1.9; margin-bottom: 14px; text-align: left; }
+  .mainbtn { background: #d9b96a; color: #1a1405; border: none; border-radius: 10px; font-size: 15px; font-weight: 800; padding: 12px 26px; cursor: pointer; touch-action: manipulation; }
+  .mainbtn:active { transform: translateY(1px); }
+  .subbtn { background: #1a2140; color: #e8e6dd; border: 2px solid #2c3a6e; border-radius: 10px; font-size: 13px; font-weight: 700; padding: 10px 16px; cursor: pointer; touch-action: manipulation; }
+  .subbtn:active { transform: translateY(1px); }
+
+  #scrResult { text-align: center; padding-top: 8px; }
+  #scrResult h2 { font-size: 16px; color: #f2e3b3; margin-bottom: 12px; }
+  .scorebox { background: #141a33; border: 2px solid #2c3a6e; border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .scorebox .row { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 8px; font-size: 14px; color: #b9c0d8; }
+  .scorebox .row b { font-size: 22px; color: #e8e6dd; }
+  .newbest { display: inline-block; background: #c9314b; color: #fff; font-size: 10px; font-weight: 800; border-radius: 5px; padding: 2px 6px; margin-left: 6px; vertical-align: 3px; }
+  .btns { display: flex; flex-direction: column; gap: 9px; max-width: 300px; margin: 0 auto; }
+  #shareDone { font-size: 12px; color: #8fd97b; margin-top: 8px; min-height: 1em; }
+  #shareFallback { width: 100%; margin-top: 8px; background: #141a33; color: #e8e6dd; border: 1px solid #2c3a6e; border-radius: 8px; font-size: 12px; padding: 8px; }
+
+  footer { font-size: 10.5px; color: #565e7c; text-align: center; margin-top: 16px; line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="apphead">
+    <h1>りんねの<span class="bit">8bit</span>ミニゲーム集</h1>
+    <button id="btnMute" class="iconbtn" aria-label="効果音のオンオフ">🔊</button>
+  </div>
+
+  <!-- メニュー -->
+  <div id="scrMenu" class="screen">
+    <p class="lead">なつかしい操作×オリジナル題材のミニゲーム3本。すべて無料・登録不要・タップだけで遊べます🌙</p>
+    <div id="menuCards"></div>
+    <p class="note">※ ベストスコアはこの端末の中だけに保存されるおまけ要素です。エンタメ用ミニゲームであり、ゲーム内に課金・広告のための会員登録はありません。</p>
+  </div>
+
+  <!-- ゲーム -->
+  <div id="scrGame" class="screen" hidden>
+    <div class="gamebar">
+      <button id="btnQuit" class="iconbtn">← やめる</button>
+      <span class="gname" id="gameName"></span>
+    </div>
+    <div id="canvasBox">
+      <canvas id="cv" width="192" height="256"></canvas>
+      <div id="howto" class="overlay" hidden>
+        <div class="obox">
+          <h2 id="howtoTitle"></h2>
+          <p id="howtoBody"></p>
+          <button id="btnStart" class="mainbtn">スタート</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- リザルト -->
+  <div id="scrResult" class="screen" hidden>
+    <h2 id="resTitle"></h2>
+    <div class="scorebox">
+      <div class="row"><span>スコア</span><b id="resScore">0</b></div>
+      <div class="row"><span>ベスト</span><span><b id="resBest">0</b><span id="resNew" class="newbest" hidden>NEW!</span></span></div>
+    </div>
+    <div class="btns">
+      <button id="btnRetry" class="mainbtn">もういちど</button>
+      <button id="btnShare" class="subbtn">シェア文をコピー</button>
+      <button id="btnMenu" class="subbtn">メニューへもどる</button>
+    </div>
+    <div id="shareDone"></div>
+    <textarea id="shareFallback" rows="3" readonly hidden></textarea>
+  </div>
+
+  <footer>りんねブログの無料ミニゲームです。データはすべてこの端末内にのみ保存され、外部への送信はありません。</footer>
+</div>
+
+<script src="core.js"></script>
+<script src="logic.js"></script>
+<script src="games.js"></script>
+<script>
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
+</script>
+</body>
+</html>
