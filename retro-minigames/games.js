@@ -9,6 +9,12 @@
   var P = PALETTE;
   var SHARE_URL = "https://rinne-blog.com/retro-minigames"; // 2026-07-19 公開確定(想定どおりのスラッグ)
 
+  /* ---- デモモード(?demo=1&game=<id>&seed=N。宣伝動画の自動録画用途・通常プレイには影響しない) ---- */
+  var QS = new URLSearchParams(location.search);
+  var DEMO = QS.get("demo") === "1";
+  var DEMO_GAME = QS.get("game") || "mangetsu";
+  var DEMO_SEED = (parseInt(QS.get("seed") || "7", 10) || 7) >>> 0;
+
   /* ============ 効果音・保存 ============ */
   var sfx = createSfx();
   try { sfx.setMuted(localStorage.getItem("retro:muted") === "1"); } catch (e) {}
@@ -29,6 +35,7 @@
     var dpr = window.devicePixelRatio || 1;
     var target = Math.min(boxW, 400);
     dispScale = Math.max(1, Math.floor((target * dpr) / BASE_W));
+    if (DEMO) dispScale = 5; // 録画用: canvas実体を960×1280に固定(captureStreamの解像度を確保)
     cv.width = BASE_W * dispScale;
     cv.height = BASE_H * dispScale;
     cv.style.width = (BASE_W * dispScale / dpr) + "px";
@@ -89,7 +96,7 @@
   /* ============ ① ぴったり満月 ============ */
   function createMangetsuUI(api) {
     var M = Mangetsu;
-    var s, stars, popups, msg, msgTtl, msgColor, t, overAt, cool;
+    var s, stars, popups, msg, msgTtl, msgColor, t, overAt, cool, demo;
     var CX = 96, CY = 114, R = 34;
 
     function start() {
@@ -97,6 +104,19 @@
       stars = makeStars(11, 40, BASE_H - 40);
       popups = makePopups();
       msg = ""; msgTtl = 0; t = 0; overAt = 0; cool = 0;
+      demo = DEMO ? { sinceTap: 0 } : null;
+    }
+    // デモボット: 状態を直接見て満月ジャストでタップ。6成功後はわざと外して3ミス→リザルトへ
+    function demoTick(dt) {
+      demo.sinceTap += dt;
+      if (s.over) return;
+      if (s.level <= 6) {
+        if (cool <= 0 && demo.sinceTap > 250 && Math.abs(s.phase - 0.5) <= s.tol * 0.35) {
+          pointer(); demo.sinceTap = 0;
+        }
+      } else if (demo.sinceTap > 650 && s.phase > 0.05 && s.phase < 0.25) {
+        pointer(); demo.sinceTap = 0;
+      }
     }
     function update(dt) {
       t += dt;
@@ -106,6 +126,7 @@
         if (t - overAt > 1200) api.finish(s.score);
         return;
       }
+      if (demo) demoTick(dt);
       M.advance(s, dt);
       popups.update(dt);
       if (msgTtl > 0) msgTtl -= dt;
@@ -163,14 +184,27 @@
   /* ============ ② ほたる集め ============ */
   function createHotaruUI(api) {
     var H = Hotaru;
-    var s, stars, popups, t, overAt, seed;
+    var s, stars, popups, t, overAt, seed, demo;
 
     function start() {
-      seed = (Date.now() % 2147483647) >>> 0;
+      seed = DEMO ? DEMO_SEED : (Date.now() % 2147483647) >>> 0;
       s = H.create({ seed: seed });
       stars = makeStars(23, 26, 60);
       popups = makePopups();
       t = 0; overAt = 0;
+      demo = DEMO ? { sinceTap: 0 } : null;
+    }
+    // デモボット: 出現から280ms以上経った(反応時間を演出)個体のうち残り寿命最短を捕獲。
+    // 8匹捕まえたら放置して3匹逃し、リザルトへ進む
+    function demoTick(dt) {
+      demo.sinceTap += dt;
+      if (s.over || s.caught >= 8 || demo.sinceTap <= 380) return;
+      var best = null;
+      for (var i = 0; i < s.fireflies.length; i++) {
+        var f = s.fireflies[i];
+        if (f.age > 280 && (!best || (f.life - f.age) < (best.life - best.age))) best = f;
+      }
+      if (best) { pointer(best.x, best.y); demo.sinceTap = 0; }
     }
     function update(dt) {
       t += dt;
@@ -179,6 +213,7 @@
         if (t - overAt > 1200) api.finish(s.score);
         return;
       }
+      if (demo) demoTick(dt);
       var before = s.lives;
       H.advance(s, dt);
       if (s.lives < before) { sfx.miss(); }
@@ -244,16 +279,28 @@
       { base: P.green, lit: P.lime },
       { base: P.blue, lit: P.skyblue },
     ];
-    var s, stars, t, overAt, seed;
+    var s, stars, t, overAt, seed, demo;
     var mode, modeT, playIdx, litNow, litTtl, wrongIdx, banner, bannerTtl;
 
     function start() {
-      seed = (Date.now() % 2147483647) >>> 0;
+      seed = DEMO ? DEMO_SEED : (Date.now() % 2147483647) >>> 0;
       s = Ch.create({ seed: seed });
       stars = makeStars(37, 30, 60);
       t = 0; overAt = 0;
       litNow = -1; litTtl = 0; wrongIdx = -1;
+      demo = DEMO ? { sinceTap: 0 } : null;
       nextRound();
+    }
+    // デモボット: 手順を正しく再現。ラウンド4の2手目でわざと間違えてリザルトへ進む
+    function demoTick(dt) {
+      if (s.over || mode !== "input") { demo.sinceTap = 0; return; }
+      demo.sinceTap += dt;
+      if (demo.sinceTap <= 480) return;
+      var target = s.seq[s.inputIdx];
+      if (s.round >= 4 && s.inputIdx === 1) target = (target + 1) % 4;
+      var sp = SPOTS[target];
+      pointer(sp.x + LW / 2, sp.y + LH / 2);
+      demo.sinceTap = 0;
     }
     function nextRound() {
       Ch.startRound(s);
@@ -270,6 +317,7 @@
         if (t - overAt > 1400) api.finish(s.score);
         return;
       }
+      if (demo) demoTick(dt);
       if (mode === "banner") {
         if (modeT >= 950) { mode = "show"; modeT = 0; playIdx = 0; }
       } else if (mode === "show") {
@@ -522,4 +570,55 @@
   /* ============ 起動 ============ */
   renderMute();
   buildMenu();
+
+  /* ============ デモモードの自動開始と録画フック(?demo=1限定・tools/promo_video.pyから使用) ============ */
+  if (DEMO) {
+    var demoDef = null;
+    for (var di = 0; di < REGISTRY.length; di++) {
+      if (REGISTRY[di].id === DEMO_GAME) demoDef = REGISTRY[di];
+    }
+    if (demoDef) {
+      sfx.setMuted(true); // 録画は無音方針のため
+      setTimeout(function () {
+        openGame(demoDef);
+        setTimeout(startPlay, 500);
+      }, 400);
+    }
+
+    // finish(リザルト遷移)をフックして録画停止のタイミングを知らせる
+    var __finishCallbacks = [];
+    var __origFinish = shellApi.finish;
+    shellApi.finish = function (score) {
+      __origFinish(score);
+      var cbs = __finishCallbacks; __finishCallbacks = [];
+      cbs.forEach(function (cb) { cb(score); });
+    };
+
+    // ゲームcanvasをMediaRecorderでwebm録画し、ダウンロードとして書き出す(moon-dodgeと同方式・映像のみ)
+    window.__startDemoRecording = function (maxDurationMs) {
+      return new Promise(function (resolve, reject) {
+        try {
+          var stream = cv.captureStream(60);
+          var mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+            ? "video/webm;codecs=vp9" : "video/webm";
+          var rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8000000 });
+          var chunks = [];
+          rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+          var stopped = false;
+          function stopAndSave() { if (stopped) return; stopped = true; rec.stop(); }
+          rec.onstop = function () {
+            var blob = new Blob(chunks, { type: mime });
+            var a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "retro-" + DEMO_GAME + "-demo.webm";
+            document.body.appendChild(a); a.click(); a.remove();
+            resolve({ size: blob.size });
+          };
+          rec.start();
+          __finishCallbacks.push(function () { setTimeout(stopAndSave, 300); });
+          setTimeout(stopAndSave, maxDurationMs); // 保険の強制終了
+        } catch (err) { reject(err); }
+      });
+    };
+  }
 })();
