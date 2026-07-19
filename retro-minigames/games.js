@@ -577,13 +577,19 @@
     for (var di = 0; di < REGISTRY.length; di++) {
       if (REGISTRY[di].id === DEMO_GAME) demoDef = REGISTRY[di];
     }
-    if (demoDef) {
-      sfx.setMuted(true); // 録画は無音方針のため
-      setTimeout(function () {
+    if (!demoDef) {
+      // 不明なgame指定は録画フックも登録しない(誤設定でメニューだけのwebmが生成されるのを防ぐ)
+      console.warn("demo: 不明なgame指定: " + DEMO_GAME);
+    }
+    // デモ(ボット)のスコアで訪問者のベスト記録を汚染しない
+    Store.setBest = function () { return false; };
+    sfx.setMuted(true); // 録画は無音方針のため
+    setTimeout(function () {
+      if (demoDef) {
         openGame(demoDef);
         setTimeout(startPlay, 500);
-      }, 400);
-    }
+      }
+    }, 400);
 
     // finish(リザルト遷移)をフックして録画停止のタイミングを知らせる
     var __finishCallbacks = [];
@@ -598,14 +604,20 @@
     window.__startDemoRecording = function (maxDurationMs) {
       return new Promise(function (resolve, reject) {
         try {
+          if (!demoDef) { reject(new Error("不明なgame指定: " + DEMO_GAME)); return; }
           var stream = cv.captureStream(60);
           var mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
             ? "video/webm;codecs=vp9" : "video/webm";
           var rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8000000 });
+          rec.onerror = function (e) { reject(e.error || new Error("MediaRecorderエラー")); };
           var chunks = [];
           rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
           var stopped = false;
-          function stopAndSave() { if (stopped) return; stopped = true; rec.stop(); }
+          function stopAndSave() {
+            if (stopped) return;
+            stopped = true;
+            try { rec.stop(); } catch (err) { reject(err); }
+          }
           rec.onstop = function () {
             var blob = new Blob(chunks, { type: mime });
             var a = document.createElement("a");
