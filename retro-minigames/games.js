@@ -7,7 +7,7 @@
 (function () {
   var BASE_W = 192, BASE_H = 256;
   var P = PALETTE;
-  var SHARE_URL = "https://rinne-blog.com/retro-minigames"; // 公開スラッグ確定後に確認
+  var SHARE_URL = "https://rinne-blog.com/retro-minigames"; // 2026-07-19 公開確定(想定どおりのスラッグ)
 
   /* ============ 効果音・保存 ============ */
   var sfx = createSfx();
