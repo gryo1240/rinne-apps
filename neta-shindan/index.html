@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>あなたを○○に例えると｜ネタ診断</title>
+<meta name="description" content="名前を入れるだけ。あなたを架空の妖怪・文房具・架空のお店の店主に例えるとどうなる？無料・登録不要のネタ診断。">
+<meta name="theme-color" content="#7c5cbf">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<style>
+/* ------------------------------------------------------------------
+ * 配色（ポップ系ライト基調 + ダークモード対応）
+ * テーマアクセント: 妖怪=紫 / 文房具=青 / 店主=オレンジ
+ * ------------------------------------------------------------------ */
+:root{
+  --bg:#f7f4fb; --surface:#ffffff; --ink:#2a2536; --muted:#6f6880;
+  --line:#e6e0ef; --shadow:0 2px 10px rgba(60,40,90,.08);
+  --accent:#7c5cbf; --accent-soft:#f0eafa;
+  --gold:#c99a2e; --gold-soft:#fdf6e3;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#1a1723; --surface:#241f30; --ink:#ece8f4; --muted:#a49ab8;
+    --line:#3a3348; --shadow:0 2px 10px rgba(0,0,0,.35);
+    --accent-soft:#2d2540; --gold-soft:#332a1c; --gold:#e0b855;
+  }
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Noto Sans JP",Meiryo,sans-serif;
+  font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+#app{max-width:560px; margin:0 auto; padding:18px 14px 40px;}
+button{font-family:inherit; cursor:pointer; border:none;}
+
+/* ---- ヘッダー ---- */
+.logo{text-align:center; margin:4px 0 18px;}
+.logo .emoji{font-size:34px; line-height:1;}
+.logo h1{margin:6px 0 4px; font-size:22px; font-weight:800; letter-spacing:.02em;}
+.logo p{margin:0; font-size:13px; color:var(--muted);}
+
+/* ---- カード共通 ---- */
+.card{
+  background:var(--surface); border:1px solid var(--line); border-radius:14px;
+  padding:16px; box-shadow:var(--shadow); margin-bottom:14px;
+}
+.label{font-size:13px; font-weight:700; color:var(--muted); margin:0 0 8px; display:block;}
+
+/* ---- 名前入力 ---- */
+#nameInput{
+  width:100%; padding:13px 14px; font-size:17px; border-radius:10px;
+  border:2px solid var(--line); background:var(--bg); color:var(--ink);
+  font-family:inherit;
+}
+#nameInput:focus{outline:none; border-color:var(--accent);}
+.note{font-size:12px; color:var(--muted); margin:8px 0 0; line-height:1.5;}
+
+/* ---- テーマ選択 ---- */
+.themes{display:flex; flex-direction:column; gap:9px;}
+.theme-btn{
+  display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+  padding:13px 14px; border-radius:12px; background:var(--bg);
+  border:2px solid var(--line); color:var(--ink); font-size:15px; transition:.15s;
+}
+.theme-btn .tem{font-size:26px; line-height:1; flex-shrink:0;}
+.theme-btn .tname{font-weight:800; display:block;}
+.theme-btn .tsub{font-size:12px; color:var(--muted); display:block; margin-top:1px;}
+.theme-btn.on{border-color:var(--accent); background:var(--accent-soft);}
+.theme-btn.on .tname{color:var(--accent);}
+
+/* ---- 主要ボタン ---- */
+.primary{
+  width:100%; padding:15px; border-radius:12px; background:var(--accent);
+  color:#fff; font-size:17px; font-weight:800; letter-spacing:.04em;
+  box-shadow:0 3px 0 rgba(0,0,0,.12);
+}
+.primary:disabled{background:#c6c0d2; color:#fff; cursor:not-allowed; box-shadow:none;}
+@media (prefers-color-scheme: dark){ .primary:disabled{background:#463f57; color:#8d84a1;} }
+.sub-btn{
+  padding:12px; border-radius:10px; background:var(--bg); color:var(--ink);
+  border:1.5px solid var(--line); font-size:14px; font-weight:700;
+}
+.sub-btn:hover{border-color:var(--accent);}
+
+/* ---- あそびかた（折りたたみ） ---- */
+details.howto{margin-top:4px;}
+details.howto summary{
+  cursor:pointer; font-size:14px; font-weight:700; color:var(--muted);
+  padding:10px 2px; list-style:none;
+}
+details.howto summary::-webkit-details-marker{display:none;}
+details.howto summary::before{content:"▶ "; font-size:11px;}
+details.howto[open] summary::before{content:"▼ ";}
+details.howto .body{font-size:13.5px; color:var(--muted); padding:2px 4px 8px;}
+details.howto ul{margin:6px 0; padding-left:1.2em;}
+details.howto li{margin:4px 0;}
+
+/* ---- 診断中演出 ---- */
+#loadingScreen{text-align:center; padding:44px 10px;}
+#loadingScreen .ldot{font-size:15px; color:var(--muted); margin-bottom:14px;}
+#rollName{
+  font-size:26px; font-weight:800; color:var(--accent); min-height:1.5em;
+  letter-spacing:.02em;
+}
+.roll-bar{
+  height:5px; border-radius:99px; background:var(--line); overflow:hidden;
+  max-width:220px; margin:18px auto 0;
+}
+.roll-bar>i{display:block; height:100%; background:var(--accent); width:0; border-radius:99px;}
+
+/* ---- 結果 ---- */
+.result-head{font-size:14px; color:var(--muted); text-align:center; margin:0 0 10px; line-height:1.5;}
+.rare-badge{
+  display:inline-block; background:var(--gold-soft); color:var(--gold);
+  border:1.5px solid var(--gold); border-radius:99px;
+  font-size:12px; font-weight:800; padding:3px 12px; margin-bottom:8px;
+}
+.result-name{
+  font-size:30px; font-weight:800; color:var(--accent); text-align:center;
+  line-height:1.3; margin:2px 0 4px; word-break:break-word;
+}
+.result-yomi{font-size:13px; color:var(--muted); text-align:center; margin:0 0 12px;}
+.result-catch{
+  font-size:15.5px; font-weight:700; text-align:center; margin:0 0 14px;
+  padding:11px 12px; background:var(--accent-soft); border-radius:10px; line-height:1.55;
+}
+.result-rows{border-top:1px solid var(--line); padding-top:12px;}
+.row{margin-bottom:12px;}
+.row:last-child{margin-bottom:0;}
+.row .rl{
+  font-size:11.5px; font-weight:800; color:var(--accent); display:block;
+  letter-spacing:.06em; margin-bottom:3px;
+}
+.row .rt{font-size:14px; line-height:1.65; margin:0;}
+
+/* ---- 結果カードのプレビュー ---- */
+#cardPreview{width:100%; border-radius:12px; display:block; border:1px solid var(--line);}
+
+/* ---- ボタン群 ---- */
+.btn-grid{display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:4px;}
+.btn-grid .wide{grid-column:1 / -1;}
+.toast{
+  text-align:center; font-size:13px; color:var(--accent); font-weight:700;
+  min-height:1.4em; margin:10px 0 0;
+}
+footer{text-align:center; font-size:11.5px; color:var(--muted); margin-top:22px; line-height:1.7;}
+[hidden]{display:none !important;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ 入力画面 ============ -->
+  <section id="inputScreen">
+    <div class="logo">
+      <div class="emoji">👻✏️🏮</div>
+      <h1>あなたを○○に例えると</h1>
+      <p>名前を入れるだけ。3つのテーマで遊べるネタ診断</p>
+    </div>
+
+    <div class="card">
+      <label class="label" for="nameInput">なまえを入力</label>
+      <input id="nameInput" type="text" maxlength="20" placeholder="なまえ・ニックネーム"
+             autocomplete="off" autocapitalize="off" spellcheck="false">
+      <p class="note">入力した名前はどこにも送信されません（すべて端末の中だけで計算しています）。</p>
+    </div>
+
+    <div class="card">
+      <span class="label">テーマをえらぶ</span>
+      <div class="themes" id="themeList"></div>
+    </div>
+
+    <button class="primary" id="goBtn" disabled>診断する</button>
+
+    <details class="howto">
+      <summary>あそびかた</summary>
+      <div class="body">
+        <ul>
+          <li>なまえ（本名でもニックネームでもOK）を入れて、テーマを選んで「診断する」を押すだけです。</li>
+          <li>同じ名前・同じテーマなら<strong>いつやっても結果は同じ</strong>です。友達と見せ合ったり、あとで見返したりできます。</li>
+          <li>3テーマそれぞれで結果が違います。全部ためしてみてください。</li>
+          <li>ごくまれに<strong>★レア結果</strong>（全体の約4%）が出ます。</li>
+          <li>結果は画像で保存したり、文章をコピーしてSNSに貼ったりできます。</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ 診断中 ============ -->
+  <section id="loadingScreen" hidden>
+    <p class="ldot" id="loadingLabel">診断中…</p>
+    <div id="rollName">?</div>
+    <div class="roll-bar"><i id="rollBar"></i></div>
+  </section>
+
+  <!-- ============ 結果画面 ============ -->
+  <section id="resultScreen" hidden>
+    <div class="card">
+      <p class="result-head" id="resultHead"></p>
+      <div style="text-align:center;">
+        <span class="rare-badge" id="rareBadge" hidden>★レア（全体の約4%）</span>
+      </div>
+      <div class="result-name" id="resultName"></div>
+      <p class="result-yomi" id="resultYomi"></p>
+      <p class="result-catch" id="resultCatch"></p>
+      <div class="result-rows">
+        <div class="row"><span class="rl">とくちょう</span><p class="rt" id="rowToku"></p></div>
+        <div class="row"><span class="rl">とりあつかい注意</span><p class="rt" id="rowChuui"></p></div>
+        <div class="row"><span class="rl" id="rowAishoLabel">相性のいい○○</span><p class="rt" id="rowAisho"></p></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="label">シェア用カード</span>
+      <img id="cardPreview" alt="診断結果のシェアカード">
+    </div>
+
+    <div class="btn-grid">
+      <button class="sub-btn" id="saveBtn">画像を保存</button>
+      <button class="sub-btn" id="copyBtn">結果をコピー</button>
+      <a class="sub-btn wide" id="xBtn" href="#" target="_blank" rel="noopener noreferrer"
+         style="text-align:center; text-decoration:none; display:block;">Xでシェア</a>
+      <button class="sub-btn" id="otherThemeBtn">別のテーマで診断</button>
+      <button class="sub-btn" id="otherNameBtn">別の名前で診断</button>
+    </div>
+    <p class="toast" id="toast"></p>
+  </section>
+
+  <footer>
+    遊びとして楽しむためのネタ診断です。占いや性格診断ではありません。<br>
+    入力した名前は端末の外に送信されません。
+  </footer>
+</div>
+
+<script src="./data.js"></script>
+<script src="./logic.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* ★★★ 重要 ★★★
+   * 結果は data.js のテーブルを `ハッシュ % 配列長` で引いている。
+   * 公開後に results / rare 配列を追加・削除・並び替えすると、
+   * すでに診断した全員の結果が変わる。テーブルの変更は禁止。
+   * 増やす場合は logic.js の VERSION_SALT を "v2" にした新テーブルに切り替えること。 */
+
+  var THEMES = window.THEMES;
+  var L = window.NetaLogic;
+
+  /* テーマごとのアクセント色と一言（仕様書§4） */
+  var THEME_META = {
+    yokai:  { color:"#7c5cbf", soft:"#f0eafa", sub:"あなたの中に棲んでいる妖怪は？" },
+    bungu:  { color:"#2f6df6", soft:"#e8f0ff", sub:"筆箱の中にいるとしたら、どれ？" },
+    tenshu: { color:"#e8833a", soft:"#fdf0e5", sub:"お店を開くなら、どんな店主？" }
+  };
+  var SHARE_URL = "https://rinne-blog.com/neta-shindan"; // TODO: 公開後の実スラッグで要確認
+
+  var $ = function(id){ return document.getElementById(id); };
+  var selectedTheme = THEMES[0].id;
+  var currentName = "";
+  var currentDiag = null;
+  var cardBlob = null;
+  var cardDataUrl = "";
+  var rollTimer = null;
+  var toastTimer = null;
+
+  /* ---------------- テーマボタンの生成 ---------------- */
+  function buildThemes(){
+    var wrap = $("themeList");
+    THEMES.forEach(function(t){
+      var meta = THEME_META[t.id] || {};
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "theme-btn" + (t.id === selectedTheme ? " on" : "");
+      b.setAttribute("data-theme", t.id);
+      b.setAttribute("aria-pressed", t.id === selectedTheme ? "true" : "false");
+
+      var em = document.createElement("span");
+      em.className = "tem";
+      em.textContent = t.emoji;
+
+      var txt = document.createElement("span");
+      var nm = document.createElement("span");
+      nm.className = "tname";
+      nm.textContent = t.name;
+      var sb = document.createElement("span");
+      sb.className = "tsub";
+      sb.textContent = meta.sub || "";
+      txt.appendChild(nm);
+      txt.appendChild(sb);
+
+      b.appendChild(em);
+      b.appendChild(txt);
+      b.addEventListener("click", function(){ selectTheme(t.id); });
+      wrap.appendChild(b);
+    });
+  }
+
+  function selectTheme(id){
+    selectedTheme = id;
+    var btns = document.querySelectorAll(".theme-btn");
+    for (var i=0; i<btns.length; i++){
+      var on = btns[i].getAttribute("data-theme") === id;
+      btns[i].classList.toggle("on", on);
+      btns[i].setAttribute("aria-pressed", on ? "true" : "false");
+    }
+    applyAccent(id);
+  }
+
+  /* テーマのアクセント色を画面全体に反映
+   * --accent-soft はライト時だけテーマ色の淡色にする（ダーク時はCSS側の暗い値を使う）。
+   * OSのダーク/ライト切替に追従しないと、淡い背景＋明るい文字色で読めなくなるため、
+   * matchMediaのchangeで必ず再適用する。 */
+  var darkMQ = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+
+  function applyAccent(id){
+    var meta = THEME_META[id];
+    if (!meta) return;
+    document.documentElement.style.setProperty("--accent", meta.color);
+    if (darkMQ && darkMQ.matches){
+      // ダーク時はインラインの上書きを外し、CSSの :root/@media 側の値に戻す
+      document.documentElement.style.removeProperty("--accent-soft");
+    } else {
+      document.documentElement.style.setProperty("--accent-soft", meta.soft);
+    }
+  }
+
+  if (darkMQ){
+    var onSchemeChange = function(){ applyAccent(selectedTheme); };
+    if (darkMQ.addEventListener) darkMQ.addEventListener("change", onSchemeChange);
+    else if (darkMQ.addListener) darkMQ.addListener(onSchemeChange); // 旧Safari
+  }
+
+  /* ---------------- 入力の監視 ---------------- */
+  function refreshGoBtn(){
+    $("goBtn").disabled = !L.isValidName($("nameInput").value);
+  }
+
+  /* ---------------- 診断中の演出 ---------------- */
+  function startRoll(theme, done){
+    var pool = theme.results.map(function(r){ return r.name; });
+    var el = $("rollName");
+    var bar = $("rollBar");
+    var total = 1200;          // 1.0〜1.5秒（仕様書§4）
+    var step = 70;
+    var elapsed = 0;
+    bar.style.width = "0";
+    rollTimer = setInterval(function(){
+      elapsed += step;
+      el.textContent = pool[Math.floor(Math.random() * pool.length)];
+      bar.style.width = Math.min(100, (elapsed / total) * 100) + "%";
+      if (elapsed >= total){
+        clearInterval(rollTimer);
+        rollTimer = null;
+        done();
+      }
+    }, step);
+  }
+
+  /* ---------------- 診断実行 ---------------- */
+  function runDiagnose(){
+    var raw = $("nameInput").value;
+    if (!L.isValidName(raw)) return;
+    currentName = raw.trim();
+    var theme = L.findTheme(THEMES, selectedTheme);
+    if (!theme) return;
+
+    $("inputScreen").hidden = true;
+    $("resultScreen").hidden = true;
+    $("loadingScreen").hidden = false;
+    $("loadingLabel").textContent = currentName + "さんを" + theme.name + "に例えると…";
+
+    startRoll(theme, function(){
+      currentDiag = L.diagnose(raw, selectedTheme, THEMES);
+      if (!currentDiag){ backToInput(); return; }
+      showResult();
+    });
+  }
+
+  /* ---------------- 結果表示 ---------------- */
+  function showResult(){
+    var d = currentDiag;
+    var t = d.theme;
+    var r = d.result;
+
+    $("resultHead").textContent = currentName + "を" + t.name + "に例えると…";
+    $("rareBadge").hidden = !d.isRare;
+    $("resultName").textContent = r.name;
+    $("resultYomi").textContent = "（" + r.yomi + "）";
+    $("resultCatch").textContent = r.catch;
+    $("rowToku").textContent = r.toku;
+    $("rowChuui").textContent = r.chuui;
+    $("rowAishoLabel").textContent = "相性のいい" + t.unit;
+    $("rowAisho").textContent = r.aisho;
+
+    $("xBtn").href = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(shareText());
+
+    drawCard(d);
+
+    $("loadingScreen").hidden = true;
+    $("resultScreen").hidden = false;
+    setToast("");
+    // iframe埋め込み時も先頭が見えるように（position:fixedは使わない方針）
+    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch(e){ window.scrollTo(0, 0); }
+  }
+
+  /* ---------------- シェア文（仕様書§7） ---------------- */
+  function shareText(){
+    var d = currentDiag;
+    if (!d) return "";
+    return "【ネタ診断】" + currentName + "を" + d.theme.name + "に例えると…\n" +
+           "「" + d.result.name + "」" + (d.isRare ? "★レア（全体の約4%）" : "") + "\n" +
+           d.result.catch + "\n" +
+           "#ネタ診断 #りんねブログ\n" +
+           SHARE_URL;
+  }
+
+  /* ---------------- Canvasシェアカード（1080×1080・仕様書§5） ---------------- */
+  var CW = 1080;
+
+  function fitFont(ctx, text, maxWidth, startSize, weight, minSize){
+    var size = startSize;
+    var w = weight || "bold";
+    var min = minSize || 30;
+    // 収まるまで縮める。min まで縮めても収まらない場合は min を適用して抜ける
+    while (true){
+      ctx.font = w + " " + size + 'px "Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif';
+      if (ctx.measureText(text).width <= maxWidth || size <= min) break;
+      size = Math.max(min, size - 4);
+    }
+    return size;
+  }
+
+  /* 行頭に来てはいけない文字（禁則処理・句読点や閉じ括弧が行頭に落ちるのを防ぐ） */
+  var NO_LINE_START = "。、．，）」』】〕》〉！？!?・ー〜%％…";
+
+  /* 指定幅で折り返して行配列にする（日本語は1文字ずつ詰める）
+   * 絵文字などのサロゲートペアを壊さないよう Array.from で書記素単位に分解する */
+  function wrapText(ctx, text, maxWidth, maxLines){
+    var chars = Array.from(String(text));
+    var lines = [];
+    var cur = "";
+    for (var i=0; i<chars.length; i++){
+      var test = cur + chars[i];
+      // 禁則処理: 句読点等は行頭に送らず、多少はみ出しても前の行にぶら下げる
+      if (ctx.measureText(test).width > maxWidth && cur && NO_LINE_START.indexOf(chars[i]) >= 0){
+        cur = test;
+        continue;
+      }
+      if (ctx.measureText(test).width > maxWidth && cur){
+        lines.push(cur);
+        cur = chars[i];
+        if (maxLines && lines.length >= maxLines){
+          // これ以上入らないので、最終行を省略記号付きで確定
+          // （末尾の1文字削りもサロゲートペアを壊さないよう書記素単位で行う）
+          var lastChars = Array.from(lines[maxLines-1]);
+          while (lastChars.length > 1 && ctx.measureText(lastChars.join("") + "…").width > maxWidth){
+            lastChars.pop();
+          }
+          lines[maxLines-1] = lastChars.join("") + "…";
+          return lines.slice(0, maxLines);
+        }
+      } else {
+        cur = test;
+      }
+    }
+    if (cur) lines.push(cur);
+    return maxLines ? lines.slice(0, maxLines) : lines;
+  }
+
+  function drawCard(d){
+    var t = d.theme;
+    var r = d.result;
+    var meta = THEME_META[t.id] || { color:"#7c5cbf", soft:"#f0eafa" };
+
+    var cv = document.createElement("canvas");
+    cv.width = CW; cv.height = CW;
+    var ctx = cv.getContext("2d");
+
+    // 背景（テーマ色の淡色ベタ）
+    ctx.fillStyle = meta.soft;
+    ctx.fillRect(0, 0, CW, CW);
+    // アクセント帯
+    ctx.fillStyle = meta.color;
+    ctx.fillRect(0, 0, CW, 16);
+
+    // 白カード枠
+    var pad = 54;
+    var cardX = pad, cardY = pad + 16, cardW = CW - pad*2, cardH = CW - pad*2 - 16;
+    ctx.fillStyle = "#ffffff";
+    if (ctx.roundRect){
+      ctx.beginPath(); ctx.roundRect(cardX, cardY, cardW, cardH, 28); ctx.fill();
+    } else {
+      ctx.fillRect(cardX, cardY, cardW, cardH);
+    }
+    ctx.strokeStyle = meta.color + "33";
+    ctx.lineWidth = 3;
+    if (ctx.roundRect){
+      ctx.beginPath(); ctx.roundRect(cardX, cardY, cardW, cardH, 28); ctx.stroke();
+    }
+
+    var innerW = cardW - 80;
+    var cx = CW / 2;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+
+    var y = cardY + 84;
+
+    // テーマ絵文字＋「あなたを{テーマ名}に例えると」
+    ctx.font = '44px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    ctx.fillStyle = "#333333";
+    ctx.fillText(t.emoji, cx, y);
+    y += 46;
+    ctx.font = '26px "Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif';
+    ctx.fillStyle = "#8a8398";
+    ctx.fillText("あなたを" + t.name + "に例えると", cx, y);
+
+    // 名前（最大12文字。超過分は11文字＋「…」）
+    y += 62;
+    // 名前は最大12文字（超過分は11文字＋「…」）。絵文字を壊さないよう書記素単位で数える
+    var nameChars = Array.from(currentName);
+    var dispName = nameChars.length > 12 ? nameChars.slice(0, 11).join("") + "…" : currentName;
+    var nameSize = fitFont(ctx, dispName, innerW, 40, "bold", 22);
+    ctx.fillStyle = "#4a4458";
+    ctx.fillText(dispName, cx, y);
+
+    // 結果名（特大・アクセント色・自動縮小）
+    y += 96;
+    var rnSize = fitFont(ctx, r.name, innerW, 78, "bold", 34);
+    ctx.fillStyle = meta.color;
+    ctx.fillText(r.name, cx, y);
+
+    // よみ
+    y += 44;
+    ctx.font = '26px "Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif';
+    ctx.fillStyle = "#8a8398";
+    ctx.fillText("（" + r.yomi + "）", cx, y);
+
+    // キャッチコピー
+    y += 58;
+    ctx.font = 'bold 30px "Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif';
+    ctx.fillStyle = "#2a2536";
+    var catchLines = wrapText(ctx, r.catch, innerW, 2);
+    catchLines.forEach(function(line){
+      ctx.fillText(line, cx, y);
+      y += 40;
+    });
+
+    // 罫線
+    y += 18;
+    ctx.strokeStyle = "#e6e0ef";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cardX + 60, y);
+    ctx.lineTo(cardX + cardW - 60, y);
+    ctx.stroke();
+    y += 52;
+
+    // 本文3行（ラベル＋本文・折返し）
+    ctx.textAlign = "left";
+    var bodyX = cardX + 46;
+    var bodyW = cardW - 92;
+    var rows = [
+      { label:"とくちょう", text:r.toku },
+      { label:"とりあつかい注意", text:r.chuui },
+      { label:"相性のいい" + t.unit, text:r.aisho }
+    ];
+    // 本文の下限。レア時はバッジ(cardY+cardH-118 から高さ46)と重ならないよう手前で止める
+    var bottomLimit = cardY + cardH - (d.isRare ? 150 : 84);
+    var LINE_H = 40;
+    for (var i=0; i<rows.length; i++){
+      if (y > bottomLimit) break;
+      ctx.font = 'bold 25px "Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif';
+      ctx.fillStyle = meta.color;
+      ctx.fillText(rows[i].label, bodyX, y);
+      y += 36;
+      ctx.font = '27px "Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif';
+      ctx.fillStyle = "#3d3750";
+      var maxLines = Math.max(1, Math.floor((bottomLimit - y) / LINE_H));
+      var lines = wrapText(ctx, rows[i].text, bodyW, Math.min(3, maxLines));
+      for (var j=0; j<lines.length; j++){
+        ctx.fillText(lines[j], bodyX, y);
+        y += LINE_H;
+      }
+      y += 30;
+    }
+
+    // レアバッジ（金色）
+    ctx.textAlign = "center";
+    if (d.isRare){
+      var bw = 300, bh = 46;
+      var bx = cx - bw/2, by = cardY + cardH - 118;
+      ctx.fillStyle = "#fdf6e3";
+      ctx.strokeStyle = "#c99a2e";
+      ctx.lineWidth = 3;
+      if (ctx.roundRect){
+        ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 23); ctx.fill(); ctx.stroke();
+      } else {
+        ctx.fillRect(bx, by, bw, bh); ctx.strokeRect(bx, by, bw, bh);
+      }
+      ctx.font = 'bold 24px "Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif';
+      ctx.fillStyle = "#c99a2e";
+      ctx.fillText("★レア（全体の約4%）", cx, by + 31);
+    }
+
+    // フッター
+    ctx.font = '22px "Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif';
+    ctx.fillStyle = "#9a92a8";
+    ctx.fillText("rinne-blog.com/neta-shindan", cx, cardY + cardH - 40);
+
+    cardDataUrl = cv.toDataURL("image/png");
+    cardBlob = dataUrlToBlob(cardDataUrl);
+    $("cardPreview").src = cardDataUrl;
+    $("cardPreview").alt = r.name + " の診断結果カード";
+  }
+
+  function dataUrlToBlob(dataUrl){
+    try{
+      var parts = dataUrl.split(",");
+      var bin = atob(parts[1]);
+      var len = bin.length;
+      var arr = new Uint8Array(len);
+      for (var i=0; i<len; i++) arr[i] = bin.charCodeAt(i);
+      return new Blob([arr], { type:"image/png" });
+    } catch(e){ return null; }
+  }
+
+  /* ---------------- 画像の保存（maboroshi-seizaと同方式） ----------------
+   * iOS Safariは a[download] を無視するが**例外を投げない**ため、
+   * try/catchでは検知できない（保存されていないのに成功トーストが出る）。
+   * そのため対応端末では先に Web Share API（navigator.share の files）を使う。
+   * 非対応端末のみ a[download] にフォールバックする。 */
+  var FILE_NAME = "neta-shindan.png";
+
+  function downloadViaAnchor(){
+    var a = document.createElement("a");
+    if (cardBlob && window.URL && URL.createObjectURL){
+      var url = URL.createObjectURL(cardBlob);
+      a.href = url;
+      a.download = FILE_NAME;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    } else {
+      a.href = cardDataUrl;
+      a.download = FILE_NAME;
+      a.click();
+    }
+  }
+
+  function openImageInNewTab(){
+    // 最終手段: 画像を別タブで開いて長押し保存してもらう
+    try{
+      var w = window.open();
+      if (w){
+        w.document.write('<img src="' + cardDataUrl + '" style="width:100%" alt="診断結果カード">');
+        w.document.close();
+        setToast("画像を長押しして保存してください");
+        return true;
+      }
+    } catch(e){}
+    return false;
+  }
+
+  function saveImage(){
+    if (!cardDataUrl) return;
+
+    // 1) Web Share API（iOS Safari等で確実に「画像を保存」まで到達できる導線）
+    if (cardBlob && window.File && navigator.canShare && navigator.share){
+      var file = null;
+      try { file = new File([cardBlob], FILE_NAME, { type:"image/png" }); } catch(e){ file = null; }
+      if (file && navigator.canShare({ files:[file] })){
+        navigator.share({ files:[file], title:"ネタ診断の結果" }).then(function(){
+          setToast("");
+        }, function(err){
+          if (err && err.name === "AbortError"){ setToast(""); return; }
+          // 共有シートが使えなかった場合はダウンロードにフォールバック
+          try { downloadViaAnchor(); setToast("画像を保存しました"); }
+          catch(e2){ if (!openImageInNewTab()) setToast("この端末では保存できませんでした"); }
+        });
+        return;
+      }
+    }
+
+    // 2) a[download]（PC・Android Chrome等）
+    try{
+      downloadViaAnchor();
+      setToast("画像を保存しました");
+    } catch(e){
+      if (!openImageInNewTab()) setToast("この端末では保存できませんでした");
+    }
+  }
+
+  /* ---------------- 結果のコピー ---------------- */
+  function copyResult(){
+    var text = shareText();
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        setToast("結果をコピーしました");
+      }, function(){ fallbackCopy(text); });
+    } else {
+      fallbackCopy(text);
+    }
+  }
+  function fallbackCopy(text){
+    try{
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "absolute";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setToast("結果をコピーしました");
+    } catch(e){ setToast("コピーできませんでした"); }
+  }
+
+  function setToast(msg){
+    $("toast").textContent = msg;
+    if (toastTimer) clearTimeout(toastTimer);
+    if (msg) toastTimer = setTimeout(function(){ $("toast").textContent = ""; }, 2600);
+  }
+
+  /* ---------------- 画面遷移 ---------------- */
+  function backToInput(){
+    if (rollTimer){ clearInterval(rollTimer); rollTimer = null; }
+    $("loadingScreen").hidden = true;
+    $("resultScreen").hidden = true;
+    $("inputScreen").hidden = false;
+    setToast("");
+    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch(e){ window.scrollTo(0, 0); }
+  }
+
+  /* ---------------- 配線 ---------------- */
+  buildThemes();
+  applyAccent(selectedTheme);
+
+  $("nameInput").addEventListener("input", refreshGoBtn);
+  $("nameInput").addEventListener("keydown", function(e){
+    if (e.key === "Enter" && !$("goBtn").disabled) runDiagnose();
+  });
+  $("goBtn").addEventListener("click", runDiagnose);
+  $("saveBtn").addEventListener("click", saveImage);
+  $("copyBtn").addEventListener("click", copyResult);
+  // 「別のテーマで診断」= 入力した名前は保持したまま入力画面へ戻る
+  $("otherThemeBtn").addEventListener("click", backToInput);
+  $("otherNameBtn").addEventListener("click", function(){
+    $("nameInput").value = "";
+    refreshGoBtn();
+    backToInput();
+    $("nameInput").focus();
+  });
+
+  refreshGoBtn();
+
+  /* ---------------- Service Worker ---------------- */
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0){
+    window.addEventListener("load", function(){
+      navigator.serviceWorker.register("./sw.js").catch(function(){});
+    });
+  }
+})();
+</script>
+</body>
+</html>
