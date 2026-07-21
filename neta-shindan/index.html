@@ -257,7 +257,7 @@ footer{text-align:center; font-size:11.5px; color:var(--muted); margin-top:22px;
     bungu:  { color:"#2f6df6", soft:"#e8f0ff", sub:"筆箱の中にいるとしたら、どれ？" },
     tenshu: { color:"#e8833a", soft:"#fdf0e5", sub:"お店を開くなら、どんな店主？" }
   };
-  var SHARE_URL = "https://rinne-blog.com/neta-shindan"; // TODO: 公開後の実スラッグで要確認
+  var SHARE_URL = "https://rinne-blog.com/name-neta-shindan";
 
   var $ = function(id){ return document.getElementById(id); };
   var selectedTheme = THEMES[0].id;
@@ -610,7 +610,7 @@ footer{text-align:center; font-size:11.5px; color:var(--muted); margin-top:22px;
     // フッター
     ctx.font = '22px "Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif';
     ctx.fillStyle = "#9a92a8";
-    ctx.fillText("rinne-blog.com/neta-shindan", cx, cardY + cardH - 40);
+    ctx.fillText("rinne-blog.com/name-neta-shindan", cx, cardY + cardH - 40);
 
     cardDataUrl = cv.toDataURL("image/png");
     cardBlob = dataUrlToBlob(cardDataUrl);
