@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>リスク許容度チェック｜あなたのタイプと、よく紹介される資産配分の例</title>
+<meta name="description" content="6つの質問に答えると、自分のリスク許容度タイプと、一般に紹介されている資産配分の例がわかる無料ツール。回答は端末内で処理し、送信されません。">
+<meta name="theme-color" content="#2f8f6d">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<style>
+:root{
+  --bg:#f4f8f6; --surface:#ffffff; --ink:#26302c; --muted:#6b7a74;
+  --line:#dde8e3; --shadow:0 2px 10px rgba(30,70,55,.07);
+  --accent:#2f8f6d; --accent-soft:#e8f4ef;
+  --stock:#2f8f6d; --bond:#5b9bd5; --cash:#9aa8a3;
+  --warn-bg:#fdf6e6; --warn-line:#e0c98a; --warn-ink:#8a6d1f;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#161d1a; --surface:#1f2a26; --ink:#e6efeb; --muted:#9fb0aa;
+    --line:#31403a; --shadow:0 2px 10px rgba(0,0,0,.35);
+    --accent:#4fb28c; --accent-soft:#22332c;
+    --stock:#4fb28c; --bond:#6ba9de; --cash:#7d8d87;
+    --warn-bg:#31291a; --warn-line:#6e5c2c; --warn-ink:#e2c883;
+  }
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Noto Sans JP",Meiryo,sans-serif;
+  font-size:15px; line-height:1.65; -webkit-font-smoothing:antialiased;
+}
+#app{max-width:620px; margin:0 auto; padding:18px 14px 40px;}
+button{font-family:inherit; cursor:pointer; border:none;}
+a{color:var(--accent);}
+
+.head{text-align:center; margin:2px 0 14px;}
+.head h1{margin:0 0 5px; font-size:21px; font-weight:800; line-height:1.4;}
+.head p{margin:0; font-size:13.5px; color:var(--muted);}
+
+.card{background:var(--surface); border:1px solid var(--line); border-radius:14px;
+  padding:16px; box-shadow:var(--shadow); margin-bottom:13px;}
+
+/* 常時表示の短い注記 */
+.always-note{
+  font-size:12px; color:var(--muted); text-align:center;
+  background:var(--accent-soft); border-radius:9px; padding:8px 10px; margin-bottom:14px;
+  line-height:1.5;
+}
+
+.intro{font-size:14px; line-height:1.7; margin:0 0 6px;}
+
+/* ---- 設問 ---- */
+.q-num{font-size:11.5px; font-weight:800; color:var(--accent); letter-spacing:.08em;}
+.q-text{font-size:15.5px; font-weight:700; margin:4px 0 3px; line-height:1.55;}
+.q-note{font-size:12.5px; color:var(--muted); margin:0 0 10px; line-height:1.5;}
+.opts{display:flex; flex-direction:column; gap:8px;}
+.opt{
+  display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+  padding:12px 13px; min-height:46px; border-radius:11px; background:var(--bg);
+  border:2px solid var(--line); color:var(--ink); font-size:14.5px; line-height:1.5;
+}
+.opt .mark{
+  flex-shrink:0; width:19px; height:19px; border-radius:50%;
+  border:2px solid var(--line); background:var(--surface); position:relative;
+}
+.opt.on{border-color:var(--accent); background:var(--accent-soft);}
+.opt.on .mark{border-color:var(--accent);}
+.opt.on .mark::after{content:""; position:absolute; inset:3px; border-radius:50%; background:var(--accent);}
+
+/* ---- 進捗 ---- */
+.progress{display:flex; align-items:center; gap:10px; margin:2px 0 12px;}
+.progress .bar{flex:1; height:7px; border-radius:99px; background:var(--line); overflow:hidden;}
+.progress .bar>i{display:block; height:100%; width:0; background:var(--accent); border-radius:99px; transition:width .25s;}
+.progress .txt{font-size:12.5px; color:var(--muted); white-space:nowrap; font-weight:700;}
+
+.primary{
+  width:100%; padding:15px; border-radius:12px; background:var(--accent);
+  color:#fff; font-size:16.5px; font-weight:800; letter-spacing:.03em;
+  box-shadow:0 3px 0 rgba(0,0,0,.1);
+}
+.primary:disabled{background:#b6c4bf; cursor:not-allowed; box-shadow:none;}
+@media (prefers-color-scheme: dark){ .primary:disabled{background:#3d4a45; color:#8b9a94;} }
+.sub-btn{padding:12px; border-radius:10px; background:var(--bg); color:var(--ink);
+  border:1.5px solid var(--line); font-size:14px; font-weight:700; width:100%;}
+
+/* ---- 結果 ---- */
+.type-name{font-size:26px; font-weight:800; color:var(--accent); text-align:center; margin:4px 0 2px;}
+.type-score{font-size:13px; color:var(--muted); text-align:center; margin:0 0 12px;}
+.type-desc{font-size:14.5px; line-height:1.75; margin:0;}
+.type-desc li{margin-bottom:7px;}
+.type-desc ul{margin:0; padding-left:1.15em;}
+
+.notice-box{
+  background:var(--warn-bg); border:1px solid var(--warn-line); color:var(--warn-ink);
+  border-radius:11px; padding:12px 13px; font-size:13.5px; line-height:1.65; margin-bottom:13px;
+}
+.notice-box strong{font-weight:800;}
+
+/* 配分バー */
+.alloc-bar{display:flex; height:34px; border-radius:9px; overflow:hidden; border:1px solid var(--line); margin:10px 0 12px;}
+.alloc-bar span{display:flex; align-items:center; justify-content:center; font-size:11.5px; color:#fff; font-weight:700;}
+.alloc-rows{display:flex; flex-direction:column; gap:7px;}
+.alloc-row{display:flex; align-items:center; gap:9px; font-size:14px;}
+.alloc-row .sw{width:13px; height:13px; border-radius:3px; flex-shrink:0;}
+.alloc-row .nm{font-weight:700; min-width:5.5em;}
+.alloc-row .rg{color:var(--muted);}
+.sub-note{font-size:12.5px; color:var(--muted); line-height:1.6; margin:11px 0 0;}
+
+details{margin-top:9px;}
+details summary{cursor:pointer; font-size:14px; font-weight:700; color:var(--muted);
+  padding:9px 2px; list-style:none;}
+details summary::-webkit-details-marker{display:none;}
+details summary::before{content:"▶ "; font-size:10px;}
+details[open] summary::before{content:"▼ ";}
+details .body{font-size:13.5px; color:var(--ink); padding:2px 2px 8px; line-height:1.7;}
+details .body ul{margin:6px 0; padding-left:1.2em;}
+details .body li{margin:5px 0;}
+
+.gpif-bar{display:flex; height:26px; border-radius:7px; overflow:hidden; border:1px solid var(--line); margin:8px 0;}
+.gpif-bar span{flex:1; display:flex; align-items:center; justify-content:center; font-size:10.5px; color:#fff; font-weight:700;}
+
+.src-list{font-size:13px; line-height:1.8; margin:6px 0 0; padding-left:1.15em;}
+.src-list li{margin-bottom:5px;}
+.src-list .pub{color:var(--muted); font-size:12px;}
+
+footer{font-size:11.5px; color:var(--muted); line-height:1.7; margin-top:20px; text-align:left;}
+[hidden]{display:none !important;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="head">
+    <h1>リスク許容度チェック</h1>
+    <p>あなたはどれくらい値動きに耐えられる？　6つの質問でチェック</p>
+  </div>
+
+  <p class="always-note" id="alwaysNote"></p>
+
+  <!-- ============ 設問画面 ============ -->
+  <section id="quizScreen">
+    <div class="card">
+      <p class="intro">
+        投資の「正解」は人によって違います。そのお金を使う時期、生活防衛資金があるかどうか、
+        値動きへの慣れなどで、無理なく続けられる形は変わります。
+        まずは自分がどのあたりにいるのかを知るところから始めてみましょう。
+      </p>
+    </div>
+
+    <div class="progress">
+      <div class="bar"><i id="progBar"></i></div>
+      <div class="txt" id="progTxt">0 / 6問</div>
+    </div>
+
+    <div id="questionList"></div>
+
+    <button class="primary" id="goBtn" disabled>結果を見る</button>
+  </section>
+
+  <!-- ============ 結果画面 ============ -->
+  <section id="resultScreen" hidden>
+
+    <!-- 生活防衛資金の優先メッセージ（Q2が0点のときだけ・最上部） -->
+    <div class="notice-box" id="emergencyFirst" hidden></div>
+
+    <div class="card">
+      <div class="type-name" id="typeName"></div>
+      <p class="type-score" id="typeScore"></p>
+      <div class="type-desc"><ul id="typeDesc"></ul></div>
+    </div>
+
+    <!-- 境界±1点のときの隣タイプ案内 -->
+    <div class="card" id="neighborCard" hidden>
+      <p style="margin:0 0 4px; font-size:14px; font-weight:700;">境界に近い結果です</p>
+      <p style="margin:0; font-size:13.5px; color:var(--muted); line-height:1.65;">
+        スコアが隣のタイプとの境目に近いため、隣のタイプの説明も読んでみてください。
+        どちらがしっくりくるかで判断していただくのがよいと思います。
+      </p>
+      <div id="neighborList"></div>
+    </div>
+
+    <div class="card">
+      <p style="margin:0 0 2px; font-size:15px; font-weight:800;">よく紹介される資産配分の例</p>
+      <p style="margin:0; font-size:12.5px; color:var(--muted);">
+        一般的な考え方の中で、このタイプがどのあたりに位置するかを幅で示しています
+      </p>
+
+      <div class="alloc-bar" id="allocBar"></div>
+      <div class="alloc-rows" id="allocRows"></div>
+
+      <p class="sub-note" id="emergencyNote"></p>
+      <p class="sub-note" id="qualitativeNote"></p>
+      <div class="notice-box" style="margin-top:12px; margin-bottom:0;" id="selfMadeNote"></div>
+    </div>
+
+    <div class="card">
+      <details>
+        <summary id="gpifTitle">参考：公的年金（GPIF）の場合</summary>
+        <div class="body">
+          <p style="margin:0 0 4px;" id="gpifPeriod"></p>
+          <div class="gpif-bar" id="gpifBar"></div>
+          <p style="margin:6px 0 0;" id="gpifCaution"></p>
+          <p style="margin:8px 0 0; font-size:12.5px;">
+            出典：<a id="gpifLink" href="#" target="_blank" rel="noopener noreferrer">年金積立金管理運用独立行政法人（GPIF）基本ポートフォリオ</a>
+            <span id="gpifChecked" style="color:var(--muted);"></span>
+          </p>
+        </div>
+      </details>
+
+      <details>
+        <summary>この結果の出し方について</summary>
+        <div class="body">
+          <ul>
+            <li>6つの質問それぞれに0〜2点を割り当て、単純に合計した点数（0〜12点）でタイプを分けています。</li>
+            <li><strong>質問ごとの重み付けはしていません。</strong>各項目を同じ重さで数えているだけです。重み付けの根拠となる公的な基準が存在しないため、あえて単純な合計にしています。</li>
+            <li>同じ回答なら、いつ・どの端末でも同じ結果になります。</li>
+            <li>資産配分は幅で示しています。ひとつの数字に決められる性質のものではないためです。</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>参考にした情報</summary>
+        <div class="body">
+          <ul class="src-list" id="sourceList"></ul>
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <p style="margin:0 0 6px; font-size:15px; font-weight:800;">次に試してみるなら</p>
+      <p style="margin:0 0 10px; font-size:13.5px; line-height:1.7;" id="nextStep"></p>
+      <ul class="src-list">
+        <li><a href="https://rinne-blog.com/tsumitate-simulator" target="_blank" rel="noopener noreferrer">つみたてシミュレーター</a><span class="pub"> 毎月の積立が将来いくらになるかを試算</span></li>
+        <li><a href="https://rinne-blog.com/dividend" target="_blank" rel="noopener noreferrer">配当金シミュレーター</a><span class="pub"> 配当でどれくらい受け取れるかを試算</span></li>
+        <li><a href="https://rinne-blog.com/nisa-torikuzushi-simulator" target="_blank" rel="noopener noreferrer">新NISA取り崩しシミュレーター</a><span class="pub"> 貯めた資産が何年もつかを試算</span></li>
+        <li><a href="https://rinne-blog.com/apps" target="_blank" rel="noopener noreferrer">無料Webアプリ一覧</a></li>
+      </ul>
+    </div>
+
+    <button class="sub-btn" id="againBtn">もう一度チェックする</button>
+  </section>
+
+  <div class="card" style="margin-top:14px;">
+    <p style="margin:0 0 4px; font-size:13px; font-weight:800;">ご確認ください</p>
+    <p style="margin:0; font-size:12.5px; color:var(--muted); line-height:1.7;" id="disclaimerFull"></p>
+  </div>
+
+  <footer id="privacyNote"></footer>
+</div>
+
+<script src="./data.js"></script>
+<script src="./logic.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var D = window.RiskData;
+  var L = window.RiskLogic;
+  var $ = function(id){ return document.getElementById(id); };
+
+  var answers = new Array(D.QUESTIONS.length).fill(null);
+
+  /* ---------------- 固定文言の流し込み ---------------- */
+  $("alwaysNote").textContent = D.DISCLAIMER_SHORT;
+  $("disclaimerFull").textContent = D.DISCLAIMER;
+  $("emergencyNote").textContent = D.EMERGENCY_FUND_NOTE;
+  $("qualitativeNote").textContent = D.QUALITATIVE_NOTE;
+  $("selfMadeNote").textContent = D.SELF_MADE_NOTICE;
+  $("emergencyFirst").textContent = D.EMERGENCY_FIRST_MESSAGE;
+  $("privacyNote").textContent =
+    "回答は端末内で処理し、どこにも送信されません。外部との通信は行っていません。";
+
+  /* ---------------- 設問の生成 ---------------- */
+  function buildQuestions(){
+    var wrap = $("questionList");
+    D.QUESTIONS.forEach(function(q, qi){
+      var card = document.createElement("div");
+      card.className = "card";
+
+      var num = document.createElement("div");
+      num.className = "q-num";
+      num.textContent = "Q" + (qi + 1);
+      card.appendChild(num);
+
+      var txt = document.createElement("p");
+      txt.className = "q-text";
+      txt.textContent = q.text;
+      card.appendChild(txt);
+
+      if (q.note){
+        var note = document.createElement("p");
+        note.className = "q-note";
+        note.textContent = q.note;
+        card.appendChild(note);
+      }
+
+      var opts = document.createElement("div");
+      opts.className = "opts";
+      q.options.forEach(function(o, oi){
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "opt";
+        b.setAttribute("data-q", String(qi));
+        b.setAttribute("data-o", String(oi));
+        b.setAttribute("aria-pressed", "false");
+
+        var mark = document.createElement("span");
+        mark.className = "mark";
+        var label = document.createElement("span");
+        label.textContent = o.label;
+
+        b.appendChild(mark);
+        b.appendChild(label);
+        b.addEventListener("click", function(){ select(qi, oi); });
+        opts.appendChild(b);
+      });
+      card.appendChild(opts);
+      wrap.appendChild(card);
+    });
+  }
+
+  function select(qi, oi){
+    answers[qi] = oi;
+    var btns = document.querySelectorAll('.opt[data-q="' + qi + '"]');
+    for (var i = 0; i < btns.length; i++){
+      var on = btns[i].getAttribute("data-o") === String(oi);
+      btns[i].classList.toggle("on", on);
+      btns[i].setAttribute("aria-pressed", on ? "true" : "false");
+    }
+    refresh();
+  }
+
+  function refresh(){
+    var done = answers.filter(function(a){ return a !== null; }).length;
+    var total = D.QUESTIONS.length;
+    $("progBar").style.width = (done / total * 100) + "%";
+    $("progTxt").textContent = done + " / " + total + "問";
+    $("goBtn").disabled = !L.isComplete(answers);
+  }
+
+  /* ---------------- 結果表示 ---------------- */
+  function showResult(){
+    var r = L.evaluate(answers);
+    if (!r) return;
+
+    // 生活防衛資金の優先メッセージ（最上部）
+    $("emergencyFirst").hidden = !r.emergencyFirst;
+
+    $("typeName").textContent = r.type.name;
+    $("typeScore").textContent = "スコア " + r.score + " / " + r.maxScore + "点";
+
+    var ul = $("typeDesc");
+    ul.innerHTML = "";
+    r.type.desc.forEach(function(line){
+      var li = document.createElement("li");
+      li.textContent = line;
+      ul.appendChild(li);
+    });
+
+    // 隣タイプの案内（境界±1点のとき）
+    $("neighborCard").hidden = !r.isNearBoundary;
+    var nl = $("neighborList");
+    nl.innerHTML = "";
+    r.neighbors.forEach(function(t){
+      var d = document.createElement("details");
+      var s = document.createElement("summary");
+      s.textContent = "「" + t.name + "」の説明を読む";
+      var body = document.createElement("div");
+      body.className = "body";
+      var uld = document.createElement("ul");
+      t.desc.forEach(function(line){
+        var li = document.createElement("li");
+        li.textContent = line;
+        uld.appendChild(li);
+      });
+      body.appendChild(uld);
+      d.appendChild(s);
+      d.appendChild(body);
+      nl.appendChild(d);
+    });
+
+    drawAllocation(r);
+    buildGpif();
+    buildSources();
+    buildNextStep(r);
+
+    $("quizScreen").hidden = true;
+    $("resultScreen").hidden = false;
+    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch(e){ window.scrollTo(0, 0); }
+  }
+
+  /* 配分の表示。★ バーは代表値、数値表記は必ず「幅」で出す */
+  function drawAllocation(r){
+    var keys = ["stock", "bond", "cash"];
+    var colors = {
+      stock: getComputedStyle(document.documentElement).getPropertyValue("--stock").trim() || "#2f8f6d",
+      bond:  getComputedStyle(document.documentElement).getPropertyValue("--bond").trim() || "#5b9bd5",
+      cash:  getComputedStyle(document.documentElement).getPropertyValue("--cash").trim() || "#9aa8a3"
+    };
+
+    var bar = $("allocBar");
+    bar.innerHTML = "";
+    keys.forEach(function(k){
+      var seg = document.createElement("span");
+      seg.style.width = r.representative[k] + "%";
+      seg.style.background = colors[k];
+      seg.textContent = r.representative[k] >= 12 ? D.ASSET_LABELS[k] : "";
+      // 読み上げも表示と同じく「幅」で伝える（断定的な単一値にしない）
+      seg.setAttribute("aria-label",
+        D.ASSET_LABELS[k] + " " + r.range[k].min + "から" + r.range[k].max + "パーセント程度");
+      bar.appendChild(seg);
+    });
+
+    var rows = $("allocRows");
+    rows.innerHTML = "";
+    keys.forEach(function(k){
+      var row = document.createElement("div");
+      row.className = "alloc-row";
+
+      var sw = document.createElement("span");
+      sw.className = "sw";
+      sw.style.background = colors[k];
+
+      var nm = document.createElement("span");
+      nm.className = "nm";
+      nm.textContent = D.ASSET_LABELS[k];
+
+      var rg = document.createElement("span");
+      rg.className = "rg";
+      // ★ 断定形の単一値ではなく、必ず幅で表示する
+      rg.textContent = r.range[k].min + "〜" + r.range[k].max + "% 程度";
+
+      row.appendChild(sw);
+      row.appendChild(nm);
+      row.appendChild(rg);
+      rows.appendChild(row);
+    });
+  }
+
+  function buildGpif(){
+    var g = D.GPIF_REFERENCE;
+    $("gpifTitle").textContent = g.title;
+    $("gpifPeriod").textContent = g.period;
+    $("gpifCaution").textContent = g.caution;
+    $("gpifLink").href = g.sourceUrl;
+    $("gpifChecked").textContent = "（" + g.checkedOn + "確認）";
+
+    var palette = ["#5b9bd5", "#7fb3dd", "#2f8f6d", "#57a888"];
+    var bar = $("gpifBar");
+    bar.innerHTML = "";
+    g.items.forEach(function(it, i){
+      var s = document.createElement("span");
+      s.style.background = palette[i % palette.length];
+      s.textContent = it.label + " " + it.pct + "%";
+      bar.appendChild(s);
+    });
+  }
+
+  function buildSources(){
+    var ul = $("sourceList");
+    ul.innerHTML = "";
+    D.SOURCES.forEach(function(s){
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      a.href = s.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = s.title;
+      li.appendChild(a);
+      var pub = document.createElement("span");
+      pub.className = "pub";
+      pub.textContent = "（" + s.publisher + "）" + (s.note ? " " + s.note : "");
+      li.appendChild(pub);
+      ul.appendChild(li);
+    });
+  }
+
+  /* つみたてへの橋渡しは「期待リターン」ではなく「幅で試す」導線にする */
+  function buildNextStep(r){
+    var stockMid = r.representative.stock;
+    var msg = "資産配分の目安が見えたら、次は金額のイメージをつかんでみましょう。";
+    if (stockMid >= 60){
+      msg += "株式の比率が高いタイプほど、想定する年利を広い幅で試してみる意味があります。" +
+             "つみたてシミュレーターで年利2%・4%・6%を入れ比べて、幅を体感してみてください。";
+    } else {
+      msg += "つみたてシミュレーターで年利2%・4%・6%のように複数のパターンを入れ比べると、" +
+             "結果がどれくらい振れるかを確認できます。";
+    }
+    $("nextStep").textContent = msg;
+  }
+
+  /* ---------------- 配線 ---------------- */
+  buildQuestions();
+  refresh();
+
+  $("goBtn").addEventListener("click", showResult);
+  $("againBtn").addEventListener("click", function(){
+    answers = new Array(D.QUESTIONS.length).fill(null);
+    var btns = document.querySelectorAll(".opt");
+    for (var i = 0; i < btns.length; i++){
+      btns[i].classList.remove("on");
+      btns[i].setAttribute("aria-pressed", "false");
+    }
+    refresh();
+    $("resultScreen").hidden = true;
+    $("quizScreen").hidden = false;
+    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch(e){ window.scrollTo(0, 0); }
+  });
+
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0){
+    window.addEventListener("load", function(){
+      navigator.serviceWorker.register("./sw.js").catch(function(){});
+    });
+  }
+})();
+</script>
+</body>
+</html>
