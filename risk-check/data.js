@@ -54,7 +54,7 @@ var QUESTIONS = [
   {
     id: "horizon",
     axis: "使う予定までの年数",
-    text: "そのお金を使う予定は、どれくらい先ですか？",
+    text: "投資に回すお金を使う予定は、どれくらい先ですか？",
     options: [
       { label: "5年以内", point: 0 },
       { label: "5〜15年くらい", point: 1 },
@@ -105,8 +105,8 @@ var QUESTIONS = [
   },
   {
     id: "purpose",
-    axis: "そのお金の性格",
-    text: "そのお金は、どんな位置づけですか？",
+    axis: "投資に回すお金の性格",
+    text: "投資に回すお金は、どんな位置づけですか？",
     options: [
       { label: "教育費・住宅資金など、使い道と時期が決まっている", point: 0 },
       { label: "老後資金など、時期はおおよそ決まっている", point: 1 },

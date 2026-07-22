@@ -1,5 +1,5 @@
 // リスク許容度チェック Service Worker（キャッシュ優先・オフライン動作）
-const CACHE = "risk-check-v1";
+const CACHE = "risk-check-v2";
 const ASSETS = [
   "./", "./index.html", "./logic.js", "./data.js",
   "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"
