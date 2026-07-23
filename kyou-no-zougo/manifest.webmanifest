@@ -1,0 +1,15 @@
+{
+  "name": "今日の造語ジェネレーター",
+  "short_name": "今日の造語",
+  "description": "辞書に載っていない架空の言葉が、毎日1語だけ辞書みたいな顔をして届く無料ジェネレーター。おかわりで何度でも生成。登録不要・完全無料。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f2ea",
+  "theme_color": "#2e6e4e",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

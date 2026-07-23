@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>今日の造語ジェネレーター</title>
+<meta name="theme-color" content="#2e6e4e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root{
+    --paper:#f7f3e8;        /* 辞書の紙面 */
+    --paper-line:#c9bfa4;   /* 二重罫線 */
+    --ink:#2b2b2b;          /* 墨色 */
+    --green:#2e6e4e;        /* 装丁の深緑 */
+    --green-d:#245a40;
+    --bg:#f5f2ea;
+    --ui-text:#33352f;
+    --sub:#6b6b60;
+    --btn-bg:#ffffff;
+    --btn-line:#d8d2c2;
+    --shadow:rgba(50,50,40,.14);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#20221f;
+      --ui-text:#e7e4da;
+      --sub:#a9a89c;
+      --btn-bg:#2c2e2a;
+      --btn-line:#43463f;
+      --shadow:rgba(0,0,0,.4);
+      /* カード紙面はダークでもクリーム色のまま=紙らしさ優先（仕様§4） */
+    }
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ui-text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,sans-serif;
+    line-height:1.7;
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:600px;margin:0 auto;padding:20px 16px 48px;}
+  .head{text-align:center;margin-bottom:14px;}
+  .head .brand{
+    display:inline-block;font-weight:700;letter-spacing:.06em;color:var(--green);
+    border-bottom:2px solid var(--green);padding-bottom:2px;font-size:15px;
+  }
+  @media (prefers-color-scheme: dark){ .head .brand{color:#7fc4a0;border-color:#7fc4a0;} }
+  .subhead{
+    text-align:center;font-size:15px;color:var(--sub);margin:14px 0 8px;font-weight:600;
+  }
+
+  /* ===== 辞書カード ===== */
+  .card{
+    background:var(--paper);
+    color:var(--ink);
+    border-radius:6px;
+    padding:22px 20px 20px;
+    box-shadow:0 3px 14px var(--shadow);
+    position:relative;
+    /* 二重罫線（外＋内） */
+    border:1px solid var(--paper-line);
+    outline:3px double var(--paper-line);
+    outline-offset:-7px;
+    font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","BIZ UDMincho","MS Mincho",serif;
+  }
+  .card .entry{
+    display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;
+    border-bottom:1px solid var(--paper-line);padding-bottom:10px;margin-bottom:12px;
+  }
+  .card .surface{
+    font-size:34px;font-weight:700;letter-spacing:.02em;line-height:1.25;color:var(--ink);
+  }
+  .card .yomi{font-size:16px;color:#5a5a4e;}
+  .card .pos{
+    font-size:12.5px;color:#5a5a4e;border:1px solid var(--paper-line);
+    border-radius:3px;padding:1px 6px;align-self:center;
+  }
+  .card .def{font-size:17px;margin:0 0 12px;text-indent:1.1em;position:relative;}
+  .card .def::before{content:"①";position:absolute;left:-.15em;text-indent:0;color:#7a7a6a;}
+  .card .ex{font-size:15px;color:#4a4a3e;margin:0 0 12px;padding-left:1.1em;position:relative;}
+  .card .ex::before{content:"▽";position:absolute;left:0;color:#7a9a7a;}
+  .card .note{font-size:12.5px;color:#8a8a7a;margin:0;padding-left:1.1em;position:relative;}
+  .card .note::before{content:"※";position:absolute;left:0;}
+
+  /* ===== ボタン群 ===== */
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+  .btns .primary{grid-column:1 / -1;}
+  button{
+    font:inherit;font-size:15px;font-weight:600;cursor:pointer;
+    border-radius:10px;padding:13px 10px;border:1px solid var(--btn-line);
+    background:var(--btn-bg);color:var(--ui-text);
+    -webkit-tap-highlight-color:transparent;transition:transform .04s ease, background .15s;
+    min-height:48px;
+  }
+  button:active{transform:scale(.98);}
+  button.primary{
+    background:var(--green);color:#fff;border-color:var(--green-d);font-size:16px;
+  }
+  @media (prefers-color-scheme: dark){ button.primary{background:#2e7a54;border-color:#256444;} }
+
+  .disclaimer{
+    text-align:center;font-size:12.5px;color:var(--sub);margin:16px 4px 0;line-height:1.6;
+  }
+  .back{
+    display:block;text-align:center;margin:14px auto 0;background:none;border:none;
+    color:var(--green);font-weight:600;font-size:14px;text-decoration:underline;
+    min-height:auto;padding:6px;
+  }
+  @media (prefers-color-scheme: dark){ .back{color:#7fc4a0;} }
+  .back[hidden]{display:none;}
+
+  /* ===== あそびかた（折りたたみ） ===== */
+  details{margin-top:22px;background:var(--btn-bg);border:1px solid var(--btn-line);border-radius:10px;padding:2px 14px;}
+  summary{cursor:pointer;font-weight:600;font-size:14px;padding:11px 0;list-style:none;}
+  summary::-webkit-details-marker{display:none;}
+  summary::before{content:"▶ ";color:var(--sub);font-size:11px;}
+  details[open] summary::before{content:"▼ ";}
+  details .body{font-size:14px;color:var(--sub);padding:2px 0 12px;line-height:1.75;}
+  details .body p{margin:6px 0;}
+
+  .toast{
+    position:absolute;left:50%;bottom:14px;transform:translateX(-50%) translateY(10px);
+    background:rgba(43,43,43,.92);color:#fff;font-size:13px;padding:8px 16px;border-radius:20px;
+    opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;white-space:nowrap;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  /* シェアカード生成用の隠しcanvas */
+  #shareCanvas{display:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head"><span class="brand">今日の造語辞典</span></div>
+
+  <div class="subhead" id="subhead">今日の造語</div>
+
+  <div class="card" id="card">
+    <div class="entry">
+      <span class="surface" id="surface">—</span>
+      <span class="yomi" id="yomi"></span>
+      <span class="pos" id="pos">名詞</span>
+    </div>
+    <p class="def" id="def"></p>
+    <p class="ex" id="ex"></p>
+    <p class="note" id="note"></p>
+    <div class="toast" id="toast">コピーしました</div>
+  </div>
+
+  <div class="btns">
+    <button class="primary" id="btnRefill">おかわり（べつの語をつくる）</button>
+    <button id="btnSave">画像を保存</button>
+    <button id="btnCopy">コピーする</button>
+    <button id="btnShare" style="grid-column:1 / -1;">Xでシェア</button>
+  </div>
+
+  <button class="back" id="btnBack" hidden>← 今日の造語にもどる</button>
+
+  <p class="disclaimer">この辞典に載っている語は、すべて実在しない架空の言葉です。</p>
+
+  <details>
+    <summary>あそびかた</summary>
+    <div class="body">
+      <p>「今日の造語」は、辞書に載っていない架空の言葉が毎日1語だけ届くコーナーです。同じ日に開けば、誰の端末でも同じ語が出ます。「今日のあれ見た？」と友達と見せ合ってみてください。</p>
+      <p>「おかわり」を押すと、その場で新しい造語を何度でもつくれます。気に入った語は「画像を保存」で辞書ページ風の画像にしたり、「コピーする」で文章にして貼りつけたりできます。</p>
+      <p>入力した情報はどこにも送信されません。造語の計算はすべて、お使いの端末の中だけで行っています。</p>
+    </div>
+  </details>
+</div>
+
+<canvas id="shareCanvas" width="1080" height="1080"></canvas>
+
+<script src="data.js"></script>
+<script src="logic.js"></script>
+<script>
+(function(){
+  "use strict";
+  var L = window.ZOUGO_LOGIC;
+  var el = function(id){ return document.getElementById(id); };
+  var state = { mode:"daily", word:null };
+
+  // 日替わり語が保持する dateStr("YYYY-MM-DD") から表示日付を取り出す。
+  // new Date() を都度参照すると、深夜に開いたまま日付を跨いだとき「語は前日・日付は翌日」の
+  // 食い違ったシェア物ができるため、語に紐づく dateStr を一貫して使う（レビューM-1対応）。
+  function dispDate(word){
+    var p = (word.dateStr || L.localDateStr()).split("-");
+    return { y: p[0], m: parseInt(p[1],10), d: parseInt(p[2],10) };
+  }
+
+  function render(word, mode){
+    state.word = word;
+    state.mode = mode;
+    el("surface").textContent = word.surface;
+    el("yomi").textContent = "（" + word.yomi + "）";
+    el("def").textContent = word.def;
+    el("ex").textContent = word.ex;
+    el("note").textContent = word.note;
+    if(mode === "daily"){
+      var dd = dispDate(word);
+      el("subhead").textContent = "今日の造語　" + dd.m + "月" + dd.d + "日";
+      el("btnBack").hidden = true;
+    }else{
+      el("subhead").textContent = "おかわりの造語";
+      el("btnBack").hidden = false;
+    }
+  }
+
+  function showToast(msg){
+    var t = el("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(t._t);
+    t._t = setTimeout(function(){ t.classList.remove("show"); }, 1500);
+  }
+
+  // ---- 今日の造語 ----
+  function showDaily(){
+    render(L.dailyWord(), "daily");
+  }
+
+  // ---- おかわり ----
+  function showRefill(){
+    render(L.randomWord(undefined, state.word), "refill");
+  }
+
+  // ---- コピー文（仕様§7） ----
+  function buildCopyText(){
+    var w = state.word;
+    var head;
+    if(state.mode === "daily"){
+      var dd = dispDate(w);
+      head = "【今日の造語】" + dd.m + "月" + dd.d + "日";
+    }else{
+      head = "【造語できました】";
+    }
+    return head + "\n" +
+      w.surface + "（" + w.yomi + "）\n" +
+      "――" + w.def + "\n" +
+      "#今日の造語 #りんねブログ\n" +
+      "https://rinne-blog.com/kyou-no-zougo";
+  }
+
+  function doCopy(){
+    var text = buildCopyText();
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(
+        function(){ showToast("コピーしました"); },
+        function(){ fallbackCopy(text); }
+      );
+    }else{
+      fallbackCopy(text);
+    }
+  }
+  function fallbackCopy(text){
+    var ta = document.createElement("textarea");
+    // 仕様§2「position:fixed 不使用」に従い、画面外配置は absolute で行う（レビューM-2対応）
+    ta.value = text; ta.style.position="absolute"; ta.style.left="-9999px"; ta.style.top="0"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); showToast("コピーしました"); }
+    catch(e){ showToast("コピーできませんでした"); }
+    document.body.removeChild(ta);
+  }
+
+  // ---- Xシェア ----
+  function doShare(){
+    var text = buildCopyText();
+    var url = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(text);
+    window.open(url, "_blank", "noopener");
+  }
+
+  // ---- Canvasシェアカード（1080×1080・仕様§5） ----
+  function drawShareCard(){
+    var cv = el("shareCanvas");
+    var ctx = cv.getContext("2d");
+    var W = 1080, H = 1080;
+    var w = state.word;
+    var mincho = '"Hiragino Mincho ProN","Yu Mincho","YuMincho","BIZ UDMincho","MS Mincho",serif';
+
+    // 背景（クリーム紙）
+    ctx.fillStyle = "#f7f3e8";
+    ctx.fillRect(0,0,W,H);
+
+    var mL = 96, mR = W - 96;
+    var innerW = mR - mL;
+
+    // ヘッダー
+    ctx.fillStyle = "#5a5a4e";
+    ctx.font = "500 30px " + mincho;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    var header;
+    if(state.mode === "daily"){
+      var dd = dispDate(w);
+      header = "今日の造語辞典｜" + dd.y + "年" + dd.m + "月" + dd.d + "日";
+    }else{
+      header = "造語辞典";
+    }
+    ctx.fillText(header, mL, 132);
+
+    // 上罫線（二重）
+    ctx.strokeStyle = "#c9bfa4";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(mL,160); ctx.lineTo(mR,160); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(mL,168); ctx.lineTo(mR,168); ctx.stroke();
+
+    // 見出し語（特大・自動縮小）
+    ctx.fillStyle = "#2b2b2b";
+    var size = 148;
+    ctx.textAlign = "left";
+    do{
+      ctx.font = "700 " + size + "px " + mincho;
+      if(ctx.measureText(w.surface).width <= innerW) break;
+      size -= 4;
+    }while(size > 60);
+    var surfaceY = 340;
+    ctx.fillText(w.surface, mL, surfaceY);
+
+    // 読み
+    ctx.fillStyle = "#5a5a4e";
+    ctx.font = "400 42px " + mincho;
+    ctx.fillText("（" + w.yomi + "）", mL, surfaceY + 66);
+
+    // 【名詞】
+    ctx.fillStyle = "#5a5a4e";
+    ctx.font = "400 38px " + mincho;
+    var posY = surfaceY + 140;
+    ctx.fillText("【名詞】", mL, posY);
+
+    // 語釈（① 折返し最大4行）
+    var y = posY + 76;
+    ctx.fillStyle = "#2b2b2b";
+    ctx.font = "400 44px " + mincho;
+    y = wrapText(ctx, "① " + w.def, mL, y, innerW, 62, 4);
+
+    // 用例（▽ 折返し最大3行）
+    y += 30;
+    ctx.fillStyle = "#4a4a3e";
+    ctx.font = "400 40px " + mincho;
+    y = wrapText(ctx, "▽ " + w.ex, mL, y, innerW, 58, 3);
+
+    // 使用上の注意（※ 小・グレー）
+    y += 26;
+    ctx.fillStyle = "#8a8a7a";
+    ctx.font = "400 32px " + mincho;
+    y = wrapText(ctx, "※ " + w.note, mL, y, innerW, 46, 2);
+
+    // 下罫線
+    var footLineY = H - 150;
+    ctx.strokeStyle = "#c9bfa4";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(mL,footLineY); ctx.lineTo(mR,footLineY); ctx.stroke();
+
+    // フッター
+    ctx.fillStyle = "#7a7a6a";
+    ctx.font = "400 28px " + mincho;
+    ctx.fillText("rinne-blog.com/kyou-no-zougo", mL, footLineY + 54);
+    ctx.fillText("※この語は実在しません", mL, footLineY + 96);
+
+    return cv;
+  }
+
+  // 折返し描画。maxLines行を超えたら末尾を「…」で省略。次の描画開始yを返す
+  function wrapText(ctx, text, x, y, maxW, lineH, maxLines){
+    var chars = text.split("");
+    var lines = [];
+    var cur = "";
+    for(var i=0;i<chars.length;i++){
+      var test = cur + chars[i];
+      if(ctx.measureText(test).width > maxW && cur !== ""){
+        lines.push(cur);
+        cur = chars[i];
+        if(lines.length === maxLines){ break; }
+      }else{
+        cur = test;
+      }
+    }
+    if(lines.length < maxLines){ lines.push(cur); }
+    else{
+      // maxLines到達。残り文字があれば最終行に…を付ける
+      var rest = chars.slice(lines.join("").length).join("");
+      if(rest.length > 0){
+        var last = lines[maxLines-1];
+        while(last.length>0 && ctx.measureText(last + "…").width > maxW){ last = last.slice(0,-1); }
+        lines[maxLines-1] = last + "…";
+      }
+    }
+    for(var j=0;j<lines.length;j++){
+      ctx.fillText(lines[j], x, y + j*lineH);
+    }
+    return y + lines.length*lineH;
+  }
+
+  // ---- 画像を保存 ----
+  function doSave(){
+    var cv = drawShareCard();
+    var filename = "kyou-no-zougo-" + state.word.surface + ".png";
+    cv.toBlob(function(blob){
+      if(!blob){ showToast("保存できませんでした"); return; }
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      showToast("画像を保存しました");
+    }, "image/png");
+  }
+
+  // ---- 配線 ----
+  el("btnRefill").addEventListener("click", showRefill);
+  el("btnBack").addEventListener("click", showDaily);
+  el("btnCopy").addEventListener("click", doCopy);
+  el("btnShare").addEventListener("click", doShare);
+  el("btnSave").addEventListener("click", doSave);
+
+  showDaily();
+
+  // ---- Service Worker 登録 ----
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", function(){
+      navigator.serviceWorker.register("sw.js").catch(function(){});
+    });
+  }
+})();
+</script>
+</body>
+</html>
