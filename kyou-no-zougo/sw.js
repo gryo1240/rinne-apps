@@ -1,5 +1,5 @@
 // 今日の造語ジェネレーター Service Worker（キャッシュ優先・オフライン動作）
-const CACHE = "kyou-no-zougo-v1";
+const CACHE = "kyou-no-zougo-v2";
 const ASSETS = [
   "./", "./index.html", "./logic.js", "./data.js",
   "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"

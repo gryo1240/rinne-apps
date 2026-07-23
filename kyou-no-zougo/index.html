@@ -45,11 +45,11 @@
   .head{text-align:center;margin-bottom:14px;}
   .head .brand{
     display:inline-block;font-weight:700;letter-spacing:.06em;color:var(--green);
-    border-bottom:2px solid var(--green);padding-bottom:2px;font-size:15px;
+    border-bottom:2px solid var(--green);padding-bottom:2px;font-size:17px;
   }
   @media (prefers-color-scheme: dark){ .head .brand{color:#7fc4a0;border-color:#7fc4a0;} }
   .subhead{
-    text-align:center;font-size:15px;color:var(--sub);margin:14px 0 8px;font-weight:600;
+    text-align:center;font-size:17px;color:var(--sub);margin:14px 0 8px;font-weight:600;
   }
 
   /* ===== 辞書カード ===== */
@@ -71,25 +71,25 @@
     border-bottom:1px solid var(--paper-line);padding-bottom:10px;margin-bottom:12px;
   }
   .card .surface{
-    font-size:34px;font-weight:700;letter-spacing:.02em;line-height:1.25;color:var(--ink);
+    font-size:36px;font-weight:700;letter-spacing:.02em;line-height:1.25;color:var(--ink);
   }
-  .card .yomi{font-size:16px;color:#5a5a4e;}
+  .card .yomi{font-size:18px;color:#5a5a4e;}
   .card .pos{
-    font-size:12.5px;color:#5a5a4e;border:1px solid var(--paper-line);
+    font-size:14.5px;color:#5a5a4e;border:1px solid var(--paper-line);
     border-radius:3px;padding:1px 6px;align-self:center;
   }
-  .card .def{font-size:17px;margin:0 0 12px;text-indent:1.1em;position:relative;}
+  .card .def{font-size:19px;margin:0 0 12px;text-indent:1.1em;position:relative;}
   .card .def::before{content:"①";position:absolute;left:-.15em;text-indent:0;color:#7a7a6a;}
-  .card .ex{font-size:15px;color:#4a4a3e;margin:0 0 12px;padding-left:1.1em;position:relative;}
+  .card .ex{font-size:17px;color:#4a4a3e;margin:0 0 12px;padding-left:1.1em;position:relative;}
   .card .ex::before{content:"▽";position:absolute;left:0;color:#7a9a7a;}
-  .card .note{font-size:12.5px;color:#8a8a7a;margin:0;padding-left:1.1em;position:relative;}
+  .card .note{font-size:14.5px;color:#5f5f50;margin:0;padding-left:1.1em;position:relative;}
   .card .note::before{content:"※";position:absolute;left:0;}
 
   /* ===== ボタン群 ===== */
   .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
   .btns .primary{grid-column:1 / -1;}
   button{
-    font:inherit;font-size:15px;font-weight:600;cursor:pointer;
+    font:inherit;font-size:17px;font-weight:600;cursor:pointer;
     border-radius:10px;padding:13px 10px;border:1px solid var(--btn-line);
     background:var(--btn-bg);color:var(--ui-text);
     -webkit-tap-highlight-color:transparent;transition:transform .04s ease, background .15s;
@@ -97,16 +97,16 @@
   }
   button:active{transform:scale(.98);}
   button.primary{
-    background:var(--green);color:#fff;border-color:var(--green-d);font-size:16px;
+    background:var(--green);color:#fff;border-color:var(--green-d);font-size:18px;
   }
   @media (prefers-color-scheme: dark){ button.primary{background:#2e7a54;border-color:#256444;} }
 
   .disclaimer{
-    text-align:center;font-size:12.5px;color:var(--sub);margin:16px 4px 0;line-height:1.6;
+    text-align:center;font-size:14.5px;color:var(--sub);margin:16px 4px 0;line-height:1.6;
   }
   .back{
     display:block;text-align:center;margin:14px auto 0;background:none;border:none;
-    color:var(--green);font-weight:600;font-size:14px;text-decoration:underline;
+    color:var(--green);font-weight:600;font-size:16px;text-decoration:underline;
     min-height:auto;padding:6px;
   }
   @media (prefers-color-scheme: dark){ .back{color:#7fc4a0;} }
@@ -114,16 +114,16 @@
 
   /* ===== あそびかた（折りたたみ） ===== */
   details{margin-top:22px;background:var(--btn-bg);border:1px solid var(--btn-line);border-radius:10px;padding:2px 14px;}
-  summary{cursor:pointer;font-weight:600;font-size:14px;padding:11px 0;list-style:none;}
+  summary{cursor:pointer;font-weight:600;font-size:16px;padding:11px 0;list-style:none;}
   summary::-webkit-details-marker{display:none;}
-  summary::before{content:"▶ ";color:var(--sub);font-size:11px;}
+  summary::before{content:"▶ ";color:var(--sub);font-size:13px;}
   details[open] summary::before{content:"▼ ";}
-  details .body{font-size:14px;color:var(--sub);padding:2px 0 12px;line-height:1.75;}
+  details .body{font-size:16px;color:var(--sub);padding:2px 0 12px;line-height:1.75;}
   details .body p{margin:6px 0;}
 
   .toast{
     position:absolute;left:50%;bottom:14px;transform:translateX(-50%) translateY(10px);
-    background:rgba(43,43,43,.92);color:#fff;font-size:13px;padding:8px 16px;border-radius:20px;
+    background:rgba(43,43,43,.92);color:#fff;font-size:15px;padding:8px 16px;border-radius:20px;
     opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;white-space:nowrap;
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
