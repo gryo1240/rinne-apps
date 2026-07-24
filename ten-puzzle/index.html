@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>今日の10パズル｜4つの数字で10をつくる脳トレ</title>
+<meta name="theme-color" content="#1fae57">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{
+  --bg:#f3f7f4; --panel:#ffffff; --ink:#243027; --sub:#6b7a70; --line:#dbe6df;
+  --accent:#1fae57; --accent-d:#178f47; --accent-bg:#e4f6ec;
+  --warn:#e2603f; --card:#eef5f0; --shadow:0 2px 8px rgba(30,60,40,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#161c18; --panel:#1f2823; --ink:#e8f0ea; --sub:#9db0a4; --line:#33403a;
+    --accent:#37c46f; --accent-d:#2aa259; --accent-bg:#1d3327; --card:#26322c; --shadow:0 2px 10px rgba(0,0,0,.35);}
+}
+:root[data-theme="dark"]{ --bg:#161c18; --panel:#1f2823; --ink:#e8f0ea; --sub:#9db0a4; --line:#33403a;
+  --accent:#37c46f; --accent-d:#2aa259; --accent-bg:#1d3327; --card:#26322c; --shadow:0 2px 10px rgba(0,0,0,.35);}
+:root[data-theme="light"]{ --bg:#f3f7f4; --panel:#ffffff; --ink:#243027; --sub:#6b7a70; --line:#dbe6df;
+  --accent:#1fae57; --accent-d:#178f47; --accent-bg:#e4f6ec; --card:#eef5f0; --shadow:0 2px 8px rgba(30,60,40,.08);}
+
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;}
+body{background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+  line-height:1.5; -webkit-text-size-adjust:100%;}
+#app{max-width:460px; margin:0 auto; padding:14px 14px 26px; min-height:100%;}
+.screen{display:none;}
+.screen.active{display:block;}
+h1{font-size:1.5rem; margin:.2em 0 .1em; letter-spacing:.02em;}
+.tagline{color:var(--sub); font-size:.92rem; margin:0 0 16px;}
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow);}
+button{font-family:inherit; cursor:pointer; border:none; color:inherit;}
+.btn{display:block; width:100%; padding:15px; border-radius:14px; font-size:1.05rem; font-weight:700;
+  background:var(--accent); color:#fff; box-shadow:var(--shadow); user-select:none;}
+.btn:active{transform:translateY(1px);}
+.btn.sub{background:var(--card); color:var(--ink); border:1px solid var(--line);}
+.btn.small{padding:11px; font-size:.95rem;}
+.bigbtn{padding:20px 16px; font-size:1.2rem; margin-bottom:12px;}
+.bigbtn .state{display:block; font-size:.82rem; font-weight:600; opacity:.9; margin-top:4px;}
+.row{display:flex; gap:10px;}
+.row>*{flex:1;}
+.records{display:flex; gap:8px; margin:14px 0; text-align:center;}
+.rec{flex:1; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:10px 6px;}
+.rec .num{font-size:1.35rem; font-weight:800; color:var(--accent);}
+.rec .lbl{font-size:.72rem; color:var(--sub);}
+.toprow{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+.toggle{display:flex; align-items:center; gap:6px; font-size:.85rem; color:var(--sub); user-select:none;}
+.toggle input{width:38px; height:22px; appearance:none; background:var(--line); border-radius:11px; position:relative; transition:.15s;}
+.toggle input:checked{background:var(--accent);}
+.toggle input::after{content:""; position:absolute; width:18px; height:18px; border-radius:50%; background:#fff; top:2px; left:2px; transition:.15s;}
+.toggle input:checked::after{left:18px;}
+details{margin-top:14px; font-size:.9rem; color:var(--sub);}
+details summary{cursor:pointer; padding:8px 0; font-weight:600;}
+details p, details li{margin:.3em 0;}
+
+/* プレイ画面 */
+.play-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; font-size:.85rem; color:var(--sub);}
+.timerbar-wrap{height:10px; background:var(--card); border-radius:6px; overflow:hidden; margin-bottom:6px;}
+.timerbar{height:100%; width:100%; background:var(--accent); transition:none;}
+.target{ text-align:center; font-size:1.05rem; color:var(--sub); margin:12px 0 4px;}
+.target b{font-size:2.1rem; color:var(--accent); display:inline-block; vertical-align:middle; margin:0 6px;}
+.cards{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; min-height:88px; align-items:center; margin:10px 0 14px;}
+.card{min-width:66px; height:78px; padding:0 8px; border-radius:14px; background:var(--card); border:2px solid var(--line);
+  font-size:1.7rem; font-weight:800; display:flex; align-items:center; justify-content:center; position:relative; user-select:none;}
+.card.frac{font-size:1.25rem;}
+.card.sel{border-color:var(--accent); background:var(--accent-bg); color:var(--accent-d);}
+.card .ord{position:absolute; top:3px; left:6px; font-size:.7rem; color:var(--accent); font-weight:700;}
+.ops{display:flex; gap:10px; margin-bottom:10px;}
+.op{flex:1; height:56px; border-radius:12px; background:var(--panel); border:1px solid var(--line);
+  font-size:1.5rem; font-weight:800; color:var(--ink); user-select:none;}
+.op:disabled{opacity:.4;}
+.op:active:not(:disabled){background:var(--accent-bg);}
+.ctrls{display:flex; gap:10px;}
+.ctrls .btn{flex:1;}
+.steps{margin-top:12px; min-height:20px; font-size:.85rem; color:var(--sub); text-align:center;}
+.hint{font-size:.78rem; color:var(--sub); text-align:center; margin-top:6px;}
+
+/* リザルト */
+.result-head{text-align:center; font-size:1.7rem; font-weight:800; margin:20px 0 6px;}
+.result-head.clear{color:var(--accent);}
+.result-head.timeup{color:var(--warn);}
+.result-time{text-align:center; font-size:2.6rem; font-weight:800; margin:6px 0;}
+.result-sub{text-align:center; color:var(--sub); font-size:.92rem; margin-bottom:8px;}
+.badge{display:inline-block; background:var(--accent-bg); color:var(--accent-d); border-radius:999px; padding:4px 12px; font-size:.85rem; font-weight:700;}
+.graph-wrap{margin:14px 0;}
+.graph-wrap h3{font-size:.85rem; color:var(--sub); margin:0 0 4px;}
+canvas{width:100%; height:120px; display:block; background:var(--panel); border:1px solid var(--line); border-radius:12px;}
+.countdown{position:relative; text-align:center; font-size:4rem; font-weight:800; color:var(--accent); padding:40px 0;}
+.copied{color:var(--accent); font-size:.8rem; text-align:center; height:1em; margin-top:4px;}
+a.xlink{display:block; text-align:center; margin-top:8px; color:var(--sub); font-size:.85rem; text-decoration:none;}
+.mini{font-size:.78rem; color:var(--sub); text-align:center; margin-top:16px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ========== タイトル ========== -->
+  <section id="scr-title" class="screen active">
+    <div class="toprow">
+      <h1>今日の10パズル</h1>
+      <label class="toggle" title="音">🔊<input type="checkbox" id="sound-toggle"></label>
+    </div>
+    <p class="tagline">4つの数字を＋−×÷で組み合わせて <b>10</b> をつくろう。制限は60秒。</p>
+
+    <button class="btn bigbtn" id="btn-daily">今日の1問に挑戦<span class="state" id="daily-state"></span></button>
+
+    <div class="panel" style="padding:12px; margin-bottom:12px;">
+      <div class="row" style="align-items:center;">
+        <button class="btn sub small" id="btn-practice" style="flex:2;">れんしゅう（記録に残らない）</button>
+        <label class="toggle" style="flex:1; justify-content:center;">上級<input type="checkbox" id="adv-toggle"></label>
+      </div>
+      <p class="hint" id="adv-hint">上級＝分数を使わないと解けない難問（腕試し）</p>
+    </div>
+
+    <div class="records">
+      <div class="rec"><div class="num" id="rec-streak">0</div><div class="lbl">連続クリア日数</div></div>
+      <div class="rec"><div class="num" id="rec-clears">0</div><div class="lbl">今日の1問 通算</div></div>
+      <div class="rec"><div class="num" id="rec-best">--</div><div class="lbl">自己ベスト</div></div>
+    </div>
+
+    <details>
+      <summary>あそびかた</summary>
+      <p>① カードを2枚タップして選ぶ（先に選んだ方が左）。</p>
+      <p>② ＋−×÷ のどれかをタップすると、2枚が1枚に合体します。</p>
+      <p>③ これを3回くり返して、最後の1枚を <b>10</b> にすればクリア！</p>
+      <p>「もどす」で1手戻せます。割り算で分数（例 7⁄2）になってもOK。</p>
+      <p class="mini" style="text-align:left;">脳トレ・エンタメ用です。記録はこの端末の中だけに保存され、外部に送信されません。</p>
+    </details>
+  </section>
+
+  <!-- ========== プレイ ========== -->
+  <section id="scr-play" class="screen">
+    <div class="play-head">
+      <span id="mode-label">今日の1問</span>
+      <span id="time-num">60.0</span>
+    </div>
+    <div class="timerbar-wrap"><div class="timerbar" id="timerbar"></div></div>
+
+    <div id="countdown" class="countdown" style="display:none;">3</div>
+
+    <div id="board-area">
+      <div class="target">この数字で <b>10</b> をつくる</div>
+      <div class="cards" id="cards"></div>
+      <div class="ops">
+        <button class="op" data-op="+">＋</button>
+        <button class="op" data-op="-">−</button>
+        <button class="op" data-op="*">×</button>
+        <button class="op" data-op="/">÷</button>
+      </div>
+      <div class="ctrls">
+        <button class="btn sub small" id="btn-undo">もどす</button>
+        <button class="btn sub small" id="btn-reset">さいしょから</button>
+      </div>
+      <div class="steps" id="steps"></div>
+      <div class="hint">2枚えらんで、＋−×÷ をタップ</div>
+      <button class="btn sub small" id="btn-quit" style="margin-top:14px;">やめる</button>
+    </div>
+  </section>
+
+  <!-- ========== リザルト ========== -->
+  <section id="scr-result" class="screen">
+    <div class="result-head" id="result-head"></div>
+    <div class="result-time" id="result-time"></div>
+    <div class="result-sub" id="result-sub"></div>
+    <div style="text-align:center;"><span class="badge" id="result-badge" style="display:none;"></span></div>
+
+    <div class="graph-wrap" id="graph-wrap" style="display:none;">
+      <h3>今日の1問クリアタイムの推移</h3>
+      <canvas id="graph" width="440" height="120"></canvas>
+    </div>
+
+    <div style="margin-top:16px;">
+      <button class="btn" id="btn-copy">結果をコピー</button>
+      <div class="copied" id="copied"></div>
+      <a class="xlink" id="x-share" target="_blank" rel="noopener">Xでシェア →</a>
+    </div>
+
+    <div class="row" style="margin-top:16px;">
+      <button class="btn sub" id="btn-again" style="display:none;">つぎの問題</button>
+      <button class="btn sub" id="btn-home">タイトルへ</button>
+    </div>
+    <p class="mini" id="result-note"></p>
+  </section>
+
+</div>
+
+<script src="engine.js"></script>
+<script src="puzzles.js"></script>
+<script>
+(function(){
+  "use strict";
+  var T = window.TenPuzzle;
+  var POOL = window.TEN_DAILY_POOL, POOL_SIZE = window.TEN_POOL_SIZE;
+  var TARGET = T.TARGET10;
+  var LSKEY = "ten-puzzle-v1";
+  var DEBUG_TIME = (function(){ var m = location.search.match(/[?&]debugTime=(\d+)/); return m ? parseInt(m[1],10) : null; })();
+
+  // ---- 記録 ----
+  function loadRec(){
+    try{ var r = JSON.parse(localStorage.getItem(LSKEY)); if(r && typeof r==="object") return r; }catch(e){}
+    return { today:{date:null,status:"none",timeMs:null}, streak:{current:0,best:0,lastClearedDate:null},
+      totals:{clears:0,plays:0}, history:[], bestTimeMs:null, sound:true };
+  }
+  function saveRec(r){ try{ localStorage.setItem(LSKEY, JSON.stringify(r)); }catch(e){} }
+  var rec = loadRec();
+
+  // ---- 状態 ----
+  var mode="daily", advanced=false;
+  var initialNums=[], board=[], sel=[], undoStack=[], stepLog=[];
+  var startTime=0, rafId=null, running=false, curPuzzle=null, cdTimer=null;
+
+  // ---- DOM ----
+  var $ = function(id){ return document.getElementById(id); };
+  function show(id){ ["scr-title","scr-play","scr-result"].forEach(function(s){ $(s).classList.toggle("active", s===id); }); }
+
+  // ---- 音（WebAudio自前）----
+  var actx=null;
+  function ensureAudio(){
+    if(!rec.sound) return;
+    if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+    if(actx && actx.state==="suspended"){ try{ actx.resume(); }catch(e){} } // ジェスチャ後でもsuspended開始する端末対策
+  }
+  function beep(freq, durMs, type){
+    if(!rec.sound || !actx) return;
+    try{
+      var o=actx.createOscillator(), g=actx.createGain();
+      o.type=type||"sine"; o.frequency.value=freq; o.connect(g); g.connect(actx.destination);
+      var t=actx.currentTime; g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.18,t+.01);
+      g.gain.exponentialRampToValueAtTime(.0001,t+durMs/1000); o.start(t); o.stop(t+durMs/1000+.02);
+    }catch(e){}
+  }
+  function sndSelect(){ beep(520,60,"triangle"); }
+  function sndCombine(){ beep(660,90,"square"); }
+  function sndClear(){ [660,880,1180].forEach(function(f,i){ setTimeout(function(){beep(f,160,"triangle");}, i*110); }); }
+  function sndTimeup(){ beep(300,200,"sawtooth"); setTimeout(function(){beep(200,260,"sawtooth");},180); }
+
+  // ---- タイトル画面の記録表示 ----
+  function refreshTitle(){
+    var todayStr = T.jstDateStr(new Date());
+    // ストリークは「まだ生きている」場合のみ数値表示。前回クリアが今日でも前日でもない＝途切れ→0
+    var streakVal = 0;
+    if(rec.streak && rec.streak.lastClearedDate){
+      var lc = rec.streak.lastClearedDate;
+      if(lc===todayStr || T.isPrevDay(lc, todayStr)) streakVal = rec.streak.current;
+    }
+    $("rec-streak").textContent = streakVal;
+    $("rec-clears").textContent = (rec.totals && rec.totals.clears) || 0;
+    $("rec-best").textContent = rec.bestTimeMs!=null ? fmtTime(rec.bestTimeMs) : "--";
+    var st = "";
+    if(rec.today && rec.today.date===todayStr){
+      if(rec.today.status==="cleared") st = "今日はクリア済み（"+fmtTime(rec.today.timeMs)+"）もう一度挑戦もOK";
+      else if(rec.today.status==="timeup") st = "今日はタイムアップ。もう一度挑戦できます";
+      else st="";
+    } else st = "まだ挑戦していません";
+    $("daily-state").textContent = st;
+    $("sound-toggle").checked = !!rec.sound;
+    $("adv-toggle").checked = advanced;
+  }
+  function fmtTime(ms){
+    if(ms==null) return "--";
+    var s = ms/1000; if(s<60) return s.toFixed(1)+"秒";
+    var m=Math.floor(s/60); return m+"分"+Math.round(s-m*60)+"秒";
+  }
+
+  // ---- 出題 ----
+  function startGame(m){
+    mode=m;
+    if(m==="daily"){
+      var idx = T.dailyIndex(T.jstDateStr(new Date()), POOL_SIZE);
+      curPuzzle = { nums: POOL[idx].slice(), diff:"daily" };
+      $("mode-label").textContent="今日の1問";
+      rec.totals=rec.totals||{clears:0,plays:0}; rec.totals.plays++; saveRec(rec);
+    }else{
+      var p = T.genPractice(advanced, Math.random);
+      curPuzzle = p || { nums:[2,3,4,5] };
+      $("mode-label").textContent = advanced ? "れんしゅう（上級）" : "れんしゅう";
+    }
+    initialNums = curPuzzle.nums.slice();
+    resetBoard();
+    show("scr-play");
+    runCountdown();
+  }
+  function resetBoard(){
+    board = T.toBoard(initialNums);
+    sel=[]; undoStack=[]; stepLog=[];
+    renderBoard(); renderSteps();
+  }
+
+  function runCountdown(){
+    var cd=$("countdown"), area=$("board-area");
+    area.style.display="none"; cd.style.display="block";
+    var n=3; cd.textContent=n; beep(440,90);
+    if(cdTimer) clearInterval(cdTimer);
+    cdTimer=setInterval(function(){
+      n--;
+      if(n<=0){ clearInterval(cdTimer); cdTimer=null; cd.style.display="none"; area.style.display="block"; beep(660,140); beginTimer(); }
+      else { cd.textContent=n; beep(440,90); }
+    }, 700);
+  }
+  function beginTimer(){
+    running=true; startTime=performance.now();
+    var limit = (DEBUG_TIME!=null ? DEBUG_TIME : 60)*1000;
+    function loop(){
+      if(!running) return;
+      var el=performance.now()-startTime, left=Math.max(0, limit-el);
+      $("time-num").textContent=(left/1000).toFixed(1);
+      $("timerbar").style.width=(left/limit*100)+"%";
+      if(left<=0){ running=false; onTimeup(); return; }
+      rafId=requestAnimationFrame(loop);
+    }
+    loop();
+  }
+  function stopTimer(){ running=false; if(rafId) cancelAnimationFrame(rafId); if(cdTimer){ clearInterval(cdTimer); cdTimer=null; } }
+
+  // ---- 盤面描画・操作 ----
+  function renderBoard(){
+    var c=$("cards"); c.innerHTML="";
+    board.forEach(function(r, i){
+      var el=document.createElement("button");
+      var str=T.ratToString(r);
+      el.className="card"+(str.indexOf("/")>=0?" frac":"")+(sel.indexOf(i)>=0?" sel":"");
+      el.innerHTML = (sel.indexOf(i)>=0 ? '<span class="ord">'+(sel.indexOf(i)+1)+'</span>' : '') + str.replace("/","⁄");
+      el.addEventListener("click", function(){ onCardTap(i); });
+      c.appendChild(el);
+    });
+    updateOps();
+  }
+  function updateOps(){
+    var enable = sel.length===2;
+    document.querySelectorAll(".op").forEach(function(b){ b.disabled=!enable; });
+  }
+  function onCardTap(i){
+    if(!running) return;
+    var pos=sel.indexOf(i);
+    if(pos>=0){ sel.splice(pos,1); }
+    else{ if(sel.length>=2) return; sel.push(i); sndSelect(); }
+    renderBoard();
+  }
+  function onOp(op){
+    if(!running || sel.length!==2) return;
+    var i=sel[0], j=sel[1];
+    var nb=T.applyMove(board, i, j, op);
+    if(nb===null){ /* ゼロ除算等 */ $("steps").textContent="その計算はできません（0で割れません）"; return; }
+    undoStack.push(board);
+    stepLog.push(T.ratToString(board[i])+opSym(op)+T.ratToString(board[j])+"="+T.ratToString(nb[nb.length-1]));
+    board=nb; sel=[]; sndCombine();
+    renderBoard(); renderSteps();
+    if(board.length===1){
+      if(T.eq(board[0], TARGET)) onClear();
+      // 1枚だが10でない → そのまま。もどすで戻れる
+    }
+  }
+  function opSym(op){ return op==="+"?"＋":op==="-"?"−":op==="*"?"×":"÷"; }
+  function renderSteps(){ $("steps").textContent = stepLog.join("　"); }
+  function undo(){
+    if(!running || undoStack.length===0) return;
+    board=undoStack.pop(); stepLog.pop(); sel=[]; renderBoard(); renderSteps();
+  }
+
+  // ---- クリア / タイムアップ ----
+  // 仕様§7.4「最初の結果のみ有効・一発勝負」: 今日の1問はクリア/タイムアップのいずれかで当日確定。
+  // 以降の再挑戦は遊べるが記録は上書きしない（連打で好タイムを狙う不正防止）。
+  function todayConcluded(todayStr){
+    return rec.today && rec.today.date===todayStr && (rec.today.status==="cleared" || rec.today.status==="timeup");
+  }
+  function onClear(){
+    stopTimer(); sndClear();
+    var timeMs = performance.now()-startTime;
+    var todayStr=T.jstDateStr(new Date());
+    var firstToday = (mode==="daily") && !todayConcluded(todayStr); // 当日の初回確定か
+    if(firstToday){
+      rec.totals=rec.totals||{clears:0,plays:0};
+      rec.totals.clears++;
+      rec.streak = T.updateStreak(rec.streak, todayStr);
+      if(rec.bestTimeMs==null || timeMs<rec.bestTimeMs) rec.bestTimeMs=timeMs;
+      rec.history=rec.history||[]; rec.history.push({date:todayStr, cleared:true, timeMs:Math.round(timeMs)});
+      if(rec.history.length>60) rec.history=rec.history.slice(-60);
+      rec.today={date:todayStr, status:"cleared", timeMs:Math.round(timeMs)};
+      saveRec(rec);
+    }
+    showResult(true, timeMs, firstToday);
+  }
+  function onTimeup(){
+    stopTimer(); sndTimeup();
+    var todayStr=T.jstDateStr(new Date());
+    if(mode==="daily" && !todayConcluded(todayStr)){
+      rec.today={date:todayStr, status:"timeup", timeMs:null};
+      // 未クリア日は履歴にだけ残す（クリアした日だけストリークが伸びる）
+      rec.history=rec.history||[]; rec.history.push({date:todayStr, cleared:false, timeMs:null});
+      if(rec.history.length>60) rec.history=rec.history.slice(-60);
+      saveRec(rec);
+    }
+    showResult(false, null, false);
+  }
+
+  function showResult(cleared, timeMs, isNewToday){
+    var h=$("result-head"), badge=$("result-badge");
+    h.className="result-head "+(cleared?"clear":"timeup");
+    h.textContent = cleared ? "10 完成！" : "タイムアップ…";
+    $("result-time").textContent = cleared ? fmtTime(timeMs) : "";
+    $("result-sub").textContent = stepLog.join("　");
+    badge.style.display="none";
+    var again=$("btn-again");
+    if(mode==="daily"){
+      again.style.display="none";
+      if(cleared){
+        var msgs=[];
+        if(isNewToday){
+          if(rec.streak.current>1) msgs.push("連続"+rec.streak.current+"日目！");
+          if(rec.bestTimeMs!=null && Math.round(timeMs)===rec.bestTimeMs) msgs.push("自己ベスト更新");
+        } else { msgs.push("今日の挑戦は完了済み（記録は最初の1回のみ）"); }
+        if(msgs.length){ badge.style.display="inline-block"; badge.textContent=msgs.join("・"); }
+      }
+      drawGraph();
+    }else{
+      again.style.display="block";
+      $("graph-wrap").style.display="none";
+    }
+    // シェア文
+    var share;
+    if(cleared && mode==="daily"){
+      // 再クリア時は記録済みタイムを優先表示（連打での見かけ更新を避ける）
+      var shownTime = (rec.today && rec.today.status==="cleared" && rec.today.timeMs!=null) ? rec.today.timeMs : timeMs;
+      share = "今日の10パズル🔢 "+fmtTime(shownTime)+"でクリア！\n連続"+((rec.streak&&rec.streak.current)||1)+"日／自己ベスト"+fmtTime(rec.bestTimeMs)+"\n#今日の10パズル #りんねブログ\nhttps://rinne-blog.com/ten-puzzle";
+    } else if(mode==="daily"){
+      share = "今日の10パズル🔢 今日はタイムアップ…また明日リベンジ\n#今日の10パズル #りんねブログ\nhttps://rinne-blog.com/ten-puzzle";
+    } else {
+      share = "10パズルで脳トレ中🔢 4つの数字で10をつくる\n#今日の10パズル #りんねブログ\nhttps://rinne-blog.com/ten-puzzle";
+    }
+    $("btn-copy").dataset.share=share;
+    $("x-share").href="https://twitter.com/intent/tweet?text="+encodeURIComponent(share);
+    $("copied").textContent="";
+    $("result-note").textContent = (mode==="daily") ? "記録はこの端末内のみに保存されます。" : "れんしゅうは記録に残りません。";
+    show("scr-result");
+  }
+
+  // ---- 成長グラフ（クリアタイム推移・自己比較のみ）----
+  function drawGraph(){
+    var hist=(rec.history||[]).filter(function(h){return h.cleared && h.timeMs!=null;}).slice(-20);
+    var wrap=$("graph-wrap");
+    if(hist.length<2){ wrap.style.display="none"; return; }
+    wrap.style.display="block";
+    var cv=$("graph"), ctx=cv.getContext("2d");
+    var W=cv.width, H=cv.height, pad=18;
+    ctx.clearRect(0,0,W,H);
+    var cs=getComputedStyle(document.documentElement);
+    var accent=cs.getPropertyValue("--accent").trim()||"#1fae57";
+    var line=cs.getPropertyValue("--line").trim()||"#ccc";
+    var sub=cs.getPropertyValue("--sub").trim()||"#888";
+    var times=hist.map(function(h){return h.timeMs;});
+    var mn=Math.min.apply(null,times), mx=Math.max.apply(null,times); if(mx===mn) mx=mn+1;
+    ctx.strokeStyle=line; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(pad,H-pad); ctx.lineTo(W-pad,H-pad); ctx.stroke();
+    ctx.strokeStyle=accent; ctx.lineWidth=2; ctx.beginPath();
+    hist.forEach(function(h,i){
+      var x=pad+(W-2*pad)*(hist.length===1?0.5:i/(hist.length-1));
+      var y=pad+(H-2*pad)*((h.timeMs-mn)/(mx-mn)); // 速い(小)ほど上
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    ctx.fillStyle=accent;
+    hist.forEach(function(h,i){
+      var x=pad+(W-2*pad)*(hist.length===1?0.5:i/(hist.length-1));
+      var y=pad+(H-2*pad)*((h.timeMs-mn)/(mx-mn));
+      ctx.beginPath(); ctx.arc(x,y,3,0,7); ctx.fill();
+    });
+    ctx.fillStyle=sub; ctx.font="10px sans-serif";
+    ctx.fillText("速い", 2, pad+4); ctx.fillText("遅い", 2, H-pad);
+  }
+
+  // ---- クリップボード ----
+  function copyShare(){
+    var txt=$("btn-copy").dataset.share||"";
+    function done(){ $("copied").textContent="コピーしました"; }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done, fallback);
+    } else fallback();
+    function fallback(){
+      var ta=document.createElement("textarea"); ta.value=txt; ta.style.position="absolute"; ta.style.left="-9999px";
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand("copy"); done(); }catch(e){ $("copied").textContent="コピーできませんでした"; }
+      document.body.removeChild(ta);
+    }
+  }
+
+  // ---- 配線 ----
+  $("btn-daily").addEventListener("click", function(){ ensureAudio(); startGame("daily"); });
+  $("btn-practice").addEventListener("click", function(){ ensureAudio(); startGame("practice"); });
+  $("adv-toggle").addEventListener("change", function(e){ advanced=e.target.checked; });
+  $("sound-toggle").addEventListener("change", function(e){ rec.sound=e.target.checked; saveRec(rec); if(rec.sound) ensureAudio(); });
+  document.querySelectorAll(".op").forEach(function(b){ b.addEventListener("click", function(){ onOp(b.dataset.op); }); });
+  $("btn-undo").addEventListener("click", undo);
+  $("btn-reset").addEventListener("click", function(){ if(running) resetBoard(); });
+  $("btn-quit").addEventListener("click", function(){ stopTimer(); show("scr-title"); refreshTitle(); });
+  $("btn-copy").addEventListener("click", copyShare);
+  $("btn-again").addEventListener("click", function(){ startGame("practice"); });
+  $("btn-home").addEventListener("click", function(){ show("scr-title"); refreshTitle(); });
+
+  refreshTitle();
+
+  // PWA
+  if("serviceWorker" in navigator){ window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); }); }
+})();
+</script>
+</body>
+</html>

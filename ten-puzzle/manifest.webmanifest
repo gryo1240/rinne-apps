@@ -1,0 +1,15 @@
+{
+  "name": "今日の10パズル",
+  "short_name": "10パズル",
+  "description": "4つの数字を＋−×÷で組み合わせて10をつくる脳トレ。1日1問＋無限れんしゅう。登録不要・完全無料。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f7f4",
+  "theme_color": "#1fae57",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
