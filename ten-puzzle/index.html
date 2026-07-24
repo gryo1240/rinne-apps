@@ -85,6 +85,8 @@ details p, details li{margin:.3em 0;}
 .result-time{text-align:center; font-size:2.6rem; font-weight:800; margin:6px 0;}
 .result-sub{text-align:center; color:var(--sub); font-size:.92rem; margin-bottom:8px;}
 .badge{display:inline-block; background:var(--accent-bg); color:var(--accent-d); border-radius:999px; padding:4px 12px; font-size:.85rem; font-weight:700;}
+.result-answer{margin:10px auto 0; max-width:360px; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:.95rem; color:var(--ink); text-align:center; line-height:1.9;}
+.result-answer .ans-label{display:block; font-size:.72rem; color:var(--sub); margin-bottom:3px;}
 .graph-wrap{margin:14px 0;}
 .graph-wrap h3{font-size:.85rem; color:var(--sub); margin:0 0 4px;}
 canvas{width:100%; height:120px; display:block; background:var(--panel); border:1px solid var(--line); border-radius:12px;}
@@ -166,6 +168,9 @@ a.xlink{display:block; text-align:center; margin-top:8px; color:var(--sub); font
     <div class="result-time" id="result-time"></div>
     <div class="result-sub" id="result-sub"></div>
     <div style="text-align:center;"><span class="badge" id="result-badge" style="display:none;"></span></div>
+
+    <div style="text-align:center;"><button class="btn sub small" id="btn-answer" style="display:none;">答えを見る</button></div>
+    <div class="result-answer" id="result-answer" style="display:none;"></div>
 
     <div class="graph-wrap" id="graph-wrap" style="display:none;">
       <h3>今日の1問クリアタイムの推移</h3>
@@ -411,6 +416,9 @@ a.xlink{display:block; text-align:center; margin-top:8px; color:var(--sub); font
     $("result-time").textContent = cleared ? fmtTime(timeMs) : "";
     $("result-sub").textContent = stepLog.join("　");
     badge.style.display="none";
+    // 答え表示: タイムアップ時のみ「答えを見る」ボタンを出す（クリア時・再表示時はリセット）
+    $("result-answer").style.display="none"; $("result-answer").textContent="";
+    $("btn-answer").style.display = cleared ? "none" : "inline-block";
     var again=$("btn-again");
     if(mode==="daily"){
       again.style.display="none";
@@ -506,6 +514,16 @@ a.xlink{display:block; text-align:center; margin-top:8px; color:var(--sub); font
   $("btn-copy").addEventListener("click", copyShare);
   $("btn-again").addEventListener("click", function(){ startGame("practice"); });
   $("btn-home").addEventListener("click", function(){ show("scr-title"); refreshTitle(); });
+  $("btn-answer").addEventListener("click", function(){
+    var steps = T.solve(initialNums, T.TARGET10);
+    var box=$("result-answer");
+    if(!steps){ box.style.display="none"; this.style.display="none"; return; } // 念のための解なし防御
+    var body = steps.map(function(s){ return s.a+opSym(s.op)+s.b+"="+s.result; }).join("　").replace(/\//g,"⁄").replace(/-/g,"−");
+    box.innerHTML='<span class="ans-label">答えの一例</span>';
+    box.appendChild(document.createTextNode(body));
+    box.style.display="block";
+    this.style.display="none";
+  });
 
   refreshTitle();
 
