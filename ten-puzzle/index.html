@@ -73,6 +73,7 @@ details p, details li{margin:.3em 0;}
   font-size:1.5rem; font-weight:800; color:var(--ink); user-select:none;}
 .op:disabled{opacity:.4;}
 .op:active:not(:disabled){background:var(--accent-bg);}
+.op.sel{border-color:var(--accent); background:var(--accent-bg); color:var(--accent-d);}
 .ctrls{display:flex; gap:10px;}
 .ctrls .btn{flex:1;}
 .steps{margin-top:12px; min-height:20px; font-size:.85rem; color:var(--sub); text-align:center;}
@@ -123,8 +124,8 @@ a.xlink{display:block; text-align:center; margin-top:8px; color:var(--sub); font
 
     <details>
       <summary>あそびかた</summary>
-      <p>① カードを2枚タップして選ぶ（先に選んだ方が左）。</p>
-      <p>② ＋−×÷ のどれかをタップすると、2枚が1枚に合体します。</p>
+      <p>① 数字カードを1枚タップして選ぶ。</p>
+      <p>② ＋−×÷ をタップし、もう1枚の数字をタップすると2枚が1枚に合体します。</p>
       <p>③ これを3回くり返して、最後の1枚を <b>10</b> にすればクリア！</p>
       <p>「もどす」で1手戻せます。割り算で分数（例 7⁄2）になってもOK。</p>
       <p class="mini" style="text-align:left;">脳トレ・エンタメ用です。記録はこの端末の中だけに保存され、外部に送信されません。</p>
@@ -155,7 +156,7 @@ a.xlink{display:block; text-align:center; margin-top:8px; color:var(--sub); font
         <button class="btn sub small" id="btn-reset">さいしょから</button>
       </div>
       <div class="steps" id="steps"></div>
-      <div class="hint">2枚えらんで、＋−×÷ をタップ</div>
+      <div class="hint">数字 → ＋−×÷ → 数字 の順にタップ</div>
       <button class="btn sub small" id="btn-quit" style="margin-top:14px;">やめる</button>
     </div>
   </section>
@@ -209,7 +210,7 @@ a.xlink{display:block; text-align:center; margin-top:8px; color:var(--sub); font
 
   // ---- 状態 ----
   var mode="daily", advanced=false;
-  var initialNums=[], board=[], sel=[], undoStack=[], stepLog=[];
+  var initialNums=[], board=[], sel=-1, pendingOp=null, undoStack=[], stepLog=[];
   var startTime=0, rafId=null, running=false, curPuzzle=null, cdTimer=null;
 
   // ---- DOM ----
@@ -285,7 +286,7 @@ a.xlink{display:block; text-align:center; margin-top:8px; color:var(--sub); font
   }
   function resetBoard(){
     board = T.toBoard(initialNums);
-    sel=[]; undoStack=[]; stepLog=[];
+    sel=-1; pendingOp=null; undoStack=[]; stepLog=[];
     renderBoard(); renderSteps();
   }
 
@@ -321,32 +322,40 @@ a.xlink{display:block; text-align:center; margin-top:8px; color:var(--sub); font
     board.forEach(function(r, i){
       var el=document.createElement("button");
       var str=T.ratToString(r);
-      el.className="card"+(str.indexOf("/")>=0?" frac":"")+(sel.indexOf(i)>=0?" sel":"");
-      el.innerHTML = (sel.indexOf(i)>=0 ? '<span class="ord">'+(sel.indexOf(i)+1)+'</span>' : '') + str.replace("/","⁄");
+      el.className="card"+(str.indexOf("/")>=0?" frac":"")+(sel===i?" sel":"");
+      el.innerHTML = str.replace("/","⁄");
       el.addEventListener("click", function(){ onCardTap(i); });
       c.appendChild(el);
     });
     updateOps();
   }
   function updateOps(){
-    var enable = sel.length===2;
-    document.querySelectorAll(".op").forEach(function(b){ b.disabled=!enable; });
+    var enable = sel!==-1;   // 1つ目の数字を選んだら演算子を押せる
+    document.querySelectorAll(".op").forEach(function(b){
+      b.disabled=!enable;
+      if(b.dataset.op===pendingOp){ b.classList.add("sel"); } else { b.classList.remove("sel"); }
+    });
   }
+  // 操作順: 数字 → 演算子 → 数字（中置記法）
   function onCardTap(i){
     if(!running) return;
-    var pos=sel.indexOf(i);
-    if(pos>=0){ sel.splice(pos,1); }
-    else{ if(sel.length>=2) return; sel.push(i); sndSelect(); }
-    renderBoard();
+    if(sel===i){ sel=-1; pendingOp=null; renderBoard(); return; }   // 選択中を再タップ→全解除
+    if(sel===-1){ sel=i; sndSelect(); renderBoard(); return; }       // 1つ目を選択
+    if(pendingOp===null){ sel=i; sndSelect(); renderBoard(); return; }// 演算子未選択→1つ目を選び直し
+    combine(sel, i, pendingOp);                                      // 演算子選択済み→2つ目として合体
   }
   function onOp(op){
-    if(!running || sel.length!==2) return;
-    var i=sel[0], j=sel[1];
+    if(!running || sel===-1) return;
+    if(pendingOp===op){ pendingOp=null; renderBoard(); return; }     // 同じ演算子を再タップ→演算子だけ解除
+    pendingOp=op; sndSelect(); renderBoard();
+  }
+  function combine(i, j, op){
     var nb=T.applyMove(board, i, j, op);
-    if(nb===null){ /* ゼロ除算等 */ $("steps").textContent="その計算はできません（0で割れません）"; return; }
+    if(nb===null){ /* ゼロ除算等: 選択は保持し、別のカードを選び直せるようにする */
+      $("steps").textContent="その計算はできません（0で割れません）"; return; }
     undoStack.push(board);
     stepLog.push(T.ratToString(board[i])+opSym(op)+T.ratToString(board[j])+"="+T.ratToString(nb[nb.length-1]));
-    board=nb; sel=[]; sndCombine();
+    board=nb; sel=-1; pendingOp=null; sndCombine();
     renderBoard(); renderSteps();
     if(board.length===1){
       if(T.eq(board[0], TARGET)) onClear();
@@ -357,7 +366,7 @@ a.xlink{display:block; text-align:center; margin-top:8px; color:var(--sub); font
   function renderSteps(){ $("steps").textContent = stepLog.join("　"); }
   function undo(){
     if(!running || undoStack.length===0) return;
-    board=undoStack.pop(); stepLog.pop(); sel=[]; renderBoard(); renderSteps();
+    board=undoStack.pop(); stepLog.pop(); sel=-1; pendingOp=null; renderBoard(); renderSteps();
   }
 
   // ---- クリア / タイムアップ ----
