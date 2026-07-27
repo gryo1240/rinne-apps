@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>安城市 子連れおでかけマップ</title>
+<meta name="description" content="安城市の観光地・公園を回るルートを組みながら、途中の授乳室が同時に見える子連れ向けおでかけマップ。安城市オープンデータを利用。">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<style>
+:root{
+  --bg:#f5f7f4; --panel:#fff; --ink:#1e2420; --sub:#66706a; --line:#dfe4de;
+  --accent:#2f7d54; --accent-soft:#e2f0e7; --ok:#2f6f4f; --ok-soft:#e3f0e8;
+  --warn:#8a6d1f; --warn-soft:#f6eed6;
+  --milk:#c8437f; --milk-soft:#fbe6f0;
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 6px 16px rgba(0,0,0,.05);
+  --r:10px; --barh:0px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#151916; --panel:#1e2320; --ink:#e9eee9; --sub:#9aa49d; --line:#333b35;
+    --accent:#6ec192; --accent-soft:#1e332a; --ok:#8fd0ab; --ok-soft:#1f3329;
+    --warn:#e0c377; --warn-soft:#352c14;
+    --milk:#f090bd; --milk-soft:#3a1d2c;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
+  font-size:15px;line-height:1.65;-webkit-text-size-adjust:100%;padding-bottom:var(--barh)}
+a{color:var(--accent)}
+button,select,input{font:inherit;color:inherit}
+
+header{background:var(--panel);border-bottom:1px solid var(--line);padding:10px 16px;
+  position:sticky;top:0;z-index:900}
+.hd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;max-width:1400px;margin:0 auto}
+.hd h1{font-size:17px;margin:0}
+.hd .tag{font-size:11px;background:var(--accent-soft);color:var(--accent);
+  border-radius:99px;padding:2px 9px;font-weight:700}
+.hd .meta{font-size:12px;color:var(--sub);margin-left:auto}
+.progress{font-size:12px;color:var(--sub)}
+.progress b{color:var(--accent);font-size:15px}
+
+.wrap{max-width:1400px;margin:0 auto;padding:14px 16px 40px;
+  display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:18px;align-items:start}
+@media (max-width:1000px){ .wrap{grid-template-columns:minmax(0,1fr)} }
+.wrap>main,.wrap>aside{min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.pad{padding:12px 14px}
+
+/* ---------- はじめての人向け ---------- */
+.intro{margin-bottom:12px;border-left:4px solid var(--accent)}
+.intro h2{font-size:15px;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.intro .x{margin-left:auto;background:none;border:1px solid var(--line);border-radius:7px;
+  color:var(--sub);cursor:pointer;font-size:12px;padding:3px 10px}
+.intro ol{margin:0 0 10px;padding-left:1.3em;font-size:13.5px}
+.intro ol li{margin:3px 0}
+.intro ol b{color:var(--accent)}
+.intro .cav{font-size:12px;color:var(--sub);border-top:1px dashed var(--line);
+  padding-top:8px;margin:0;line-height:1.7}
+
+/* ---------- 絞り込み ---------- */
+.filters{margin-bottom:12px}
+.frow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-width:0}
+#typechips,#catchips{display:contents}
+.frow+.frow{margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}
+.flabel{font-size:12px;color:var(--sub);min-width:5.2em;font-weight:600}
+input[type=search],select,#origin{background:var(--bg);border:1px solid var(--line);
+  border-radius:8px;padding:6px 10px}
+input[type=search]{flex:1;min-width:150px}
+#origin{min-width:13em;flex:0 1 15em}
+.chip{background:var(--bg);border:1px solid var(--line);border-radius:99px;
+  padding:4px 12px;cursor:pointer;font-size:13px;transition:.12s}
+.chip:hover{border-color:var(--accent)}
+.chip[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);
+  color:var(--accent);font-weight:700}
+.chip.cc{border-left:5px solid var(--cc)}
+.chip.cc[aria-pressed=true]{background:var(--cc-soft);border-color:var(--cc);color:var(--cc)}
+.chip.milkchip[aria-pressed=true]{background:var(--milk-soft);border-color:var(--milk);color:var(--milk)}
+.count{font-size:13px;color:var(--sub);margin-left:auto;white-space:nowrap}
+.count b{color:var(--ink);font-size:17px}
+.linkbtn{background:none;border:none;color:var(--accent);cursor:pointer;
+  font-size:12px;text-decoration:underline;padding:2px 4px}
+.note{font-size:12px;color:var(--warn);background:var(--warn-soft);
+  border-radius:6px;padding:2px 9px;display:none}
+.note.show{display:inline-block}
+.needs{border-color:var(--warn) !important;box-shadow:0 0 0 3px var(--warn-soft)}
+
+/* ---------- リスト ---------- */
+.groupttl{margin:18px 0 8px;font-size:13px;font-weight:700;color:var(--sub);
+  display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;
+  cursor:pointer;padding:4px 0;text-align:left;font-family:inherit}
+.groupttl:hover{color:var(--accent)}
+.groupttl::after{content:"";flex:1;height:1px;background:var(--line)}
+.groupttl .n{background:var(--bg);border:1px solid var(--line);border-radius:99px;
+  padding:0 8px;font-size:11px;font-weight:600}
+.groupttl .ar{font-size:10px;transition:transform .15s;display:inline-block}
+.groupttl[aria-expanded=false] .ar{transform:rotate(-90deg)}
+
+ul.list{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+ul.list[hidden]{display:none}
+li.spot{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:11px 13px;box-shadow:var(--shadow);scroll-margin-top:120px;transition:.12s;
+  border-left:5px solid var(--cc,var(--line))}
+li.spot.visited{opacity:.6}
+li.spot.hi{box-shadow:0 0 0 3px var(--accent-soft)}
+li.spot.inplan{background:linear-gradient(0deg,var(--accent-soft),var(--accent-soft)),var(--panel)}
+.stop{display:flex;gap:10px;align-items:flex-start}
+.sname{font-size:16px;font-weight:700;margin:0;line-height:1.4;flex:1;cursor:pointer}
+.sname:hover{color:var(--accent)}
+.dist{font-size:12px;color:var(--accent);font-weight:700;white-space:nowrap;padding-top:3px}
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 0}
+.t{font-size:11px;border-radius:5px;padding:1px 7px;border:1px solid var(--line);
+  background:var(--bg);color:var(--sub);white-space:nowrap}
+.t.cat{background:var(--cc-soft);color:var(--cc);border-color:transparent;font-weight:700}
+.desc{font-size:13px;margin:8px 0 0;color:var(--ink);line-height:1.7}
+.addr{font-size:12px;color:var(--sub);margin:7px 0 0}
+
+/* 最寄り授乳室 —— このアプリの主役。地図ピンの .pin.milk と別名にする */
+.milkrow{display:flex;gap:7px;align-items:flex-start;margin:9px 0 0;padding:6px 9px;
+  background:var(--milk-soft);border-radius:7px;font-size:12.5px;line-height:1.55}
+.milkrow .ic{color:var(--milk);font-weight:700;white-space:nowrap}
+.milkrow .nm{font-weight:600}
+.milkrow .hr{color:var(--sub);font-size:11.5px}
+.milkrow.onsite{box-shadow:inset 0 0 0 1px var(--milk)}
+.milkrow.onsite .ic{letter-spacing:.02em}
+.milkrow.far{background:var(--bg);color:var(--sub)}
+.milkrow.far .ic{color:var(--sub)}
+
+body.compact .desc,body.compact .addr,body.compact .acts .sub{display:none}
+body.compact li.spot{padding:8px 11px}
+body.compact .milkrow{padding:3px 8px;font-size:12px}
+body.compact .milkrow .hr{display:none}
+
+.acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;padding-top:9px;
+  border-top:1px solid var(--line);align-items:center}
+.act{background:var(--bg);border:1px solid var(--line);border-radius:7px;
+  padding:4px 11px;font-size:12px;cursor:pointer;text-decoration:none;color:var(--ink)}
+.act:hover{border-color:var(--accent);color:var(--accent)}
+.act.on{background:var(--ok-soft);border-color:var(--ok);color:var(--ok);font-weight:700}
+.act.plan{border-color:var(--accent);color:var(--accent);font-weight:600}
+.act.plan.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* ---------- 右カラム ---------- */
+.side{position:sticky;top:74px;display:grid;gap:12px;
+  max-height:calc(100vh - 74px - var(--barh) - 12px);overflow-y:auto;
+  scrollbar-width:thin;padding-bottom:2px}
+@media (max-width:1000px){ .side{position:static;max-height:none;overflow:visible} }
+#map{height:420px;border-radius:var(--r);border:1px solid var(--line);z-index:1}
+@media (max-width:1000px){ #map{height:320px} }
+.sideh{font-size:13px;font-weight:700;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.sideh .n{margin-left:auto;font-size:11px;color:var(--sub);font-weight:600}
+.hint{font-size:11.5px;color:var(--sub);margin:7px 0 0;line-height:1.5}
+.hint.strong{color:var(--ink);background:var(--accent-soft);border-radius:7px;
+  padding:7px 9px;font-weight:600}
+.hint.warn{color:var(--warn);background:var(--warn-soft);border-radius:7px;padding:7px 9px}
+.legend{display:flex;gap:9px;flex-wrap:wrap;font-size:11.5px;color:var(--sub);
+  padding:8px 10px;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);box-shadow:var(--shadow)}
+.legend span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.legend i{width:11px;height:11px;border-radius:99px;border:2px solid var(--panel);
+  box-shadow:0 0 0 1px rgba(128,128,128,.5);flex:none}
+.legend i.dia{border-radius:2px;transform:rotate(45deg)}
+.legend i.sq{border-radius:3px}
+
+ol.plan{list-style:none;margin:0;padding:0;display:grid;gap:5px;counter-reset:p}
+ol.plan li{display:flex;gap:8px;align-items:flex-start;font-size:13px;
+  background:var(--bg);border-radius:7px;padding:5px 8px}
+ol.plan li::before{counter-increment:p;content:counter(p);background:var(--accent);
+  color:#fff;border-radius:99px;width:19px;height:19px;flex:none;font-size:11px;
+  font-weight:700;display:grid;place-items:center;margin-top:2px}
+ol.plan .pn{flex:1;line-height:1.45}
+ol.plan .px{background:none;border:none;color:var(--sub);cursor:pointer;font-size:15px;padding:0 3px}
+ol.plan .px:hover{color:#c0392b}
+ol.plan .pmv{font-size:10.5px;color:var(--accent);background:var(--accent-soft);
+  border-radius:4px;padding:0 5px;margin-left:5px;white-space:nowrap;font-weight:700}
+ol.plan .pmilk{font-size:11px;color:var(--milk);display:block}
+ol.plan li.moved{animation:moved .9s ease}
+@keyframes moved{0%{background:var(--accent-soft);transform:translateX(10px)}
+  30%{background:var(--accent-soft);transform:translateX(0)}100%{background:var(--bg)}}
+@media (prefers-reduced-motion:reduce){ ol.plan li.moved{animation:none} }
+.planbtns{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:8px;
+  padding:7px 13px;font-size:13px;cursor:pointer;font-weight:600;text-decoration:none;
+  display:inline-block}
+.btn.ghost{background:var(--bg);color:var(--sub);border:1px solid var(--line);font-weight:500}
+.btn.off{opacity:.4;pointer-events:none}
+
+.fab{position:fixed;right:14px;bottom:calc(var(--barh) + 14px);z-index:1000;
+  width:42px;height:42px;border-radius:99px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);box-shadow:var(--shadow);cursor:pointer;
+  font-size:17px;display:none;place-items:center}
+.fab.show{display:grid}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:1001;background:var(--panel);
+  border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.10);
+  padding:9px 14px;display:none;align-items:center;gap:10px}
+.bar.show{display:flex}
+.bar .bn{font-size:13px;font-weight:700}
+.bar .bn b{color:var(--accent);font-size:17px;display:inline-block}
+.bar .sp{flex:1}
+.bar.bump .bn b{animation:bump .35s ease}
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.5)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){ .bar.bump .bn b{animation:none} }
+
+.sheet{position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.45);
+  display:none;align-items:flex-end;justify-content:center}
+.sheet.show{display:flex}
+.sheet-in{background:var(--panel);width:100%;max-width:560px;max-height:82vh;overflow:auto;
+  border-radius:14px 14px 0 0;padding:14px 16px 20px}
+@media (min-width:700px){ .sheet{align-items:center} .sheet-in{border-radius:14px;max-height:76vh} }
+.sheet h2{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.sheet .x{margin-left:auto;background:none;border:none;font-size:22px;color:var(--sub);cursor:pointer}
+
+.empty{text-align:center;color:var(--sub);padding:36px 20px;font-size:14px}
+footer{max-width:1400px;margin:0 auto;padding:20px 16px 40px;font-size:12px;
+  color:var(--sub);line-height:1.8;border-top:1px solid var(--line)}
+.leaflet-popup-content{margin:10px 12px;font-size:13px;line-height:1.5}
+.leaflet-popup-content b{font-size:14px}
+.pin{width:13px;height:13px;border-radius:99px;border:2px solid #fff;
+  box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.pin.v{background:#9a9489 !important;opacity:.75}
+.pin.p{width:19px;height:19px;border-width:3px;
+  box-shadow:0 0 0 2px #fff,0 0 0 4.5px #14110e,0 1px 4px rgba(0,0,0,.45)}
+.pin.milk{background:#c8437f;width:12px;height:12px;border-radius:3px;
+  border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.pinno{width:26px;height:26px;border-radius:99px;border:3px solid #fff;color:#fff;
+  font-size:13px;font-weight:700;display:grid;place-items:center;line-height:1;
+  box-shadow:0 0 0 2px #14110e,0 2px 6px rgba(0,0,0,.45);font-family:inherit}
+.pin.o{background:#14110e;width:20px;height:20px;border-radius:3px;
+  border:3px solid #fff;transform:rotate(45deg);
+  box-shadow:0 0 0 1.5px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.4)}
+
+@media (max-width:640px){
+  .hd .meta{margin-left:0;flex-basis:100%}
+  .hd h1{font-size:16px}
+  .flabel{min-width:100%}
+  .count{margin-left:0}
+  li.spot{padding:11px}
+  .act{padding:6px 12px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hd">
+    <h1>安城市 子連れおでかけマップ</h1>
+    <span class="tag">授乳室が同時に見える</span>
+    <span class="progress">行った <b id="pv">0</b> / <span id="ptot">0</span></span>
+    <span class="meta" id="meta"></span>
+  </div>
+</header>
+
+<div class="wrap">
+  <main>
+    <section class="card pad intro" id="intro" hidden>
+      <h2>はじめての方へ <button class="x" id="introx">閉じる</button></h2>
+      <ol>
+        <li><b>観光地と公園</b>から行きたい場所をしぼり込みます。件数はその場で変わります。</li>
+        <li>気になった場所の<b>「＋ 候補に追加」</b>で、その日に回りたい場所を集めます。</li>
+        <li><b>「回る順番を組む」</b>で並べ替え、<b>「Googleマップで開く」</b>で経路を確認します。</li>
+      </ol>
+      <p class="cav">各カードには<b style="color:var(--milk)">最寄りの授乳室と、そこまでの距離・利用時間</b>を表示しています。
+        授乳室は行き先ではないので候補には入りません。地図での表示は切り替えられます。<br>
+        情報は安城市のオープンデータをもとにしています。<b>おでかけ前に最新情報をご確認ください。</b></p>
+    </section>
+
+    <section class="card pad filters">
+      <div class="frow">
+        <input type="search" id="q" placeholder="名前・住所・説明で検索" autocomplete="off">
+        <span class="count"><b id="cnt">0</b> 件</span>
+      </div>
+      <div class="frow">
+        <span class="flabel">種類</span>
+        <span id="catchips"></span>
+      </div>
+      <div class="frow">
+        <span class="flabel">公園の規模</span>
+        <span id="typechips"></span>
+      </div>
+      <div class="frow">
+        <span class="flabel">条件</span>
+        <button class="chip milkchip" data-f="nearmilk" data-v="1" aria-pressed="false">授乳室が500m以内</button>
+        <button class="chip" data-f="unvisited" data-v="1" aria-pressed="false">まだ行っていない</button>
+        <button class="linkbtn" id="reset">条件をクリア</button>
+      </div>
+      <div class="frow">
+        <span class="flabel">出発地</span>
+        <input id="origin" list="stationlist" autocomplete="off" spellcheck="false"
+               placeholder="駅名を入力（例：安城）" title="愛知県・岐阜県の駅名を入力できます">
+        <datalist id="stationlist"></datalist>
+        <button class="chip" id="originclear">解除</button>
+        <button class="chip" id="pickmap" aria-pressed="false">地図をクリックして指定</button>
+        <span class="note" id="orignote">← 先に出発地を決めてください</span>
+      </div>
+      <div class="frow">
+        <span class="flabel">並び順</span>
+        <select id="sort">
+          <option value="type">種類ごとにまとめる</option>
+          <option value="dist">出発地から近い順</option>
+          <option value="area">広い順（公園）</option>
+          <option value="name">名前順</option>
+        </select>
+        <span class="flabel" style="min-width:auto">表示</span>
+        <button class="chip" id="showmilk" aria-pressed="true">地図に授乳室を出す</button>
+        <button class="chip" id="compact" aria-pressed="false">コンパクト</button>
+        <button class="linkbtn" id="collapseall">すべて折りたたむ</button>
+        <button class="linkbtn" id="expandall">すべて開く</button>
+        <button class="linkbtn" id="help">使い方</button>
+        <button class="linkbtn" id="clearvisit">記録を消す</button>
+      </div>
+    </section>
+
+    <div id="listbox"></div>
+  </main>
+
+  <aside class="side">
+    <div id="map"></div>
+    <div class="legend" id="legend"></div>
+    <section class="card pad">
+      <h2 class="sideh">おでかけ候補 <span class="n plann">0 件</span></h2>
+      <div class="planbox"></div>
+    </section>
+  </aside>
+</div>
+
+<footer>
+  <p><b>出典：</b><a href="https://www.city.anjo.aichi.jp/shisei/opendata/opendata-index.html" target="_blank" rel="noopener">安城市オープンデータ</a>（観光地一覧／公園一覧／授乳室一覧）を利用し、地図表示用に加工しています。
+    ライセンスは<a href="https://creativecommons.org/licenses/by/4.0/deed.ja" target="_blank" rel="noopener">クリエイティブ・コモンズ表示4.0国際（CC BY 4.0）</a>です。</p>
+  <p>このサイトは個人が作成したもので、安城市の公式サイトではありません。
+    <b>開館時間・休館日・授乳室の利用可否は変わることがあります。おでかけ前に各施設へご確認ください。</b></p>
+  <p>地図および駅データ：<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>（ODbL）／
+    行った記録はお使いのブラウザ内にのみ保存され、どこにも送信されません。</p>
+</footer>
+
+<button class="fab" id="totop" title="ページの先頭に戻る">↑</button>
+<div class="bar" id="bar">
+  <span class="bn">おでかけ候補 <b class="plann">0</b></span>
+  <span class="sp"></span>
+  <button class="btn" id="opensheet">候補を見る</button>
+</div>
+<div class="sheet" id="sheet">
+  <div class="sheet-in">
+    <h2>おでかけ候補 <span class="n plann" style="color:var(--sub);font-weight:600">0 件</span>
+      <button class="x" id="closesheet" title="閉じる">×</button></h2>
+    <div class="planbox"></div>
+  </div>
+</div>
+
+<script src="vendor/leaflet.js"></script>
+<script src="data/anjo.js"></script>
+<script src="data/stations.js"></script>
+<script>
+(function(){
+"use strict";
+
+var DATA  = (window.ANJO_DATA || {});
+var ALL   = (DATA.items || []).filter(function(s){ return s.lat != null; });
+var DEST  = ALL.filter(function(s){ return s.cat !== "授乳室"; });   // 行き先
+var MILKS = ALL.filter(function(s){ return s.cat === "授乳室"; });   // 支援施設
+
+var CAT_COLORS = { "観光地":"#cf6a3c", "公園":"#3f9350" };
+var MILK_COLOR = "#c8437f";
+function ccolor(c){ return CAT_COLORS[c] || "#8a837a"; }
+function soft(hex){
+  var r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return "rgba("+r+","+g+","+b+",.16)";
+}
+
+var STATIONS = (window.STATION_DATA || []);
+var STATION_BY_NAME = {};
+STATIONS.forEach(function(s){ STATION_BY_NAME[s.n] = s; });
+
+var LS = "anjo.visited.v1", LS_INTRO = "anjo.intro.v1";
+var visited = {};
+try { visited = JSON.parse(localStorage.getItem(LS) || "{}") || {}; } catch(e){ visited = {}; }
+function saveVisited(){ try{ localStorage.setItem(LS, JSON.stringify(visited)); }catch(e){} }
+
+var plan = [], origin = null, pickMode = false, highlighted = null;
+var collapsed = {}, planHint = "", prevPos = null, showMilk = true;
+var F = { q:"", cat:null, ptype:null, nearmilk:false, unvisited:false, sort:"type" };
+
+var $ = function(id){ return document.getElementById(id); };
+function all(sel){ return [].slice.call(document.querySelectorAll(sel)); }
+function byId(id){ for(var i=0;i<ALL.length;i++){ if(ALL[i].id===id) return ALL[i]; } return null; }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+
+function km(a,b,c,d){
+  var R=6371, p=Math.PI/180;
+  var dLa=(c-a)*p, dLo=(d-b)*p;
+  var x=Math.sin(dLa/2)*Math.sin(dLa/2)+
+        Math.cos(a*p)*Math.cos(c*p)*Math.sin(dLo/2)*Math.sin(dLo/2);
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function fmtDist(v){
+  if(v < 1) return Math.round(v*1000)+"m";
+  return v<10 ? v.toFixed(1)+"km" : Math.round(v)+"km";
+}
+
+/* 同じ施設かどうかの判定。表記ゆれ（空白・全角半角・かっこ）を吸収してから比べる。 */
+function norm(s){
+  return String(s||"").replace(/[\s　]/g,"").replace(/[（）()、,]/g,"");
+}
+function sameFacility(destName, milk){
+  var a = norm(destName);
+  var cands = [norm(milk.name)];
+  if(milk.place) cands.push(norm(milk.place));
+  for(var i=0;i<cands.length;i++){
+    var b = cands[i];
+    if(!b) continue;
+    if(a.indexOf(b)>=0 || b.indexOf(a)>=0) return true;
+    // 「へきしんギャラクシープラザ（安城市文化センター）」と
+    // 「へきしんギャラクシープラザ（文化センター）」のように途中で分岐する表記に備える
+    var n=0;
+    while(n<a.length && n<b.length && a.charAt(n)===b.charAt(n)) n++;
+    if(n>=6) return true;
+  }
+  return false;
+}
+
+/* 行き先ごとに最寄りの授乳室を先に求めておく（このアプリの核） */
+var SAME_SITE_M = 50;   // これ以内なら名前が違っても同じ敷地とみなす
+(function attachNearestMilk(){
+  DEST.forEach(function(d){
+    var best=null, bd=Infinity;
+    MILKS.forEach(function(m){
+      var v = km(d.lat,d.lng,m.lat,m.lng);
+      if(v<bd){ bd=v; best=m; }
+    });
+    d._milk = best; d._milkKm = best ? bd : null;
+    d._milkOnSite = !!best && (bd*1000 <= SAME_SITE_M || sameFacility(d.name, best));
+  });
+})();
+/* 「12m」と出すより「敷地内」のほうが伝わる */
+function milkLabel(s){
+  return s._milkOnSite ? "授乳室 敷地内" : "授乳室 "+fmtDist(s._milkKm);
+}
+
+/* Googleマップに渡す目的地。座標を渡すと近くの別住所が拾われるため名前＋住所で渡す。 */
+function gq(s){ return (s.name+" 安城市"+(s.address||"")).trim(); }
+
+/* ---------- 地図 ---------- */
+var map = L.map("map",{scrollWheelZoom:true, wheelPxPerZoomLevel:120}).setView([34.96,137.08],13);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
+  maxZoom:18, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+}).addTo(map);
+map.on("click", function(e){
+  if(!pickMode) return;
+  setOrigin({name:"地図で指定した地点", lat:e.latlng.lat, lng:e.latlng.lng,
+             q:e.latlng.lat.toFixed(6)+","+e.latlng.lng.toFixed(6)});
+  pickMode=false; $("pickmap").setAttribute("aria-pressed","false");
+  $("pickmap").textContent="地図をクリックして指定";
+});
+var layer = L.layerGroup().addTo(map);
+var milkLayer = L.layerGroup().addTo(map);
+var routeLayer = L.layerGroup().addTo(map);
+var originMarker = null, markers = {};
+
+function pinHtml(s){
+  var cls="pin", style="background:"+ccolor(s.cat);
+  if(plan.indexOf(s.id)>=0) cls+=" p";
+  if(visited[s.id]) cls+=" v";
+  return '<div class="'+cls+'" style="'+style+'"></div>';
+}
+function iconFor(s){
+  // 候補に入っている場所は、地図上でも回る順番の番号で示す
+  var idx = plan.indexOf(s.id);
+  if(idx>=0){
+    return L.divIcon({className:"",
+      html:'<div class="pinno" style="background:'+ccolor(s.cat)+'">'+(idx+1)+'</div>',
+      iconSize:[26,26], iconAnchor:[13,13]});
+  }
+  return L.divIcon({className:"", html:pinHtml(s), iconSize:[13,13], iconAnchor:[7,7]});
+}
+function plainIcon(cls,sz){ return L.divIcon({className:"",
+  html:'<div class="pin '+cls+'"></div>', iconSize:[sz,sz], iconAnchor:[sz/2,sz/2]}); }
+
+function drawMap(rows){
+  layer.clearLayers(); markers={};
+  rows.forEach(function(s){
+    var m = L.marker([s.lat,s.lng],{icon:iconFor(s), title:s.name}).addTo(layer);
+    markers[s.id]=m;
+    m.bindPopup(
+      '<b>'+esc(s.name)+'</b><br>'+
+      '<span style="color:'+ccolor(s.cat)+';font-weight:700">'+esc(s.cat)+
+      (s.ptype?'／'+esc(s.ptype):'')+'</span>'+
+      (s._milk?'<br><span style="color:'+MILK_COLOR+'">'+milkLabel(s)+
+        '（'+esc(s._milk.name)+'）</span>':'')+
+      '<br><a href="#" class="jump">リストで詳しく見る →</a>'
+    );
+    m.on("popupopen", function(){
+      var a=document.querySelector(".leaflet-popup .jump");
+      if(a) a.onclick=function(ev){ ev.preventDefault(); focusSpot(s.id); };
+    });
+  });
+
+  milkLayer.clearLayers();
+  if(showMilk){
+    MILKS.forEach(function(s){
+      L.marker([s.lat,s.lng],{icon:plainIcon("milk",12), title:"授乳室: "+s.name})
+        .addTo(milkLayer)
+        .bindPopup('<b style="color:'+MILK_COLOR+'">授乳室</b><br><b>'+esc(s.name)+'</b>'+
+          (s.place?'<br>'+esc(s.place):'')+
+          (s.hours?'<br>'+esc(s.hours.replace(/\n/g,' / ')):'')+
+          (s.days?'<br><span style="color:#777">'+esc(s.days)+'</span>':''));
+    });
+  }
+
+  drawRoute();
+
+  if(originMarker){ map.removeLayer(originMarker); originMarker=null; }
+  if(origin){
+    originMarker = L.marker([origin.lat,origin.lng],{icon:plainIcon("o",20),title:origin.name})
+      .addTo(map).bindPopup("<b>出発地：</b>"+esc(origin.name));
+  }
+}
+
+/* 出発地 →① →② … を線でつなぐ。候補の順番を地図でも分かるようにする。 */
+function drawRoute(){
+  routeLayer.clearLayers();
+  if(plan.length < 1) return;
+  var pts = [];
+  if(origin) pts.push([origin.lat, origin.lng]);
+  plan.forEach(function(id){ var s=byId(id); if(s) pts.push([s.lat,s.lng]); });
+  if(pts.length < 2) return;
+  L.polyline(pts,{color:"#14110e",weight:4,opacity:.35}).addTo(routeLayer);
+  L.polyline(pts,{color:"#2f7d54",weight:2.5,opacity:.95,dashArray:"7 6"}).addTo(routeLayer);
+}
+
+/* 候補を出し入れすると後ろの番号がずれるので、関係するピンをまとめて描き直す。 */
+function syncPlanMarkers(extraId){
+  var ids = plan.slice();
+  if(extraId && ids.indexOf(extraId)<0) ids.push(extraId);
+  ids.forEach(function(id){
+    var s = byId(id);
+    if(s && markers[id]) markers[id].setIcon(iconFor(s));
+  });
+  drawRoute();
+}
+
+function patchSpot(id){
+  var s=byId(id); if(!s) return;
+  var li=document.getElementById("sp"+id);
+  if(li){
+    var inPlan = plan.indexOf(id)>=0;
+    li.classList.toggle("visited", !!visited[id]);
+    li.classList.toggle("inplan", inPlan);
+    var vb=li.querySelector("[data-visit]");
+    if(vb){ vb.classList.toggle("on",!!visited[id]);
+      vb.textContent = visited[id]?"✓ 行った":"行ったことにする"; }
+    var pb=li.querySelector("[data-plan]");
+    if(pb){ pb.classList.toggle("on",inPlan);
+      pb.textContent = inPlan?"✓ 候補に入れた":"＋ 候補に追加"; }
+  }
+  if(markers[id]) markers[id].setIcon(iconFor(s));
+}
+function updateProgress(){
+  var n=0; for(var k in visited){ if(visited[k]) n++; }
+  $("pv").textContent=n;
+}
+function focusSpot(id){
+  var el=document.getElementById("sp"+id);
+  if(el && el.closest){
+    var list=el.closest("ul.list");
+    if(list && list.hidden){
+      var key=list.getAttribute("data-key");
+      delete collapsed[key]; list.hidden=false;
+      var b=document.querySelector('.groupttl[data-key="'+key+'"]');
+      if(b) b.setAttribute("aria-expanded","true");
+    }
+  }
+  if(!el) return;
+  if(highlighted) highlighted.classList.remove("hi");
+  el.classList.add("hi"); highlighted=el;
+  el.scrollIntoView({behavior:"smooth", block:"center"});
+}
+
+function setOrigin(o){
+  origin=o;
+  var box=$("origin");
+  box.value = o ? o.name : "";
+  box.classList.remove("needs");
+  $("orignote").classList.remove("show");
+  if(o && F.sort!=="dist"){ F.sort="dist"; $("sort").value="dist"; }
+  render();
+  if(o) map.setView([o.lat,o.lng], Math.max(map.getZoom(),13));
+}
+
+function filtered(){
+  var q=F.q.trim().toLowerCase();
+  return DEST.filter(function(s){
+    if(F.cat && s.cat!==F.cat) return false;
+    if(F.ptype && s.ptype!==F.ptype) return false;
+    if(F.nearmilk && !(s._milkOnSite || (s._milkKm!=null && s._milkKm<=0.5))) return false;
+    if(F.unvisited && visited[s.id]) return false;
+    if(q){
+      var hay=(s.name+" "+(s.address||"")+" "+(s.desc||"")+" "+s.cat+" "+(s.ptype||"")).toLowerCase();
+      if(hay.indexOf(q)<0) return false;
+    }
+    return true;
+  });
+}
+
+function milkRow(s){
+  if(!s._milk) return "";
+  var near = s._milkOnSite || s._milkKm<=0.5;
+  return '<div class="milkrow'+(near?"":" far")+(s._milkOnSite?" onsite":"")+'">'+
+    '<span class="ic">'+milkLabel(s)+'</span>'+
+    '<span><span class="nm">'+esc(s._milk.name)+'</span>'+
+      (s._milk.hours?'<br><span class="hr">'+esc(s._milk.hours.replace(/\n/g," / "))+'</span>':'')+
+    '</span></div>';
+}
+
+function card(s){
+  var d = origin ? km(origin.lat,origin.lng,s.lat,s.lng) : null;
+  var inPlan = plan.indexOf(s.id)>=0;
+  var c = ccolor(s.cat);
+  var gm = "https://www.google.com/maps/dir/?api=1&travelmode=transit&destination="+
+           encodeURIComponent(gq(s))+(origin?"&origin="+encodeURIComponent(origin.q):"");
+  return '<li class="spot'+(visited[s.id]?" visited":"")+(inPlan?" inplan":"")+
+      '" id="sp'+esc(s.id)+'" style="--cc:'+c+';--cc-soft:'+soft(c)+'">'+
+    '<div class="stop">'+
+      '<h3 class="sname" data-focus="'+esc(s.id)+'">'+esc(s.name)+'</h3>'+
+      (d!==null?'<span class="dist">'+fmtDist(d)+'</span>':'')+
+    '</div>'+
+    '<div class="tags">'+
+      '<span class="t cat">'+esc(s.cat)+'</span>'+
+      (s.ptype?'<span class="t">'+esc(s.ptype)+'</span>':'')+
+      (s.area?'<span class="t">'+s.area+' ha</span>':'')+
+      (s.tel?'<span class="t">'+esc(s.tel)+'</span>':'')+
+    '</div>'+
+    (s.desc?'<p class="desc">'+esc(s.desc)+'</p>':'')+
+    milkRow(s)+
+    '<p class="addr">安城市'+esc(s.address)+'</p>'+
+    '<div class="acts">'+
+      '<button class="act plan'+(inPlan?" on":"")+'" data-plan="'+esc(s.id)+'">'+
+        (inPlan?"✓ 候補に入れた":"＋ 候補に追加")+'</button>'+
+      '<button class="act'+(visited[s.id]?" on":"")+'" data-visit="'+esc(s.id)+'">'+
+        (visited[s.id]?"✓ 行った":"行ったことにする")+'</button>'+
+      '<button class="act sub" data-here="'+esc(s.id)+'">ここを出発地に</button>'+
+      '<a class="act sub" href="'+gm+'" target="_blank" rel="noopener">経路</a>'+
+      (s.web?'<a class="act sub" href="'+esc(s.web)+'" target="_blank" rel="noopener">公式ページ</a>':'')+
+    '</div>'+
+  '</li>';
+}
+
+function render(){
+  var rows=filtered();
+  $("cnt").textContent=rows.length;
+  var html="";
+  if(!rows.length){
+    html='<div class="card empty">条件に合う場所がありません。<br>「条件をクリア」で戻せます。</div>';
+  } else if(F.sort==="type"){
+    var groups={}, order=[];
+    rows.forEach(function(s){
+      var k = s.cat==="公園" ? ("公園 － "+(s.ptype||"その他")) : s.cat;
+      if(!groups[k]){ groups[k]=[]; order.push(k); }
+      groups[k].push(s);
+    });
+    // 観光地を先頭に、そのあと公園を規模の大きい区分から
+    var rank={"観光地":0,"公園 － 運動公園":1,"公園 － 地区公園":2,"公園 － 近隣公園":3,
+              "公園 － 歴史公園":4,"公園 － 緑地":5,"公園 － 街区公園":6};
+    order.sort(function(a,b){
+      var ra=rank[a]!=null?rank[a]:9, rb=rank[b]!=null?rank[b]:9;
+      return ra!==rb ? ra-rb : a.localeCompare(b,"ja");
+    });
+    order.forEach(function(k){
+      var g=groups[k];
+      if(origin) g.sort(function(a,b){
+        return km(origin.lat,origin.lng,a.lat,a.lng)-km(origin.lat,origin.lng,b.lat,b.lng); });
+      var open=!collapsed[k];
+      html+='<button class="groupttl" data-group="'+esc(k)+'" data-key="'+esc(k)+
+              '" aria-expanded="'+(open?"true":"false")+'">'+
+              '<span class="ar">▼</span>'+esc(k)+'<span class="n">'+g.length+'</span></button>'+
+            '<ul class="list" data-key="'+esc(k)+'"'+(open?"":" hidden")+'>'+
+              g.map(card).join("")+'</ul>';
+    });
+  } else {
+    if(F.sort==="dist" && origin){
+      rows.sort(function(a,b){
+        return km(origin.lat,origin.lng,a.lat,a.lng)-km(origin.lat,origin.lng,b.lat,b.lng); });
+    } else if(F.sort==="area"){
+      rows.sort(function(a,b){ return (b.area||0)-(a.area||0) || a.name.localeCompare(b.name,"ja"); });
+    } else {
+      rows.sort(function(a,b){ return a.name.localeCompare(b.name,"ja"); });
+    }
+    html='<ul class="list">'+rows.map(card).join("")+'</ul>';
+  }
+  $("listbox").innerHTML=html;
+  highlighted=null;
+  drawMap(rows);
+  renderPlan();
+  updateProgress();
+}
+
+/* ---------- 候補 ---------- */
+var MAX_STOPS = 10;
+function planHtml(){
+  if(!plan.length){
+    return '<p class="empty" style="padding:16px 14px;font-size:13px;line-height:1.8">'+
+      'まだ候補がありません。<br>リストの<b style="color:var(--accent)">「＋ 候補に追加」</b>で、'+
+      'その日に回りたい場所を集められます。</p>';
+  }
+  var items=plan.map(function(id,i){
+    var s=byId(id); if(!s) return "";
+    var mv="";
+    if(prevPos && prevPos[id]!=null && prevPos[id]!==i)
+      mv='<span class="pmv">'+(prevPos[id]+1)+'番目から</span>';
+    var over=(i>=MAX_STOPS)
+      ? '<br><span style="color:var(--warn);font-size:11px">※Googleマップには載りません</span>':'';
+    return '<li'+(mv?' class="moved"':'')+'><span class="pn">'+esc(s.name)+mv+
+      '<br><span style="color:var(--sub);font-size:11px">'+
+      '<span style="color:'+ccolor(s.cat)+'">●</span> '+esc(s.cat)+'</span>'+
+      (s._milk?'<span class="pmilk">'+milkLabel(s)+'（'+esc(s._milk.name)+'）</span>':'')+
+      over+'</span>'+
+      '<button class="px" data-unplan="'+esc(id)+'" title="はずす">×</button></li>';
+  }).join("");
+
+  var use=plan.slice(0,MAX_STOPS);
+  var qs=use.map(function(id){ var s=byId(id); return s?gq(s):null; }).filter(Boolean);
+  var url="https://www.google.com/maps/dir/?api=1&travelmode=transit";
+  if(origin) url+="&origin="+encodeURIComponent(origin.q);
+  url+="&destination="+encodeURIComponent(qs[qs.length-1]);
+  if(qs.length>1) url+="&waypoints="+qs.slice(0,-1).map(encodeURIComponent).join("|");
+
+  var canOpt = plan.length>=2;
+  return '<ol class="plan">'+items+'</ol>'+
+    '<div class="planbtns">'+
+      '<button class="btn'+(canOpt?"":" off")+'" data-act="opt">回る順番を組む</button>'+
+      '<a class="btn ghost" href="'+url+'" target="_blank" rel="noopener">Googleマップで開く</a>'+
+      '<button class="btn ghost" data-act="clear">空にする</button>'+
+    '</div>'+
+    (canOpt?"":'<p class="hint">候補が2件以上になると「回る順番を組む」が使えます。</p>')+
+    (plan.length>MAX_STOPS
+      ? '<p class="hint warn">Googleマップで一度に開ける立ち寄り先は'+MAX_STOPS+
+        'か所までです。上から'+MAX_STOPS+'件だけが経路に入ります。</p>':"")+
+    (planHint?'<p class="hint strong">'+esc(planHint)+'</p>':'');
+}
+
+var lastPlanCount=0;
+function renderPlan(){
+  all(".planbox").forEach(function(el){ el.innerHTML=planHtml(); });
+  all(".plann").forEach(function(el){
+    el.textContent = el.tagName==="B" ? String(plan.length) : plan.length+" 件"; });
+  var bar=$("bar");
+  bar.classList.toggle("show", plan.length>0);
+  document.documentElement.style.setProperty("--barh", plan.length?"58px":"0px");
+  if(!plan.length) $("sheet").classList.remove("show");
+  if(plan.length>lastPlanCount){
+    bar.classList.remove("bump"); void bar.offsetWidth; bar.classList.add("bump");
+  }
+  lastPlanCount=plan.length;
+}
+
+function optimize(){
+  var pts=plan.map(byId).filter(Boolean);
+  if(pts.length<2) return;
+  var before=plan.slice();
+  var start = origin ? {lat:origin.lat,lng:origin.lng} : pts[0];
+  function total(r){
+    var t=0,p=start;
+    for(var i=0;i<r.length;i++){ t+=km(p.lat,p.lng,r[i].lat,r[i].lng); p=r[i]; }
+    return t;
+  }
+  var beforeKm=total(pts);
+  var rest=pts.slice(), route=[], cur=start;
+  if(!origin){ route.push(rest.shift()); cur=route[0]; }
+  while(rest.length){
+    var bi=0,bd=Infinity;
+    for(var i=0;i<rest.length;i++){
+      var d=km(cur.lat,cur.lng,rest[i].lat,rest[i].lng);
+      if(d<bd){ bd=d; bi=i; }
+    }
+    cur=rest[bi]; route.push(cur); rest.splice(bi,1);
+  }
+  var improved=true, guard=0;
+  while(improved && guard++<60){
+    improved=false;
+    for(var a=0;a<route.length-1;a++){
+      for(var b=a+1;b<route.length;b++){
+        var cand=route.slice(0,a).concat(route.slice(a,b+1).reverse(), route.slice(b+1));
+        if(total(cand)<total(route)-1e-9){ route=cand; improved=true; }
+      }
+    }
+  }
+  var afterKm=total(route);
+  plan=route.map(function(s){ return s.id; });
+
+  prevPos={}; var moved=0;
+  plan.forEach(function(id,i){
+    var was=before.indexOf(id); prevPos[id]=was; if(was!==i) moved++;
+  });
+  var tail = origin ? "" : "（出発地を決めると、より実際に近い順番になります）";
+  if(moved===0){
+    prevPos=null;
+    planHint="すでに回りやすい順番でした。並べ替えはありません（移動距離の目安 約"+
+      fmtDist(afterKm)+"）。"+tail;
+  }else if(Math.abs(beforeKm-afterKm) < 0.05){
+    // 表示上の丸め幅より差が小さいと「約1.1km → 約1.1km」と出て変化なしに見える
+    planHint="順番を入れ替えました（"+moved+"件が移動）。"+
+      "ただし移動距離はほとんど変わりません（約"+fmtDist(afterKm)+"）。"+tail;
+  }else{
+    planHint="順番を入れ替えました："+moved+"件が移動し、移動距離の目安が 約"+
+      fmtDist(beforeKm)+" → 約"+fmtDist(afterKm)+" になりました。"+tail+
+      " 直線距離での計算なので、実際の経路はGoogleマップでご確認ください。";
+  }
+  syncPlanMarkers();
+  renderPlan();
+}
+
+/* ---------- イベント ---------- */
+document.addEventListener("click", function(e){
+  var t=e.target.closest ? e.target.closest(
+    "[data-visit],[data-plan],[data-unplan],[data-here],[data-focus],[data-group],[data-act],.chip") : null;
+  if(!t) return;
+
+  if(t.hasAttribute("data-visit")){
+    var id=t.getAttribute("data-visit");
+    if(visited[id]) delete visited[id]; else visited[id]=1;
+    saveVisited(); updateProgress();
+    if(F.unvisited) render(); else patchSpot(id);
+    return;
+  }
+  if(t.hasAttribute("data-plan")){
+    var id2=t.getAttribute("data-plan"), i=plan.indexOf(id2);
+    if(i>=0) plan.splice(i,1); else plan.push(id2);
+    planHint=""; prevPos=null; patchSpot(id2); syncPlanMarkers(id2); renderPlan(); return;
+  }
+  if(t.hasAttribute("data-unplan")){
+    var uid=t.getAttribute("data-unplan"), i2=plan.indexOf(uid);
+    if(i2>=0) plan.splice(i2,1);
+    planHint=""; prevPos=null; patchSpot(uid); syncPlanMarkers(uid); renderPlan(); return;
+  }
+  if(t.hasAttribute("data-here")){
+    var s=byId(t.getAttribute("data-here"));
+    if(s) setOrigin({name:s.name,lat:s.lat,lng:s.lng,q:gq(s)});
+    return;
+  }
+  if(t.hasAttribute("data-focus")){
+    var s2=byId(t.getAttribute("data-focus"));
+    if(s2){ map.setView([s2.lat,s2.lng],16);
+      if(markers[s2.id]) markers[s2.id].openPopup(); }
+    return;
+  }
+  if(t.hasAttribute("data-group")){
+    var key=t.getAttribute("data-group");
+    var ul=document.querySelector('ul.list[data-key="'+key+'"]');
+    if(collapsed[key]) delete collapsed[key]; else collapsed[key]=1;
+    var open=!collapsed[key];
+    if(ul) ul.hidden=!open;
+    t.setAttribute("aria-expanded", open?"true":"false");
+    return;
+  }
+  if(t.hasAttribute("data-act")){
+    var a2=t.getAttribute("data-act");
+    if(a2==="opt") optimize();
+    if(a2==="clear"){
+      if(plan.length>1 && !confirm("おでかけ候補を"+plan.length+"件すべて消します。よろしいですか？")) return;
+      var old=plan.slice(); plan=[]; planHint=""; prevPos=null;
+      old.forEach(patchSpot); old.forEach(function(id){
+        var s=byId(id); if(s&&markers[id]) markers[id].setIcon(iconFor(s)); });
+      drawRoute(); renderPlan();
+    }
+    return;
+  }
+  if(t.classList.contains("chip") && t.hasAttribute("data-f")){
+    var f=t.getAttribute("data-f"), v=t.getAttribute("data-v");
+    if(f==="cat"||f==="ptype"){ F[f]=(F[f]===v)?null:v; }
+    else { F[f]=!F[f]; }
+    // 公園の規模を選んだら、種類は自動で「公園」に寄せる
+    if(f==="ptype" && F.ptype) F.cat="公園";
+    syncChips(); render(); return;
+  }
+});
+
+function syncChips(){
+  all(".chip[data-f]").forEach(function(c){
+    var f=c.getAttribute("data-f"), v=c.getAttribute("data-v");
+    var on=(f==="cat"||f==="ptype") ? F[f]===v : !!F[f];
+    c.setAttribute("aria-pressed", on?"true":"false");
+  });
+}
+
+$("pickmap").addEventListener("click", function(){
+  pickMode=!pickMode;
+  this.setAttribute("aria-pressed", pickMode?"true":"false");
+  this.textContent = pickMode?"地図をクリックしてください…":"地図をクリックして指定";
+  if(pickMode) $("map").scrollIntoView({behavior:"smooth", block:"center"});
+});
+$("q").addEventListener("input", function(){ F.q=this.value; render(); });
+$("sort").addEventListener("change", function(){
+  F.sort=this.value;
+  var need=(this.value==="dist" && !origin);
+  $("orignote").classList.toggle("show", need);
+  $("origin").classList.toggle("needs", need);
+  if(need) $("origin").focus();
+  render();
+});
+function applyOriginInput(){
+  var box=$("origin"), v=box.value.trim();
+  if(!v){ setOrigin(null); return; }
+  var st=STATION_BY_NAME[v] || STATION_BY_NAME[v+"駅"];
+  if(st){ setOrigin({name:st.n,lat:st.lat,lng:st.lng,q:st.n}); return; }
+  if(origin && origin.name===v) return;
+  box.classList.add("needs");
+  $("orignote").textContent="← その駅は見つかりません（愛知県・岐阜県の駅名を入力してください）";
+  $("orignote").classList.add("show");
+}
+$("origin").addEventListener("change", applyOriginInput);
+$("origin").addEventListener("input", function(){
+  if(STATION_BY_NAME[this.value.trim()]) applyOriginInput();
+});
+$("originclear").addEventListener("click", function(){ setOrigin(null); });
+$("reset").addEventListener("click", function(){
+  F={q:"",cat:null,ptype:null,nearmilk:false,unvisited:false,sort:F.sort};
+  $("q").value=""; syncChips(); render();
+});
+$("showmilk").addEventListener("click", function(){
+  showMilk=!showMilk;
+  this.setAttribute("aria-pressed", showMilk?"true":"false");
+  drawMap(filtered());
+});
+$("compact").addEventListener("click", function(){
+  var on=document.body.classList.toggle("compact");
+  this.setAttribute("aria-pressed", on?"true":"false");
+});
+$("collapseall").addEventListener("click", function(){
+  all("ul.list[data-key]").forEach(function(ul){
+    collapsed[ul.getAttribute("data-key")]=1; ul.hidden=true; });
+  all(".groupttl").forEach(function(b){ b.setAttribute("aria-expanded","false"); });
+  window.scrollTo({top:0,behavior:"smooth"});
+});
+$("expandall").addEventListener("click", function(){
+  collapsed={};
+  all("ul.list[data-key]").forEach(function(ul){ ul.hidden=false; });
+  all(".groupttl").forEach(function(b){ b.setAttribute("aria-expanded","true"); });
+});
+function showIntro(force){
+  var seen=false;
+  try{ seen = localStorage.getItem(LS_INTRO)==="1"; }catch(e){}
+  $("intro").hidden = seen && !force;
+}
+$("introx").addEventListener("click", function(){
+  try{ localStorage.setItem(LS_INTRO,"1"); }catch(e){}
+  $("intro").hidden=true;
+});
+$("help").addEventListener("click", function(){
+  showIntro(true); $("intro").scrollIntoView({behavior:"smooth",block:"start"});
+});
+$("clearvisit").addEventListener("click", function(){
+  var n=0; for(var k in visited){ if(visited[k]) n++; }
+  if(!n){ alert("「行った」にした場所はまだありません。"); return; }
+  if(!confirm("行った記録"+n+"件をすべて消します。よろしいですか？")) return;
+  visited={}; saveVisited(); render();
+});
+$("opensheet").addEventListener("click", function(){ $("sheet").classList.add("show"); });
+$("closesheet").addEventListener("click", function(){ $("sheet").classList.remove("show"); });
+$("sheet").addEventListener("click", function(e){ if(e.target===this) this.classList.remove("show"); });
+document.addEventListener("keydown", function(e){
+  if(e.key==="Escape") $("sheet").classList.remove("show"); });
+$("totop").addEventListener("click", function(){ window.scrollTo({top:0,behavior:"smooth"}); });
+window.addEventListener("scroll", function(){
+  $("totop").classList.toggle("show", window.scrollY>700);
+});
+
+/* ---------- 初期化 ---------- */
+(function init(){
+  if(!DEST.length){
+    $("listbox").innerHTML='<div class="card empty">'+
+      'データが読み込めませんでした。<br><code>python scripts/build_data.py</code> を実行して '+
+      '<code>data/anjo.js</code> を作ってください。</div>';
+    return;
+  }
+  $("ptot").textContent=DEST.length;
+  $("meta").textContent="観光地"+(DATA.counts&&DATA.counts["観光地"]||0)+
+    "・公園"+(DATA.counts&&DATA.counts["公園"]||0)+
+    "・授乳室"+MILKS.length+"／出典 安城市オープンデータ";
+
+  var cats=[]; DEST.forEach(function(s){ if(cats.indexOf(s.cat)<0) cats.push(s.cat); });
+  $("catchips").innerHTML=cats.map(function(c){
+    var col=ccolor(c);
+    return '<button class="chip cc" data-f="cat" data-v="'+esc(c)+'" aria-pressed="false" '+
+           'style="--cc:'+col+';--cc-soft:'+soft(col)+'">'+esc(c)+'</button>';
+  }).join(" ");
+
+  var order=["運動公園","地区公園","近隣公園","歴史公園","緑地","街区公園"];
+  var types=[]; DEST.forEach(function(s){ if(s.ptype && types.indexOf(s.ptype)<0) types.push(s.ptype); });
+  types.sort(function(a,b){
+    var ia=order.indexOf(a), ib=order.indexOf(b);
+    return (ia<0?9:ia)-(ib<0?9:ib);
+  });
+  $("typechips").innerHTML=types.map(function(t){
+    return '<button class="chip" data-f="ptype" data-v="'+esc(t)+'" aria-pressed="false">'+esc(t)+'</button>';
+  }).join(" ");
+
+  $("legend").innerHTML=
+    cats.map(function(c){ return '<span><i style="background:'+ccolor(c)+'"></i>'+esc(c)+'</span>'; }).join("")+
+    '<span><i class="sq" style="background:'+MILK_COLOR+'"></i>授乳室</span>'+
+    '<span><i style="background:#9a9489"></i>行った</span>'+
+    '<span><i style="background:transparent;box-shadow:0 0 0 2px #14110e"></i>おでかけ候補（①②…）</span>'+
+    '<span><i class="dia" style="background:#14110e"></i>出発地</span>';
+
+  var dl=$("stationlist"), frag=document.createDocumentFragment();
+  STATIONS.forEach(function(st){
+    var o=document.createElement("option"); o.value=st.n; frag.appendChild(o);
+  });
+  dl.appendChild(frag);
+  if(!STATIONS.length){ $("origin").placeholder="駅データが読み込めません"; $("origin").disabled=true; }
+
+  showIntro(false);
+  render();
+  map.fitBounds(L.latLngBounds(ALL.map(function(s){ return [s.lat,s.lng]; })).pad(.05));
+})();
+
+})();
+</script>
+</body>
+</html>
