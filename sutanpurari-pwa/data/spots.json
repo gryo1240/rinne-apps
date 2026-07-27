@@ -1,5 +1,5 @@
 {
- "fetched_at": "2026-07-26",
+ "fetched_at": "2026-07-27",
  "source": "https://www.miniiku-trip.jp",
  "count": 120,
  "spots": [
@@ -68,7 +68,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/4/",
    "lat": 35.183858,
    "lng": 136.799658,
-   "paid": false,
+   "paid": true,
    "city": "あま市"
   },
   {
@@ -85,7 +85,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/5/",
    "lat": 34.893057,
    "lng": 136.842446,
-   "paid": false,
+   "paid": true,
    "city": "常滑市"
   },
   {
@@ -119,7 +119,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/6/",
    "lat": 35.2263834,
    "lng": 137.103327,
-   "paid": false,
+   "paid": true,
    "city": "瀬戸市"
   },
   {
@@ -289,7 +289,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/14/",
    "lat": 35.36489,
    "lng": 137.113242,
-   "paid": false,
+   "paid": true,
    "city": "多治見市"
   },
   {
@@ -442,7 +442,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/23/",
    "lat": 35.2377318,
    "lng": 137.293659,
-   "paid": false,
+   "paid": true,
    "city": "豊田市"
   },
   {
@@ -459,7 +459,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/24/",
    "lat": 35.0664165,
    "lng": 136.971092,
-   "paid": false,
+   "paid": true,
    "city": "名古屋市"
   },
   {
@@ -493,7 +493,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/26/",
    "lat": 35.2476404,
    "lng": 136.925123,
-   "paid": false,
+   "paid": true,
    "city": "西春日井郡"
   },
   {
@@ -731,7 +731,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/43/",
    "lat": 35.749822,
    "lng": 136.960995,
-   "paid": false,
+   "paid": true,
    "city": "郡上市"
   },
   {
@@ -782,7 +782,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/46/",
    "lat": 35.698783,
    "lng": 137.380684,
-   "paid": false,
+   "paid": true,
    "city": "中津川市"
   },
   {
@@ -918,7 +918,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/50/",
    "lat": 34.8776559,
    "lng": 137.039916,
-   "paid": false,
+   "paid": true,
    "city": "西尾市"
   },
   {
@@ -969,7 +969,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/53/",
    "lat": 34.901427,
    "lng": 136.928515,
-   "paid": false,
+   "paid": true,
    "city": "半田市"
   },
   {
@@ -1394,7 +1394,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/71/",
    "lat": 35.340471,
    "lng": 136.988609,
-   "paid": false,
+   "paid": true,
    "city": "犬山市"
   },
   {
@@ -1445,7 +1445,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/80/",
    "lat": 35.21452,
    "lng": 137.503793,
-   "paid": false,
+   "paid": true,
    "city": "豊田市"
   },
   {
@@ -1462,7 +1462,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/79/",
    "lat": 35.129666,
    "lng": 137.313933,
-   "paid": false,
+   "paid": true,
    "city": "豊田市"
   },
   {
@@ -1496,7 +1496,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/81/",
    "lat": 35.278267,
    "lng": 136.967653,
-   "paid": false,
+   "paid": true,
    "city": "春日井市"
   },
   {
@@ -1513,7 +1513,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/238/",
    "lat": 35.2832201,
    "lng": 136.971066,
-   "paid": false,
+   "paid": true,
    "city": "春日井市"
   },
   {
@@ -1547,7 +1547,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/208/",
    "lat": 35.0641401,
    "lng": 137.548593,
-   "paid": false,
+   "paid": true,
    "city": "北設楽郡"
   },
   {
@@ -1870,7 +1870,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/94/",
    "lat": 35.305227,
    "lng": 137.388737,
-   "paid": false,
+   "paid": true,
    "city": "恵那市"
   },
   {
@@ -1938,7 +1938,7 @@
    "url": "https://www.miniiku-trip.jp/stamp/spot/detail/203/",
    "lat": 35.466717,
    "lng": 136.483556,
-   "paid": false,
+   "paid": true,
    "city": "揖斐郡"
   },
   {
