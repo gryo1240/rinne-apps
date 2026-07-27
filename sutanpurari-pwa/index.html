@@ -238,6 +238,9 @@ footer{max-width:1400px;margin:0 auto;padding:20px 16px 40px;font-size:12px;
   box-shadow:0 0 0 2px #fff,0 0 0 4.5px #14110e,0 1px 4px rgba(0,0,0,.45)}
 /* 起点：ジャンルのどの色とも重ならないマゼンタ＋ひし形。
    以前は青い四角で「繊維・機械・伝統工芸」の青と紛らわしかった。 */
+.pinno{width:26px;height:26px;border-radius:99px;border:3px solid #fff;color:#fff;
+  font-size:13px;font-weight:700;display:grid;place-items:center;line-height:1;
+  box-shadow:0 0 0 2px #14110e,0 2px 6px rgba(0,0,0,.45);font-family:inherit}
 .pin.o{background:#d6006c;width:20px;height:20px;border-radius:3px;
   border:3px solid #fff;transform:rotate(45deg);
   box-shadow:0 0 0 1.5px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.4)}
@@ -457,6 +460,7 @@ map.on("click", function(e){
   $("pickmap").textContent = "地図をクリックして指定";
 });
 var layer = L.layerGroup().addTo(map);
+var routeLayer = L.layerGroup().addTo(map);
 var originMarker = null;
 var markers = {};          // 施設ID -> Leafletマーカー（部分更新用）
 
@@ -467,9 +471,14 @@ function pinHtml(s){
   return '<div class="'+cls+'" style="'+style+'"></div>';
 }
 function iconFor(s){
-  var big = plan.indexOf(s.id)>=0;
-  return L.divIcon({className:"", html:pinHtml(s),
-    iconSize:[big?19:13,big?19:13], iconAnchor:[big?10:7,big?10:7]});
+  // 候補に入っている施設は、地図上でも回る順番の番号で示す
+  var idx = plan.indexOf(s.id);
+  if(idx>=0){
+    return L.divIcon({className:"",
+      html:'<div class="pinno" style="background:'+gcolor(s.genre)+'">'+(idx+1)+'</div>',
+      iconSize:[26,26], iconAnchor:[13,13]});
+  }
+  return L.divIcon({className:"", html:pinHtml(s), iconSize:[13,13], iconAnchor:[7,7]});
 }
 function plainIcon(cls){ return L.divIcon({className:"",
   html:'<div class="pin '+cls+'"></div>', iconSize:[19,19], iconAnchor:[10,10]}); }
@@ -492,11 +501,36 @@ function drawMap(rows){
       if(a) a.onclick = function(ev){ ev.preventDefault(); focusSpot(s.id); };
     });
   });
+  drawRoute();
+
   if(originMarker){ map.removeLayer(originMarker); originMarker=null; }
   if(origin){
     originMarker = L.marker([origin.lat,origin.lng],{icon:plainIcon("o"),title:origin.name})
       .addTo(map).bindPopup("<b>起点：</b>"+esc(origin.name));
   }
+}
+
+/* 起点 →① →② … を線でつなぐ。候補の順番を地図でも分かるようにする。 */
+function drawRoute(){
+  routeLayer.clearLayers();
+  if(plan.length < 1) return;
+  var pts = [];
+  if(origin) pts.push([origin.lat, origin.lng]);
+  plan.forEach(function(id){ var s=byId(id); if(s) pts.push([s.lat,s.lng]); });
+  if(pts.length < 2) return;
+  L.polyline(pts,{color:"#14110e",weight:4,opacity:.35}).addTo(routeLayer);
+  L.polyline(pts,{color:"#9a5b2c",weight:2.5,opacity:.95,dashArray:"7 6"}).addTo(routeLayer);
+}
+
+/* 候補を出し入れすると後ろの番号がずれるので、関係するピンをまとめて描き直す。 */
+function syncPlanMarkers(extraId){
+  var ids = plan.slice();
+  if(extraId && ids.indexOf(extraId)<0) ids.push(extraId);
+  ids.forEach(function(id){
+    var s = byId(id);
+    if(s && markers[id]) markers[id].setIcon(iconFor(s));
+  });
+  drawRoute();
 }
 
 /* 訪問チェックや候補追加のたびに一覧全体を作り直すとリストがガタつくので、
@@ -791,11 +825,16 @@ function optimize(){
     prevPos = null;
     planHint = "すでに回りやすい順番でした。並べ替えはありません"+
       "（移動距離の目安 約"+fmtKm(afterKm)+"）。"+tail;
+  }else if(Math.abs(beforeKm-afterKm) < 0.05){
+    // 表示上の丸め幅より差が小さいと「約14km → 約14km」と出て変化なしに見える
+    planHint = "順番を入れ替えました（"+moved+"件が移動）。"+
+      "ただし移動距離はほとんど変わりません（約"+fmtKm(afterKm)+"）。"+tail;
   }else{
     planHint = "順番を入れ替えました：" + moved + "件が移動し、"+
       "移動距離の目安が 約"+fmtKm(beforeKm)+" → 約"+fmtKm(afterKm)+" になりました。"+tail+
       " 直線距離で計算しているので、電車・バスの乗換はGoogleマップでご確認ください。";
   }
+  syncPlanMarkers();
   renderPlan();
 }
 
@@ -817,13 +856,13 @@ document.addEventListener("click", function(e){
     var id2 = t.getAttribute("data-plan");
     var i = plan.indexOf(id2);
     if(i>=0) plan.splice(i,1); else plan.push(id2);
-    planHint = ""; prevPos = null; patchSpot(id2); renderPlan(); return;
+    planHint = ""; prevPos = null; patchSpot(id2); syncPlanMarkers(id2); renderPlan(); return;
   }
   if(t.hasAttribute("data-unplan")){
     var uid = t.getAttribute("data-unplan");
     var i2 = plan.indexOf(uid);
     if(i2>=0) plan.splice(i2,1);
-    planHint = ""; prevPos = null; patchSpot(uid); renderPlan(); return;
+    planHint = ""; prevPos = null; patchSpot(uid); syncPlanMarkers(uid); renderPlan(); return;
   }
   if(t.hasAttribute("data-here")){
     var s = byId(t.getAttribute("data-here"));
@@ -851,7 +890,9 @@ document.addEventListener("click", function(e){
     if(a2==="clear"){
       if(plan.length>1 && !confirm("おでかけ候補を"+plan.length+"件すべて消します。よろしいですか？")) return;
       var old = plan.slice(); plan = []; planHint=""; prevPos=null;
-      old.forEach(patchSpot); renderPlan();
+      old.forEach(patchSpot);
+      old.forEach(function(id){ var s=byId(id); if(s&&markers[id]) markers[id].setIcon(iconFor(s)); });
+      drawRoute(); renderPlan();
     }
     return;
   }
@@ -895,7 +936,7 @@ function applyOriginInput(){
   var st = STATION_BY_NAME[v] || STATION_BY_NAME[v+"駅"];
   if(st){
     // 駅は座標ではなく名前でGoogleマップに渡した方が正しく解釈される
-    setOrigin({name:st.n, lat:st.lat, lng:st.lng, q:st.n+" 駅"});
+    setOrigin({name:st.n, lat:st.lat, lng:st.lng, q:st.n});
     return;
   }
   if(origin && origin.name===v) return;      // 地図で指定した地点などはそのまま
@@ -987,7 +1028,7 @@ window.addEventListener("scroll", function(){
     gs.map(function(g){
       return '<span><i style="background:'+gcolor(g)+'"></i>'+esc(g)+'</span>'; }).join("")+
     '<span><i style="background:#9a9489"></i>訪問済み</span>'+
-    '<span><i style="background:transparent;box-shadow:0 0 0 2px #14110e"></i>おでかけ候補</span>'+
+    '<span><i style="background:transparent;box-shadow:0 0 0 2px #14110e"></i>おでかけ候補（①②…）</span>'+
     '<span><i class="dia" style="background:#d6006c"></i>起点</span>';
 
   // 出発駅の入力候補。愛知・岐阜の全駅を入れる（型を打つと絞り込まれる）
