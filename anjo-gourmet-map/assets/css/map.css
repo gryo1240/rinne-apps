@@ -1,0 +1,41 @@
+/* ============================================================
+   map.css － 地図（Leaflet）まわり
+   Leaflet 本体は遅延読み込みするが、この CSS は先に当てておく。
+   #map の高さを最初から確保しておかないと、地図が入った瞬間に
+   ページが下へずれる（CLS）。高さの予約はここでやる。
+   ============================================================ */
+
+#map{
+  height:420px;border-radius:var(--r);border:1px solid var(--line);z-index:1;
+  background:var(--bg);
+}
+@media (max-width:1000px){ #map{height:340px} }
+/* 読み込み前のプレースホルダ。高さは #map と同じなのでズレない */
+.map-ph{
+  height:100%;display:grid;place-items:center;color:var(--sub);font-size:13px;
+  border-radius:var(--r);
+}
+
+.leaflet-popup-content{margin:10px 12px;font-size:13px;line-height:1.5}
+.leaflet-popup-content b{font-size:14px}
+.leaflet-popup-content .pop-acts{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
+.leaflet-popup-content .pop-acts a,
+.leaflet-popup-content .pop-acts button{
+  font-size:11.5px;border:1px solid var(--line);border-radius:6px;padding:3px 8px;
+  background:var(--bg);color:var(--ink);text-decoration:none;cursor:pointer;
+}
+
+.pin{width:13px;height:13px;border-radius:var(--r-pill);border:2px solid #fff;
+  box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.pin.v{background:#9a9489 !important;opacity:.75}
+.pin.p{width:19px;height:19px;border-width:3px;
+  box-shadow:0 0 0 2px #fff,0 0 0 4.5px #14110e,0 1px 4px rgba(0,0,0,.45)}
+.pinno{width:26px;height:26px;border-radius:var(--r-pill);border:3px solid #fff;color:#fff;
+  font-size:13px;font-weight:700;display:grid;place-items:center;line-height:1;
+  box-shadow:0 0 0 2px #14110e,0 2px 6px rgba(0,0,0,.45);font-family:inherit}
+.pin.o{background:#14110e;width:20px;height:20px;border-radius:3px;
+  border:3px solid #fff;transform:rotate(45deg);
+  box-shadow:0 0 0 1.5px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.4)}
+
+/* 営業中の店だけ光らせる小さな輪。色だけに頼らないよう、リスト側にも文字を出している */
+.pin.open-now{box-shadow:0 0 0 1px rgba(0,0,0,.35),0 0 0 3px rgba(47,111,79,.45)}

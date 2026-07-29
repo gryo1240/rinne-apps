@@ -1,0 +1,1000 @@
+/* ============================================================
+   app.css － 自動生成。**手で編集しないこと。**
+   もとは assets/css/ の各ファイル。直したら
+     python scripts/build_pages.py --base-url <URL>
+   を実行してここを作り直してください。
+   連結順（後勝ち）: tokens.css → layout.css → components.css → decide.css → map.css
+   ============================================================ */
+
+/* ===== tokens.css ===== */
+/* ============================================================
+   tokens.css － 色・余白・文字・リセット
+   ここだけが「値」を持つ。他のCSSは必ずこの変数を経由すること。
+   将来「安城ランチ」「モーニング」などのサービスを足すときも、
+   ページごとに --brand 系だけ差し替えれば全体の見た目が揃う。
+   ============================================================ */
+
+:root{
+  /* --- 面と文字 --- */
+  --bg:#faf7f3; --panel:#fff; --ink:#241d17; --sub:#6d6259; --line:#e6ded4;
+  --accent:#b45309; --accent-soft:#fbeee0; --accent-ink:#fff;
+
+  /* --- 状態色 ---
+     営業中／営業時間外は「緑と赤」なので、色だけで意味を伝えないこと。
+     必ず記号（●／○／—）と文字ラベルを併記する。色覚特性への配慮。 */
+  --ok:#2f6f4f;   --ok-soft:#e3f0e8;     /* 営業中 */
+  --warn:#8a6d1f; --warn-soft:#f6eed6;   /* 注意・要確認 */
+  --ng:#b3261e;   --ng-soft:#fbe9e7;     /* 営業時間外 */
+  --mute:#6d6259; --mute-soft:#efeae4;   /* 定休日 */
+
+  /* --- 大分類の色 ---
+     dataviz の validate_palette.js で all-pairs 検証済み（HANDOFF-dev.md 第5章参照） */
+  --c-meal:#eb6834; --c-cafe:#199e70; --c-bar:#2a78d6;
+
+  /* --- 形 --- */
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 6px 16px rgba(0,0,0,.05);
+  --shadow-lg:0 4px 12px rgba(0,0,0,.10),0 18px 40px rgba(0,0,0,.08);
+  --r:10px; --r-lg:14px; --r-pill:99px;
+
+  /* --- 固定要素の高さ。JS が実測値を入れる。0 のままでも崩れない --- */
+  --barh:0px;   /* 候補バー（PC） */
+  --navh:0px;   /* ボトムナビ（スマホ） */
+}
+
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#17140f; --panel:#221d18; --ink:#f0e9e1; --sub:#a89b8e; --line:#3a322a;
+    --accent:#e8a06a; --accent-soft:#3a2a1c; --accent-ink:#17140f;
+    --ok:#8fd0ab;   --ok-soft:#1f3329;
+    --warn:#e0c377; --warn-soft:#352c14;
+    --ng:#f2a297;   --ng-soft:#3b201c;
+    --mute:#a89b8e; --mute-soft:#2c261f;
+    --c-meal:#d95926; --c-cafe:#199e70; --c-bar:#3987e5;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+    --shadow-lg:0 6px 24px rgba(0,0,0,.5);
+  }
+}
+
+/* 設定パネルからの手動切り替え。OSの設定より優先する */
+:root[data-theme="light"]{
+  --bg:#faf7f3; --panel:#fff; --ink:#241d17; --sub:#6d6259; --line:#e6ded4;
+  --accent:#b45309; --accent-soft:#fbeee0; --accent-ink:#fff;
+  --ok:#2f6f4f; --ok-soft:#e3f0e8; --warn:#8a6d1f; --warn-soft:#f6eed6;
+  --ng:#b3261e; --ng-soft:#fbe9e7; --mute:#6d6259; --mute-soft:#efeae4;
+  --c-meal:#eb6834; --c-cafe:#199e70; --c-bar:#2a78d6;
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 6px 16px rgba(0,0,0,.05);
+}
+:root[data-theme="dark"]{
+  --bg:#17140f; --panel:#221d18; --ink:#f0e9e1; --sub:#a89b8e; --line:#3a322a;
+  --accent:#e8a06a; --accent-soft:#3a2a1c; --accent-ink:#17140f;
+  --ok:#8fd0ab; --ok-soft:#1f3329; --warn:#e0c377; --warn-soft:#352c14;
+  --ng:#f2a297; --ng-soft:#3b201c; --mute:#a89b8e; --mute-soft:#2c261f;
+  --c-meal:#d95926; --c-cafe:#199e70; --c-bar:#3987e5;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+}
+
+/* ---------- リセット ---------- */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} }
+
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
+  font-size:15px;line-height:1.65;-webkit-text-size-adjust:100%;
+  /* 候補バーとボトムナビの分だけ下に余白を作る。0px なら何も起きない */
+  padding-bottom:calc(var(--barh) + var(--navh));
+  overflow-wrap:anywhere;
+}
+a{color:var(--accent)}
+button,select,input,textarea{font:inherit;color:inherit}
+img,svg,canvas{max-width:100%;height:auto}
+h1,h2,h3,h4{line-height:1.4}
+
+/* ---------- アクセシビリティの土台 ---------- */
+
+/* フォーカスは必ず見えるようにする。キーボード操作の生命線 */
+:focus-visible{
+  outline:3px solid var(--accent);
+  outline-offset:2px;
+  border-radius:4px;
+}
+/* マウス操作では出さない（:focus-visible 非対応ブラウザ向けの保険） */
+:focus:not(:focus-visible){outline:none}
+
+/* 読み上げ専用。見た目には出さないが、支援技術には読ませる */
+.visually-hidden{
+  position:absolute !important;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0;
+}
+/* 本文へ飛ぶリンク。Tab の1回目で出る */
+.skiplink{
+  position:absolute;left:8px;top:-60px;z-index:2000;background:var(--accent);
+  color:var(--accent-ink);padding:9px 16px;border-radius:8px;font-weight:700;
+  text-decoration:none;transition:top .15s;
+}
+.skiplink:focus{top:8px}
+
+/* 動きを減らす設定を尊重する（アニメーションは全て任意演出） */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+  }
+}
+
+/* 高コントラスト設定では境界を強める */
+@media (prefers-contrast:more){
+  :root{--line:#9c9084;--sub:#4a423a}
+  .card,li.spot,.chip{border-width:2px}
+}
+
+/* ===== layout.css ===== */
+/* ============================================================
+   layout.css － 画面の骨格
+   ヘッダー／ファーストビュー／2カラム／フッター／ボトムナビ
+   ============================================================ */
+
+.container{max-width:1400px;margin:0 auto;padding-left:16px;padding-right:16px}
+
+/* ---------- ヘッダー ----------
+   以前は h1 と「非公式」バッジをここに出していたが、
+   ファーストビューで価値が伝わらなかったため、
+   h1 はヒーローへ、非公式の表示はフッターへ移した（表記自体は消していない）。 */
+header.site{
+  background:var(--panel);border-bottom:1px solid var(--line);
+  position:sticky;top:0;z-index:900;
+}
+.site-in{display:flex;align-items:center;gap:12px;padding:9px 0;min-height:48px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;
+  text-decoration:none;color:var(--ink);white-space:nowrap}
+.brand .mark{width:22px;height:22px;border-radius:7px;flex:none;
+  background:linear-gradient(135deg,var(--c-meal),var(--c-bar));
+  display:grid;place-items:center;color:#fff;font-size:12px;font-weight:900}
+.site-in .spacer{flex:1}
+.site-nav{display:flex;gap:2px;align-items:center}
+.site-nav a,.site-nav button{
+  background:none;border:none;color:var(--sub);font-size:12.5px;cursor:pointer;
+  padding:6px 9px;border-radius:8px;text-decoration:none;white-space:nowrap}
+.site-nav a:hover,.site-nav button:hover{background:var(--bg);color:var(--accent)}
+.site-nav .badge{background:var(--accent);color:var(--accent-ink);border-radius:var(--r-pill);
+  font-size:11px;font-weight:700;padding:0 6px;margin-left:4px;display:inline-block}
+@media (max-width:640px){
+  .site-nav a,.site-nav button{padding:6px 7px;font-size:12px}
+  .site-nav .hide-sm{display:none}
+}
+
+/* ---------- ファーストビュー ----------
+   ここが LCP 要素。画像を使わず文字だけで組んでいるので速い。
+   高さを固定して CLS を出さない（数値は JS が後から入れる）。 */
+.hero{
+  background:
+    radial-gradient(900px 320px at 12% -10%, var(--accent-soft), transparent 65%),
+    radial-gradient(700px 300px at 92% 0%, var(--ok-soft), transparent 60%),
+    var(--panel);
+  border-bottom:1px solid var(--line);
+}
+.hero-in{padding:26px 0 20px}
+.hero h1{
+  font-size:clamp(24px,5.2vw,40px);margin:0 0 10px;letter-spacing:-.01em;
+  font-weight:900;line-height:1.28;
+}
+.hero h1 .l2{display:block;color:var(--accent)}
+.hero .sub{font-size:clamp(14px,2.4vw,17px);color:var(--sub);margin:0 0 16px;max-width:44em}
+.hero-cta{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.hero-note{font-size:12px;color:var(--sub);margin:12px 0 0}
+.hero-note a{color:var(--sub)}
+
+/* 統計カード。5枚。中身が入る前から同じ高さを確保する＝CLS 対策 */
+.stats{
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:18px 0 0;
+  list-style:none;padding:0;
+}
+@media (max-width:900px){ .stats{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@media (max-width:480px){ .stats{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.stat{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:10px 12px;box-shadow:var(--shadow);min-height:76px;display:flex;
+  flex-direction:column;justify-content:center;
+}
+.stat .v{font-size:clamp(19px,3.6vw,26px);font-weight:900;line-height:1.15;color:var(--accent)}
+.stat .v small{font-size:.6em;font-weight:700;margin-left:1px}
+.stat .k{font-size:11.5px;color:var(--sub);margin-top:3px;line-height:1.35}
+.stat.is-date .v{font-size:clamp(14px,2.6vw,18px);color:var(--ink)}
+
+/* ---------- 2カラム ---------- */
+.wrap{
+  max-width:1400px;margin:0 auto;padding:14px 16px 40px;
+  display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:18px;align-items:start;
+}
+@media (max-width:1000px){ .wrap{grid-template-columns:minmax(0,1fr)} }
+.wrap>main,.wrap>aside{min-width:0}
+
+/* ---------- 描画のずれ（CLS）を出さないための場所取り ----------
+   【実測】場所取りが無い状態で CLS 0.175（目標 0.05 以下）だった。
+   原因は「HTML の時点では空で、JS が中身を入れる」箱が
+   ファーストビューの中にあり、中身が入った瞬間に下の要素が押し下げられること。
+
+   ・#listbox … 最初の描画までビューポート1枚分を確保する。
+     こうすると、その下（ランキング・FAQ など）が初期表示の画面内に入らないので、
+     あとから伸びてもずれとして数えられない。
+     描画が終わったら body.ready が付いて解除される（絞り込みで3件になったときに
+     空白が残らないようにするため）。
+   ・.legend / .planbox … 右カラムの上のほうにあり、初期表示で見えている。
+     中身が入ったときの高さを先に取っておく。
+   実測しなおして CLS 0.175 → 0.004 になった。 */
+body:not(.ready) #listbox{min-height:100vh}
+.legend{min-height:33px}
+.planbox{min-height:96px}
+
+/* 「今日の気分から選ぶ」の棚も、HTML の時点では空で JS が中身を入れる。
+   ヒーローのすぐ下にあるので、そのままだと下の節（最近見た・よくある質問・目的から探す）が
+   初期表示の画面内に入ってしまい、棚が入った瞬間に押し下げられる。
+   実測 CLS 0.163 → 0.006。描き終わったら解除する（中身のほうが高いので、そこでは動かない）。 */
+body:not(.decide-ready) #shelves{min-height:100vh}
+
+.side{
+  position:sticky;top:66px;display:grid;gap:12px;
+  max-height:calc(100vh - 66px - var(--barh) - var(--navh) - 12px);overflow-y:auto;
+  scrollbar-width:thin;padding-bottom:2px;
+}
+@media (max-width:1000px){ .side{position:static;max-height:none;overflow:visible} }
+
+/* ---------- 節 ---------- */
+.section{margin:26px 0 0}
+.section-h{
+  display:flex;align-items:baseline;gap:10px;margin:0 0 10px;flex-wrap:wrap;
+}
+.section-h h2{font-size:17px;margin:0;font-weight:800}
+.section-h .lead{font-size:12.5px;color:var(--sub);margin:0}
+.section-h .more{margin-left:auto;font-size:12.5px}
+
+/* ---------- フッター ---------- */
+footer.site{
+  max-width:1400px;margin:0 auto;padding:24px 16px 40px;font-size:12px;
+  color:var(--sub);line-height:1.8;border-top:1px solid var(--line);
+}
+footer.site h2{font-size:13px;color:var(--ink);margin:0 0 6px}
+footer.site .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+footer.site .unofficial{
+  display:inline-flex;align-items:center;gap:6px;background:var(--warn-soft);color:var(--warn);
+  border-radius:var(--r-pill);padding:3px 12px;font-weight:700;font-size:12px;margin-bottom:8px;
+}
+footer.site nav ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+
+/* ---------- 追従要素 ---------- */
+.fab{
+  position:fixed;right:14px;bottom:calc(var(--barh) + var(--navh) + 14px);z-index:1000;
+  width:44px;height:44px;border-radius:var(--r-pill);border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);box-shadow:var(--shadow);cursor:pointer;
+  font-size:17px;display:none;place-items:center;
+}
+.fab.show{display:grid}
+
+/* 候補バー（PC専用。スマホはボトムナビの「候補」タブが担当する） */
+.bar{
+  position:fixed;left:0;right:0;bottom:var(--navh);z-index:1001;background:var(--panel);
+  border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.10);
+  padding:9px 14px;display:none;align-items:center;gap:10px;
+}
+.bar.show{display:flex}
+@media (max-width:1000px){ .bar.show{display:none} }
+.bar .bn{font-size:13px;font-weight:700}
+.bar .bn b{color:var(--accent);font-size:17px;display:inline-block}
+.bar .sp{flex:1}
+.bar.bump .bn b{animation:bump .35s ease}
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.5)}100%{transform:scale(1)}}
+
+/* ---------- ボトムナビ（スマホ） ----------
+   ホーム／地図／候補／お気に入り／設定。
+   タブはページ遷移ではなく画面内の切り替え。URL の ?tab= に同期する。 */
+.bottomnav{
+  position:fixed;left:0;right:0;bottom:0;z-index:1002;background:var(--panel);
+  border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.10);
+  display:none;padding-bottom:env(safe-area-inset-bottom);
+}
+@media (max-width:1000px){ .bottomnav{display:block} }
+.bottomnav ul{display:flex;list-style:none;margin:0;padding:0}
+.bottomnav li{flex:1;min-width:0}
+.bottomnav button{
+  width:100%;background:none;border:none;cursor:pointer;color:var(--sub);
+  display:grid;justify-items:center;gap:2px;padding:7px 2px 8px;font-size:10.5px;
+  line-height:1.2;position:relative;
+}
+.bottomnav .ic{font-size:19px;line-height:1;display:block}
+.bottomnav button[aria-selected="true"]{color:var(--accent);font-weight:700}
+.bottomnav button[aria-selected="true"] .ic{transform:translateY(-1px)}
+.bottomnav .cnt{
+  position:absolute;top:3px;left:calc(50% + 7px);background:var(--accent);
+  color:var(--accent-ink);border-radius:var(--r-pill);font-size:10px;font-weight:700;
+  min-width:16px;padding:0 4px;line-height:16px;text-align:center;
+}
+.bottomnav .cnt[hidden]{display:none}
+
+/* タブでの表示切り替え。
+   「きめる」「さがす」「行きたい」は**別の画面**なので、PC でも出し分ける。
+   （以前はPCで全部を縦に並べていたが、それだと一覧が視界に入ってしまい、
+     「決める」より「見比べる」に意識が向いてしまう。思想に反するのでやめた）
+
+   【罠】ここのセレクタには必ず `body[data-app="top"]` を付けること。
+   付け忘れると、店舗ページ・カテゴリページ（どちらも body に data-tab があった）にも
+   当たってしまい、**右カラム（地図と今日のおでかけプラン）が丸ごと消えます。**
+   実際にそれで全店舗ページの地図が出なくなっていました（実測で発見）。
+   data-app="top" が付いているのは index.html だけです。 */
+.view[hidden]{display:none}
+body[data-app="top"][data-tab="home"] #v-search,
+body[data-app="top"][data-tab="home"] #v-fav,
+body[data-app="top"][data-tab="search"] #v-home,
+body[data-app="top"][data-tab="search"] #v-fav,
+body[data-app="top"][data-tab="fav"] #v-home,
+body[data-app="top"][data-tab="fav"] #v-search{display:none}
+
+/* 地図と「今日のおでかけプラン」は、探しているときだけ横に出す。
+   決める画面では地図を出さない（情報が増えると決まらなくなるため）。 */
+body[data-app="top"][data-tab="home"] .side,
+body[data-app="top"][data-tab="fav"] .side{display:none}
+
+/* 決める画面では1カラムにして、質問を画面の真ん中に置く */
+body[data-app="top"][data-tab="home"] .wrap,
+body[data-app="top"][data-tab="fav"] .wrap{grid-template-columns:minmax(0,1fr)}
+
+/* スマホの「さがす」では、地図を一覧より先に出す。
+   1カラムだと、地図が100件のカードの下に埋まって永遠にたどり着けない（実測で発見）。 */
+@media (max-width:1000px){
+  body[data-app="top"][data-tab="search"] .side{order:-1}
+  body[data-app="top"][data-tab="search"] #map{height:46vh;min-height:280px}
+}
+
+.hero-kicker{
+  font-size:12.5px;color:var(--sub);font-weight:700;letter-spacing:.04em;
+  margin:0 0 10px;text-align:center;
+}
+
+/* ===== components.css ===== */
+/* ============================================================
+   components.css － 部品
+   1部品＝1ブロック。どの画面からでも同じ見た目で使えるようにする。
+   ============================================================ */
+
+/* ---------- 面 ---------- */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.pad{padding:12px 14px}
+
+/* ---------- ボタン ---------- */
+.btn{
+  background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);
+  border-radius:9px;padding:9px 16px;font-size:14px;cursor:pointer;font-weight:700;
+  text-decoration:none;display:inline-flex;align-items:center;gap:6px;line-height:1.4;
+  min-height:44px;box-sizing:border-box;
+}
+.btn:hover{filter:brightness(1.06)}
+.btn.lg{padding:12px 22px;font-size:15.5px;border-radius:10px}
+.btn.ghost{background:var(--panel);color:var(--ink);border-color:var(--line);font-weight:600}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn.off{opacity:.45;pointer-events:none}
+/* 【タップ領域は 44px 以上】
+   指で押すものはすべて 44px を下回らないこと。
+   実測（375px・320px）で .linkbtn 26px / .chip 30px / .favbtn 27px /
+   .act 34px / .groupttl 29px / .btn 40px と、ほとんどが下回っていました。 */
+.linkbtn{
+  background:none;border:none;color:var(--accent);cursor:pointer;
+  font-size:12px;text-decoration:underline;padding:3px 4px;
+  min-height:44px;display:inline-flex;align-items:center;
+}
+
+/* ---------- チップ ---------- */
+.chip{
+  background:var(--bg);border:1px solid var(--line);border-radius:var(--r-pill);
+  padding:5px 12px;cursor:pointer;font-size:13px;transition:.12s;line-height:1.4;
+  min-height:44px;display:inline-flex;align-items:center;box-sizing:border-box;
+}
+.chip:hover{border-color:var(--accent)}
+.chip[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);
+  color:var(--accent);font-weight:700}
+.chip.cc{border-left:5px solid var(--cc)}
+.chip.cc[aria-pressed=true]{background:var(--cc-soft);border-color:var(--cc);color:var(--cc)}
+
+/* ---------- 検索と絞り込み ----------
+   最初は検索ボックスだけ。細かい条件は「絞り込み」を押したときに開く。
+   項目を減らしたのではなく、開くまで隠しているだけ（機能は全部残っている）。 */
+.searchbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.searchbox{position:relative;flex:1;min-width:190px;display:flex;align-items:center}
+.searchbox .ic{position:absolute;left:11px;font-size:15px;color:var(--sub);pointer-events:none}
+.searchbox input{
+  width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;
+  padding:10px 34px 10px 33px;font-size:15px;
+}
+.searchbox .clr{
+  position:absolute;right:6px;background:none;border:none;color:var(--sub);
+  font-size:17px;cursor:pointer;padding:2px 6px;border-radius:6px;line-height:1;
+}
+.searchbox .clr[hidden]{display:none}
+.filtoggle{
+  min-height:44px;box-sizing:border-box;
+  background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 14px;
+  font-size:13.5px;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:6px;
+  white-space:nowrap;
+}
+.filtoggle[aria-expanded=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.filtoggle .n{
+  background:var(--accent);color:var(--accent-ink);border-radius:var(--r-pill);
+  font-size:11px;font-weight:700;padding:0 6px;min-width:17px;text-align:center;
+}
+.filtoggle .n[hidden]{display:none}
+.filtoggle .ar{font-size:10px;transition:transform .15s}
+.filtoggle[aria-expanded=true] .ar{transform:rotate(180deg)}
+
+/* よく使う条件は開かなくても押せるように、検索の下に出しておく */
+.quickrow{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;align-items:center}
+.quickrow .count{margin-left:auto;font-size:13px;color:var(--sub);white-space:nowrap}
+.quickrow .count b{color:var(--ink);font-size:17px}
+
+.filterpanel{margin-top:11px;padding-top:11px;border-top:1px dashed var(--line)}
+.filterpanel[hidden]{display:none}
+.frow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-width:0}
+#bigchips,#genrechips,#svcchips{display:contents}
+.frow+.frow{margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}
+.flabel{font-size:12px;color:var(--sub);min-width:5.2em;font-weight:600}
+select,#origin{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+#origin{min-width:13em;flex:0 1 15em}
+.note{font-size:12px;color:var(--warn);background:var(--warn-soft);
+  border-radius:6px;padding:2px 9px;display:none}
+.note.show{display:inline-block}
+.needs{border-color:var(--warn) !important;box-shadow:0 0 0 3px var(--warn-soft)}
+
+/* ---------- 営業状態バッジ ----------
+   【重要】色だけで伝えない。記号（●○—）と文字を必ず併記する。
+   緑＝営業中／赤＝営業時間外／灰＝定休日。判定不能なときは黄で「要確認」。 */
+.openbadge{
+  display:inline-flex;align-items:center;gap:5px;border-radius:var(--r-pill);
+  padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap;border:1px solid transparent;
+}
+.openbadge .dot{font-size:9px;line-height:1}
+.openbadge.is-open{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+.openbadge.is-closed{background:var(--ng-soft);color:var(--ng);border-color:var(--ng)}
+.openbadge.is-holiday{background:var(--mute-soft);color:var(--mute);border-color:var(--line)}
+.openbadge.is-unknown{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+.opensub{font-size:11.5px;color:var(--sub);margin-left:6px;font-weight:600}
+
+/* ---------- 店舗カード ----------
+   優先順位：店名 → 営業中か → 距離 → 駐車場・子連れ → 営業時間・定休日 → 予算 → ボタン
+   ボタンは Googleマップ／候補へ追加／詳細 の順。 */
+ul.list{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+ul.list[hidden]{display:none}
+/* グリッドの子は既定が min-width:auto で「中身より狭くならない」。
+   これを 0 にしないと、長いタグ（「34席（テーブル席有）」など）が
+   カードごと画面幅を押し広げ、320〜375px で横スクロールが出る。実測で発見。 */
+ul.list>li{min-width:0}
+
+li.spot{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:11px 13px;box-shadow:var(--shadow);scroll-margin-top:120px;transition:.12s;
+  border-left:5px solid var(--cc,var(--line));
+  /* 画面外のカードは描画を省く。100件でもスクロールが軽くなる。
+     高さの目安を渡してスクロールバーが暴れないようにする（CLS対策） */
+  content-visibility:auto;contain-intrinsic-size:auto 230px;
+}
+li.spot.visited{opacity:.62}
+li.spot.hi{box-shadow:0 0 0 3px var(--accent-soft)}
+li.spot.inplan{background:linear-gradient(0deg,var(--accent-soft),var(--accent-soft)),var(--panel)}
+
+.spot-head{display:flex;gap:10px;align-items:flex-start}
+.sname{font-size:16.5px;font-weight:800;margin:0;line-height:1.4;flex:1;min-width:0}
+.sname a{color:inherit;text-decoration:none}
+.sname a:hover{color:var(--accent);text-decoration:underline}
+.spot-head .favbtn{
+  background:none;border:1px solid var(--line);border-radius:8px;cursor:pointer;
+  font-size:15px;line-height:1;padding:5px 8px;color:var(--sub);flex:none;
+  min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;
+}
+.spot-head .favbtn:hover{border-color:var(--accent);color:var(--accent)}
+.spot-head .favbtn[aria-pressed=true]{color:#e0a000;border-color:#e0a000;background:var(--warn-soft)}
+
+.statusrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:7px 0 0}
+.dist{font-size:12.5px;color:var(--accent);font-weight:700;white-space:nowrap;
+  background:var(--accent-soft);border-radius:var(--r-pill);padding:2px 9px}
+
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0 0;min-width:0}
+/* 【罠】white-space:nowrap にすると「1000台（デンパーク共用）」のような長いタグが
+   1個で画面幅を超え、横スクロールの原因になる。折り返せるようにしておくこと。 */
+.t{font-size:11px;border-radius:5px;padding:1px 7px;border:1px solid var(--line);
+  background:var(--bg);color:var(--sub);max-width:100%;overflow-wrap:anywhere}
+.t.cat{background:var(--cc-soft);color:var(--cc);border-color:transparent;font-weight:700}
+.t.kid{background:var(--ok-soft);color:var(--ok);border-color:transparent;font-weight:700}
+.t.park{background:var(--bg);color:var(--ink);font-weight:600}
+.t.money{background:var(--bg);color:var(--ink);font-weight:600}
+.addr{font-size:12px;color:var(--sub);margin:7px 0 0}
+
+/* 営業時間・定休日はこのアプリの主役。行として見やすく置く */
+.info{margin:9px 0 0;padding:7px 9px;background:var(--bg);border-radius:7px;
+  font-size:12.5px;line-height:1.6;display:grid;gap:2px}
+.info div{display:flex;gap:7px;min-width:0}
+.info .k{color:var(--sub);white-space:nowrap;min-width:4.2em;font-weight:600}
+.info .v{flex:1;min-width:0;overflow-wrap:anywhere}
+.info .closed{color:var(--warn);font-weight:600}
+
+body.compact .info,body.compact .addr,body.compact .acts .sub{display:none}
+body.compact li.spot{padding:8px 11px;contain-intrinsic-size:auto 150px}
+
+.acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;padding-top:9px;
+  border-top:1px solid var(--line);align-items:center}
+.act{background:var(--bg);border:1px solid var(--line);border-radius:7px;
+  padding:5px 11px;font-size:12px;cursor:pointer;text-decoration:none;color:var(--ink);
+  min-height:44px;display:inline-flex;align-items:center;box-sizing:border-box}
+.act:hover{border-color:var(--accent);color:var(--accent)}
+.act.on{background:var(--ok-soft);border-color:var(--ok);color:var(--ok);font-weight:700}
+.act.plan{border-color:var(--accent);color:var(--accent);font-weight:700}
+.act.plan.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.act.gmap{font-weight:600}
+
+/* ---------- グループ見出し ---------- */
+.groupttl{margin:18px 0 8px;font-size:13px;font-weight:700;color:var(--sub);
+  display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;
+  cursor:pointer;padding:4px 0;text-align:left;font-family:inherit;
+  min-height:44px;box-sizing:border-box}
+.groupttl:hover{color:var(--accent)}
+.groupttl::after{content:"";flex:1;height:1px;background:var(--line)}
+.groupttl .n{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-pill);
+  padding:0 8px;font-size:11px;font-weight:600}
+.groupttl .ar{font-size:10px;transition:transform .15s;display:inline-block}
+.groupttl[aria-expanded=false] .ar{transform:rotate(-90deg)}
+
+/* ---------- 3ステップのチュートリアル ----------
+   説明文を読ませない。1画面3ステップ、終わったら二度と出さない。 */
+.tut{position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,.5);display:none;
+  align-items:center;justify-content:center;padding:16px}
+.tut.show{display:flex}
+.tut-in{background:var(--panel);border-radius:var(--r-lg);max-width:460px;width:100%;
+  padding:22px 20px 18px;box-shadow:var(--shadow-lg);text-align:center}
+.tut h2{font-size:18px;margin:0 0 4px}
+.tut .lead{font-size:13px;color:var(--sub);margin:0 0 16px}
+.tut ol{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:9px;text-align:left}
+.tut li{display:flex;gap:11px;align-items:center;background:var(--bg);
+  border-radius:10px;padding:11px 13px}
+.tut li .no{width:27px;height:27px;flex:none;border-radius:var(--r-pill);
+  background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;
+  font-weight:800;font-size:13px}
+.tut li b{display:block;font-size:14.5px}
+.tut li span{font-size:12px;color:var(--sub);line-height:1.5}
+.tut .tut-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+
+/* ---------- ボトムシート／ダイアログ ---------- */
+.sheet{position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.45);
+  display:none;align-items:flex-end;justify-content:center}
+.sheet.show{display:flex}
+.sheet-in{background:var(--panel);width:100%;max-width:560px;max-height:82vh;overflow:auto;
+  border-radius:14px 14px 0 0;padding:14px 16px 24px}
+@media (min-width:700px){ .sheet{align-items:center} .sheet-in{border-radius:14px;max-height:80vh} }
+.sheet h2{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+/* 閉じる×・外す×も指で押す。しかも押し間違えると内容が消える操作なので、
+   小さいままにしないこと（社内レビューで 25〜26px と判明）。 */
+.sheet .x{margin-left:auto;background:none;border:none;font-size:22px;color:var(--sub);
+  cursor:pointer;line-height:1;padding:2px 6px;border-radius:6px;
+  min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+
+/* ---------- 候補（回る順番） ---------- */
+.sideh{font-size:13px;font-weight:700;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.sideh .n{margin-left:auto;font-size:11px;color:var(--sub);font-weight:600}
+.hint{font-size:11.5px;color:var(--sub);margin:7px 0 0;line-height:1.5}
+.hint.strong{color:var(--ink);background:var(--accent-soft);border-radius:7px;
+  padding:7px 9px;font-weight:600}
+.hint.warn{color:var(--warn);background:var(--warn-soft);border-radius:7px;padding:7px 9px}
+
+ol.plan{list-style:none;margin:0;padding:0;display:grid;gap:5px;counter-reset:p}
+ol.plan li{display:flex;gap:8px;align-items:flex-start;font-size:13px;
+  background:var(--bg);border-radius:7px;padding:5px 8px}
+ol.plan li::before{counter-increment:p;content:counter(p);background:var(--accent);
+  color:var(--accent-ink);border-radius:var(--r-pill);width:19px;height:19px;flex:none;
+  font-size:11px;font-weight:700;display:grid;place-items:center;margin-top:2px}
+ol.plan .pn{flex:1;line-height:1.45;min-width:0}
+ol.plan .px{background:none;border:none;color:var(--sub);cursor:pointer;font-size:15px;
+  padding:0 3px;min-width:44px;min-height:44px;
+  display:inline-flex;align-items:center;justify-content:center}
+ol.plan .px:hover{color:#c0392b}
+ol.plan .pmv{font-size:10.5px;color:var(--accent);background:var(--accent-soft);
+  border-radius:4px;padding:0 5px;margin-left:5px;white-space:nowrap;font-weight:700}
+ol.plan .phr{font-size:11px;color:var(--sub);display:block}
+ol.plan li.moved{animation:moved .9s ease}
+@keyframes moved{0%{background:var(--accent-soft);transform:translateX(10px)}
+  30%{background:var(--accent-soft);transform:translateX(0)}100%{background:var(--bg)}}
+.planbtns{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}
+
+/* ---------- AIおすすめルート ---------- */
+.ai-q{display:grid;gap:14px;margin:4px 0 14px}
+.ai-q fieldset{border:none;margin:0;padding:0;min-width:0}
+.ai-q legend{font-size:12.5px;color:var(--sub);font-weight:700;padding:0 0 6px}
+.ai-opts{display:flex;gap:7px;flex-wrap:wrap}
+.ai-opts .chip{font-size:13px}
+.ai-result{border-top:1px dashed var(--line);padding-top:12px;margin-top:4px}
+.ai-result[hidden]{display:none}
+.ai-course{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:7px;counter-reset:c}
+.ai-course li{display:flex;gap:9px;background:var(--bg);border-radius:9px;padding:9px 11px;
+  align-items:flex-start}
+.ai-course li::before{counter-increment:c;content:counter(c);background:var(--accent);
+  color:var(--accent-ink);border-radius:var(--r-pill);width:21px;height:21px;flex:none;
+  font-size:11.5px;font-weight:800;display:grid;place-items:center;margin-top:2px}
+.ai-course .cn{flex:1;min-width:0}
+.ai-course .cn b{font-size:14px}
+.ai-course .cw{font-size:11.5px;color:var(--sub);display:block;line-height:1.5}
+.ai-why{font-size:11.5px;color:var(--sub);background:var(--bg);border-radius:8px;
+  padding:8px 10px;margin:0 0 10px;line-height:1.6}
+
+/* ---------- ランキング／モデルコース ---------- */
+.tabs{display:flex;gap:5px;border-bottom:1px solid var(--line);margin:0 0 11px;
+  overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;
+  padding:8px 11px;font-size:13px;color:var(--sub);white-space:nowrap;font-weight:600}
+.tabs button[aria-selected=true]{color:var(--accent);border-bottom-color:var(--accent)}
+.rank{list-style:none;margin:0;padding:0;display:grid;gap:7px;counter-reset:r}
+.rank li{display:flex;gap:10px;align-items:center;background:var(--bg);
+  border-radius:9px;padding:8px 11px;min-width:0}
+.rank li::before{counter-increment:r;content:counter(r);width:22px;height:22px;flex:none;
+  border-radius:7px;background:var(--panel);border:1px solid var(--line);
+  display:grid;place-items:center;font-size:11.5px;font-weight:800;color:var(--sub)}
+.rank li:nth-child(1)::before{background:#f5c518;border-color:#f5c518;color:#3a2c00}
+.rank li:nth-child(2)::before{background:#d8d8d8;border-color:#d8d8d8;color:#333}
+.rank li:nth-child(3)::before{background:#e0a878;border-color:#e0a878;color:#3a2200}
+.rank .rn{flex:1;min-width:0}
+.rank .rn b{font-size:13.5px;display:block}
+.rank .rn a{color:inherit;text-decoration:none}
+.rank .rn a:hover{color:var(--accent);text-decoration:underline}
+.rank .rn span{font-size:11.5px;color:var(--sub)}
+.rank .ra{flex:none}
+.sample{font-size:10.5px;background:var(--warn-soft);color:var(--warn);border-radius:5px;
+  padding:1px 7px;font-weight:700;white-space:nowrap}
+
+/* 横スクロールする店カード列（最近見た・おすすめ・新着） */
+.strip{display:flex;gap:9px;overflow-x:auto;padding:2px 2px 8px;
+  scroll-snap-type:x proximity;list-style:none;margin:0}
+.strip li{flex:0 0 210px;scroll-snap-align:start;min-width:0}
+.minicard{display:block;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);padding:10px 11px;height:100%;text-decoration:none;color:inherit;
+  border-left:4px solid var(--cc,var(--line))}
+.minicard:hover{border-color:var(--accent)}
+.minicard b{font-size:13.5px;display:block;line-height:1.4}
+.minicard .m{font-size:11.5px;color:var(--sub);display:block;margin-top:3px}
+
+/* ---------- 共有 ---------- */
+.sharebtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.share-x{background:#111;border-color:#111;color:#fff}
+.share-line{background:#06c755;border-color:#06c755;color:#fff}
+.sharecanvas{width:100%;border:1px solid var(--line);border-radius:10px;background:var(--bg);
+  display:block;margin-top:10px}
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(var(--navh) + var(--barh) + 22px);z-index:1500;
+  background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:var(--r-pill);
+  font-size:13px;font-weight:600;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;
+  transition:opacity .2s,transform .2s;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+
+/* ---------- FAQ ---------- */
+.faq{display:grid;gap:8px}
+.faq details{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:10px 13px}
+/* 質問の行も指で押す。44px を切らないこと（社内レビューで 23px と判明） */
+.faq summary{cursor:pointer;font-weight:700;font-size:14px;list-style:none;
+  min-height:44px;display:flex;align-items:center}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::before{content:"Q ";color:var(--accent);font-weight:900}
+.faq details[open] summary{margin-bottom:7px}
+.faq p{margin:0;font-size:13px;color:var(--sub);line-height:1.75}
+
+/* ---------- 収益化の置き場（既定では出さない） ----------
+   AGM.config.monetization.* を true にしたときだけ表示される。
+   出典が公式サイトである以上、広告を出す前に安城市観光協会へ確認すること
+   （HANDOFF-dev.md 第9章）。枠だけ用意して、既定は空のままにしている。 */
+.slot{display:none}
+.slot.is-on{display:block}
+.slot-in{border:1px dashed var(--line);border-radius:var(--r);padding:12px 14px;
+  background:var(--bg);font-size:12.5px;color:var(--sub)}
+.slot-label{font-size:10.5px;font-weight:700;color:var(--sub);letter-spacing:.06em;
+  text-transform:uppercase;margin-bottom:5px}
+.slot .sponsor{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+
+/* ---------- そのほか ---------- */
+.empty{text-align:center;color:var(--sub);padding:36px 20px;font-size:14px}
+.pill-row{display:flex;gap:6px;flex-wrap:wrap}
+.legend{display:flex;gap:9px;flex-wrap:wrap;font-size:11.5px;color:var(--sub);
+  padding:8px 10px;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);box-shadow:var(--shadow)}
+.legend span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.legend i{width:11px;height:11px;border-radius:var(--r-pill);border:2px solid var(--panel);
+  box-shadow:0 0 0 1px rgba(128,128,128,.5);flex:none}
+.legend i.dia{border-radius:2px;transform:rotate(45deg)}
+
+/* ---------- パンくず ---------- */
+.crumb{font-size:12px;color:var(--sub);padding:10px 0 0;margin:0}
+.crumb ol{list-style:none;display:flex;gap:6px;flex-wrap:wrap;margin:0;padding:0}
+.crumb li::after{content:"›";margin-left:6px;color:var(--line)}
+.crumb li:last-child::after{content:""}
+
+@media (max-width:640px){
+  .flabel{min-width:100%}
+  li.spot{padding:11px}
+  .act{padding:6px 12px}
+}
+
+/* ===== decide.css ===== */
+/* ============================================================
+   decide.css － 「決める」ための画面
+   質問カード／おすすめ3軒／横スクロール棚／代替ビジュアル
+   ------------------------------------------------------------
+   片手で使えることを優先しています。
+   ・押すものは高さ 48px 以上（親指で外さない大きさ）
+   ・主要ボタンは常に画面の下寄り（親指の届く範囲）
+   ・横スクロールの棚は、指で払える余白を左右に取る
+   ============================================================ */
+
+/* ---------- 質問カード ---------- */
+.qcard{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);
+  box-shadow:var(--shadow-lg);padding:20px 18px 16px;max-width:640px;margin:0 auto;
+}
+.qprog{height:4px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:14px}
+.qprog i{display:block;height:100%;background:var(--accent);transition:width .25s}
+.qstep{font-size:11.5px;color:var(--sub);margin:0 0 4px;font-weight:700;letter-spacing:.04em}
+.qtitle{font-size:clamp(20px,4.4vw,27px);margin:0 0 4px;font-weight:900;line-height:1.35}
+.qlead{font-size:13px;color:var(--sub);margin:0 0 16px}
+
+.qopts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px}
+@media (max-width:420px){ .qopts{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.qopt{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  min-height:82px;padding:12px 10px;cursor:pointer;
+  background:var(--bg);border:2px solid var(--line);border-radius:12px;
+  font-size:14.5px;font-weight:700;line-height:1.3;text-align:center;transition:.12s;
+}
+.qopt:hover{border-color:var(--accent);color:var(--accent)}
+.qopt.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.qopt .qi{font-size:24px;line-height:1}
+.qopts.is-multi .qopt{min-height:60px;flex-direction:row;gap:8px}
+
+.qorigin{display:grid;gap:9px}
+.qorigin .qopt{flex-direction:row;gap:10px;min-height:56px;justify-content:flex-start;padding:12px 16px}
+.qstation{display:flex;gap:8px;margin-top:2px;flex-wrap:wrap}
+.qstation[hidden]{display:none}
+.qstation input{
+  flex:1;min-width:160px;background:var(--bg);border:1px solid var(--line);
+  border-radius:10px;padding:11px 12px;font-size:15px;
+}
+.qnow{font-size:12.5px;color:var(--sub);margin:2px 0 0}
+
+.qfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px}
+.qjump{
+  display:block;width:100%;margin-top:12px;padding:13px 12px;cursor:pointer;
+  background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;
+  color:var(--accent);font-weight:800;font-size:14.5px;
+}
+.qjump:hover{background:var(--accent);color:var(--accent-ink)}
+
+/* ---------- おすすめ3軒 ---------- */
+.reco-head{margin:0 0 14px}
+.reco-head h2{font-size:clamp(19px,4vw,25px);margin:0 0 4px;font-weight:900}
+.reco-sub{font-size:13px;color:var(--sub);margin:0}
+.reco-relax{
+  font-size:12.5px;background:var(--warn-soft);color:var(--warn);
+  border-radius:8px;padding:8px 11px;margin:10px 0 0;line-height:1.6;
+}
+.reco-count{font-size:13px;color:var(--sub);margin:4px 0 0}
+.reco-count b{color:var(--ink)}
+.reco-crowd{font-size:12.5px;color:var(--sub);margin:8px 0 0;line-height:1.6}
+.tiny{font-size:11px;color:var(--sub);line-height:1.6}
+
+/* 結果画面の「条件を足す」。
+   質問から外した4条件（駐車場・子連れ・禁煙・予約）を、3軒を見たあとで足す場所。
+   横並び・折り返し可。指で押すので 44px を切らないこと。 */
+.reco-refine{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+  margin:0 0 14px;padding:10px 12px;
+  background:var(--card);border:1px solid var(--line);border-radius:12px;
+}
+.reco-refine-h{font-size:12.5px;color:var(--sub);font-weight:700;margin-right:2px}
+.reco-refine .chip{min-height:44px}
+
+.reco-list{display:grid;gap:14px}
+@media (min-width:900px){ .reco-list{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start} }
+
+.reco{
+  background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--cc);
+  border-radius:var(--r-lg);box-shadow:var(--shadow);padding:0 0 14px;overflow:hidden;
+  display:flex;flex-direction:column;
+}
+
+/* ① 理由をいちばん上に、いちばん目立たせる */
+.reco-why{background:var(--cc-soft);padding:13px 15px 12px}
+.reco-why-h{
+  display:flex;align-items:center;gap:8px;margin:0 0 7px;
+  font-size:12px;font-weight:800;color:var(--cc);letter-spacing:.02em;
+}
+.reco-why-h .rk{
+  width:22px;height:22px;border-radius:99px;background:var(--cc);color:#fff;
+  display:grid;place-items:center;font-size:12px;font-weight:900;flex:none;
+}
+.reco-why ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.reco-why li{
+  display:flex;gap:8px;align-items:flex-start;font-size:14px;line-height:1.5;
+  font-weight:600;color:var(--ink);
+}
+.reco-why li .ri{flex:none;font-size:15px;line-height:1.4}
+
+.reco-name{font-size:19px;font-weight:900;margin:13px 15px 10px;line-height:1.35}
+.reco-name a{color:inherit;text-decoration:none}
+.reco-name a:hover{color:var(--accent);text-decoration:underline}
+
+.reco-facts{margin:12px 15px 0;display:grid;gap:5px;font-size:13px}
+.reco-facts>div{display:flex;gap:10px}
+.reco-facts dt{color:var(--sub);min-width:4.5em;font-weight:600;flex:none}
+.reco-facts dd{margin:0;flex:1;min-width:0;overflow-wrap:anywhere}
+
+.reco-acts{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  margin:14px 15px 0;padding-top:12px;border-top:1px solid var(--line);margin-top:auto;
+}
+.reco-acts .btn{flex:1 1 auto;justify-content:center;min-height:46px}
+.reco-acts .btn.ghost.on{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+
+/* 表に出すボタンは1つだけ。横1本にして、迷う余地をなくす。
+   幅いっぱいなので、375px でも折り返しません。 */
+.btn.block{
+  display:flex;width:100%;justify-content:center;align-items:center;
+  min-height:48px;line-height:1.4;text-align:center;
+}
+/* flex の子だと 100% が効かないので、行を独占させる */
+.reco-acts>.btn.block{flex:1 0 100%}
+/* 閉じているときは「ほかの店にする」と同じ行に並べて**2行**に収める。
+   開いたときだけ行を独占させる（中のボタンを幅いっぱいにするため）。 */
+.reco-more{flex:1 1 auto;min-width:104px;text-align:right}
+.reco-more[open]{flex:1 0 100%;margin-top:4px;text-align:left}
+.reco-more>summary{
+  cursor:pointer;font-size:13px;color:var(--sub);
+  padding:8px 0;min-height:44px;display:flex;align-items:center;justify-content:flex-end;
+}
+.reco-more[open]>summary{justify-content:flex-start}
+/* 「ほかの店にする」と「ほかの操作」の高さをそろえて、同じ行に並べる。
+   44px はタップ領域の下限でもある。 */
+.reco-acts .linkbtn{min-height:44px;display:inline-flex;align-items:center}
+.reco-more .btn{display:block;width:100%;margin-bottom:6px;min-height:44px;line-height:1.4}
+.reco-foot{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.reco-note{margin-top:10px}
+
+/* ---------- 代替ビジュアル（写真は使わない。visual.js の解説を参照） ---------- */
+.pvis{
+  position:relative;overflow:hidden;background:var(--cc,#8a837a);
+  border-radius:10px;aspect-ratio:16/9;display:grid;place-items:center;
+}
+.pvis.is-wide{margin:0 15px;aspect-ratio:16/7}
+.pvis::before{
+  content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(var(--pa,120deg),
+    rgba(255,255,255,.20) 0 14px, rgba(255,255,255,0) 14px 42px);
+}
+.pvis[data-pat="1"]::before{
+  background:repeating-linear-gradient(var(--pa,120deg),
+    rgba(255,255,255,.16) 0 6px, rgba(255,255,255,0) 6px 26px);
+}
+.pvis[data-pat="2"]::before{
+  background:radial-gradient(circle at 78% 22%, rgba(255,255,255,.30), transparent 52%),
+             radial-gradient(circle at 18% 82%, rgba(0,0,0,.14), transparent 46%);
+}
+.pvis .pg{
+  position:relative;font-size:clamp(30px,9vw,54px);font-weight:900;color:#fff;
+  text-shadow:0 2px 8px rgba(0,0,0,.28);line-height:1;
+}
+.pvis .pl{
+  position:absolute;left:9px;bottom:8px;font-size:11px;font-weight:700;color:#fff;
+  background:rgba(0,0,0,.34);border-radius:5px;padding:1px 8px;
+}
+.pvis img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* ---------- 横スクロールの棚 ---------- */
+.shelf{margin:22px 0 0}
+.shelf-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 6px}
+.shelf-h h3{font-size:15.5px;margin:0;font-weight:800;display:flex;align-items:center;gap:6px}
+.shelf-h h3 .n{
+  background:var(--bg);border:1px solid var(--line);border-radius:99px;
+  padding:0 8px;font-size:11px;font-weight:700;color:var(--sub);
+}
+.shelf-h .linkbtn{margin-left:auto;white-space:nowrap}
+.shelf-note{margin:0 0 8px}
+
+.scard{
+  display:block;text-decoration:none;color:inherit;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--r);overflow:hidden;height:100%;
+}
+.scard:hover{border-color:var(--accent)}
+.scard .pvis{border-radius:0}
+.scard b{display:block;font-size:13.5px;line-height:1.4;margin:8px 10px 0}
+.scard .m{display:block;font-size:11.5px;color:var(--sub);margin:3px 10px}
+.scard .m:last-child{margin-bottom:10px}
+.strip li{flex:0 0 190px}
+
+/* ---------- 検索は控えめに ----------
+   禁止はしていません。ただし最初の視線に入らない大きさにしています。 */
+.searchlite{
+  display:flex;align-items:center;gap:8px;justify-content:center;
+  margin:18px auto 0;max-width:640px;
+}
+/* 指で押すので 44px を切らないこと（社内レビューで 37px と判明） */
+.searchlite a,.searchlite button{
+  min-height:44px;display:inline-flex;align-items:center;
+  background:none;border:none;color:var(--sub);font-size:13px;cursor:pointer;
+  text-decoration:underline;padding:8px 10px;border-radius:8px;
+}
+.searchlite a:hover,.searchlite button:hover{color:var(--accent)}
+
+/* ---------- AI相談ページ ---------- */
+.aibox{max-width:640px;margin:0 auto}
+.aiform{display:flex;gap:8px;flex-wrap:wrap}
+.aiform textarea{
+  flex:1;min-width:220px;background:var(--bg);border:1px solid var(--line);
+  border-radius:12px;padding:13px 14px;font-size:16px;min-height:74px;resize:vertical;
+}
+.aiex{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
+.aiex button{
+  background:var(--bg);border:1px solid var(--line);border-radius:99px;
+  padding:8px 14px;font-size:13px;cursor:pointer;min-height:40px;
+}
+.aiex button:hover{border-color:var(--accent);color:var(--accent)}
+.airead{
+  background:var(--ok-soft);border-radius:10px;padding:11px 13px;margin:14px 0 0;
+  font-size:13px;line-height:1.7;
+}
+.airead b{color:var(--ok)}
+.airead ul{margin:6px 0 0;padding-left:1.2em}
+.aimiss{
+  background:var(--warn-soft);color:var(--warn);border-radius:10px;
+  padding:11px 13px;margin:14px 0 0;font-size:13px;line-height:1.7;
+}
+
+/* ---------- 決まるまでの時間（KPI表示） ---------- */
+.kpi{
+  display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--sub);
+  background:var(--bg);border-radius:8px;padding:9px 11px;margin-top:10px;
+}
+.kpi b{color:var(--accent);font-size:15px}
+
+/* ===== map.css ===== */
+/* ============================================================
+   map.css － 地図（Leaflet）まわり
+   Leaflet 本体は遅延読み込みするが、この CSS は先に当てておく。
+   #map の高さを最初から確保しておかないと、地図が入った瞬間に
+   ページが下へずれる（CLS）。高さの予約はここでやる。
+   ============================================================ */
+
+#map{
+  height:420px;border-radius:var(--r);border:1px solid var(--line);z-index:1;
+  background:var(--bg);
+}
+@media (max-width:1000px){ #map{height:340px} }
+/* 読み込み前のプレースホルダ。高さは #map と同じなのでズレない */
+.map-ph{
+  height:100%;display:grid;place-items:center;color:var(--sub);font-size:13px;
+  border-radius:var(--r);
+}
+
+.leaflet-popup-content{margin:10px 12px;font-size:13px;line-height:1.5}
+.leaflet-popup-content b{font-size:14px}
+.leaflet-popup-content .pop-acts{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
+.leaflet-popup-content .pop-acts a,
+.leaflet-popup-content .pop-acts button{
+  font-size:11.5px;border:1px solid var(--line);border-radius:6px;padding:3px 8px;
+  background:var(--bg);color:var(--ink);text-decoration:none;cursor:pointer;
+}
+
+.pin{width:13px;height:13px;border-radius:var(--r-pill);border:2px solid #fff;
+  box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.pin.v{background:#9a9489 !important;opacity:.75}
+.pin.p{width:19px;height:19px;border-width:3px;
+  box-shadow:0 0 0 2px #fff,0 0 0 4.5px #14110e,0 1px 4px rgba(0,0,0,.45)}
+.pinno{width:26px;height:26px;border-radius:var(--r-pill);border:3px solid #fff;color:#fff;
+  font-size:13px;font-weight:700;display:grid;place-items:center;line-height:1;
+  box-shadow:0 0 0 2px #14110e,0 2px 6px rgba(0,0,0,.45);font-family:inherit}
+.pin.o{background:#14110e;width:20px;height:20px;border-radius:3px;
+  border:3px solid #fff;transform:rotate(45deg);
+  box-shadow:0 0 0 1.5px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.4)}
+
+/* 営業中の店だけ光らせる小さな輪。色だけに頼らないよう、リスト側にも文字を出している */
+.pin.open-now{box-shadow:0 0 0 1px rgba(0,0,0,.35),0 0 0 3px rgba(47,111,79,.45)}

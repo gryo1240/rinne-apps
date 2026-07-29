@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="安城グルメマップ － 安城市の飲食店を営業時間つきで探す">
+<!-- SNS に出るカード画像。写真は使わない（権利上の方針）ので文字と図形だけで作る。
+     PNG が必要になったら、この SVG を 1200x630 で書き出して assets/img/ogp.png に置き、
+     index.html と build_shops.py の og:image を差し替えること。 -->
+<rect width="1200" height="630" fill="#faf7f3"/>
+<circle cx="1110" cy="-40" r="300" fill="#fbeee0"/>
+<circle cx="-60" cy="670" r="240" fill="#e3f0e8"/>
+<g font-family="Hiragino Kaku Gothic ProN, Yu Gothic UI, Meiryo, sans-serif">
+  <rect x="64" y="60" width="46" height="46" rx="12" fill="#eb6834"/>
+  <text x="87" y="93" font-size="26" font-weight="900" fill="#fff" text-anchor="middle">安</text>
+  <text x="126" y="94" font-size="27" font-weight="700" fill="#b45309">安城グルメマップ</text>
+
+  <text x="64" y="200" font-size="62" font-weight="900" fill="#241d17">最短ルートで回れる</text>
+  <text x="64" y="278" font-size="62" font-weight="900" fill="#b45309">安城グルメ 完全マップ</text>
+  <text x="64" y="340" font-size="27" fill="#6d6259">営業時間・定休日・子連れ対応・駐車場まで一目で分かります</text>
+
+  <g>
+    <rect x="64"  y="386" width="248" height="104" rx="14" fill="#fff" stroke="#e6ded4"/>
+    <rect x="330" y="386" width="248" height="104" rx="14" fill="#fff" stroke="#e6ded4"/>
+    <rect x="596" y="386" width="248" height="104" rx="14" fill="#fff" stroke="#e6ded4"/>
+    <rect x="862" y="386" width="274" height="104" rx="14" fill="#fff" stroke="#e6ded4"/>
+    <text x="88"  y="440" font-size="38" font-weight="900" fill="#b45309">100<tspan font-size="21">店</tspan></text>
+    <text x="88"  y="470" font-size="17" fill="#6d6259">対象店舗</text>
+    <text x="354" y="440" font-size="38" font-weight="900" fill="#b45309">100<tspan font-size="21">%</tspan></text>
+    <text x="354" y="470" font-size="17" fill="#6d6259">営業時間の掲載率</text>
+    <text x="620" y="440" font-size="38" font-weight="900" fill="#b45309">74<tspan font-size="21">店</tspan></text>
+    <text x="620" y="470" font-size="17" fill="#6d6259">子連れ対応</text>
+    <text x="886" y="440" font-size="38" font-weight="900" fill="#b45309">90<tspan font-size="21">店</tspan></text>
+    <text x="886" y="470" font-size="17" fill="#6d6259">駐車場あり</text>
+  </g>
+
+  <text x="64" y="560" font-size="20" fill="#6d6259">いま営業中の店がすぐ分かる／行きたい店を選ぶだけで回る順番まで</text>
+  <text x="64" y="596" font-size="16" fill="#8a837a">個人が作成した非公式マップ　出典：安城グルメガイド（安城市観光協会）</text>
+</g>
+</svg>

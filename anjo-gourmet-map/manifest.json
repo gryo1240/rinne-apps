@@ -1,0 +1,44 @@
+{
+  "name": "安城グルメマップ【非公式】",
+  "short_name": "安城グルメ",
+  "description": "安城市のごはん屋さんを、いま開いている店だけから3軒えらびます。個人が作った非公式のマップです。",
+  "lang": "ja",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf7f3",
+  "theme_color": "#b45309",
+  "categories": [
+    "food",
+    "travel",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "assets/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "言葉で相談する",
+      "url": "ai/"
+    }
+  ]
+}

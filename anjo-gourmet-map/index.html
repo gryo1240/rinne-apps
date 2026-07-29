@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#b45309" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#17140f" media="(prefers-color-scheme: dark)">
+
+<!-- ===== SEO =====
+     このサイトは「飲食店を検索するサービス」ではなく
+     「店選びに迷わないサービス」なので、title もそう名乗る。
+     「非公式」は必須表記（HANDOFF-dev.md 第7章）なので末尾に残す。 -->
+<title>安城市のランチ・カフェ・居酒屋を30秒で｜今営業中の店だけ3軒｜安城グルメマップ【非公式】</title>
+<meta name="description" content="安城市のランチ・カフェ・居酒屋を、今営業中の店だけから3軒ご提案します。質問に答えるだけ、最短30秒。駐車場あり・子連れOK・予算でも絞れます。掲載100店すべてに営業時間と定休日を表示。個人が作った非公式マップです。">
+<!-- 【重要】canonical / og:url / og:image は**絶対URL**であること。
+     相対URLだとクローラも X・LINE・Facebook も解決できません。
+     いまは仮のURLです。本番URLが決まったら、この3か所と
+     assets/js/core/config.js の site.origin を同時に書き換え、
+     python scripts/build_pages.py --base-url <本番URL> を実行してください。 -->
+<link rel="canonical" href="https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="安城グルメマップ">
+<meta property="og:title" content="安城市のランチ・カフェ・居酒屋を30秒で｜今営業中の店だけ3軒">
+<meta property="og:description" content="質問に答えるだけで、いま営業中の店から3軒を理由つきでご案内。安城市のランチ・カフェ・居酒屋・モーニング。駐車場あり・子連れOKでも絞れます。">
+<meta property="og:url" content="https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/">
+<meta property="og:image" content="https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/assets/img/ogp.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="安城市のランチ・カフェ・居酒屋を30秒で">
+<meta name="twitter:description" content="いま営業中の店から3軒を理由つきでご案内。安城市のランチ・カフェ・居酒屋。">
+<meta name="twitter:image" content="https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/assets/img/ogp.png">
+
+<!-- assets/css/ の5本を1本にしたもの。**生成物なので手で編集しないこと。**
+     もとのファイルを直したら python scripts/build_pages.py を実行してください。 -->
+<link rel="stylesheet" href="assets/css/app.css">
+
+<!-- ホーム画面に追加したときの見え方。manifest.json は生成物（build_pages.py）。
+     apple-touch-icon は別に要る。iOS は manifest のアイコンを見ないため。 -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/img/icon-192.png">
+
+<link rel="dns-prefetch" href="https://tile.openstreetmap.org">
+<link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
+
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {
+      "@type":"WebSite","@id":"#website",
+      "name":"安城グルメマップ",
+      "alternateName":"安城市の飲食店マップ",
+      "inLanguage":"ja",
+      "description":"安城市で今日行くお店を、質問に答えるだけで決められる非公式サービス",
+      "potentialAction":{
+        "@type":"SearchAction",
+        "target":{"@type":"EntryPoint","urlTemplate":"./?q={search_term_string}"},
+        "query-input":"required name=search_term_string"
+      }
+    },
+    {
+      "@type":"WebApplication",
+      "name":"安城グルメマップ",
+      "applicationCategory":"TravelApplication",
+      "operatingSystem":"Web","inLanguage":"ja","isAccessibleForFree":true,
+      "offers":{"@type":"Offer","price":"0","priceCurrency":"JPY"},
+      "featureList":"条件から3軒を提案, おすすめ理由の説明, 営業中判定, 今日まわる順番, 行きたいリスト"
+    },
+    {
+      "@type":"BreadcrumbList",
+      "itemListElement":[
+        {"@type":"ListItem","position":1,"name":"ホーム","item":"./"}
+      ]
+    }
+  ]
+}
+</script>
+
+<!-- FAQ。下の「よくある質問」と同じ内容にすること -->
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org","@type":"FAQPage",
+  "mainEntity":[
+    {"@type":"Question","name":"安城市で今すぐ入れるお店をどう選べばいいですか？",
+     "acceptedAnswer":{"@type":"Answer","text":"トップの質問に答えると、いま営業中のお店の中から、あなたの条件に合う3軒だけをおすすめ理由つきで表示します。一覧を見比べる必要はありません。最短2タップで決まります。"}},
+    {"@type":"Question","name":"おすすめの理由は何をもとにしていますか？",
+     "acceptedAnswer":{"@type":"Answer","text":"営業時間・定休日・駐車場・子連れ対応・席数・平均予算・設備など、公式サイトに載っている事実情報だけを使っています。口コミや評価は使っていません（そのデータを持っていないためです）。"}},
+    {"@type":"Question","name":"AIは外部のサービスに接続していますか？",
+     "acceptedAnswer":{"@type":"Answer","text":"接続していません。条件の判定はすべてお使いの端末の中で行っており、入力内容がどこかへ送信されることはありません。"}},
+    {"@type":"Question","name":"「行った」の記録はどこに保存されますか？",
+     "acceptedAnswer":{"@type":"Answer","text":"お使いのブラウザの中にだけ保存されます。会員登録は不要で、どこにも送信されません。設定からいつでも消せます。"}},
+    {"@type":"Question","name":"混雑状況は分かりますか？",
+     "acceptedAnswer":{"@type":"Answer","text":"実際の混雑データは持っていません。12時台はランチのピーク、14〜17時はピークを過ぎた時間帯、といった時間帯からの一般的な目安だけをお伝えしています。"}}
+  ]
+}
+</script>
+
+<!-- ITEMLIST:START  ここは scripts/build_pages.py が自動で書き換えます。手で編集しないこと -->
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "ItemList",
+ "name": "安城市の掲載店舗",
+ "numberOfItems": 100,
+ "itemListOrder": "https://schema.org/ItemListOrderAscending",
+ "itemListElement": [
+  {
+   "@type": "ListItem",
+   "position": 1,
+   "name": "花れ割烹 遊木むら",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/1/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 2,
+   "name": "料亭・懐石 達磨",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/2/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 3,
+   "name": "うなぎ・お料理 𠮷野屋",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/3/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 4,
+   "name": "まるは食堂 三河安城店",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/4/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 5,
+   "name": "zoan",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/5/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 6,
+   "name": "キッチン花車",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/6/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 7,
+   "name": "ほっともっと安城北部店",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/7/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 8,
+   "name": "丈山の里 いずみ庵 本店",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/8/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 9,
+   "name": "鶴林古",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/9/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 10,
+   "name": "樹神亭",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/10/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 11,
+   "name": "師崎茶屋 太っ腹",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/11/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 12,
+   "name": "みつばち食堂",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/12/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 13,
+   "name": "六ツ美食堂",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/13/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 14,
+   "name": "初寿司",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/14/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 15,
+   "name": "御食事処 ふじき",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/15/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 16,
+   "name": "かどいち",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/16/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 17,
+   "name": "おかだや麺楽",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/17/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 18,
+   "name": "栄寿司",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/18/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 19,
+   "name": "どんぐり本店",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/19/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 20,
+   "name": "レストランカフェ Orange Pekoe",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/20/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 21,
+   "name": "カフェ&ダイニング ヒラソル",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/21/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 22,
+   "name": "茶寮 花の宴",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/22/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 23,
+   "name": "カントリーヴレッジ【閉業】",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/23/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 24,
+   "name": "HAMBURG MEISTER",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/24/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 25,
+   "name": "TIME",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/25/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 26,
+   "name": "味の店 とんかつ 安曇野",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/26/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 27,
+   "name": "ふらんす食堂 ここりこ",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/27/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 28,
+   "name": "イタリア料理 らぱん",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/28/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 29,
+   "name": "DELI＆KITCHEN Chant",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/29/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 30,
+   "name": "パスタとデリのお店 プルミーノ",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/30/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 31,
+   "name": "NEJI",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/31/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 32,
+   "name": "PREMIUM DINING WISH",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/32/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 33,
+   "name": "中国料理 北京本店",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/33/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 34,
+   "name": "中華飯店 味覚亭",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/34/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 35,
+   "name": "香楽 新安城本店",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/35/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 36,
+   "name": "福来源",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/36/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 37,
+   "name": "らーめん駒 安城店",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/37/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 38,
+   "name": "名古屋コーチン らーめん鳥よし",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/38/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 39,
+   "name": "すすきのらぁめん膳 新安城北口店【閉業】",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/39/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 40,
+   "name": "豚旨うま屋ラーメン 安城店",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/40/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 41,
+   "name": "キンパKITCHEN",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/41/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 42,
+   "name": "うり食堂",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/42/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 43,
+   "name": "多国籍料理 cheers",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/43/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 44,
+   "name": "インドネパールレストラン ガナパティババ",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/44/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 45,
+   "name": "インド料理 タージ・ベンガル",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/45/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 46,
+   "name": "ハラルレストラン マディナ",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/46/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 47,
+   "name": "デンパーク ハム工房",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/47/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 48,
+   "name": "焼肉 春",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/48/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 49,
+   "name": "焼肉みます",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/49/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 50,
+   "name": "BBQガーデン「ピクニック」",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/50/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 51,
+   "name": "お好み焼 三河多田屋",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/51/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 52,
+   "name": "ステーキハウスシャロレ",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/52/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 53,
+   "name": "炭火焼肉 栄養亭",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/53/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 54,
+   "name": "焼肉 安萬",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/54/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 55,
+   "name": "YAKINIKU 安萬LABO",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/55/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 56,
+   "name": "築山さん家のたこやき屋さん",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/56/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 57,
+   "name": "焼肉屋ウルフ",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/57/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 58,
+   "name": "REVOLBAR",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/58/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 59,
+   "name": "Taro’s Bar 三河安城店",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/59/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 60,
+   "name": "酒食百景 松",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/60/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 61,
+   "name": "和洋いざかや 道っちゃん",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/61/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 62,
+   "name": "もてなし 旬菜や",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/62/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 63,
+   "name": "旬菜や 個室酒房 季喜",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/63/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 64,
+   "name": "ナベカラマリン",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/64/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 65,
+   "name": "鉄板たこやきBar マリン",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/65/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 66,
+   "name": "浜焼きdining カキヤ 安城店",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/66/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 67,
+   "name": "とりこ 三河安城",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/67/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 68,
+   "name": "海鮮居酒屋 龍のおとし子 安城店",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/68/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 69,
+   "name": "炭焼き酒場 TORI‐YA 炭の助",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/69/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 70,
+   "name": "Wine&Kitchen vegetoruno",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/70/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 71,
+   "name": "日本食一 安城横丁",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/71/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 72,
+   "name": "三条",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/72/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 73,
+   "name": "cafe angora",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/73/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 74,
+   "name": "Café & Blomster",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/74/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 75,
+   "name": "三河デリシャスファーム",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/75/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 76,
+   "name": "カフェキッチン・BONO",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/76/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 77,
+   "name": "ぼちぼちカフェ",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/77/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 78,
+   "name": "cafe Laima",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/78/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 79,
+   "name": "craft cafe R2・3",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/79/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 80,
+   "name": "FUKUSUKE COFFEE ROASTERY",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/80/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 81,
+   "name": "BUNT COFFEE",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/81/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 82,
+   "name": "カフェ＆温活リラクゼーションサロン おさかなの手紙",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/82/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 83,
+   "name": "COFFEE MINAMI",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/83/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 84,
+   "name": "TEA HOUSE laCASA 安城店",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/84/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 85,
+   "name": "cobaco ne cobaco",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/85/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 86,
+   "name": "茶々屋南山園 アピタ安城南店",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/86/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 87,
+   "name": "カフェ&ダイナー アジコ",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/87/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 88,
+   "name": "カフェ・ピクアント",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/88/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 89,
+   "name": "cafe sweet corns",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/89/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 90,
+   "name": "cafe Rest はみんぐ",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/90/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 91,
+   "name": "comecome.co",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/91/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 92,
+   "name": "デ・レーヴ タカハシ",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/92/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 93,
+   "name": "洋菓子工房 Tin-Ker Béll 安城本店",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/93/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 94,
+   "name": "フルーツの金魚屋",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/94/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 95,
+   "name": "デンパーク アイス工房",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/95/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 96,
+   "name": "両口屋菓匠",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/96/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 97,
+   "name": "甘味 すえひろ",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/97/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 98,
+   "name": "えびせん家族 安城店",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/98/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 99,
+   "name": "パニーノ 安城店",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/99/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 100,
+   "name": "おりひめandひこぼし",
+   "url": "https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/shop/100/"
+  }
+ ]
+}
+</script>
+<!-- ITEMLIST:END -->
+</head>
+
+<body data-app="top" data-tab="home">
+
+<a class="skiplink" href="#main">本文へ移動</a>
+
+<header class="site">
+  <div class="container site-in">
+    <a class="brand" href="./">
+      <span class="mark" aria-hidden="true">安</span>安城グルメ<span class="hide-sm">マップ</span>
+    </a>
+    <span class="spacer"></span>
+    <nav class="site-nav" aria-label="サイト内">
+      <a href="ai/">言葉で相談</a>
+      <button type="button" data-tabgo="search" class="hide-sm">自分で探す</button>
+      <button type="button" data-scroll="faqsec" class="hide-sm">よくある質問</button>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <main id="main">
+
+    <!-- ==================== ホーム（決める画面） ==================== -->
+    <section class="view" id="v-home" role="tabpanel" aria-labelledby="tab-home">
+
+      <!-- ファーストビューは店一覧ではなく「質問」。
+           ここで一覧を出すと、それは検索サービスになってしまう。 -->
+      <div class="hero">
+        <div class="hero-in" style="padding:20px 0 6px">
+          <!-- h1 はページに1つ。質問文（h2）は手順が進むと変わるので、
+               ページの主題はこちらに置く。検索結果に出るのもこの言葉。 -->
+          <h1 class="hero-kicker">安城市で今日どこに行くか、30秒で決める</h1>
+
+          <!-- ===== 1問目は HTML に直接書いてあります =====
+               理由は2つ。
+               1) **CLS 対策。** ここを空にして JS で作ると、質問カードが入った瞬間に
+                  下の要素が押し下げられる。実測で CLS 0.63（目標 0.05以下）だった。
+                  最初の1問を先に置いておけば、JS は同じ大きさの中身に差し替えるだけになる。
+               2) **JS が動かなくても、何のサイトか分かる。**
+               2問目以降は wizard.js が同じ書式で描き替えます。
+               ここを変えるときは assets/js/ui/wizard.js の render() も必ず合わせること。 -->
+          <!-- 【読み上げのために必要】1タップで自動的に次の質問へ切り替わるので、
+               aria-live が無いとスクリーンリーダー利用者は画面が変わったことに気づけません。
+               中身を丸ごと差し替えるため atomic="true"。 -->
+          <div id="wizard" role="region" aria-live="polite" aria-atomic="true" aria-label="質問">
+            <div class="qcard">
+              <div class="qprog" aria-hidden="true"><i style="width:0%"></i></div>
+              <p class="qstep">質問 1 / 4</p>
+              <h2 class="qtitle">今日はどんな気分ですか？</h2>
+              <p class="qlead">いちばん近いものを1つ</p>
+              <div class="qopts" role="group">
+                <button type="button" class="qopt" data-wz-opt="family">
+                  <span class="qi" aria-hidden="true">👨‍👩‍👧</span><span class="qt">家族で</span></button>
+                <button type="button" class="qopt" data-wz-opt="solo">
+                  <span class="qi" aria-hidden="true">🙂</span><span class="qt">一人</span></button>
+                <button type="button" class="qopt" data-wz-opt="date">
+                  <span class="qi" aria-hidden="true">🍷</span><span class="qt">デート</span></button>
+                <button type="button" class="qopt" data-wz-opt="friends">
+                  <span class="qi" aria-hidden="true">🎉</span><span class="qt">友達</span></button>
+                <button type="button" class="qopt" data-wz-opt="tourist">
+                  <span class="qi" aria-hidden="true">📷</span><span class="qt">観光</span></button>
+                <button type="button" class="qopt" data-wz-opt="takeout">
+                  <span class="qi" aria-hidden="true">🥡</span><span class="qt">テイクアウト</span></button>
+              </div>
+              <div class="qfoot">
+                <span></span>
+                <button type="button" class="linkbtn" data-wz="skip">スキップ</button>
+              </div>
+            </div>
+          </div>
+          <div class="searchlite">
+            <button type="button" data-tabgo="search">お店の一覧から自分で探す</button>
+            <span aria-hidden="true">・</span>
+            <a href="ai/">言葉で相談する</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 質問に答えたらここに3軒だけ出る -->
+      <div id="recobox" class="section" role="region" aria-live="polite"
+           aria-label="おすすめのお店"></div>
+
+      <div class="slot" id="slot-sponsor" aria-hidden="true"></div>
+
+      <!-- 質問に答えるほどでもない人向けの近道。1タップで3軒へ -->
+      <section class="section" id="shelfsec">
+        <div class="section-h">
+          <h2>今日の気分から選ぶ</h2>
+          <p class="lead">押すとその条件で3軒えらびます</p>
+        </div>
+        <div id="shelves"></div>
+      </section>
+
+      <!-- 行きたい・最近見た -->
+      <section class="section" id="historysec">
+        <div class="section-h">
+          <h2>最近見たお店</h2>
+          <p class="lead">この端末の中にだけ残ります</p>
+        </div>
+        <div id="historybox"></div>
+      </section>
+
+      <section class="section" id="faqsec">
+        <div class="section-h"><h2>よくある質問</h2></div>
+        <div class="faq">
+          <details>
+            <summary>安城市で今すぐ入れるお店をどう選べばいいですか？</summary>
+            <p>トップの質問に答えると、いま営業中のお店の中から、あなたの条件に合う3軒だけを
+              おすすめ理由つきで表示します。一覧を見比べる必要はありません。最短2タップで決まります。</p>
+          </details>
+          <details>
+            <summary>おすすめの理由は何をもとにしていますか？</summary>
+            <p>営業時間・定休日・駐車場・子連れ対応・席数・平均予算・設備など、
+              公式サイトに載っている事実情報だけを使っています。
+              口コミや評価は使っていません（そのデータを持っていないためです）。</p>
+          </details>
+          <details>
+            <summary>AIは外部のサービスに接続していますか？</summary>
+            <p>接続していません。条件の判定はすべてお使いの端末の中で行っており、
+              入力内容がどこかへ送信されることはありません。</p>
+          </details>
+          <details>
+            <summary>「行った」の記録はどこに保存されますか？</summary>
+            <p>お使いのブラウザの中にだけ保存されます。会員登録は不要で、どこにも送信されません。
+              設定からいつでも消せます。</p>
+          </details>
+          <details>
+            <summary>混雑状況は分かりますか？</summary>
+            <p>実際の混雑データは持っていません。12時台はランチのピーク、
+              14〜17時はピークを過ぎた時間帯、といった時間帯からの一般的な目安だけをお伝えしています。</p>
+          </details>
+        </div>
+      </section>
+
+      <!-- 目的別のページへの入口（SEOの受け皿にも内部リンクにもなる）
+
+           【重要】ここは**静的HTML**であること。
+           以前は JS で作っていたため、クローラが最初に受け取るHTMLに
+           目的別ページ12枚・店舗ページ100枚へのリンクが**1本もありませんでした**。
+           sitemap.xml も無かったので、112ページが完全に孤立していました。 -->
+      <section class="section" id="scenelinks">
+        <div class="section-h"><h2>目的から探す</h2></div>
+        <!-- SCENELINKS:START  scripts/build_pages.py が自動で書き換えます。手で編集しないこと -->
+        <div class="pill-row" id="scenepills">
+          <a class="chip" href="c/lunch/">🍚 安城市のランチ</a>
+          <a class="chip" href="c/morning/">🥐 安城市のモーニング</a>
+          <a class="chip" href="c/cafe/">☕ 安城市のカフェ・喫茶店</a>
+          <a class="chip" href="c/dinner/">🌙 安城市の夜ご飯</a>
+          <a class="chip" href="c/sweets/">🍰 安城市のスイーツ・パン</a>
+          <a class="chip" href="c/takeout/">🥡 安城市のテイクアウト</a>
+          <a class="chip" href="c/kids/">👶 安城市の子連れで行けるお店</a>
+          <a class="chip" href="c/date/">🍷 安城市のデートで使えるお店</a>
+          <a class="chip" href="c/tabearuki/">🚶 安城市の食べ歩き</a>
+          <a class="chip" href="c/parking/">🅿️ 安城市の駐車場があるお店</a>
+          <a class="chip" href="c/quiet/">🤫 安城市の静かに過ごせるお店</a>
+          <a class="chip" href="c/cheap/">💴 安城市の1,000円以下で食べられるお店</a>
+        </div>
+        <!-- SCENELINKS:END -->
+      </section>
+
+      <div class="slot" id="slot-paid" aria-hidden="true"></div>
+      <div class="slot" id="slot-admin-city" aria-hidden="true"></div>
+      <div class="slot" id="slot-admin-biz" aria-hidden="true"></div>
+    </section>
+
+    <!-- ==================== 自分で探す（従来の検索・一覧） ====================
+         検索は禁止しません。ただし最初の導線からは外し、タブの奥に置きます。 -->
+    <section class="view" id="v-search" role="tabpanel" aria-labelledby="tab-search" hidden>
+      <div class="section-h">
+        <h2>お店の一覧から探す</h2>
+        <p class="lead">迷ったら上の「言葉で相談」のほうが早く決まります</p>
+      </div>
+
+      <section class="card pad" id="listsec" aria-label="お店を探す">
+        <div class="searchbar">
+          <div class="searchbox">
+            <span class="ic" aria-hidden="true">🔍</span>
+            <label for="q" class="visually-hidden">店名・住所・ジャンルで検索</label>
+            <input type="search" id="q" placeholder="店名・ジャンル・住所で検索" autocomplete="off">
+            <button class="clr" id="qclear" hidden aria-label="検索語を消す">×</button>
+          </div>
+          <button class="filtoggle" id="filtoggle" aria-expanded="false" aria-controls="filterpanel">
+            絞り込み <span class="n" hidden>0</span> <span class="ar" aria-hidden="true">▼</span>
+          </button>
+        </div>
+
+        <div class="quickrow">
+          <button class="chip" data-f="openNow" data-v="1" aria-pressed="false">いま営業中</button>
+          <button class="chip" data-f="svc" data-v="お子様連れ対応可能" aria-pressed="false">子連れOK</button>
+          <button class="chip" data-f="parking" data-v="1" aria-pressed="false">駐車場あり</button>
+          <button class="chip" data-f="fav" data-v="1" aria-pressed="false">行きたい</button>
+          <span class="count" role="status" aria-live="polite"><b id="cnt">0</b> 件</span>
+        </div>
+
+        <div class="filterpanel" id="filterpanel" hidden>
+          <div class="frow">
+            <span class="flabel" id="lb-big">種類</span>
+            <span id="bigchips" role="group" aria-labelledby="lb-big"></span>
+          </div>
+          <div class="frow">
+            <span class="flabel" id="lb-genre">ジャンル</span>
+            <span id="genrechips" role="group" aria-labelledby="lb-genre"></span>
+          </div>
+          <div class="frow">
+            <span class="flabel" id="lb-svc">条件</span>
+            <span id="svcchips" role="group" aria-labelledby="lb-svc"></span>
+            <button class="chip" data-f="unvisited" data-v="1" aria-pressed="false">まだ行っていない</button>
+            <button class="linkbtn" id="reset">条件をクリア</button>
+          </div>
+          <div class="frow">
+            <label class="flabel" for="origin">出発地</label>
+            <input id="origin" list="stationlist" autocomplete="off" spellcheck="false"
+                   placeholder="駅名を入力（例：安城）" title="愛知県の駅名を入力できます">
+            <datalist id="stationlist"></datalist>
+            <button class="chip" id="geoloc">現在地を使う</button>
+            <button class="chip" id="originclear">解除</button>
+            <button class="chip" id="pickmap" aria-pressed="false">地図をクリックして指定</button>
+            <span class="note" id="orignote">← 先に出発地を決めてください</span>
+          </div>
+          <div class="frow">
+            <label class="flabel" for="sort">並び順</label>
+            <select id="sort">
+              <option value="type">種類ごとにまとめる</option>
+              <option value="open">いま営業中を先に</option>
+              <option value="dist">出発地から近い順</option>
+              <option value="budget">昼の予算が安い順</option>
+              <option value="name">名前順</option>
+            </select>
+            <button class="linkbtn" id="collapseall">すべて折りたたむ</button>
+            <button class="linkbtn" id="expandall">すべて開く</button>
+          </div>
+        </div>
+      </section>
+
+      <div id="listbox"></div>
+    </section>
+
+    <!-- ==================== 行きたい ==================== -->
+    <section class="view section" id="v-fav" role="tabpanel" aria-labelledby="tab-fav" hidden>
+      <div class="section-h">
+        <h2>行きたいお店 <span class="lead">（<span id="favcount">0</span>件）</span></h2>
+        <p class="lead">カードの「♡ 行きたい」でいつでも足せます。この端末の中にだけ残ります</p>
+      </div>
+      <div id="favbox"></div>
+
+      <div class="section-h" style="margin-top:24px">
+        <h2>保存したまわる順番</h2>
+      </div>
+      <div id="savedbox"></div>
+    </section>
+
+  </main>
+
+  <aside class="side">
+    <div id="map"><div class="map-ph">地図を読み込んでいます…</div></div>
+    <div class="legend" id="legend"></div>
+    <section class="card pad">
+      <h2 class="sideh">今日まわる順番 <span class="n plann">0 件</span></h2>
+      <div class="planbox"></div>
+    </section>
+    <div class="slot" id="slot-ad-side" aria-hidden="true"></div>
+    <div class="slot" id="slot-premium" aria-hidden="true"></div>
+  </aside>
+</div>
+
+<div class="slot" id="slot-ad-foot" aria-hidden="true"></div>
+
+<!-- ===== フッター =====
+     ここの表記は権利と信頼性のために必須。削除・改変しないこと（HANDOFF-dev.md 第7章）。 -->
+<footer class="site">
+  <p class="unofficial">⚠ 個人が作成した非公式マップです</p>
+  <div class="cols">
+    <div>
+      <h2>このサイトについて</h2>
+      <p><b>このサイトは個人が作成した非公式のマップです。</b>
+        安城市観光協会および各店舗とは関係ありません。</p>
+      <p><b>出典：</b><a href="https://anjo-stamp.jp/shop/" target="_blank" rel="noopener">安城グルメガイド（安城市観光協会）</a>
+        の対象店舗情報のうち、店名・所在地・営業時間・定休日・電話番号・ジャンル・設備といった
+        事実情報のみを加工しています。<b>紹介文・写真は転載していません</b>
+        （カードの絵はジャンルから自動で作ったもので、実際の店内写真ではありません）。</p>
+    </div>
+    <div>
+      <h2>おでかけ前に</h2>
+      <p><b>営業時間・定休日・掲載店舗は変わることがあります。
+        おでかけ前に公式サイトと各店舗でご確認ください。</b></p>
+      <!-- 出典元はデジタルスタンプラリーのサイトです。ここから来た方が
+           「このサイトでスタンプが押せる」と誤解しないよう、この1行だけは残します。
+           （スタンプラリー向けの機能・案内は 2026-07-28 にすべて外しました） -->
+      <p>このサイトではスタンプは押せません。スタンプの取得・応募は<a href="https://anjo-stamp.jp/stamphome/" target="_blank" rel="noopener">出典元の公式サイト</a>で行ってください。</p>
+    </div>
+    <div>
+      <h2>データと保存</h2>
+      <p>地図および駅データ：<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>（ODbL）</p>
+      <p>行きたい・プラン・閲覧履歴・回答内容は<b>お使いのブラウザ内にのみ保存され、どこにも送信されません。</b>
+        おすすめの判定も端末の中だけで行っており、<b>外部のAIサービスには接続していません。</b></p>
+      <!-- 閲覧数の集計を入れたときだけ、ここに説明が出ます（config.js の analytics）。
+           文言と計測は同じスイッチから出しています。片方だけ出さないこと。 -->
+      <p id="analyticsnote" hidden></p>
+      <nav aria-label="ページ内">
+        <!-- FOOTLINKS:START  scripts/build_pages.py が自動で書き換えます。手で編集しないこと -->
+        <ul id="footlinks">
+          <li><a href="ai/">言葉で相談する</a></li>
+          <li><a href="c/lunch/">安城市のランチ</a></li>
+          <li><a href="c/morning/">安城市のモーニング</a></li>
+          <li><a href="c/cafe/">安城市のカフェ・喫茶店</a></li>
+          <li><a href="c/dinner/">安城市の夜ご飯</a></li>
+          <li><a href="c/sweets/">安城市のスイーツ・パン</a></li>
+          <li><a href="c/takeout/">安城市のテイクアウト</a></li>
+          <li><a href="c/kids/">安城市の子連れで行けるお店</a></li>
+          <li><a href="c/date/">安城市のデートで使えるお店</a></li>
+          <li><a href="c/tabearuki/">安城市の食べ歩き</a></li>
+          <li><a href="c/parking/">安城市の駐車場があるお店</a></li>
+          <li><a href="c/quiet/">安城市の静かに過ごせるお店</a></li>
+          <li><a href="c/cheap/">安城市の1,000円以下で食べられるお店</a></li>
+        </ul>
+        <!-- FOOTLINKS:END -->
+      </nav>
+    </div>
+  </div>
+</footer>
+
+<button class="fab" id="totop" title="ページの先頭に戻る" aria-label="ページの先頭に戻る">↑</button>
+
+<div class="bar" id="bar">
+  <span class="bn">今日まわる順番 <b class="plann">0</b></span>
+  <span class="sp"></span>
+  <button class="btn" id="opensheet">まわる順番を見る</button>
+</div>
+
+<!-- ===== ボトムナビ ===== -->
+<nav class="bottomnav" id="bottomnav" aria-label="メニュー">
+  <ul role="tablist">
+    <li><button role="tab" id="tab-home" aria-controls="v-home" data-tab="home" aria-selected="true">
+      <span class="ic" aria-hidden="true">✨</span>決める</button></li>
+    <li><button role="tab" id="tab-search" aria-controls="v-search" data-tab="search" aria-selected="false">
+      <span class="ic" aria-hidden="true">🔍</span>探す</button></li>
+    <li><button role="tab" id="tab-plan" aria-haspopup="dialog" data-tab="plan" aria-selected="false">
+      <span class="ic" aria-hidden="true">📋</span>まわる順
+      <span class="cnt" id="navplan-cnt" hidden>0</span></button></li>
+    <li><button role="tab" id="tab-fav" aria-controls="v-fav" data-tab="fav" aria-selected="false">
+      <span class="ic" aria-hidden="true">♡</span>行きたい
+      <span class="cnt" id="navfav-cnt" hidden>0</span></button></li>
+    <li><button role="tab" id="tab-settings" aria-haspopup="dialog" data-tab="settings" aria-selected="false">
+      <span class="ic" aria-hidden="true">⚙</span>設定</button></li>
+  </ul>
+</nav>
+
+<!-- ===== 今日まわる順番 ===== -->
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h" aria-hidden="true">
+  <div class="sheet-in">
+    <h2 id="sheet-h">今日まわる順番 <span class="n plann" style="color:var(--sub);font-weight:600">0 件</span>
+      <button class="x" data-close title="閉じる" aria-label="閉じる">×</button></h2>
+    <div class="planbox"></div>
+  </div>
+</div>
+
+<!-- ===== 共有 ===== -->
+<div class="sheet" id="sharesheet" role="dialog" aria-modal="true" aria-labelledby="share-h" aria-hidden="true">
+  <div class="sheet-in">
+    <h2 id="share-h">今日まわる順番を共有
+      <button class="x" data-close title="閉じる" aria-label="閉じる">×</button></h2>
+    <canvas class="sharecanvas" id="sharecanvas" width="1200" height="630"
+            aria-label="共有用に作った「今日まわる順番」の画像"></canvas>
+    <div class="sharebtns">
+      <button class="btn" id="share-native" hidden>共有する</button>
+      <button class="btn ghost" id="share-dl">画像を保存</button>
+      <button class="btn share-x" id="share-x">Xに投稿</button>
+      <button class="btn share-line" id="share-line">LINEで送る</button>
+      <button class="btn ghost" id="share-copy">URLをコピー</button>
+    </div>
+    <p class="hint">Xの投稿画面には画像を直接添付できないため、
+      画像を使う場合は「画像を保存」してから投稿画面で添付してください。<br>
+      URLにはプランのお店と並び順が入っているので、開いた人も同じプランを見られます。</p>
+    <label class="visually-hidden" for="shareurl">共有用のURL</label>
+    <input id="shareurl" readonly style="width:100%;margin-top:8px;padding:8px;
+      border:1px solid var(--line);border-radius:8px;background:var(--bg)">
+  </div>
+</div>
+
+<!-- ===== 設定 ===== -->
+<div class="sheet" id="settingsheet" role="dialog" aria-modal="true" aria-labelledby="set-h" aria-hidden="true">
+  <div class="sheet-in">
+    <h2 id="set-h">設定
+      <button class="x" data-close title="閉じる" aria-label="閉じる">×</button></h2>
+
+    <p class="hint" style="margin-top:0">配色</p>
+    <div class="pill-row">
+      <button class="chip" data-theme-set="auto" aria-pressed="true">端末に合わせる</button>
+      <button class="chip" data-theme-set="light" aria-pressed="false">明るい</button>
+      <button class="chip" data-theme-set="dark" aria-pressed="false">暗い</button>
+    </div>
+
+    <p class="hint">表示</p>
+    <div class="pill-row">
+      <button class="chip" id="set-compact" aria-pressed="false">コンパクト表示</button>
+      <button class="chip" id="set-restart">質問をやり直す</button>
+    </div>
+
+    <p class="hint">記録</p>
+    <div class="pill-row">
+      <button class="chip" id="set-clearvisit">「行った」の記録を消す</button>
+      <button class="chip" id="set-clearhistory">閲覧履歴を消す</button>
+      <!-- 直近に出した店は次のおすすめで下がる。ここで白紙に戻せる -->
+      <button class="chip" id="set-clearshown">おすすめの履歴をリセット</button>
+    </div>
+
+    <div class="kpi" id="kpibox" hidden></div>
+    <p class="hint">記録はすべてお使いのブラウザ内にのみ保存され、どこにも送信されません。</p>
+  </div>
+</div>
+
+<!-- ===== スクリプト =====
+     【初回表示に要らないものは読み込まない】
+       data/stations.js（27KB）… 最後の質問と絞り込みの出発地欄だけ。触れた瞬間に読む
+       assets/js/ui/share.js（9.7KB）… 共有ボタンを押したときだけ
+       assets/js/core/nlp.js（8.3KB）… /ai だけが使う。トップでは一切使わない
+     地図（Leaflet 145KB）は従来どおり ui/map.js が遅延で読み込みます。
+     ES モジュールは使わない（file:// で開けなくなるため）。読み込み順＝依存順。 -->
+<script src="data/city.js" defer></script>
+<script src="data/categories.js" defer></script>
+<script src="data/shops.js" defer></script>
+<script src="assets/js/core/config.js" defer></script>
+<script src="assets/js/core/util.js" defer></script>
+<script src="assets/js/core/store.js" defer></script>
+<script src="assets/js/core/taxonomy.js" defer></script>
+<script src="assets/js/core/hours.js" defer></script>
+<script src="assets/js/core/shops.js" defer></script>
+<script src="assets/js/core/place.js" defer></script>
+<script src="assets/js/core/scenes.js" defer></script>
+<script src="assets/js/core/decide.js" defer></script>
+<script src="assets/js/ui/dialog.js" defer></script>
+<script src="assets/js/ui/visual.js" defer></script>
+<script src="assets/js/ui/card.js" defer></script>
+<script src="assets/js/ui/filters.js" defer></script>
+<script src="assets/js/ui/map.js" defer></script>
+<script src="assets/js/ui/plan.js" defer></script>
+<script src="assets/js/ui/personal.js" defer></script>
+<script src="assets/js/ui/nav.js" defer></script>
+<script src="assets/js/ui/slots.js" defer></script>
+<script src="assets/js/ui/wizard.js" defer></script>
+<script src="assets/js/ui/reco.js" defer></script>
+<script src="assets/js/ui/shelf.js" defer></script>
+<script src="assets/js/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,237 @@
+/* ============================================================
+   decide.css － 「決める」ための画面
+   質問カード／おすすめ3軒／横スクロール棚／代替ビジュアル
+   ------------------------------------------------------------
+   片手で使えることを優先しています。
+   ・押すものは高さ 48px 以上（親指で外さない大きさ）
+   ・主要ボタンは常に画面の下寄り（親指の届く範囲）
+   ・横スクロールの棚は、指で払える余白を左右に取る
+   ============================================================ */
+
+/* ---------- 質問カード ---------- */
+.qcard{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);
+  box-shadow:var(--shadow-lg);padding:20px 18px 16px;max-width:640px;margin:0 auto;
+}
+.qprog{height:4px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:14px}
+.qprog i{display:block;height:100%;background:var(--accent);transition:width .25s}
+.qstep{font-size:11.5px;color:var(--sub);margin:0 0 4px;font-weight:700;letter-spacing:.04em}
+.qtitle{font-size:clamp(20px,4.4vw,27px);margin:0 0 4px;font-weight:900;line-height:1.35}
+.qlead{font-size:13px;color:var(--sub);margin:0 0 16px}
+
+.qopts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px}
+@media (max-width:420px){ .qopts{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.qopt{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  min-height:82px;padding:12px 10px;cursor:pointer;
+  background:var(--bg);border:2px solid var(--line);border-radius:12px;
+  font-size:14.5px;font-weight:700;line-height:1.3;text-align:center;transition:.12s;
+}
+.qopt:hover{border-color:var(--accent);color:var(--accent)}
+.qopt.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.qopt .qi{font-size:24px;line-height:1}
+.qopts.is-multi .qopt{min-height:60px;flex-direction:row;gap:8px}
+
+.qorigin{display:grid;gap:9px}
+.qorigin .qopt{flex-direction:row;gap:10px;min-height:56px;justify-content:flex-start;padding:12px 16px}
+.qstation{display:flex;gap:8px;margin-top:2px;flex-wrap:wrap}
+.qstation[hidden]{display:none}
+.qstation input{
+  flex:1;min-width:160px;background:var(--bg);border:1px solid var(--line);
+  border-radius:10px;padding:11px 12px;font-size:15px;
+}
+.qnow{font-size:12.5px;color:var(--sub);margin:2px 0 0}
+
+.qfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px}
+.qjump{
+  display:block;width:100%;margin-top:12px;padding:13px 12px;cursor:pointer;
+  background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;
+  color:var(--accent);font-weight:800;font-size:14.5px;
+}
+.qjump:hover{background:var(--accent);color:var(--accent-ink)}
+
+/* ---------- おすすめ3軒 ---------- */
+.reco-head{margin:0 0 14px}
+.reco-head h2{font-size:clamp(19px,4vw,25px);margin:0 0 4px;font-weight:900}
+.reco-sub{font-size:13px;color:var(--sub);margin:0}
+.reco-relax{
+  font-size:12.5px;background:var(--warn-soft);color:var(--warn);
+  border-radius:8px;padding:8px 11px;margin:10px 0 0;line-height:1.6;
+}
+.reco-count{font-size:13px;color:var(--sub);margin:4px 0 0}
+.reco-count b{color:var(--ink)}
+.reco-crowd{font-size:12.5px;color:var(--sub);margin:8px 0 0;line-height:1.6}
+.tiny{font-size:11px;color:var(--sub);line-height:1.6}
+
+/* 結果画面の「条件を足す」。
+   質問から外した4条件（駐車場・子連れ・禁煙・予約）を、3軒を見たあとで足す場所。
+   横並び・折り返し可。指で押すので 44px を切らないこと。 */
+.reco-refine{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+  margin:0 0 14px;padding:10px 12px;
+  background:var(--card);border:1px solid var(--line);border-radius:12px;
+}
+.reco-refine-h{font-size:12.5px;color:var(--sub);font-weight:700;margin-right:2px}
+.reco-refine .chip{min-height:44px}
+
+.reco-list{display:grid;gap:14px}
+@media (min-width:900px){ .reco-list{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start} }
+
+.reco{
+  background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--cc);
+  border-radius:var(--r-lg);box-shadow:var(--shadow);padding:0 0 14px;overflow:hidden;
+  display:flex;flex-direction:column;
+}
+
+/* ① 理由をいちばん上に、いちばん目立たせる */
+.reco-why{background:var(--cc-soft);padding:13px 15px 12px}
+.reco-why-h{
+  display:flex;align-items:center;gap:8px;margin:0 0 7px;
+  font-size:12px;font-weight:800;color:var(--cc);letter-spacing:.02em;
+}
+.reco-why-h .rk{
+  width:22px;height:22px;border-radius:99px;background:var(--cc);color:#fff;
+  display:grid;place-items:center;font-size:12px;font-weight:900;flex:none;
+}
+.reco-why ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.reco-why li{
+  display:flex;gap:8px;align-items:flex-start;font-size:14px;line-height:1.5;
+  font-weight:600;color:var(--ink);
+}
+.reco-why li .ri{flex:none;font-size:15px;line-height:1.4}
+
+.reco-name{font-size:19px;font-weight:900;margin:13px 15px 10px;line-height:1.35}
+.reco-name a{color:inherit;text-decoration:none}
+.reco-name a:hover{color:var(--accent);text-decoration:underline}
+
+.reco-facts{margin:12px 15px 0;display:grid;gap:5px;font-size:13px}
+.reco-facts>div{display:flex;gap:10px}
+.reco-facts dt{color:var(--sub);min-width:4.5em;font-weight:600;flex:none}
+.reco-facts dd{margin:0;flex:1;min-width:0;overflow-wrap:anywhere}
+
+.reco-acts{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  margin:14px 15px 0;padding-top:12px;border-top:1px solid var(--line);margin-top:auto;
+}
+.reco-acts .btn{flex:1 1 auto;justify-content:center;min-height:46px}
+.reco-acts .btn.ghost.on{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+
+/* 表に出すボタンは1つだけ。横1本にして、迷う余地をなくす。
+   幅いっぱいなので、375px でも折り返しません。 */
+.btn.block{
+  display:flex;width:100%;justify-content:center;align-items:center;
+  min-height:48px;line-height:1.4;text-align:center;
+}
+/* flex の子だと 100% が効かないので、行を独占させる */
+.reco-acts>.btn.block{flex:1 0 100%}
+/* 閉じているときは「ほかの店にする」と同じ行に並べて**2行**に収める。
+   開いたときだけ行を独占させる（中のボタンを幅いっぱいにするため）。 */
+.reco-more{flex:1 1 auto;min-width:104px;text-align:right}
+.reco-more[open]{flex:1 0 100%;margin-top:4px;text-align:left}
+.reco-more>summary{
+  cursor:pointer;font-size:13px;color:var(--sub);
+  padding:8px 0;min-height:44px;display:flex;align-items:center;justify-content:flex-end;
+}
+.reco-more[open]>summary{justify-content:flex-start}
+/* 「ほかの店にする」と「ほかの操作」の高さをそろえて、同じ行に並べる。
+   44px はタップ領域の下限でもある。 */
+.reco-acts .linkbtn{min-height:44px;display:inline-flex;align-items:center}
+.reco-more .btn{display:block;width:100%;margin-bottom:6px;min-height:44px;line-height:1.4}
+.reco-foot{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.reco-note{margin-top:10px}
+
+/* ---------- 代替ビジュアル（写真は使わない。visual.js の解説を参照） ---------- */
+.pvis{
+  position:relative;overflow:hidden;background:var(--cc,#8a837a);
+  border-radius:10px;aspect-ratio:16/9;display:grid;place-items:center;
+}
+.pvis.is-wide{margin:0 15px;aspect-ratio:16/7}
+.pvis::before{
+  content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(var(--pa,120deg),
+    rgba(255,255,255,.20) 0 14px, rgba(255,255,255,0) 14px 42px);
+}
+.pvis[data-pat="1"]::before{
+  background:repeating-linear-gradient(var(--pa,120deg),
+    rgba(255,255,255,.16) 0 6px, rgba(255,255,255,0) 6px 26px);
+}
+.pvis[data-pat="2"]::before{
+  background:radial-gradient(circle at 78% 22%, rgba(255,255,255,.30), transparent 52%),
+             radial-gradient(circle at 18% 82%, rgba(0,0,0,.14), transparent 46%);
+}
+.pvis .pg{
+  position:relative;font-size:clamp(30px,9vw,54px);font-weight:900;color:#fff;
+  text-shadow:0 2px 8px rgba(0,0,0,.28);line-height:1;
+}
+.pvis .pl{
+  position:absolute;left:9px;bottom:8px;font-size:11px;font-weight:700;color:#fff;
+  background:rgba(0,0,0,.34);border-radius:5px;padding:1px 8px;
+}
+.pvis img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* ---------- 横スクロールの棚 ---------- */
+.shelf{margin:22px 0 0}
+.shelf-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 6px}
+.shelf-h h3{font-size:15.5px;margin:0;font-weight:800;display:flex;align-items:center;gap:6px}
+.shelf-h h3 .n{
+  background:var(--bg);border:1px solid var(--line);border-radius:99px;
+  padding:0 8px;font-size:11px;font-weight:700;color:var(--sub);
+}
+.shelf-h .linkbtn{margin-left:auto;white-space:nowrap}
+.shelf-note{margin:0 0 8px}
+
+.scard{
+  display:block;text-decoration:none;color:inherit;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--r);overflow:hidden;height:100%;
+}
+.scard:hover{border-color:var(--accent)}
+.scard .pvis{border-radius:0}
+.scard b{display:block;font-size:13.5px;line-height:1.4;margin:8px 10px 0}
+.scard .m{display:block;font-size:11.5px;color:var(--sub);margin:3px 10px}
+.scard .m:last-child{margin-bottom:10px}
+.strip li{flex:0 0 190px}
+
+/* ---------- 検索は控えめに ----------
+   禁止はしていません。ただし最初の視線に入らない大きさにしています。 */
+.searchlite{
+  display:flex;align-items:center;gap:8px;justify-content:center;
+  margin:18px auto 0;max-width:640px;
+}
+/* 指で押すので 44px を切らないこと（社内レビューで 37px と判明） */
+.searchlite a,.searchlite button{
+  min-height:44px;display:inline-flex;align-items:center;
+  background:none;border:none;color:var(--sub);font-size:13px;cursor:pointer;
+  text-decoration:underline;padding:8px 10px;border-radius:8px;
+}
+.searchlite a:hover,.searchlite button:hover{color:var(--accent)}
+
+/* ---------- AI相談ページ ---------- */
+.aibox{max-width:640px;margin:0 auto}
+.aiform{display:flex;gap:8px;flex-wrap:wrap}
+.aiform textarea{
+  flex:1;min-width:220px;background:var(--bg);border:1px solid var(--line);
+  border-radius:12px;padding:13px 14px;font-size:16px;min-height:74px;resize:vertical;
+}
+.aiex{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
+.aiex button{
+  background:var(--bg);border:1px solid var(--line);border-radius:99px;
+  padding:8px 14px;font-size:13px;cursor:pointer;min-height:40px;
+}
+.aiex button:hover{border-color:var(--accent);color:var(--accent)}
+.airead{
+  background:var(--ok-soft);border-radius:10px;padding:11px 13px;margin:14px 0 0;
+  font-size:13px;line-height:1.7;
+}
+.airead b{color:var(--ok)}
+.airead ul{margin:6px 0 0;padding-left:1.2em}
+.aimiss{
+  background:var(--warn-soft);color:var(--warn);border-radius:10px;
+  padding:11px 13px;margin:14px 0 0;font-size:13px;line-height:1.7;
+}
+
+/* ---------- 決まるまでの時間（KPI表示） ---------- */
+.kpi{
+  display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--sub);
+  background:var(--bg);border-radius:8px;padding:9px 11px;margin-top:10px;
+}
+.kpi b{color:var(--accent);font-size:15px}

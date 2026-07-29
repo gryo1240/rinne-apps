@@ -1,0 +1,219 @@
+/* ============================================================
+   layout.css － 画面の骨格
+   ヘッダー／ファーストビュー／2カラム／フッター／ボトムナビ
+   ============================================================ */
+
+.container{max-width:1400px;margin:0 auto;padding-left:16px;padding-right:16px}
+
+/* ---------- ヘッダー ----------
+   以前は h1 と「非公式」バッジをここに出していたが、
+   ファーストビューで価値が伝わらなかったため、
+   h1 はヒーローへ、非公式の表示はフッターへ移した（表記自体は消していない）。 */
+header.site{
+  background:var(--panel);border-bottom:1px solid var(--line);
+  position:sticky;top:0;z-index:900;
+}
+.site-in{display:flex;align-items:center;gap:12px;padding:9px 0;min-height:48px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;
+  text-decoration:none;color:var(--ink);white-space:nowrap}
+.brand .mark{width:22px;height:22px;border-radius:7px;flex:none;
+  background:linear-gradient(135deg,var(--c-meal),var(--c-bar));
+  display:grid;place-items:center;color:#fff;font-size:12px;font-weight:900}
+.site-in .spacer{flex:1}
+.site-nav{display:flex;gap:2px;align-items:center}
+.site-nav a,.site-nav button{
+  background:none;border:none;color:var(--sub);font-size:12.5px;cursor:pointer;
+  padding:6px 9px;border-radius:8px;text-decoration:none;white-space:nowrap}
+.site-nav a:hover,.site-nav button:hover{background:var(--bg);color:var(--accent)}
+.site-nav .badge{background:var(--accent);color:var(--accent-ink);border-radius:var(--r-pill);
+  font-size:11px;font-weight:700;padding:0 6px;margin-left:4px;display:inline-block}
+@media (max-width:640px){
+  .site-nav a,.site-nav button{padding:6px 7px;font-size:12px}
+  .site-nav .hide-sm{display:none}
+}
+
+/* ---------- ファーストビュー ----------
+   ここが LCP 要素。画像を使わず文字だけで組んでいるので速い。
+   高さを固定して CLS を出さない（数値は JS が後から入れる）。 */
+.hero{
+  background:
+    radial-gradient(900px 320px at 12% -10%, var(--accent-soft), transparent 65%),
+    radial-gradient(700px 300px at 92% 0%, var(--ok-soft), transparent 60%),
+    var(--panel);
+  border-bottom:1px solid var(--line);
+}
+.hero-in{padding:26px 0 20px}
+.hero h1{
+  font-size:clamp(24px,5.2vw,40px);margin:0 0 10px;letter-spacing:-.01em;
+  font-weight:900;line-height:1.28;
+}
+.hero h1 .l2{display:block;color:var(--accent)}
+.hero .sub{font-size:clamp(14px,2.4vw,17px);color:var(--sub);margin:0 0 16px;max-width:44em}
+.hero-cta{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.hero-note{font-size:12px;color:var(--sub);margin:12px 0 0}
+.hero-note a{color:var(--sub)}
+
+/* 統計カード。5枚。中身が入る前から同じ高さを確保する＝CLS 対策 */
+.stats{
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:18px 0 0;
+  list-style:none;padding:0;
+}
+@media (max-width:900px){ .stats{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@media (max-width:480px){ .stats{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.stat{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:10px 12px;box-shadow:var(--shadow);min-height:76px;display:flex;
+  flex-direction:column;justify-content:center;
+}
+.stat .v{font-size:clamp(19px,3.6vw,26px);font-weight:900;line-height:1.15;color:var(--accent)}
+.stat .v small{font-size:.6em;font-weight:700;margin-left:1px}
+.stat .k{font-size:11.5px;color:var(--sub);margin-top:3px;line-height:1.35}
+.stat.is-date .v{font-size:clamp(14px,2.6vw,18px);color:var(--ink)}
+
+/* ---------- 2カラム ---------- */
+.wrap{
+  max-width:1400px;margin:0 auto;padding:14px 16px 40px;
+  display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:18px;align-items:start;
+}
+@media (max-width:1000px){ .wrap{grid-template-columns:minmax(0,1fr)} }
+.wrap>main,.wrap>aside{min-width:0}
+
+/* ---------- 描画のずれ（CLS）を出さないための場所取り ----------
+   【実測】場所取りが無い状態で CLS 0.175（目標 0.05 以下）だった。
+   原因は「HTML の時点では空で、JS が中身を入れる」箱が
+   ファーストビューの中にあり、中身が入った瞬間に下の要素が押し下げられること。
+
+   ・#listbox … 最初の描画までビューポート1枚分を確保する。
+     こうすると、その下（ランキング・FAQ など）が初期表示の画面内に入らないので、
+     あとから伸びてもずれとして数えられない。
+     描画が終わったら body.ready が付いて解除される（絞り込みで3件になったときに
+     空白が残らないようにするため）。
+   ・.legend / .planbox … 右カラムの上のほうにあり、初期表示で見えている。
+     中身が入ったときの高さを先に取っておく。
+   実測しなおして CLS 0.175 → 0.004 になった。 */
+body:not(.ready) #listbox{min-height:100vh}
+.legend{min-height:33px}
+.planbox{min-height:96px}
+
+/* 「今日の気分から選ぶ」の棚も、HTML の時点では空で JS が中身を入れる。
+   ヒーローのすぐ下にあるので、そのままだと下の節（最近見た・よくある質問・目的から探す）が
+   初期表示の画面内に入ってしまい、棚が入った瞬間に押し下げられる。
+   実測 CLS 0.163 → 0.006。描き終わったら解除する（中身のほうが高いので、そこでは動かない）。 */
+body:not(.decide-ready) #shelves{min-height:100vh}
+
+.side{
+  position:sticky;top:66px;display:grid;gap:12px;
+  max-height:calc(100vh - 66px - var(--barh) - var(--navh) - 12px);overflow-y:auto;
+  scrollbar-width:thin;padding-bottom:2px;
+}
+@media (max-width:1000px){ .side{position:static;max-height:none;overflow:visible} }
+
+/* ---------- 節 ---------- */
+.section{margin:26px 0 0}
+.section-h{
+  display:flex;align-items:baseline;gap:10px;margin:0 0 10px;flex-wrap:wrap;
+}
+.section-h h2{font-size:17px;margin:0;font-weight:800}
+.section-h .lead{font-size:12.5px;color:var(--sub);margin:0}
+.section-h .more{margin-left:auto;font-size:12.5px}
+
+/* ---------- フッター ---------- */
+footer.site{
+  max-width:1400px;margin:0 auto;padding:24px 16px 40px;font-size:12px;
+  color:var(--sub);line-height:1.8;border-top:1px solid var(--line);
+}
+footer.site h2{font-size:13px;color:var(--ink);margin:0 0 6px}
+footer.site .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+footer.site .unofficial{
+  display:inline-flex;align-items:center;gap:6px;background:var(--warn-soft);color:var(--warn);
+  border-radius:var(--r-pill);padding:3px 12px;font-weight:700;font-size:12px;margin-bottom:8px;
+}
+footer.site nav ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+
+/* ---------- 追従要素 ---------- */
+.fab{
+  position:fixed;right:14px;bottom:calc(var(--barh) + var(--navh) + 14px);z-index:1000;
+  width:44px;height:44px;border-radius:var(--r-pill);border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);box-shadow:var(--shadow);cursor:pointer;
+  font-size:17px;display:none;place-items:center;
+}
+.fab.show{display:grid}
+
+/* 候補バー（PC専用。スマホはボトムナビの「候補」タブが担当する） */
+.bar{
+  position:fixed;left:0;right:0;bottom:var(--navh);z-index:1001;background:var(--panel);
+  border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.10);
+  padding:9px 14px;display:none;align-items:center;gap:10px;
+}
+.bar.show{display:flex}
+@media (max-width:1000px){ .bar.show{display:none} }
+.bar .bn{font-size:13px;font-weight:700}
+.bar .bn b{color:var(--accent);font-size:17px;display:inline-block}
+.bar .sp{flex:1}
+.bar.bump .bn b{animation:bump .35s ease}
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.5)}100%{transform:scale(1)}}
+
+/* ---------- ボトムナビ（スマホ） ----------
+   ホーム／地図／候補／お気に入り／設定。
+   タブはページ遷移ではなく画面内の切り替え。URL の ?tab= に同期する。 */
+.bottomnav{
+  position:fixed;left:0;right:0;bottom:0;z-index:1002;background:var(--panel);
+  border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.10);
+  display:none;padding-bottom:env(safe-area-inset-bottom);
+}
+@media (max-width:1000px){ .bottomnav{display:block} }
+.bottomnav ul{display:flex;list-style:none;margin:0;padding:0}
+.bottomnav li{flex:1;min-width:0}
+.bottomnav button{
+  width:100%;background:none;border:none;cursor:pointer;color:var(--sub);
+  display:grid;justify-items:center;gap:2px;padding:7px 2px 8px;font-size:10.5px;
+  line-height:1.2;position:relative;
+}
+.bottomnav .ic{font-size:19px;line-height:1;display:block}
+.bottomnav button[aria-selected="true"]{color:var(--accent);font-weight:700}
+.bottomnav button[aria-selected="true"] .ic{transform:translateY(-1px)}
+.bottomnav .cnt{
+  position:absolute;top:3px;left:calc(50% + 7px);background:var(--accent);
+  color:var(--accent-ink);border-radius:var(--r-pill);font-size:10px;font-weight:700;
+  min-width:16px;padding:0 4px;line-height:16px;text-align:center;
+}
+.bottomnav .cnt[hidden]{display:none}
+
+/* タブでの表示切り替え。
+   「きめる」「さがす」「行きたい」は**別の画面**なので、PC でも出し分ける。
+   （以前はPCで全部を縦に並べていたが、それだと一覧が視界に入ってしまい、
+     「決める」より「見比べる」に意識が向いてしまう。思想に反するのでやめた）
+
+   【罠】ここのセレクタには必ず `body[data-app="top"]` を付けること。
+   付け忘れると、店舗ページ・カテゴリページ（どちらも body に data-tab があった）にも
+   当たってしまい、**右カラム（地図と今日のおでかけプラン）が丸ごと消えます。**
+   実際にそれで全店舗ページの地図が出なくなっていました（実測で発見）。
+   data-app="top" が付いているのは index.html だけです。 */
+.view[hidden]{display:none}
+body[data-app="top"][data-tab="home"] #v-search,
+body[data-app="top"][data-tab="home"] #v-fav,
+body[data-app="top"][data-tab="search"] #v-home,
+body[data-app="top"][data-tab="search"] #v-fav,
+body[data-app="top"][data-tab="fav"] #v-home,
+body[data-app="top"][data-tab="fav"] #v-search{display:none}
+
+/* 地図と「今日のおでかけプラン」は、探しているときだけ横に出す。
+   決める画面では地図を出さない（情報が増えると決まらなくなるため）。 */
+body[data-app="top"][data-tab="home"] .side,
+body[data-app="top"][data-tab="fav"] .side{display:none}
+
+/* 決める画面では1カラムにして、質問を画面の真ん中に置く */
+body[data-app="top"][data-tab="home"] .wrap,
+body[data-app="top"][data-tab="fav"] .wrap{grid-template-columns:minmax(0,1fr)}
+
+/* スマホの「さがす」では、地図を一覧より先に出す。
+   1カラムだと、地図が100件のカードの下に埋まって永遠にたどり着けない（実測で発見）。 */
+@media (max-width:1000px){
+  body[data-app="top"][data-tab="search"] .side{order:-1}
+  body[data-app="top"][data-tab="search"] #map{height:46vh;min-height:280px}
+}
+
+.hero-kicker{
+  font-size:12.5px;color:var(--sub);font-weight:700;letter-spacing:.04em;
+  margin:0 0 10px;text-align:center;
+}

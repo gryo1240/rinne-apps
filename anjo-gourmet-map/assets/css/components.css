@@ -1,0 +1,365 @@
+/* ============================================================
+   components.css － 部品
+   1部品＝1ブロック。どの画面からでも同じ見た目で使えるようにする。
+   ============================================================ */
+
+/* ---------- 面 ---------- */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.pad{padding:12px 14px}
+
+/* ---------- ボタン ---------- */
+.btn{
+  background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);
+  border-radius:9px;padding:9px 16px;font-size:14px;cursor:pointer;font-weight:700;
+  text-decoration:none;display:inline-flex;align-items:center;gap:6px;line-height:1.4;
+  min-height:44px;box-sizing:border-box;
+}
+.btn:hover{filter:brightness(1.06)}
+.btn.lg{padding:12px 22px;font-size:15.5px;border-radius:10px}
+.btn.ghost{background:var(--panel);color:var(--ink);border-color:var(--line);font-weight:600}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn.off{opacity:.45;pointer-events:none}
+/* 【タップ領域は 44px 以上】
+   指で押すものはすべて 44px を下回らないこと。
+   実測（375px・320px）で .linkbtn 26px / .chip 30px / .favbtn 27px /
+   .act 34px / .groupttl 29px / .btn 40px と、ほとんどが下回っていました。 */
+.linkbtn{
+  background:none;border:none;color:var(--accent);cursor:pointer;
+  font-size:12px;text-decoration:underline;padding:3px 4px;
+  min-height:44px;display:inline-flex;align-items:center;
+}
+
+/* ---------- チップ ---------- */
+.chip{
+  background:var(--bg);border:1px solid var(--line);border-radius:var(--r-pill);
+  padding:5px 12px;cursor:pointer;font-size:13px;transition:.12s;line-height:1.4;
+  min-height:44px;display:inline-flex;align-items:center;box-sizing:border-box;
+}
+.chip:hover{border-color:var(--accent)}
+.chip[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);
+  color:var(--accent);font-weight:700}
+.chip.cc{border-left:5px solid var(--cc)}
+.chip.cc[aria-pressed=true]{background:var(--cc-soft);border-color:var(--cc);color:var(--cc)}
+
+/* ---------- 検索と絞り込み ----------
+   最初は検索ボックスだけ。細かい条件は「絞り込み」を押したときに開く。
+   項目を減らしたのではなく、開くまで隠しているだけ（機能は全部残っている）。 */
+.searchbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.searchbox{position:relative;flex:1;min-width:190px;display:flex;align-items:center}
+.searchbox .ic{position:absolute;left:11px;font-size:15px;color:var(--sub);pointer-events:none}
+.searchbox input{
+  width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;
+  padding:10px 34px 10px 33px;font-size:15px;
+}
+.searchbox .clr{
+  position:absolute;right:6px;background:none;border:none;color:var(--sub);
+  font-size:17px;cursor:pointer;padding:2px 6px;border-radius:6px;line-height:1;
+}
+.searchbox .clr[hidden]{display:none}
+.filtoggle{
+  min-height:44px;box-sizing:border-box;
+  background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 14px;
+  font-size:13.5px;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:6px;
+  white-space:nowrap;
+}
+.filtoggle[aria-expanded=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.filtoggle .n{
+  background:var(--accent);color:var(--accent-ink);border-radius:var(--r-pill);
+  font-size:11px;font-weight:700;padding:0 6px;min-width:17px;text-align:center;
+}
+.filtoggle .n[hidden]{display:none}
+.filtoggle .ar{font-size:10px;transition:transform .15s}
+.filtoggle[aria-expanded=true] .ar{transform:rotate(180deg)}
+
+/* よく使う条件は開かなくても押せるように、検索の下に出しておく */
+.quickrow{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;align-items:center}
+.quickrow .count{margin-left:auto;font-size:13px;color:var(--sub);white-space:nowrap}
+.quickrow .count b{color:var(--ink);font-size:17px}
+
+.filterpanel{margin-top:11px;padding-top:11px;border-top:1px dashed var(--line)}
+.filterpanel[hidden]{display:none}
+.frow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-width:0}
+#bigchips,#genrechips,#svcchips{display:contents}
+.frow+.frow{margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}
+.flabel{font-size:12px;color:var(--sub);min-width:5.2em;font-weight:600}
+select,#origin{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+#origin{min-width:13em;flex:0 1 15em}
+.note{font-size:12px;color:var(--warn);background:var(--warn-soft);
+  border-radius:6px;padding:2px 9px;display:none}
+.note.show{display:inline-block}
+.needs{border-color:var(--warn) !important;box-shadow:0 0 0 3px var(--warn-soft)}
+
+/* ---------- 営業状態バッジ ----------
+   【重要】色だけで伝えない。記号（●○—）と文字を必ず併記する。
+   緑＝営業中／赤＝営業時間外／灰＝定休日。判定不能なときは黄で「要確認」。 */
+.openbadge{
+  display:inline-flex;align-items:center;gap:5px;border-radius:var(--r-pill);
+  padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap;border:1px solid transparent;
+}
+.openbadge .dot{font-size:9px;line-height:1}
+.openbadge.is-open{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+.openbadge.is-closed{background:var(--ng-soft);color:var(--ng);border-color:var(--ng)}
+.openbadge.is-holiday{background:var(--mute-soft);color:var(--mute);border-color:var(--line)}
+.openbadge.is-unknown{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+.opensub{font-size:11.5px;color:var(--sub);margin-left:6px;font-weight:600}
+
+/* ---------- 店舗カード ----------
+   優先順位：店名 → 営業中か → 距離 → 駐車場・子連れ → 営業時間・定休日 → 予算 → ボタン
+   ボタンは Googleマップ／候補へ追加／詳細 の順。 */
+ul.list{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+ul.list[hidden]{display:none}
+/* グリッドの子は既定が min-width:auto で「中身より狭くならない」。
+   これを 0 にしないと、長いタグ（「34席（テーブル席有）」など）が
+   カードごと画面幅を押し広げ、320〜375px で横スクロールが出る。実測で発見。 */
+ul.list>li{min-width:0}
+
+li.spot{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:11px 13px;box-shadow:var(--shadow);scroll-margin-top:120px;transition:.12s;
+  border-left:5px solid var(--cc,var(--line));
+  /* 画面外のカードは描画を省く。100件でもスクロールが軽くなる。
+     高さの目安を渡してスクロールバーが暴れないようにする（CLS対策） */
+  content-visibility:auto;contain-intrinsic-size:auto 230px;
+}
+li.spot.visited{opacity:.62}
+li.spot.hi{box-shadow:0 0 0 3px var(--accent-soft)}
+li.spot.inplan{background:linear-gradient(0deg,var(--accent-soft),var(--accent-soft)),var(--panel)}
+
+.spot-head{display:flex;gap:10px;align-items:flex-start}
+.sname{font-size:16.5px;font-weight:800;margin:0;line-height:1.4;flex:1;min-width:0}
+.sname a{color:inherit;text-decoration:none}
+.sname a:hover{color:var(--accent);text-decoration:underline}
+.spot-head .favbtn{
+  background:none;border:1px solid var(--line);border-radius:8px;cursor:pointer;
+  font-size:15px;line-height:1;padding:5px 8px;color:var(--sub);flex:none;
+  min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;
+}
+.spot-head .favbtn:hover{border-color:var(--accent);color:var(--accent)}
+.spot-head .favbtn[aria-pressed=true]{color:#e0a000;border-color:#e0a000;background:var(--warn-soft)}
+
+.statusrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:7px 0 0}
+.dist{font-size:12.5px;color:var(--accent);font-weight:700;white-space:nowrap;
+  background:var(--accent-soft);border-radius:var(--r-pill);padding:2px 9px}
+
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0 0;min-width:0}
+/* 【罠】white-space:nowrap にすると「1000台（デンパーク共用）」のような長いタグが
+   1個で画面幅を超え、横スクロールの原因になる。折り返せるようにしておくこと。 */
+.t{font-size:11px;border-radius:5px;padding:1px 7px;border:1px solid var(--line);
+  background:var(--bg);color:var(--sub);max-width:100%;overflow-wrap:anywhere}
+.t.cat{background:var(--cc-soft);color:var(--cc);border-color:transparent;font-weight:700}
+.t.kid{background:var(--ok-soft);color:var(--ok);border-color:transparent;font-weight:700}
+.t.park{background:var(--bg);color:var(--ink);font-weight:600}
+.t.money{background:var(--bg);color:var(--ink);font-weight:600}
+.addr{font-size:12px;color:var(--sub);margin:7px 0 0}
+
+/* 営業時間・定休日はこのアプリの主役。行として見やすく置く */
+.info{margin:9px 0 0;padding:7px 9px;background:var(--bg);border-radius:7px;
+  font-size:12.5px;line-height:1.6;display:grid;gap:2px}
+.info div{display:flex;gap:7px;min-width:0}
+.info .k{color:var(--sub);white-space:nowrap;min-width:4.2em;font-weight:600}
+.info .v{flex:1;min-width:0;overflow-wrap:anywhere}
+.info .closed{color:var(--warn);font-weight:600}
+
+body.compact .info,body.compact .addr,body.compact .acts .sub{display:none}
+body.compact li.spot{padding:8px 11px;contain-intrinsic-size:auto 150px}
+
+.acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;padding-top:9px;
+  border-top:1px solid var(--line);align-items:center}
+.act{background:var(--bg);border:1px solid var(--line);border-radius:7px;
+  padding:5px 11px;font-size:12px;cursor:pointer;text-decoration:none;color:var(--ink);
+  min-height:44px;display:inline-flex;align-items:center;box-sizing:border-box}
+.act:hover{border-color:var(--accent);color:var(--accent)}
+.act.on{background:var(--ok-soft);border-color:var(--ok);color:var(--ok);font-weight:700}
+.act.plan{border-color:var(--accent);color:var(--accent);font-weight:700}
+.act.plan.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.act.gmap{font-weight:600}
+
+/* ---------- グループ見出し ---------- */
+.groupttl{margin:18px 0 8px;font-size:13px;font-weight:700;color:var(--sub);
+  display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;
+  cursor:pointer;padding:4px 0;text-align:left;font-family:inherit;
+  min-height:44px;box-sizing:border-box}
+.groupttl:hover{color:var(--accent)}
+.groupttl::after{content:"";flex:1;height:1px;background:var(--line)}
+.groupttl .n{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-pill);
+  padding:0 8px;font-size:11px;font-weight:600}
+.groupttl .ar{font-size:10px;transition:transform .15s;display:inline-block}
+.groupttl[aria-expanded=false] .ar{transform:rotate(-90deg)}
+
+/* ---------- 3ステップのチュートリアル ----------
+   説明文を読ませない。1画面3ステップ、終わったら二度と出さない。 */
+.tut{position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,.5);display:none;
+  align-items:center;justify-content:center;padding:16px}
+.tut.show{display:flex}
+.tut-in{background:var(--panel);border-radius:var(--r-lg);max-width:460px;width:100%;
+  padding:22px 20px 18px;box-shadow:var(--shadow-lg);text-align:center}
+.tut h2{font-size:18px;margin:0 0 4px}
+.tut .lead{font-size:13px;color:var(--sub);margin:0 0 16px}
+.tut ol{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:9px;text-align:left}
+.tut li{display:flex;gap:11px;align-items:center;background:var(--bg);
+  border-radius:10px;padding:11px 13px}
+.tut li .no{width:27px;height:27px;flex:none;border-radius:var(--r-pill);
+  background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;
+  font-weight:800;font-size:13px}
+.tut li b{display:block;font-size:14.5px}
+.tut li span{font-size:12px;color:var(--sub);line-height:1.5}
+.tut .tut-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+
+/* ---------- ボトムシート／ダイアログ ---------- */
+.sheet{position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.45);
+  display:none;align-items:flex-end;justify-content:center}
+.sheet.show{display:flex}
+.sheet-in{background:var(--panel);width:100%;max-width:560px;max-height:82vh;overflow:auto;
+  border-radius:14px 14px 0 0;padding:14px 16px 24px}
+@media (min-width:700px){ .sheet{align-items:center} .sheet-in{border-radius:14px;max-height:80vh} }
+.sheet h2{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+/* 閉じる×・外す×も指で押す。しかも押し間違えると内容が消える操作なので、
+   小さいままにしないこと（社内レビューで 25〜26px と判明）。 */
+.sheet .x{margin-left:auto;background:none;border:none;font-size:22px;color:var(--sub);
+  cursor:pointer;line-height:1;padding:2px 6px;border-radius:6px;
+  min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+
+/* ---------- 候補（回る順番） ---------- */
+.sideh{font-size:13px;font-weight:700;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.sideh .n{margin-left:auto;font-size:11px;color:var(--sub);font-weight:600}
+.hint{font-size:11.5px;color:var(--sub);margin:7px 0 0;line-height:1.5}
+.hint.strong{color:var(--ink);background:var(--accent-soft);border-radius:7px;
+  padding:7px 9px;font-weight:600}
+.hint.warn{color:var(--warn);background:var(--warn-soft);border-radius:7px;padding:7px 9px}
+
+ol.plan{list-style:none;margin:0;padding:0;display:grid;gap:5px;counter-reset:p}
+ol.plan li{display:flex;gap:8px;align-items:flex-start;font-size:13px;
+  background:var(--bg);border-radius:7px;padding:5px 8px}
+ol.plan li::before{counter-increment:p;content:counter(p);background:var(--accent);
+  color:var(--accent-ink);border-radius:var(--r-pill);width:19px;height:19px;flex:none;
+  font-size:11px;font-weight:700;display:grid;place-items:center;margin-top:2px}
+ol.plan .pn{flex:1;line-height:1.45;min-width:0}
+ol.plan .px{background:none;border:none;color:var(--sub);cursor:pointer;font-size:15px;
+  padding:0 3px;min-width:44px;min-height:44px;
+  display:inline-flex;align-items:center;justify-content:center}
+ol.plan .px:hover{color:#c0392b}
+ol.plan .pmv{font-size:10.5px;color:var(--accent);background:var(--accent-soft);
+  border-radius:4px;padding:0 5px;margin-left:5px;white-space:nowrap;font-weight:700}
+ol.plan .phr{font-size:11px;color:var(--sub);display:block}
+ol.plan li.moved{animation:moved .9s ease}
+@keyframes moved{0%{background:var(--accent-soft);transform:translateX(10px)}
+  30%{background:var(--accent-soft);transform:translateX(0)}100%{background:var(--bg)}}
+.planbtns{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}
+
+/* ---------- AIおすすめルート ---------- */
+.ai-q{display:grid;gap:14px;margin:4px 0 14px}
+.ai-q fieldset{border:none;margin:0;padding:0;min-width:0}
+.ai-q legend{font-size:12.5px;color:var(--sub);font-weight:700;padding:0 0 6px}
+.ai-opts{display:flex;gap:7px;flex-wrap:wrap}
+.ai-opts .chip{font-size:13px}
+.ai-result{border-top:1px dashed var(--line);padding-top:12px;margin-top:4px}
+.ai-result[hidden]{display:none}
+.ai-course{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:7px;counter-reset:c}
+.ai-course li{display:flex;gap:9px;background:var(--bg);border-radius:9px;padding:9px 11px;
+  align-items:flex-start}
+.ai-course li::before{counter-increment:c;content:counter(c);background:var(--accent);
+  color:var(--accent-ink);border-radius:var(--r-pill);width:21px;height:21px;flex:none;
+  font-size:11.5px;font-weight:800;display:grid;place-items:center;margin-top:2px}
+.ai-course .cn{flex:1;min-width:0}
+.ai-course .cn b{font-size:14px}
+.ai-course .cw{font-size:11.5px;color:var(--sub);display:block;line-height:1.5}
+.ai-why{font-size:11.5px;color:var(--sub);background:var(--bg);border-radius:8px;
+  padding:8px 10px;margin:0 0 10px;line-height:1.6}
+
+/* ---------- ランキング／モデルコース ---------- */
+.tabs{display:flex;gap:5px;border-bottom:1px solid var(--line);margin:0 0 11px;
+  overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;
+  padding:8px 11px;font-size:13px;color:var(--sub);white-space:nowrap;font-weight:600}
+.tabs button[aria-selected=true]{color:var(--accent);border-bottom-color:var(--accent)}
+.rank{list-style:none;margin:0;padding:0;display:grid;gap:7px;counter-reset:r}
+.rank li{display:flex;gap:10px;align-items:center;background:var(--bg);
+  border-radius:9px;padding:8px 11px;min-width:0}
+.rank li::before{counter-increment:r;content:counter(r);width:22px;height:22px;flex:none;
+  border-radius:7px;background:var(--panel);border:1px solid var(--line);
+  display:grid;place-items:center;font-size:11.5px;font-weight:800;color:var(--sub)}
+.rank li:nth-child(1)::before{background:#f5c518;border-color:#f5c518;color:#3a2c00}
+.rank li:nth-child(2)::before{background:#d8d8d8;border-color:#d8d8d8;color:#333}
+.rank li:nth-child(3)::before{background:#e0a878;border-color:#e0a878;color:#3a2200}
+.rank .rn{flex:1;min-width:0}
+.rank .rn b{font-size:13.5px;display:block}
+.rank .rn a{color:inherit;text-decoration:none}
+.rank .rn a:hover{color:var(--accent);text-decoration:underline}
+.rank .rn span{font-size:11.5px;color:var(--sub)}
+.rank .ra{flex:none}
+.sample{font-size:10.5px;background:var(--warn-soft);color:var(--warn);border-radius:5px;
+  padding:1px 7px;font-weight:700;white-space:nowrap}
+
+/* 横スクロールする店カード列（最近見た・おすすめ・新着） */
+.strip{display:flex;gap:9px;overflow-x:auto;padding:2px 2px 8px;
+  scroll-snap-type:x proximity;list-style:none;margin:0}
+.strip li{flex:0 0 210px;scroll-snap-align:start;min-width:0}
+.minicard{display:block;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);padding:10px 11px;height:100%;text-decoration:none;color:inherit;
+  border-left:4px solid var(--cc,var(--line))}
+.minicard:hover{border-color:var(--accent)}
+.minicard b{font-size:13.5px;display:block;line-height:1.4}
+.minicard .m{font-size:11.5px;color:var(--sub);display:block;margin-top:3px}
+
+/* ---------- 共有 ---------- */
+.sharebtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.share-x{background:#111;border-color:#111;color:#fff}
+.share-line{background:#06c755;border-color:#06c755;color:#fff}
+.sharecanvas{width:100%;border:1px solid var(--line);border-radius:10px;background:var(--bg);
+  display:block;margin-top:10px}
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(var(--navh) + var(--barh) + 22px);z-index:1500;
+  background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:var(--r-pill);
+  font-size:13px;font-weight:600;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;
+  transition:opacity .2s,transform .2s;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+
+/* ---------- FAQ ---------- */
+.faq{display:grid;gap:8px}
+.faq details{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:10px 13px}
+/* 質問の行も指で押す。44px を切らないこと（社内レビューで 23px と判明） */
+.faq summary{cursor:pointer;font-weight:700;font-size:14px;list-style:none;
+  min-height:44px;display:flex;align-items:center}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::before{content:"Q ";color:var(--accent);font-weight:900}
+.faq details[open] summary{margin-bottom:7px}
+.faq p{margin:0;font-size:13px;color:var(--sub);line-height:1.75}
+
+/* ---------- 収益化の置き場（既定では出さない） ----------
+   AGM.config.monetization.* を true にしたときだけ表示される。
+   出典が公式サイトである以上、広告を出す前に安城市観光協会へ確認すること
+   （HANDOFF-dev.md 第9章）。枠だけ用意して、既定は空のままにしている。 */
+.slot{display:none}
+.slot.is-on{display:block}
+.slot-in{border:1px dashed var(--line);border-radius:var(--r);padding:12px 14px;
+  background:var(--bg);font-size:12.5px;color:var(--sub)}
+.slot-label{font-size:10.5px;font-weight:700;color:var(--sub);letter-spacing:.06em;
+  text-transform:uppercase;margin-bottom:5px}
+.slot .sponsor{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+
+/* ---------- そのほか ---------- */
+.empty{text-align:center;color:var(--sub);padding:36px 20px;font-size:14px}
+.pill-row{display:flex;gap:6px;flex-wrap:wrap}
+.legend{display:flex;gap:9px;flex-wrap:wrap;font-size:11.5px;color:var(--sub);
+  padding:8px 10px;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);box-shadow:var(--shadow)}
+.legend span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.legend i{width:11px;height:11px;border-radius:var(--r-pill);border:2px solid var(--panel);
+  box-shadow:0 0 0 1px rgba(128,128,128,.5);flex:none}
+.legend i.dia{border-radius:2px;transform:rotate(45deg)}
+
+/* ---------- パンくず ---------- */
+.crumb{font-size:12px;color:var(--sub);padding:10px 0 0;margin:0}
+.crumb ol{list-style:none;display:flex;gap:6px;flex-wrap:wrap;margin:0;padding:0}
+.crumb li::after{content:"›";margin-left:6px;color:var(--line)}
+.crumb li:last-child::after{content:""}
+
+@media (max-width:640px){
+  .flabel{min-width:100%}
+  li.spot{padding:11px}
+  .act{padding:6px 12px}
+}

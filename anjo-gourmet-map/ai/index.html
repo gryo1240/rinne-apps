@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#b45309" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#17140f" media="(prefers-color-scheme: dark)">
+
+<title>言葉で相談して安城市の店を決める｜「子供が寝そう」「雨の日」から3軒【非公式】</title>
+<meta name="description" content="「子供が寝そう」「雨の日」「静か」「記念日」など、今日の状況を書くだけで安城市のお店を3軒ご提案します。営業時間・駐車場・子連れ対応から理由つきで選びます。入力内容はどこにも送信されません。">
+<!-- 【重要】canonical / og:url / og:image は**絶対URL**であること。
+     相対URLだとクローラも X・LINE・Facebook も解決できません。
+     いまは仮のURLです。本番URLが決まったら、この3か所と
+     assets/js/core/config.js の site.origin を同時に書き換え、
+     python scripts/build_pages.py --base-url <本番URL> を実行してください。 -->
+<link rel="canonical" href="https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/ai/">
+<meta name="robots" content="index,follow">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="安城グルメマップ">
+<meta property="og:title" content="言葉で相談して安城市の店を決める｜今日の状況から3軒">
+<meta property="og:description" content="「子供が寝そう」「雨の日」「記念日」…今日の状況を書くだけで3軒ご提案します。">
+<meta property="og:url" content="https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/ai/">
+<meta property="og:image" content="https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/assets/img/ogp.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="言葉で相談して安城市の店を決める｜今日の状況から3軒">
+<meta name="twitter:description" content="「子供が寝そう」「雨の日」「記念日」…今日の状況を書くだけで3軒ご提案します。">
+<meta name="twitter:image" content="https://gryo1240.github.io/rinne-apps/anjo-gourmet-map/assets/img/ogp.png">
+
+<!-- 生成物。手で編集しないこと（もとは assets/css/ の各ファイル） -->
+<link rel="stylesheet" href="../assets/css/app.css">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../assets/img/icon-192.png">
+
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"WebPage","name":"言葉で相談する","inLanguage":"ja",
+     "description":"今日の状況を書くだけで安城市のお店を3軒提案するページ"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"安城グルメマップ","item":"../"},
+      {"@type":"ListItem","position":2,"name":"言葉で相談する"}
+    ]}
+  ]
+}
+</script>
+</head>
+
+<body data-tab="home">
+
+<a class="skiplink" href="#main">本文へ移動</a>
+
+<header class="site">
+  <div class="container site-in">
+    <a class="brand" href="../"><span class="mark" aria-hidden="true">安</span>安城グルメ<span class="hide-sm">マップ</span></a>
+    <span class="spacer"></span>
+    <nav class="site-nav" aria-label="サイト内">
+      <a href="../">決める</a>
+      <a href="../?tab=search">自分で探す</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container">
+  <nav class="crumb" aria-label="現在の位置">
+    <ol>
+      <li><a href="../">安城グルメマップ</a></li>
+      <li aria-current="page">言葉で相談する</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="wrap">
+  <main id="main">
+    <section class="section aibox">
+      <h1 style="font-size:clamp(22px,4.6vw,31px);margin:6px 0 8px;font-weight:900">
+        今日の状況を書いてください</h1>
+      <p class="lead" style="font-size:14px;color:var(--sub);margin:0 0 14px">
+        「子供が寝そう」「雨の日」「記念日」など、そのままの言葉で大丈夫です。<br>
+        条件に直して、安城市のお店を3軒えらびます。</p>
+
+      <form id="aiform" class="aiform">
+        <label class="visually-hidden" for="aitext">今日の状況</label>
+        <textarea id="aitext" placeholder="例：子供が寝そうなので、駐車場があってさっと食べられるところ"></textarea>
+        <button class="btn lg" type="submit">相談する</button>
+      </form>
+
+      <p class="tiny" style="margin-top:8px">よく使われる言い方（押すとすぐ試せます）</p>
+      <div class="aiex" id="aiex"></div>
+
+      <div id="airead" class="airead" hidden></div>
+
+      <p class="tiny" style="margin-top:14px">
+        この相談は、決まった言い回しを条件に置き換えて判定しています。
+        <b>外部のAIサービスには接続しておらず、入力内容はどこにも送信されません。</b>
+        判定はすべてお使いの端末の中で行っています。
+      </p>
+    </section>
+
+    <div id="recobox" class="section" role="region" aria-live="polite" aria-label="おすすめのお店"></div>
+
+    <div class="slot" id="slot-sponsor" aria-hidden="true"></div>
+
+    <section class="section">
+      <div class="section-h"><h2>目的から探す</h2></div>
+      <div class="pill-row" id="scenepills"></div>
+    </section>
+  </main>
+</div>
+
+<footer class="site">
+  <p class="unofficial">⚠ 個人が作成した非公式マップです</p>
+  <div class="cols">
+    <div>
+      <h2>このサイトについて</h2>
+      <p><b>このサイトは個人が作成した非公式のマップです。</b>
+        安城市観光協会および各店舗とは関係ありません。</p>
+      <p><b>出典：</b><a href="https://anjo-stamp.jp/shop/" target="_blank" rel="noopener">安城グルメガイド（安城市観光協会）</a>
+        の事実情報のみを加工しています。紹介文・写真は転載していません。</p>
+    </div>
+    <div>
+      <h2>おでかけ前に</h2>
+      <p><b>営業時間・定休日・掲載店舗は変わることがあります。おでかけ前にご確認ください。</b></p>
+      <!-- 出典元はデジタルスタンプラリーのサイトです。誤解を防ぐための1行だけ残します -->
+      <p>このサイトではスタンプは押せません。取得・応募は<a href="https://anjo-stamp.jp/stamphome/" target="_blank" rel="noopener">出典元の公式サイト</a>で行ってください。</p>
+    </div>
+    <div>
+      <h2>データと保存</h2>
+      <p>地図および駅データ：<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>（ODbL）</p>
+      <p>相談内容・行きたい・プランは<b>お使いのブラウザ内にのみ保存され、どこにも送信されません。</b></p>
+      <p id="analyticsnote" hidden></p>
+    </div>
+  </div>
+</footer>
+
+<script src="../data/city.js" defer></script>
+<script src="../data/categories.js" defer></script>
+<script src="../data/shops.js" defer></script>
+<script src="../data/stations.js" defer></script>
+<script src="../assets/js/core/config.js" defer></script>
+<script src="../assets/js/core/util.js" defer></script>
+<script src="../assets/js/core/store.js" defer></script>
+<script src="../assets/js/core/taxonomy.js" defer></script>
+<script src="../assets/js/core/hours.js" defer></script>
+<script src="../assets/js/core/shops.js" defer></script>
+<script src="../assets/js/core/place.js" defer></script>
+<script src="../assets/js/core/scenes.js" defer></script>
+<script src="../assets/js/core/decide.js" defer></script>
+<script src="../assets/js/core/nlp.js" defer></script>
+<script src="../assets/js/ui/visual.js" defer></script>
+<script src="../assets/js/ui/filters.js" defer></script>
+<script src="../assets/js/ui/plan.js" defer></script>
+<script src="../assets/js/ui/wizard.js" defer></script>
+<script src="../assets/js/ui/reco.js" defer></script>
+<script src="../assets/js/ui/slots.js" defer></script>
+<script src="../assets/js/ai-page.js" defer></script>
+</body>
+</html>

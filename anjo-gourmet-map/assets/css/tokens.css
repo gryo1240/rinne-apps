@@ -1,0 +1,121 @@
+/* ============================================================
+   tokens.css － 色・余白・文字・リセット
+   ここだけが「値」を持つ。他のCSSは必ずこの変数を経由すること。
+   将来「安城ランチ」「モーニング」などのサービスを足すときも、
+   ページごとに --brand 系だけ差し替えれば全体の見た目が揃う。
+   ============================================================ */
+
+:root{
+  /* --- 面と文字 --- */
+  --bg:#faf7f3; --panel:#fff; --ink:#241d17; --sub:#6d6259; --line:#e6ded4;
+  --accent:#b45309; --accent-soft:#fbeee0; --accent-ink:#fff;
+
+  /* --- 状態色 ---
+     営業中／営業時間外は「緑と赤」なので、色だけで意味を伝えないこと。
+     必ず記号（●／○／—）と文字ラベルを併記する。色覚特性への配慮。 */
+  --ok:#2f6f4f;   --ok-soft:#e3f0e8;     /* 営業中 */
+  --warn:#8a6d1f; --warn-soft:#f6eed6;   /* 注意・要確認 */
+  --ng:#b3261e;   --ng-soft:#fbe9e7;     /* 営業時間外 */
+  --mute:#6d6259; --mute-soft:#efeae4;   /* 定休日 */
+
+  /* --- 大分類の色 ---
+     dataviz の validate_palette.js で all-pairs 検証済み（HANDOFF-dev.md 第5章参照） */
+  --c-meal:#eb6834; --c-cafe:#199e70; --c-bar:#2a78d6;
+
+  /* --- 形 --- */
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 6px 16px rgba(0,0,0,.05);
+  --shadow-lg:0 4px 12px rgba(0,0,0,.10),0 18px 40px rgba(0,0,0,.08);
+  --r:10px; --r-lg:14px; --r-pill:99px;
+
+  /* --- 固定要素の高さ。JS が実測値を入れる。0 のままでも崩れない --- */
+  --barh:0px;   /* 候補バー（PC） */
+  --navh:0px;   /* ボトムナビ（スマホ） */
+}
+
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#17140f; --panel:#221d18; --ink:#f0e9e1; --sub:#a89b8e; --line:#3a322a;
+    --accent:#e8a06a; --accent-soft:#3a2a1c; --accent-ink:#17140f;
+    --ok:#8fd0ab;   --ok-soft:#1f3329;
+    --warn:#e0c377; --warn-soft:#352c14;
+    --ng:#f2a297;   --ng-soft:#3b201c;
+    --mute:#a89b8e; --mute-soft:#2c261f;
+    --c-meal:#d95926; --c-cafe:#199e70; --c-bar:#3987e5;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+    --shadow-lg:0 6px 24px rgba(0,0,0,.5);
+  }
+}
+
+/* 設定パネルからの手動切り替え。OSの設定より優先する */
+:root[data-theme="light"]{
+  --bg:#faf7f3; --panel:#fff; --ink:#241d17; --sub:#6d6259; --line:#e6ded4;
+  --accent:#b45309; --accent-soft:#fbeee0; --accent-ink:#fff;
+  --ok:#2f6f4f; --ok-soft:#e3f0e8; --warn:#8a6d1f; --warn-soft:#f6eed6;
+  --ng:#b3261e; --ng-soft:#fbe9e7; --mute:#6d6259; --mute-soft:#efeae4;
+  --c-meal:#eb6834; --c-cafe:#199e70; --c-bar:#2a78d6;
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 6px 16px rgba(0,0,0,.05);
+}
+:root[data-theme="dark"]{
+  --bg:#17140f; --panel:#221d18; --ink:#f0e9e1; --sub:#a89b8e; --line:#3a322a;
+  --accent:#e8a06a; --accent-soft:#3a2a1c; --accent-ink:#17140f;
+  --ok:#8fd0ab; --ok-soft:#1f3329; --warn:#e0c377; --warn-soft:#352c14;
+  --ng:#f2a297; --ng-soft:#3b201c; --mute:#a89b8e; --mute-soft:#2c261f;
+  --c-meal:#d95926; --c-cafe:#199e70; --c-bar:#3987e5;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+}
+
+/* ---------- リセット ---------- */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} }
+
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
+  font-size:15px;line-height:1.65;-webkit-text-size-adjust:100%;
+  /* 候補バーとボトムナビの分だけ下に余白を作る。0px なら何も起きない */
+  padding-bottom:calc(var(--barh) + var(--navh));
+  overflow-wrap:anywhere;
+}
+a{color:var(--accent)}
+button,select,input,textarea{font:inherit;color:inherit}
+img,svg,canvas{max-width:100%;height:auto}
+h1,h2,h3,h4{line-height:1.4}
+
+/* ---------- アクセシビリティの土台 ---------- */
+
+/* フォーカスは必ず見えるようにする。キーボード操作の生命線 */
+:focus-visible{
+  outline:3px solid var(--accent);
+  outline-offset:2px;
+  border-radius:4px;
+}
+/* マウス操作では出さない（:focus-visible 非対応ブラウザ向けの保険） */
+:focus:not(:focus-visible){outline:none}
+
+/* 読み上げ専用。見た目には出さないが、支援技術には読ませる */
+.visually-hidden{
+  position:absolute !important;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0;
+}
+/* 本文へ飛ぶリンク。Tab の1回目で出る */
+.skiplink{
+  position:absolute;left:8px;top:-60px;z-index:2000;background:var(--accent);
+  color:var(--accent-ink);padding:9px 16px;border-radius:8px;font-weight:700;
+  text-decoration:none;transition:top .15s;
+}
+.skiplink:focus{top:8px}
+
+/* 動きを減らす設定を尊重する（アニメーションは全て任意演出） */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+  }
+}
+
+/* 高コントラスト設定では境界を強める */
+@media (prefers-contrast:more){
+  :root{--line:#9c9084;--sub:#4a423a}
+  .card,li.spot,.chip{border-width:2px}
+}
