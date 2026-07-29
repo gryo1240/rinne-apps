@@ -110,9 +110,9 @@ AGM.config = {
      集計しているのに文言が無い、という食い違いを起こさないためです。
      token を入れて enabled を true にすれば、両方が同時に出ます。 */
   analytics: {
-    enabled: false,
+    enabled: true,
     provider: "cloudflare",
-    token: ""            // Cloudflare の「サイトを追加」で出るトークンを貼る
+    token: "1b94813f3ef3405ca20dec048f2fc2a6"
   },
 
   /* 出典まわり。フッターと店舗ページで使う（表記は必須。消さないこと） */
