@@ -101,6 +101,23 @@ function pixelTextWidth(text, scale) {
 }
 
 /* ============ 効果音（WebAudio自前合成・ブラウザのみ） ============ */
+/* iPhoneの消音スイッチ対策（2026-08-16）。
+   iOSはWeb Audioを「ambient」区分で鳴らすので、本体の消音スイッチだけで無音になる。
+   エラーも出ないため「設定はオンなのに鳴らない」という形で表面化する。
+   audioSession.type を 'playback' にすると音楽と同じ扱いになる（iOS 16.4以降）。
+   ★AudioContextを作る前に呼ぶこと（区分は生成時に決まる）。未対応の端末では何も起きない。
+   教訓: .company/lessons/audio-ios-silent-switch.md */
+function claimPlayback() {
+  try {
+    var s = navigator.audioSession;
+    if (s && s.type !== "playback") s.type = "playback";
+  } catch (e) {}
+}
+claimPlayback();
+if (typeof window !== "undefined" && window.addEventListener) {
+  window.addEventListener("pointerdown", claimPlayback, { capture: true, passive: true });
+}
+
 function createSfx() {
   var ctx = null;
   var muted = false;
@@ -110,6 +127,7 @@ function createSfx() {
       if (!ctx) {
         var AC = window.AudioContext || window.webkitAudioContext;
         if (!AC) return null;
+        claimPlayback();
         ctx = new AC();
       }
       if (ctx.state === "suspended") { var p = ctx.resume(); if (p && p.catch) p.catch(function () {}); }

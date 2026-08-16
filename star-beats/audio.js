@@ -14,10 +14,26 @@
 //   notes は [[時刻(秒), レーン, ホールド秒(0=単ノーツ)], ...] 形式
 // ============================================================
 
+/* iPhoneの消音スイッチ対策（2026-08-16）。
+   iOSはWeb Audioを「ambient」区分で鳴らすので、本体の消音スイッチだけで無音になる。
+   エラーも出ないため「設定はオンなのに鳴らない」という形で表面化する。
+   ★音ゲーは音が本体なので、ここが効かないとゲームとして成立しない。
+   audioSession.type を 'playback' にすると音楽と同じ扱いになる（iOS 16.4以降）。
+   ★AudioContextを作る前に呼ぶこと（区分は生成時に決まる）。未対応の端末では何も起きない。
+   教訓: .company/lessons/audio-ios-silent-switch.md */
+function claimPlayback() {
+  try {
+    const s = navigator.audioSession;
+    if (s && s.type !== "playback") s.type = "playback";
+  } catch (e) {}
+}
+claimPlayback();
+window.addEventListener("pointerdown", claimPlayback, { capture: true, passive: true });
+
 const GameAudio = (() => {
   let ctx = null;
   function ensureCtx() {
-    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (!ctx) { claimPlayback(); ctx = new (window.AudioContext || window.webkitAudioContext)(); }
     if (ctx.state === "suspended") ctx.resume();
     return ctx;
   }

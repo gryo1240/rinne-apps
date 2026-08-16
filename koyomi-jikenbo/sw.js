@@ -1,5 +1,5 @@
 // 宵乃こよみの事件簿 Service Worker (network-first・オフライン時のみキャッシュ)
-const CACHE = "koyomi-jikenbo-v1";
+const CACHE = "koyomi-jikenbo-v2";
 const ASSETS = ["./", "./index.html", "./scenario.js", "./sprites.js", "./logic.js", "./audio.js", "./engine.js", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
