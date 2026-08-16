@@ -275,11 +275,28 @@
   let bgm = null, muted = localStorage.getItem("md-mute") === "1";
   let vol = parseInt(localStorage.getItem("md-vol") || "35", 10);
   if (isNaN(vol) || vol < 0 || vol > 100) vol = 35;
+  /* iPhoneの消音スイッチ対策（2026-08-16）。
+     iOSは音を「ambient」区分で鳴らすことがあり、本体の消音スイッチだけで無音になる。
+     エラーも出ないため「設定はオンなのに鳴らない」という形で表面化する。
+     audioSession.type を 'playback' にすると音楽と同じ扱いになる（iOS 16.4以降）。
+     ★このアプリのBGMは <audio> 要素だが、区分はページ単位なのでここで宣言しておく。
+     ★音を出す前に呼ぶこと。未対応の端末では何も起きない。
+     教訓: .company/lessons/audio-ios-silent-switch.md */
+  function claimPlayback() {
+    try {
+      const s = navigator.audioSession;
+      if (s && s.type !== "playback") s.type = "playback";
+    } catch (e) {}
+  }
+  claimPlayback();
+  window.addEventListener("pointerdown", claimPlayback, { capture: true, passive: true });
+
   const muteBtn = document.getElementById("mute");
   const volSlider = document.getElementById("vol");
   volSlider.value = vol;
   fetch("bgm/bgm.mp3", { method: "HEAD" }).then((r) => {
     if (!r.ok) return;
+    claimPlayback();
     bgm = new Audio("bgm/bgm.mp3");
     bgm.loop = true;
     muteBtn.classList.remove("hidden");
