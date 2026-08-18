@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>輪廻の塔｜月が変えるダンジョンを、何度でも登れ【無料RPG】</title>
+<meta name="description" content="敵の「構え」を読んで崩す、オート戦闘のダンジョン探索RPG。作戦・編成・装備で戦い方を組み立てる。現実の月齢で塔の中身が変わります。無料・登録不要・ブラウザで遊べます。">
+<meta name="theme-color" content="#0d0b12">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style/base.css?v=942971b1">
+
+<!--
+  起動できなかったときの救済（2026-08-09 追加）
+
+  【なぜ必要か】2026-08-08 の事故
+  ブラウザが**古いJSと新しいJSを混ぜて**読み込むと、
+    The requested module './dom.js' does not provide an export named 'fxOff'
+  でモジュールの読み込みが丸ごと失敗する。#app は空のままなので、
+  プレイヤーには**ただの真っ黒な画面**にしか見えず、打つ手が分からない。
+
+  【なぜここに直接書くか】
+  外部ファイルにすると**それ自体が古いキャッシュになりうる**ので、救済が救済にならない。
+  `type="module"` は defer 相当なので、この普通のscriptのほうが必ず先に走る。
+
+  【自動で復旧しない理由】
+  `location.reload()` はサブリソース（JSモジュール）のキャッシュを無効化しない仕様なので、
+  勝手に再読み込みしても同じ古いJSでまた失敗し、無限ループになるだけ。
+  必ず**人がボタンを押す**形にしてある。
+-->
+<script>
+(function () {
+  var failed = null;
+
+  // モジュールの読み込み失敗は window の error として上がってくる
+  window.addEventListener('error', function (e) {
+    if (!failed) failed = (e && e.message) || 'unknown';
+  }, true);
+  window.addEventListener('unhandledrejection', function (e) {
+    if (!failed) failed = (e && e.reason && e.reason.message) || 'unhandled rejection';
+  });
+
+  function esc(s) { return String(s).replace(/[<>&]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; }); }
+
+  function rescue() {
+    var app = document.getElementById('app');
+    // ★「エラーが出た」だけでは出さない。**画面が本当に空のときだけ**出す。
+    //   絵の404などは起きても遊べるので、それで救済画面を出したら邪魔なだけ
+    if (!app || app.children.length > 0) return;
+
+    app.innerHTML =
+      '<div style="padding:24px;max-width:34em;margin:0 auto;color:#e8d9b0;font-family:sans-serif;line-height:1.7">' +
+      '<h1 style="font-size:1.2rem;margin:0 0 12px">読み込みに失敗しました</h1>' +
+      '<p style="margin:0 0 12px">保存されている古いデータが残っているのが原因のことがほとんどです。' +
+      '下のボタンで古いデータを捨てて、読み込み直してください。</p>' +
+      '<p style="margin:0 0 16px;font-size:.9rem;opacity:.8">' +
+      '<strong>セーブデータは消えません。</strong>ただし、塔に潜っている途中だった場合、その潜行はやり直しになります。</p>' +
+      '<button id="rescueBtn" style="font-size:1rem;padding:12px 20px;border-radius:8px;border:1px solid #c9a227;' +
+      'background:#c9a227;color:#1a1520;font-weight:bold;cursor:pointer">古いデータを捨てて読み込み直す</button>' +
+      '<p style="margin:16px 0 0;font-size:.85rem;opacity:.7">それでも直らないときは、キーボードなら ' +
+      '<strong>Ctrl+Shift+R</strong>、スマホなら再読み込みボタンを長押しして「キャッシュを無視して再読み込み」を選んでください。</p>' +
+      '<p style="margin:12px 0 0;font-size:.75rem;opacity:.5">' + esc(failed || '') + '</p>' +
+      '</div>';
+
+    document.getElementById('rescueBtn').addEventListener('click', function () {
+      this.disabled = true;
+      this.textContent = '片づけています…';
+      var jobs = [];
+
+      // ★このアプリのキャッシュだけ消す。`caches.keys()` はオリジン単位なので、
+      //   絞らないと同じ場所で公開している他のアプリまで巻き添えになる
+      if (window.caches && caches.keys) {
+        jobs.push(caches.keys().then(function (keys) {
+          return Promise.all(keys.map(function (k) {
+            return k.indexOf('rinne-tou-') === 0 ? caches.delete(k) : null;
+          }));
+        }).catch(function () {}));
+      }
+      // ★このページのSWだけ解除する（getRegistrations() の全解除はしない）
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+        jobs.push(navigator.serviceWorker.getRegistration().then(function (r) {
+          return r ? r.unregister() : null;
+        }).catch(function () {}));
+      }
+      // localStorage には**絶対に触れない**。セーブがそこにあり、
+      // しかもオリジンは他アプリと共有なので clear() は全アプリのセーブを消す
+      Promise.all(jobs).then(function () {
+        location.replace(location.pathname + '?_r=' + Date.now());
+      });
+    });
+  }
+
+  // 読み込みが終わってから判定する（モジュールは defer 相当なので load を待つ）
+  window.addEventListener('load', function () { setTimeout(rescue, 300); });
+})();
+</script>
+<!-- BEGIN importmap (tools/gen_importmap.py が生成。手で書き換えない) -->
+<script type="importmap">
+{"imports":{
+  "./src/battle/ai.js":"./src/battle/ai.js?v=2b5f66e4",
+  "./src/battle/engine.js":"./src/battle/engine.js?v=47d0fea0",
+  "./src/battle/run.js":"./src/battle/run.js?v=a1153e03",
+  "./src/battle/tactics.js":"./src/battle/tactics.js?v=0cacbe13",
+  "./src/core/rng.js":"./src/core/rng.js?v=5d57fe13",
+  "./src/core/rules.js":"./src/core/rules.js?v=3c8b85ee",
+  "./src/core/save.js":"./src/core/save.js?v=260cb84b",
+  "./src/core/time.js":"./src/core/time.js?v=93e79577",
+  "./src/dungeon/events.js":"./src/dungeon/events.js?v=ef913cb4",
+  "./src/dungeon/explore.js":"./src/dungeon/explore.js?v=2cbd8af5",
+  "./src/dungeon/floor.js":"./src/dungeon/floor.js?v=aaf7a267",
+  "./src/dungeon/towers.js":"./src/dungeon/towers.js?v=9938eb88",
+  "./src/meta/board.js":"./src/meta/board.js?v=02b9535e",
+  "./src/meta/dex.js":"./src/meta/dex.js?v=7523845a",
+  "./src/meta/dispatch.js":"./src/meta/dispatch.js?v=dfe19ca3",
+  "./src/meta/growth.js":"./src/meta/growth.js?v=0633e942",
+  "./src/meta/home.js":"./src/meta/home.js?v=ce5fd5b9",
+  "./src/meta/profile.js":"./src/meta/profile.js?v=7b4ffcc0",
+  "./src/meta/rebirth.js":"./src/meta/rebirth.js?v=ff1f21f8",
+  "./src/meta/recruit.js":"./src/meta/recruit.js?v=9c2605d2",
+  "./src/meta/shop.js":"./src/meta/shop.js?v=31f295a3",
+  "./src/meta/story.js":"./src/meta/story.js?v=7e0774ae",
+  "./src/ui/affix_help.js":"./src/ui/affix_help.js?v=5c148cd9",
+  "./src/ui/app.js":"./src/ui/app.js?v=a7365109",
+  "./src/ui/audio.js":"./src/ui/audio.js?v=bd2fbfdc",
+  "./src/ui/battle_fx.js":"./src/ui/battle_fx.js?v=47e92ac0",
+  "./src/ui/confirm.js":"./src/ui/confirm.js?v=9b1ffda3",
+  "./src/ui/dispatch_flow.js":"./src/ui/dispatch_flow.js?v=f863c69f",
+  "./src/ui/dom.js":"./src/ui/dom.js?v=9d63a0aa",
+  "./src/ui/equip_sell.js":"./src/ui/equip_sell.js?v=293e4fe5",
+  "./src/ui/med_target.js":"./src/ui/med_target.js?v=ef3519c7",
+  "./src/ui/preload.js":"./src/ui/preload.js?v=748cca76",
+  "./src/ui/run_flow.js":"./src/ui/run_flow.js?v=ae9dbbcc",
+  "./src/ui/screen_battle.js":"./src/ui/screen_battle.js?v=c24a69e9",
+  "./src/ui/screen_board.js":"./src/ui/screen_board.js?v=a4a4cc46",
+  "./src/ui/screen_chars.js":"./src/ui/screen_chars.js?v=84ed15fe",
+  "./src/ui/screen_dispatch.js":"./src/ui/screen_dispatch.js?v=edfd99a0",
+  "./src/ui/screen_explore.js":"./src/ui/screen_explore.js?v=bab5fb69",
+  "./src/ui/screen_home.js":"./src/ui/screen_home.js?v=da3d0208",
+  "./src/ui/screen_items.js":"./src/ui/screen_items.js?v=347bc56f",
+  "./src/ui/screen_party.js":"./src/ui/screen_party.js?v=f5a79965",
+  "./src/ui/screen_records.js":"./src/ui/screen_records.js?v=1a64dbea",
+  "./src/ui/screen_result.js":"./src/ui/screen_result.js?v=6be9aa59",
+  "./src/ui/screen_settings.js":"./src/ui/screen_settings.js?v=459c9d38",
+  "./src/ui/screen_shop.js":"./src/ui/screen_shop.js?v=7cb1be62",
+  "./src/ui/screen_story.js":"./src/ui/screen_story.js?v=379fac21",
+  "./src/ui/screen_talk.js":"./src/ui/screen_talk.js?v=4943c821",
+  "./src/ui/screen_title.js":"./src/ui/screen_title.js?v=7163a69b",
+  "./src/ui/story_flow.js":"./src/ui/story_flow.js?v=310034c1",
+  "./data/board.js":"./data/board.js?v=32c03a37",
+  "./data/bonds.js":"./data/bonds.js?v=bb3da5b4",
+  "./data/bosses.js":"./data/bosses.js?v=40785536",
+  "./data/chars.js":"./data/chars.js?v=411d1e04",
+  "./data/daily.js":"./data/daily.js?v=c5df4c3a",
+  "./data/enemies.js":"./data/enemies.js?v=bf0e1adb",
+  "./data/equips.js":"./data/equips.js?v=da1409a6",
+  "./data/events.js":"./data/events.js?v=49b1ec62",
+  "./data/items.js":"./data/items.js?v=13eaea5f",
+  "./data/profiles.js":"./data/profiles.js?v=a3cad86e",
+  "./data/scenario.js":"./data/scenario.js?v=a745212a",
+  "./data/skills.js":"./data/skills.js?v=60f3ae46",
+  "./assets/art-manifest.js":"./assets/art-manifest.js?v=f89f1382",
+  "./assets/audio-manifest.js":"./assets/audio-manifest.js?v=f6c2b964"
+}}
+</script>
+<!-- END importmap -->
+</head>
+<body>
+
+<!-- 画面はすべてここに描く。ページ遷移はしない（spec §2） -->
+<!-- ★aria-live は付けない。画面遷移のたびに #app を丸ごと差し替えるので、
+     付けると読み上げソフトが毎回すべてを読み直して実用にならない。
+     読み上げの対象は #toast と戦闘ログだけに絞っている。 -->
+<div id="app"></div>
+
+<!-- 汎用の確認ダイアログ／通知 -->
+<div id="modal" class="modal" hidden>
+  <div class="modal__box" role="dialog" aria-modal="true">
+    <p class="modal__text" id="modalText"></p>
+    <div class="modal__btns" id="modalBtns"></div>
+  </div>
+</div>
+<div id="toast" class="toast" hidden></div>
+
+<noscript>
+  <p style="padding:24px;color:#e8d9b0">このゲームはJavaScriptを使います。ブラウザの設定で有効にしてください。</p>
+</noscript>
+
+<script type="module" src="src/ui/app.js?v=a7365109"></script>
+</body>
+</html>

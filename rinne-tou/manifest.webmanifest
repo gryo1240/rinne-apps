@@ -1,0 +1,16 @@
+{
+  "name": "輪廻の塔",
+  "short_name": "輪廻の塔",
+  "description": "敵の構えを読んで崩す、オート戦闘のダンジョン探索RPG。現実の月齢で塔の中身が変わります。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0b12",
+  "theme_color": "#0d0b12",
+  "lang": "ja",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

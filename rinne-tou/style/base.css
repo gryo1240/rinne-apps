@@ -1,0 +1,1561 @@
+/* ==========================================================================
+   輪廻の塔 — 基本テーマ（和紙 × 墨 × 金）
+   縦画面・スマホ基準（375px）。横画面でも崩れないこと（spec §13-4）
+   絵が無くても成立させるため、色・字・余白だけで塔の質感を作る。
+   ========================================================================== */
+
+:root {
+  --bg:        #0d0b12;   /* 墨（背景） */
+  --bg2:       #16121c;
+  --paper:     #1e1926;   /* 和紙パネル */
+  --paper2:    #262032;
+  --ink:       #ece3d0;   /* 文字（生成り） */
+  --ink-dim:   #a99e8c;
+  /* 説明文の色（2026-08-12）。--ink-dim は「補足・添え字」用に暗く作ってあるので、
+     まとまった説明文をこれで書くと読めない。読ませる文はこちらを使う */
+  --ink-sub:   #cfc4ae;
+  --gold:      #c9a227;   /* 金（強調・輪廻） */
+  --gold-lit:  #e8c46a;
+  --line:      rgba(201, 162, 39, 0.28);
+
+  /* 三すくみ。色だけに頼らず必ず文字を併記する（spec §2-1・色覚多様性への配慮） */
+  --gou:       #d4635a;   /* 剛 */
+  --shitsu:    #5fb0a8;   /* 疾 */
+  --ju:        #a97fd0;   /* 呪 */
+  --ha:        #d4635a;   /* 破（朱） */
+  --ryu:       #6a97d0;   /* 流（藍） */
+  --fu:        #d9b64a;   /* 封（金） */
+
+  --hp:        #6fbf73;
+  --hp-low:    #d4635a;
+  --ki:        #6a97d0;
+  --akari:     #e8c46a;
+  --warn:      #d4635a;
+  --ok:        #6fbf73;
+
+  --r:         10px;      /* 角丸 */
+  --tap:       44px;      /* タップ領域の最小（spec §13-4） */
+  --maxw:      560px;
+}
+
+/* 文字サイズ設定（設定画面から切替・spec §13-4） */
+:root[data-textsize="s"] { --fs: 14px; }
+:root[data-textsize="m"] { --fs: 15px; }
+:root[data-textsize="l"] { --fs: 17px; }
+:root { --fs: 15px; }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+html { background: var(--bg); }
+body { min-height: 100%; }   /* ★body に background を置かない（下の body::before の注記） */
+
+body {
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+  font-size: var(--fs);
+  line-height: 1.7;
+  color: var(--ink);
+  display: flex;
+  justify-content: center;
+  overflow-wrap: anywhere;
+  position: relative;
+}
+/**
+ * 塔の中の薄明かり（画像を使わずグラデーションだけで作る）。
+ *
+ * ★ここを `body { background }` に直接書くと、**背景画像の層（.bglayer）を覆い隠す**。
+ *   負のz-indexの子孫より、親のブロック背景のほうが後に描かれるため。
+ *   実際それで背景6枚が1pxも描かれていなかった（2026-08-04 レビューで発覚）。
+ *   別の層に分けて、背景画像より下（z-index:-2）に敷く。
+ */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: -2;
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgba(201,162,39,0.10), transparent 60%),
+    radial-gradient(90% 50% at 50% 110%, rgba(106,151,208,0.07), transparent 60%),
+    var(--bg);
+  pointer-events: none;
+}
+
+#app {
+  width: 100%;
+  max-width: var(--maxw);
+  padding: 8px 12px calc(20px + env(safe-area-inset-bottom));
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/**
+ * 塔の背景（assets/bg/tower-N.jpg）。
+ * ★文字の読みやすさを最優先にするので、暗い覆いを必ず上に重ねる。
+ *   絵が無い環境（画像を置いていない／読み込み失敗）でも、この層が無いだけで
+ *   下のグラデーションがそのまま見えるので破綻しない。
+ */
+.bglayer {
+  position: fixed; inset: 0; z-index: -1;
+  background-size: cover; background-position: center;
+  opacity: 0.75;
+  pointer-events: none;
+  transition: opacity 400ms ease, background-image 400ms ease;
+}
+/* ★上に暗い覆いを必ず重ねる。パネルの下に絵の細部が透けると本文が読みづらい。
+   下ほど濃くして、選択肢のボタンが並ぶ領域を確実に沈める */
+.bglayer::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(14,12,20,0.62), rgba(14,12,20,0.88) 65%, rgba(14,12,20,0.94));
+}
+
+/* ★会話画面だけ絵を明るく見せる（2026-08-09 オーナー要望「背景が真っ暗なのが気になる」）。
+   会話は本文が `.talk__box`（不透明の帯）に載っているので、絵を明るくしても読める。 */
+:root[data-screen="talk"] .bglayer { opacity: 0.92; }
+:root[data-screen="talk"] .bglayer::after {
+  background: linear-gradient(180deg, rgba(14,12,20,0.34), rgba(14,12,20,0.55) 60%, rgba(14,12,20,0.78));
+}
+
+/**
+ * ★探索画面も薄くする（2026-08-14 オーナー指摘
+ *   「全ての塔で同じなんだけど、探索画面は背景の上に濃い暗幕がかかっていて、
+ *     背景絵が全然見えないね。暗幕を少し薄くしましょう」）。
+ *
+ * 2026-08-09 の時点では「探索は情報量が多いので変えない」と決めていたが、
+ * その後に塔ごとの背景（朔の窖・望の櫓）を入れたので、**絵を分けた意味が消えていた**。
+ *
+ * 会話ほどは薄くしない。探索は地図の丸・階数・灯の残りを絵の上で直接読ませるため。
+ * 下端だけは濃いままにする（行動のボタンが並ぶ帯なので、ここが透けると押し間違える）。
+ */
+:root[data-screen="explore"] .bglayer { opacity: 0.9; }
+:root[data-screen="explore"] .bglayer::after {
+  background: linear-gradient(180deg, rgba(14,12,20,0.42), rgba(14,12,20,0.66) 60%, rgba(14,12,20,0.86));
+}
+
+/* 確認ダイアログの「次からは確かめない」。当たり判定を44px割らない（spec §16） */
+.checkline {
+  display: flex; align-items: center; gap: 10px;
+  min-height: var(--tap);
+  margin-top: 12px; padding: 4px 2px;
+  cursor: pointer; color: var(--ink-dim);
+}
+.checkline input { width: 22px; height: 22px; accent-color: var(--gold); flex: 0 0 auto; }
+
+/* ---------- レベルアップ（結果画面・2026-08-04） ----------
+   経験値は潜行の精算でまとめて入るので、上がるのは結果画面。
+   ★情報は演出OFFでも必ず出す。止めるのは光と動きだけ。 */
+.levelup {
+  position: relative; overflow: hidden;
+  border-color: var(--gold-lit);
+  background: linear-gradient(180deg, rgba(201,162,39,0.16), rgba(30,25,38,0.95));
+}
+.levelup--fx { animation: levelUpIn 620ms cubic-bezier(0.2, 0.9, 0.25, 1); }
+.levelup--fx::before {
+  content: ''; position: absolute; inset: -40% -60%;
+  background: linear-gradient(105deg, transparent 42%, rgba(255,240,200,0.42) 50%, transparent 58%);
+  animation: levelUpSheen 1500ms ease-out 220ms 1;
+}
+.levelup__head {
+  font-size: 1.15em; letter-spacing: 0.18em; text-align: center;
+  margin-bottom: 8px; text-shadow: 0 0 14px rgba(232,196,106,0.7);
+}
+.levelup--fx .levelup__head { animation: levelUpPulse 1100ms ease-in-out 2; }
+.levelup__row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.levelup__body { flex: 1 1 auto; min-width: 0; }
+.levelup__lv { letter-spacing: 0.06em; }
+.levelup__stats { color: var(--gold-lit); letter-spacing: 0.04em; }
+
+@keyframes levelUpIn {
+  0%   { opacity: 0; transform: translateY(10px) scale(0.97); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes levelUpSheen { 0% { transform: translateX(-55%); } 100% { transform: translateX(55%); } }
+@keyframes levelUpPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+/* 演出OFF設定と、OSの「視差効果を減らす」の両方を尊重する（spec §13-4） */
+/* ★演出を止めるのは**ゲーム内の設定「画面の演出」だけ**（2026-08-08）。
+   以前はここに `@media (prefers-reduced-motion: reduce)` で全アニメーションを
+   止める指定を置いていたが、**Windowsの「アニメーション効果」を切っている人には
+   演出が丸ごと出ない**（オーナーの環境がこれで、エフェクトが一度も見えていなかった）。
+   OSの設定は「初回起動時の初期値」としてだけ尊重し（app.js の defaultFx）、
+   そのあとはプレイヤーがこの設定で決められるようにしてある。 */
+:root[data-fx="off"] * { animation: none !important; transition: none !important; }
+
+/* ---------- 見出し・文字 ---------- */
+
+h1, h2, h3 { font-weight: normal; letter-spacing: 0.08em; }
+
+.title-logo {
+  text-align: center;
+  font-size: 2.2rem;
+  letter-spacing: 0.35em;
+  text-indent: 0.35em;   /* letter-spacing のぶん右にずれるのを戻す */
+  color: var(--gold-lit);
+  text-shadow: 0 0 18px rgba(201,162,39,0.45);
+  padding: 28px 0 4px;
+}
+
+/* ---------- キービジュアル（assets/bg/title.* があれば出る） ----------
+   画像が無くても成立するのが前提なので、無いときは要素ごと消える。 */
+
+.keyvisual {
+  position: relative;
+  margin: -8px -12px 0;      /* #app の左右paddingを打ち消して画面幅いっぱいに */
+  overflow: hidden;
+  line-height: 0;
+}
+.keyvisual__img {
+  width: 100%;
+  height: auto;
+  display: block;
+  /* 横長の絵を縦画面で使うため、上下を少し詰めて塔と鳥居を残す */
+  max-height: 46vh;
+  object-fit: cover;
+  object-position: center 38%;
+}
+/* 下端を背景へ溶かして、絵と本文の境目を消す */
+.keyvisual::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 45%;
+  background: linear-gradient(to bottom, rgba(13,11,18,0), var(--bg) 92%);
+  pointer-events: none;
+}
+.keyvisual + .title-logo {
+  margin-top: -2.4em;        /* 絵の下端（溶けた部分）にロゴを重ねる */
+  position: relative;
+  z-index: 1;
+  padding-top: 0;
+}
+.title-sub {
+  text-align: center;
+  color: var(--ink-dim);
+  font-size: 0.9em;
+  letter-spacing: 0.12em;
+  padding-bottom: 20px;
+  /* ★.keyvisual::after は position:absolute なので、静的な要素より必ず上に描かれる。
+     ロゴ側だけ z-index を付けていて副題を忘れると、絵を置いた瞬間に
+     副題の1行目がグラデーションに隠れる（2026-08-03 実機で発覚）。 */
+  position: relative;
+  z-index: 1;
+}
+
+.sec-title {
+  color: var(--gold-lit);
+  font-size: 1.05em;
+  letter-spacing: 0.14em;
+  border-bottom: 1px solid var(--line);
+  padding: 2px 0 4px;
+  margin: 14px 0 8px;
+}
+.dim  { color: var(--ink-dim); }
+.gold { color: var(--gold-lit); }
+.warn { color: var(--warn); }
+.ok   { color: var(--ok); }
+.small { font-size: 0.92em; }
+.center { text-align: center; }
+.nowrap { white-space: nowrap; }
+
+/* ---------- パネル ---------- */
+
+/* 背景画像の上に置くので、パネルは透けさせない（読みやすさ優先） */
+.panel {
+  background: linear-gradient(180deg, var(--paper), var(--paper2));
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.panel--flat { background: rgba(30, 25, 38, 0.6); }
+
+/* ---------- ボタン ---------- */
+
+.btn {
+  display: block;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  font-family: inherit;
+  font-size: 1em;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+  background: linear-gradient(180deg, #2a2333, #201a29);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.12s, border-color 0.12s;
+}
+.btn:hover:not(:disabled) { background: linear-gradient(180deg, #362d42, #29222f); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:focus-visible { outline: 2px solid var(--gold-lit); outline-offset: 2px; }
+
+.btn--primary {
+  color: #17120a;
+  background: linear-gradient(180deg, var(--gold-lit), var(--gold));
+  border-color: var(--gold-lit);
+  font-weight: bold;
+}
+.btn--primary:hover:not(:disabled) { background: linear-gradient(180deg, #f0d287, var(--gold-lit)); }
+.btn--danger { border-color: rgba(212,99,90,0.5); color: #e8a49e; }
+/* 見た目は小さくても、当たり判定は 44px を割らない（spec §16）。
+   戦闘中の主要操作（モード・一時停止・倍速）がここに入るため */
+.btn--sm {
+  min-height: var(--tap); min-width: var(--tap);
+  padding: 5px 12px; font-size: 0.85em; margin-bottom: 0; width: auto;
+}
+.btn--inline { display: inline-block; width: auto; margin: 0 6px 6px 0; }
+
+/**
+ * 2列に並べるボタン（2026-08-16 オーナー指示
+ * 「スクロールを減らしたい（略）祠画面とか、支度を2列にするのはどうかな？」）。
+ *
+ * ★1マスの幅は390px端末で約175px。**添え書き（.btn-sub）は1行に収まる長さだけ**にすること。
+ *   折り返すと行が増えて、2列にした意味（縦を詰める）がそのまま消える。目安は全角8〜10字。
+ * ★`.btn` の `margin-bottom` は打ち消す。gap と二重にかかって行間が空く。
+ * ★高さは行ごとにそろう（grid の既定が stretch）。片方だけ2行になっても
+ *   隣が間延びするだけで、ボタンの当たり判定は崩れない。
+ */
+.btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btn-grid > .btn { margin-bottom: 0; }
+
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-row > .btn { flex: 1 1 0; min-width: 96px; margin-bottom: 0; }
+/* ★「？」だけは伸ばさない（2026-08-10）。
+   `.btn--help` 側で flex:0 0 auto を書いても、この `.btn-row > .btn` のほうが
+   詳細度で勝つので、**ここで打ち消す**必要がある。
+   打ち消さないと min-width:96px で横幅を食い、狭い画面（390px）で
+   タブが折り返して2段になった（実機で確認） */
+.btn-row > .btn--help { flex: 0 0 auto; min-width: 34px; margin-left: auto; }
+
+.btn-sub {   /* ボタンの下段に添える補足（何が起きるかを事前に示す） */
+  display: block;
+  font-size: 0.78em;
+  color: var(--ink-dim);
+  letter-spacing: 0.02em;
+  margin-top: 2px;
+}
+.btn--primary .btn-sub { color: rgba(23,18,10,0.7); }
+
+/* ---------- 紋（もん）— 絵の差し替え機構（tech-design §6） ----------
+   画像があれば <img class="mon">、無ければ漢字1字の <span class="mon mon--glyph">。
+   **どちらでも同じ枠サイズ**にしてレイアウトを動かさない。 */
+
+.mon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+.mon--glyph {
+  font-size: 24px;
+  line-height: 1;
+  color: var(--c, var(--gold-lit));
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.35));
+  border: 1px solid var(--c, var(--gold));
+  box-shadow: 0 0 10px rgba(0,0,0,0.5), inset 0 0 12px rgba(0,0,0,0.4);
+  text-shadow: 0 0 8px var(--c, var(--gold));
+}
+.mon--sm { width: 34px; height: 34px; }
+.mon--sm.mon--glyph { font-size: 16px; }
+.mon--lg { width: 76px; height: 76px; }
+.mon--lg.mon--glyph { font-size: 36px; }
+.mon--down { opacity: 0.25; filter: grayscale(1); }
+
+/* ---------- ゲージ ---------- */
+
+.bar {
+  height: 8px;
+  background: rgba(0,0,0,0.45);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.bar__fill {
+  height: 100%;
+  width: 0;
+  background: var(--hp);
+  transition: width 0.28s ease-out;
+}
+.bar--hp   .bar__fill { background: linear-gradient(90deg, #4f9e57, var(--hp)); }
+.bar--low  .bar__fill { background: linear-gradient(90deg, #a8453e, var(--hp-low)); }
+.bar--ki   .bar__fill { background: linear-gradient(90deg, #4a72a8, var(--ki)); }
+.bar--akari .bar__fill { background: linear-gradient(90deg, #a8863a, var(--akari)); }
+.bar--enemy .bar__fill { background: linear-gradient(90deg, #8a3a34, #c25a50); }
+.bar--sm { height: 5px; }
+
+/* ---------- 構え・系統のタグ ---------- */
+
+.tag {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  letter-spacing: 0.08em;
+  border: 1px solid currentColor;
+  line-height: 1.5;
+}
+.tag--gou    { color: var(--gou); }
+.tag--shitsu { color: var(--shitsu); }
+.tag--ju     { color: var(--ju); }
+.tag--ha     { color: var(--ha); }
+.tag--ryu    { color: var(--ryu); }
+.tag--fu     { color: var(--fu); }
+.tag--none   { color: var(--ink-dim); }
+
+/* 予告（次の構え）は本作のUIの核なので、いちばん目立たせる */
+.telegraph {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.88em;
+  letter-spacing: 0.1em;
+  border: 1px solid currentColor;
+  background: rgba(0,0,0,0.35);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+/* ---------- 状況バー（探索・戦闘の共通ヘッダ） ---------- */
+
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  margin-bottom: 8px;
+  font-size: 0.88em;
+}
+.statusbar__floor { color: var(--gold-lit); font-size: 1.1em; letter-spacing: 0.06em; }
+.statusbar__akari { flex: 1 1 auto; min-width: 60px; }
+.statusbar__moon  { color: var(--ink-dim); white-space: nowrap; }
+
+/* ---------- 探索：階層マップ ---------- */
+
+.map { width: 100%; height: auto; display: block; touch-action: manipulation; }
+.map__edge { stroke: rgba(201,162,39,0.22); stroke-width: 1.5; fill: none; }
+.map__edge--open { stroke: var(--gold-lit); stroke-width: 2.5; }
+.map__node { fill: #221c2c; stroke: rgba(201,162,39,0.3); stroke-width: 1.5; }
+.map__node--visited { fill: #2e2740; stroke: rgba(236,227,208,0.35); }
+.map__node--current { fill: #3a2f1a; stroke: var(--gold-lit); stroke-width: 2.5; }
+.map__node--open    { fill: #2a2338; stroke: var(--gold-lit); stroke-width: 2.5; cursor: pointer; }
+.map__node--dim     { opacity: 0.45; }
+/* 来た道（もう解決済みだが、通り直して他のルートへ行ける）。
+   ★**破線**にすること（2026-08-12）。実機のスクショで、細い金の実線だと
+   未踏の進み先とほとんど見分けがつかなかった。見分けられないと、
+   もう何も無いマスに灯を払って歩くことになる。
+   「押せる（金）」と「もう何も無い（破線・沈んだ中身）」を同時に見せる */
+.map__node--back {
+  fill: #221d2c;
+  stroke: rgba(232,196,106,0.5);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+/* 当たり判定だけを広げる透明な円（見た目は変えない） */
+.map__hit { fill: transparent; stroke: none; cursor: pointer; }
+.map__label { fill: var(--ink); font-size: 13px; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.map__label--sub { fill: var(--ink-dim); font-size: 9px; }
+
+.choice { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.choice__guide { display: flex; align-items: center; justify-content: center; gap: 8px; }
+/* 「？」の丸ボタン。細かい説明はここへ畳んで、画面から縦幅を返す */
+/**
+ * ヘルプの「？」（2026-08-16 オーナー指示
+ * 「ヘルプマークは全てサイズ感をもう少し小さくしていいよ。今のサイズだと、少しスペースとるでしょ？」
+ *  「ヘルプマークだけで1行使っている箇所が多い」）。
+ *
+ * ★34px。spec §16 の「押す的は44px」より小さいので、**ここだけ意図的に外している**。
+ *   理由: この「？」は押し間違えても害が無い（説明が開くだけ）唯一のボタンで、
+ *   逆に44pxあると見出しの行に収まらず、**1行まるごと占める**ことが多かった。
+ *   進む・買う・売るといった取り返しのつかない操作は、いままでどおり44pxを守ること。
+ * ★見出しの行に置くので `align-self: center`。行の高さに引き伸ばさない。
+ */
+.btn--help {
+  width: 34px; height: 34px;
+  min-width: 34px; min-height: 34px;
+  padding: 0; border-radius: 50%; flex: 0 0 auto;
+  align-self: center;
+  font-size: 0.9em; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+
+/* ---------- 戦闘 ---------- */
+
+/* 敵の列。★狭めても【構え】の可読性だけは落とさない（この画面の核） */
+.enemies {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  padding: 4px 0 6px;
+  min-height: 0;
+}
+.enemy { width: 72px; min-width: 0; text-align: center; }
+/* ボスの紋(76px)がセル幅(72px)を超えて隣とぶつからないように収める */
+.enemy .mon--lg { max-width: 100%; height: auto; aspect-ratio: 1; }
+.enemy__name { font-size: 0.72em; margin: 2px 0 1px; line-height: 1.2; overflow-wrap: anywhere; }
+/* 写し身の印。**必ず行を改めて、それ自体は折り返さない**（2026-08-13 オーナー指摘）。
+   枠が72pxしかないので、名前と続けて書くと「写し／身」で割れる */
+.enemy__dup {
+  display: block; white-space: nowrap;
+  font-size: 0.9em; color: var(--gold); letter-spacing: 0.02em;
+}
+.enemy__act  { font-size: 0.66em; color: var(--ink-dim); margin-top: 1px; line-height: 1.2; }
+.enemy--targeted .mon { box-shadow: 0 0 0 2px var(--gold-lit), 0 0 14px var(--gold); }
+/* プレイヤーが指した敵（2026-08-10 オーナー要望の赤▼）。
+   ★わざ選択中の金色（.enemy--targeted）より**後**に置くこと。
+   両方付いたときは「いま選んでいる対象」ではなく「狙い続けている相手」を見せたい */
+.enemy__focus {
+  color: #ff6b6b;
+  font-size: 0.85em;
+  /* ★狙っていないカードでも高さを持たせる（中身は空）。
+     ここを 0 にすると、狙った1枚だけ下へずれて隣と揃わない */
+  height: 1em;
+  line-height: 1;
+  margin-bottom: 1px;
+  text-shadow: 0 0 6px rgba(255, 70, 70, .85), 0 1px 2px #000;
+}
+.enemy--focus .mon { box-shadow: 0 0 0 2px #ff6b6b, 0 0 12px rgba(255, 70, 70, .6); }
+/* 崩した敵に残る印（2026-08-10）。その敵が動くまで消えない。
+   ★これは**状態表示**なので :root[data-fx="off"] でも消さない（演出を切っていても、
+   崩しが効いているかどうかは見えている必要がある） */
+.crushmark {
+  display: inline-block;
+  margin-right: 3px;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: var(--gold);
+  color: #17120a;
+  font-weight: bold;
+  /* 親（.enemy__act）が 0.66em なので、ここを1未満にすると実機で潰れて読めない */
+  font-size: 1em;
+  line-height: 1.35;
+}
+/* 逆風の印（2026-08-11）。崩しの対。★崩しと同じ大きさ・同じ位置にすること。
+   片方だけ小さいと、並んだ敵の列で高さが揃わない */
+.advmark {
+  display: inline-block;
+  margin-right: 3px;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: #6f89ad;
+  color: #0d1219;
+  font-weight: bold;
+  font-size: 1em;
+  line-height: 1.35;
+}
+
+/* 数字を飛ばす層。パネルの外に重ねるので、再描画で消えない */
+.battle-stage { position: relative; }
+.fxlayer { position: absolute; inset: 0; pointer-events: none; overflow: visible; z-index: 3; }
+.pop {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 1.05em; font-weight: bold;
+  text-shadow: 0 1px 3px #000, 0 0 8px #000;
+  white-space: nowrap;
+  /* ★数字は上へ流れながら**僅かに横揺れ**する（2026-08-08 オーナー要望）。
+     臨場感のためだが、揺れ幅は2pxまで。これ以上だと数字が読めなくなる。
+     2本のアニメを重ねているので、popUp 側の translate と合成される */
+  animation: popUp var(--pop-ms, 500ms) ease-out forwards,
+             popJitter 120ms ease-in-out 3;
+}
+@keyframes popJitter {
+  0%, 100% { margin-left: 0; }
+  25% { margin-left: -2px; }
+  75% { margin-left: 2px; }
+}
+.pop--dmg  { color: #ffd9d9; }
+.pop--crit { color: var(--gold-lit); font-size: 1.3em; }
+.pop--heal { color: var(--ok); }
+/* 崩しで威力半減した一撃（2026-08-10）。
+   上に「本来の値」を取り消し線で、下に「実際に受けた値」を金で出す。
+   崩しの見返りはこの瞬間まで見えないので、減った幅そのものを数字で見せる */
+.pop--suppressed { display: flex; flex-direction: column; align-items: center; line-height: 1.05; }
+.pop__was {
+  font-size: 0.78em;
+  /* ★ダメージの色（#ffd9d9）を落としたもの。--ink-dim だと実機で沈んで読めず、
+     「いくら減ったか」が伝わらない（2026-08-10 実機のスクショで確認して上げた）。
+     赤＝受けるはずだった値／金＝実際に受けた値、で色が意味を持つ */
+  color: #e6b3b3;
+  text-decoration: line-through;
+  text-decoration-color: var(--gold-lit);
+  /* 取り消し線が細いと、実機（等倍のスマホ）では消えたようにしか見えない */
+  text-decoration-thickness: 2px;
+}
+.pop__now { color: var(--gold-lit); }
+
+/* 三すくみの当たり方は、数字ごと別物にする（2026-08-11 オーナー指摘
+   「逆風と崩しの演出が弱くて、普段の攻撃と分かりづらい」）。
+   ★色だけでは足りない。実機の34pxの紋の上を0.5秒で流れる数字なので、
+   「札（崩し／逆風）」を添えて、読まなくても形で違いが分かるようにしている */
+.pop--crush, .pop--adverse {
+  display: flex; flex-direction: column; align-items: center; line-height: 1.05;
+}
+.pop__tag {
+  font-size: 0.6em; letter-spacing: 0.12em; font-weight: bold;
+  padding: 0 4px; border-radius: 3px;
+}
+.pop--crush .pop__tag { background: var(--gold); color: #17120a; }
+.pop--crush .pop__num { color: var(--gold-lit); font-size: 1.45em; }
+/* 逆風は「弾かれて効かなかった」側。冷たい色で、数字も一回り小さくする */
+.pop--adverse .pop__tag { background: #6f89ad; color: #0d1219; }
+.pop--adverse .pop__num { color: #b9d2ee; font-size: 0.92em; }
+/* ★数字を絵の**上**に置く。append順に頼ると、呼ぶ順を変えた瞬間に数字が絵の下へ潜る */
+.pop { z-index: 2; }
+
+/* 戦闘エフェクト（2026-08-06）。絵が無ければそもそも生成されない */
+.fx-burst {
+  position: absolute; z-index: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  /* both = 開始前も0%の見た目にする。forwards だけだと、挿入から
+     アニメ開始までに1フレーム描かれた場合に原寸・不透明で一瞬出る余地が残る */
+  animation: fxBurst var(--fx-ms, 360ms) ease-out both;
+}
+/* ★時間と大きさは**変数で外に出す**。絵ができてから実機で詰めるため、
+   ここを詰めるのにJSを触らなくていいようにしてある */
+@keyframes fxBurst {
+  0%   { opacity: 0;    transform: translate(-50%, -50%) scale(0.55) rotate(var(--fx-rot, 0deg)); }
+  30%  { opacity: 0.95; transform: translate(-50%, -50%) scale(1.05) rotate(var(--fx-rot, 0deg)); }
+  100% { opacity: 0;    transform: translate(-50%, -50%) scale(1.25) rotate(var(--fx-rot, 0deg)); }
+}
+@keyframes popUp {
+  0%   { opacity: 0; transform: translate(-50%, -30%) scale(0.8); }
+  25%  { opacity: 1; transform: translate(-50%, -60%) scale(1.1); }
+  100% { opacity: 0; transform: translate(-50%, -130%) scale(1); }
+}
+
+.timeline {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 0.8em; color: var(--ink-dim);
+  overflow-x: auto; padding: 4px 0;
+  scrollbar-width: thin;
+  /* ★ここも高さを固定する（2026-08-15）。倒れた者が消えると幅が縮み、
+     横スクロールバーの有無で高さが変わって、下の列が上下していた */
+  height: 2.4em;
+  flex: 0 0 auto;
+}
+.timeline__item { white-space: nowrap; padding: 1px 6px; border-radius: 4px; background: rgba(0,0,0,0.3); }
+.timeline__item--now { color: var(--gold-lit); border: 1px solid var(--line); }
+
+/* ★高さを固定する（2026-08-15 オーナー指摘「味方キャラが1段下にずれるのをやめたい」）。
+   中身が出たり消えたりする枠なので、空でも1行ぶんの場所を取らせておく。
+   そうしないと、崩しや狙い指定のたびに下の仲間の列が上下する */
+.gauge-crush {
+  display: flex; align-items: center; gap: 5px; font-size: 0.85em;
+  min-height: 1.5em;
+}
+.gauge-crush__dot { width: 11px; height: 11px; border-radius: 50%; border: 1px solid var(--gold); }
+.gauge-crush__dot--on { background: var(--gold-lit); box-shadow: 0 0 8px var(--gold); }
+
+/* 拠点・探索の並び（1人1行）。★戦闘画面だけ下の .party--row で横並びに差し替える */
+.party { display: flex; flex-direction: column; gap: 5px; }
+.party__row { display: flex; align-items: center; gap: 8px; }
+.party__row--down { opacity: 0.4; }
+.party__name { width: 4.5em; font-size: 0.85em; flex: 0 0 auto; }
+.party__bars { flex: 1 1 auto; min-width: 0; }
+.party__num  { font-size: 0.75em; color: var(--ink-dim); width: 6.5em; text-align: right; flex: 0 0 auto; }
+
+/**
+ * 戦闘画面だけ、味方を横に1列にする（2026-08-05 オーナー指示）。
+ * 1人1行だとHP・気のバーが画面幅いっぱいに伸び、4人で縦幅を大きく食っていた。
+ * ★`.party` を直接書き換えないこと。拠点・探索の一覧が同じクラスを使っている
+ */
+.party--row { flex-direction: row; gap: 6px; align-items: flex-start; }
+.party--row .party__cell { flex: 1 1 0; min-width: 0; text-align: center; display: flex; flex-direction: column; gap: 3px; align-items: center; }
+.party--row .party__cell--down { opacity: 0.4; }
+.party--row .party__cell .bar { width: 100%; }
+.party--row .party__name { width: auto; font-size: 0.78em; line-height: 1.2; overflow-wrap: anywhere; }
+.party--row .party__ail  { font-size: 0.68em; line-height: 1.2; min-height: 1.2em; }
+
+/* 戦闘ログは敵の上に1行だけ。履歴はここでは持たない */
+.battle-line {
+  /**
+   * ★高さを**固定**する（2026-08-15 オーナー指摘
+   *   「崩しの行が1行増えてしまい、味方キャラが1段下にずれるのをやめたい」）。
+   *   min-height だと、長い一文のときだけ伸びて下の敵と仲間がまるごと下がる。
+   *   2行ぶんを常に取り、はみ出す分は隠す（文言側を2行に収める前提）。
+   */
+  height: 3.9em;
+  overflow: hidden;
+  font-size: 0.85em;
+  padding: 4px 6px;
+  margin-bottom: 4px;
+  background: rgba(0,0,0,0.3);
+  border-radius: var(--r);
+  text-align: center;
+  display: flex; align-items: center; justify-content: center;
+}
+.battle-line.l-damage  { color: var(--ink); }
+.battle-line.l-heal    { color: var(--ok); }
+.battle-line.l-down    { color: var(--warn); }
+.battle-line.l-ailment { color: var(--ju); }
+.battle-line.l-slip    { color: var(--gou); }
+.battle-line.l-phase   { color: var(--gold-lit); }
+.battle-line.l-crush   { color: var(--gold-lit); font-weight: bold; }
+.battle-line.l-adverse { color: var(--gou); }
+/* 常闇で攻撃を外した（2026-08-12）。事故なので警告色ではなく、手応えの無い灰色にする */
+.battle-line.l-miss    { color: var(--ink-dim); }
+
+.battle-log {
+  height: 132px;
+  overflow-y: auto;
+  font-size: 0.85em;
+  padding: 6px 8px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(201,162,39,0.15);
+  border-radius: var(--r);
+  scrollbar-width: thin;
+}
+.battle-log p { margin-bottom: 2px; }
+/* 探索ログの種別（explore.js の say() が使う）。無いと警告や獲得が色分けされない */
+.battle-log .l-info    { color: var(--ink); }
+.battle-log .l-warn    { color: var(--warn); }
+.battle-log .l-get     { color: var(--ok); }
+.battle-log .l-win     { color: var(--gold-lit); }
+.battle-log .l-ret     { color: var(--ki); }
+.battle-log .l-floor   { color: var(--gold-lit); }
+.battle-log .l-heal    { color: var(--ok); }
+.battle-log .l-damage  { color: var(--ink); }
+.battle-log .l-down    { color: var(--warn); }
+.battle-log .l-miss    { color: var(--ink-dim); }
+
+/**
+ * 探索ログを「最新が下、かつ最初から最新が見えている」状態にする（2026-08-12）。
+ * ★中身は**新しい順**で入れること（screen_explore.js の logPanel）。
+ *   column-reverse の箱は下端が原点なので、スクロール位置を計算しなくても
+ *   常に最新行が見えている。JSで scrollTop をいじる案は、
+ *   まだ文書に入っていないDOM（render の戻り値）では効かない。
+ */
+.battle-log--tail { display: flex; flex-direction: column-reverse; }
+.battle-log--tail p { margin-bottom: 0; margin-top: 2px; }
+
+/* 見出しへフォーカスを移すときに枠線を出さない（読み上げ用の移動なので視覚上は無音にする） */
+h1:focus, h2:focus { outline: none; }
+
+.controls { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+.controls .btn { margin-bottom: 0; }
+
+/* 崩し成立の一瞬の光。演出OFFでは止まる（上の :root[data-fx="off"]） */
+.flash-crush { animation: flashCrush 0.5s ease-out; }
+@keyframes flashCrush {
+  0%   { box-shadow: 0 0 0 0 rgba(232,196,106,0.9); }
+  100% { box-shadow: 0 0 0 22px rgba(232,196,106,0); }
+}
+/* ★敵1体に絞って光らせるとき（2026-08-10）は広がりを抑える。
+   カード幅は72pxしかないので、列と同じ22pxだと隣の敵まで飲み込んで
+   「どれを崩したのか」が結局分からない
+   ★2026-08-11: オーナー指摘を受けて強めた。輪郭が広がるだけでは弱かったので、
+   カードの地色を一瞬だけ金に染め、わずかに沈み込ませている（0.5s→0.62s）。
+   隣を飲み込まないよう、広がりは 9px → 11px にとどめる */
+.enemy.flash-crush { border-radius: 6px; animation: flashCrushCard 0.62s ease-out; }
+@keyframes flashCrushCard {
+  0%   { box-shadow: 0 0 0 0 rgba(232,196,106,0.95); background: rgba(232,196,106,0.55); transform: scale(1.06); }
+  35%  { background: rgba(232,196,106,0.22); transform: scale(1); }
+  100% { box-shadow: 0 0 0 11px rgba(232,196,106,0); background: transparent; transform: scale(1); }
+}
+/* 逆風は崩しの対。冷たい色で、伸びるのではなく**弾かれて縮む** */
+.enemy.flash-adverse { border-radius: 6px; animation: flashAdverseCard 0.5s ease-out; }
+@keyframes flashAdverseCard {
+  0%   { box-shadow: 0 0 0 0 rgba(150,190,235,0.85); background: rgba(150,190,235,0.30); transform: scale(0.94); }
+  40%  { background: rgba(150,190,235,0.12); transform: scale(1); }
+  100% { box-shadow: 0 0 0 8px rgba(150,190,235,0); background: transparent; transform: scale(1); }
+}
+
+/* ---------- 錬気（スライダー・2026-08-10） ---------- */
+
+.renki { margin-bottom: 8px; }
+/* ボタンの既定の下マージンを消す。7項目×4人ぶん積み上がると、
+   それだけで画面1つぶんの無駄なスクロールになる */
+.renki .btn { margin-bottom: 0; }
+.renki .kv { padding: 0; }
+.renki__range {
+  width: 100%;
+  margin: 0;
+  /* ★指で掴む前提。既定の高さ（約16px）だとスマホで外しやすい */
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+  /* ★つまみと「ここまで動かした」部分の色は accent-color に任せる。
+     `::-webkit-slider-thumb` を自前で書いても、input 側に appearance:none を
+     付けない限り効かず、**つまみが既定の青のまま**になる（2026-08-10 実機で確認）。
+     かといって appearance:none にすると、今度は動かした部分の塗りが消えて
+     「どこまで動かしたか」が見えなくなる。標準に任せるのが一番よく動く */
+  accent-color: var(--gold-lit);
+}
+/* 溝を太くする（つまみの大きさは accent-color 側の標準に従う）。
+   ★溝は**一色**にすること。金→暗色のグラデーションにしていたら、
+   つまみが左端にあっても「もう満タン」に見えた（2026-08-10 実機のスクショで気づいた） */
+.renki__range::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 3px; background: #4a4030;
+}
+.renki__range::-moz-range-track {
+  height: 6px; border-radius: 3px; background: #4a4030;
+}
+.renki__range:focus-visible { outline: 2px solid var(--gold-lit); outline-offset: 2px; }
+
+/* ---------- 鍛冶の行・変更なしの表し方（2026-08-11 オーナー要望） ---------- */
+
+/* ★`.renki__range` は鍛冶でも使い回している（見た目をそろえるため）。
+   クラス名が「錬気」なのは、先に錬気で作ったという順番だけの理由。 */
+.forge-row {
+  padding: 8px 10px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(201,162,39,0.15);
+  border-radius: 8px;
+}
+.forge-row .btn { margin-bottom: 0; }
+.forge-row .kv { padding: 0; }
+
+/* つまみが 0 ＝この項目は変えない。**枠ごと沈める**ので、
+   7項目・10件が並んでいても「どこを動かしたか」がひと目で分かる。
+   ★沈めすぎないこと。0.62 にしたら装備名と稀少度の色まで読めなくなった
+   （実機のスクショで確認して 0.72 に戻した）。選ぶ前の一覧なので、
+   「変えない」ことより「何があるか」のほうが先に読めなければならない */
+.renki--zero, .forge-row--zero { opacity: 0.72; }
+.forge-row--zero { background: rgba(0,0,0,0.16); border-color: rgba(255,255,255,0.06); }
+
+/**
+ * いま手を付けられる行かどうか（2026-08-16 オーナー指摘
+ * 「錬気とか鍛冶ができるか否かが分かりづらい。できるものは色分けしてほしい」）。
+ *
+ * ★左の縁だけを塗る。枠全体を金にすると、つまみを動かした行（＝これから使う行）の
+ *   強調とぶつかって、どちらが「いま選んでいる行」か分からなくなる。
+ * ★色だけに頼らない（spec §13-4）。できない行には理由（「上限」「◯個たりません」）を
+ *   文字でも出してある（screen_party.js）。色は探す速さのためだけに足す。
+ * ★`--zero`（つまみが0）は**できる行**なので、沈んでいても縁は金のまま。
+ *   「できるが、まだ動かしていない」と「そもそもできない」は別のことなので混ぜない。
+ */
+/* ★`--lack` の背景を先に置く。あとに書くと border-color の一括指定が
+   下の border-left の色を塗り替えてしまう */
+.forge-row--lack { background: rgba(0,0,0,0.16); border-color: rgba(255,255,255,0.06); }
+.forge-row--ok, .renki--ok { border-left: 3px solid var(--gold-lit); padding-left: 8px; }
+.forge-row--lack, .renki--lack {
+  border-left: 3px solid rgba(255,255,255,0.10);
+  padding-left: 8px;
+  opacity: 0.72;
+}
+
+/* 「0」のボタン。押せない灰色にして、金色の「これから使う数字」と混ざらないようにする。
+   ★`.btn:disabled` の opacity だけに頼らないこと。素材が足りなくて押せない行
+   （こちらは必要数を数字で出している）と見分けが付かなくなる */
+.btn--zero {
+  background: #35353a;
+  border-color: rgba(255,255,255,0.14);
+  color: #8d8d94;
+}
+.btn--zero:disabled { opacity: 0.85; }
+
+/* 図鑑・持ち物で「まだ持っていない／まだ見ていない」行（2026-08-12）。
+   隠さずに沈めるのは、**何が残っているかを見せる**ため（埋める遊びの土台） */
+.list__item--off { opacity: 0.55; }
+/* 図鑑の中見出し（敵／装備／道具）。sec-title より一段小さく */
+.sec-title--sub { font-size: 0.95em; margin-top: 14px; opacity: 0.9; }
+
+/**
+ * 音量つまみの行（2026-08-12 オーナー指摘
+ * 「BGMとSEでスライドできる長さが違うので揃えてください」）。
+ *
+ * ★ラベルの幅を**固定**すること。`.kv__k` のままだと文字数で幅が変わり
+ *   （「BGM」と「SE」）、残りをつまみが取るので**つまみの長さが違って見える**。
+ *   同じ長さでないと、同じ位置＝同じ音量に見えない。
+ */
+.volrow { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.volrow__label {
+  flex: 0 0 3.6em;         /* ← ここが「揃える」の実体。文字数で伸び縮みさせない */
+  color: var(--ink-dim);
+  font-size: 0.9em;
+}
+.volrow input[type="range"] { flex: 1 1 auto; min-width: 0; }
+
+/* ※「決定」の吹き出し（.btn--go / .btn__go / .btn__cost）は 2026-08-16 に廃止。
+   ボタンから数字を外したので、数字を指す尻尾つきの札が指す先を失った。
+   要るものは行の説明にまとめて並べている（screen_party.js の setGo を参照）。 */
+
+/* ---------- 錬気の相手えらび（アイコン＋名前・2026-08-11 オーナー要望） ---------- */
+
+/* ★以前は出撃メンバー4人ぶんを縦に積んでいて、1画面に収まらなかった。
+   ★並べ方は**格子（grid）**にすること（2026-08-11 オーナー指摘
+   「1キャラだけが広すぎるのは微妙」）。flexの `flex:1 1 0` は行ごとに余りを分けるので、
+   5人・6人だと折り返した最後の1人が**その行を独り占めして全幅に伸びる**。
+   gridなら折り返しても1人ぶんの幅は変わらない。 */
+.charpick {
+  display: grid;
+  /* 56px ＝ 仲間6人が横1行に収まる幅（390pxの端末で 6×56＋gap がぎりぎり入る）。
+     タップ領域の下限44pxも割らない。名前は2〜3文字なので、これで潰れない。
+     ★`auto-fit` ではなく **`auto-fill`**。auto-fit は余った列を畳むので、
+     仲間が1人しかいないとき**その1人が画面いっぱいに伸びる**
+     （オーナー指摘とまったく同じ見た目になる。実機のスクショで気づいた）。
+     auto-fill なら列は残るので、1人でも6人でも1人ぶんの幅は変わらない。 */
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+.charpick__btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 6px 4px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(201,162,39,0.15);
+  border-radius: 8px;
+  color: var(--ink-dim);
+  cursor: pointer;
+}
+.charpick__btn:hover { border-color: var(--line); }
+.charpick__btn--on {
+  border-color: var(--gold-lit);
+  background: rgba(201,162,39,0.12);
+  color: var(--gold-lit);
+}
+.charpick__btn:focus-visible { outline: 2px solid var(--gold-lit); outline-offset: 2px; }
+.charpick__name { font-size: 0.82em; letter-spacing: 0.04em; }
+/* 選んでいない仲間の絵は少し沈める（選択中がどれか、色だけで分かるように） */
+.charpick__btn:not(.charpick__btn--on) .mon { opacity: 0.7; }
+
+/* ---------- 一覧（装備・仲間） ---------- */
+
+.list { display: flex; flex-direction: column; gap: 6px; }
+.list__item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(201,162,39,0.15);
+  border-radius: 8px;
+  min-height: var(--tap);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font-family: inherit; font-size: 1em; color: inherit;
+}
+.list__item:hover { border-color: var(--line); background: rgba(201,162,39,0.06); }
+.list__item--on { border-color: var(--gold-lit); background: rgba(201,162,39,0.10); }
+/* 未読の話（2026-08-10）。★opacity で沈めない。
+   「まだ読めません」の案内まで読めなくなり、何をすれば開くのか分からなくなる */
+.list__item--locked { border-style: dashed; }
+/* まだ開いていない項目（未解放の支塔など）。押せないので hover も出さない */
+.list__item.is-locked { cursor: default; opacity: 0.55; border-style: dashed; }
+.list__item.is-locked:hover { border-color: rgba(201,162,39,0.15); background: rgba(0,0,0,0.25); }
+/**
+ * 2列に並べる一覧（2026-08-16 オーナー指摘「影送りのキャラ選択は2列にして縦を抑える」）。
+ * ★flexの折り返しではなく **grid**。flexだと折り返した最後の1人がその行を独り占めして
+ *   全幅に伸びる（`.charpick` で同じ失敗をしている）。
+ * ★1人ぶんの幅が約175pxしかないので、`.list__right` は入らない。
+ *   右端に置きたい情報は、名前か説明の中に畳んでから使うこと。
+ */
+.list--2col { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: stretch; }
+.list--2col .list__item { padding: 8px; gap: 6px; }
+
+.list__main { flex: 1 1 auto; min-width: 0; }
+/* ★0.78em は小さすぎた（2026-08-12 オーナー指摘「説明文が読みづらい」）。
+   15px 基準で 11.7px → 13.4px。色も --ink-dim より一段明るいものを別に持つ */
+.list__sub  { font-size: 0.89em; color: var(--ink-sub); }
+.list__right { flex: 0 0 auto; text-align: right; font-size: 0.85em; }
+
+/* 稀少度。色だけでなく記号（常/珍/稀/伝/銘）も併記する */
+.rar-0 { color: var(--ink-dim); }
+.rar-1 { color: #7fb0d8; }
+.rar-2 { color: #9fd07f; }
+.rar-3 { color: #d0a05f; }
+.rar-4 { color: var(--gold-lit); text-shadow: 0 0 8px rgba(201,162,39,0.6); }
+
+/* ---------- 表 ---------- */
+
+/* ---------- 因果盤（7×7・spec §6-5） ----------
+   縦画面の幅に7列を収めるため、マスは正方形の比率で伸縮させる。
+   タップ領域は44px（spec §13-4）を下回らない: 幅390pxの端末で1マス約48px。 */
+.board {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin: 10px 0 4px;
+}
+/* ★幅の狭い端末（320px＝iPhone SE 第1世代・拡大表示）でもタップ領域44pxを守る。
+   #app の左右padding 12px を打ち消して画面幅いっぱいに使い、隙間を詰める:
+   (320 - 12*2 + 12*2 - 2*6) / 7 = 44.0px  */
+@media (max-width: 380px) {
+  .board { margin-inline: -12px; gap: 2px; }
+}
+.board__cell {
+  aspect-ratio: 1 / 1;
+  min-height: var(--tap);      /* 44px。spec §13-4 */
+  font-family: inherit;        /* 盤だけUI既定フォントになるのを防ぐ */
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.95em;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.02);
+  color: var(--ink-dim);
+  cursor: default;
+}
+.board__cell--on {
+  background: color-mix(in srgb, var(--c) 26%, transparent);
+  border-color: var(--c);
+  color: var(--ink);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--c) 30%, transparent);
+}
+/* 開けるマス（因果が足りている）。点滅させず、枠と明度だけで示す */
+.board__cell--next {
+  border-color: var(--gold-lit);
+  color: var(--gold-lit);
+  cursor: pointer;
+}
+/* 隣接しているが因果が足りないマス */
+.board__cell--near { border-color: var(--line); color: var(--ink-dim); cursor: pointer; }
+/* まだ届かないマス。**中身は見せる**（伸ばす方向を決める材料になるため）が、薄くする */
+.board__cell--far { color: rgba(255,255,255,0.22); cursor: pointer; }
+
+/* 凡例の色チップ。色だけに頼らず、必ず文字を中に入れる */
+.board__chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.5em; height: 1.5em; margin-right: 4px;
+  border: 1px solid var(--c); border-radius: 4px;
+  background: color-mix(in srgb, var(--c) 26%, transparent);
+  color: var(--ink); font-size: 0.85em;
+}
+
+.kv { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; font-size: 0.9em; }
+/**
+ * 名前と数だけの短い行を2列に（2026-08-16 オーナー指摘
+ * 「真ん中あたりが余白になっているし、ここも2列で良いんじゃないかな」）。
+ * ★列のあいだは `column-gap` で空ける。`.kv` は両端そろえなので、
+ *   すき間が無いと右列の名前と左列の数がくっついて読めなくなる。
+ */
+.kv-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 18px; }
+.kv__k { color: var(--ink-dim); }
+.kv__v { text-align: right; }
+.up { color: var(--ok); }
+.down { color: var(--warn); }
+
+/* ---------- モーダル・トースト ---------- */
+
+.modal {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(0,0,0,0.72);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal[hidden] { display: none; }
+/**
+ * ★中身が画面より高いとき、**箱の中でスクロールさせる**（2026-08-13 オーナー指摘
+ *   「輪廻塔の階選択では、縦に長すぎるし、スクロールできないです」）。
+ *
+ *   `position:fixed` の敷物の中で上下中央に置いているので、
+ *   高さの指定が無いと**上下にはみ出した分がどこからも読めない**（画面外に固定される）。
+ * ★箱を縦のflexにして、**本文だけを伸び縮みさせる**。
+ *   箱ごとスクロールさせると「やめる／進む」のボタンまで流れていき、
+ *   長い一覧では毎回いちばん下まで送らないと閉じられなくなる。
+ */
+.modal__box {
+  width: 100%; max-width: 400px;
+  background: linear-gradient(180deg, var(--paper), var(--paper2));
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 18px 16px 14px;
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);   /* アドレスバーで高さが変わるスマホ向け */
+}
+.modal__text {
+  margin-bottom: 14px; white-space: pre-wrap;
+  overflow-y: auto; overscroll-behavior: contain;
+  flex: 1 1 auto; min-height: 0;     /* ★min-height:0 が無いとflexの子は縮まずはみ出す */
+}
+.modal__btns { flex: 0 0 auto; }
+.modal__btns { display: flex; gap: 8px; }
+.modal__btns .btn { margin-bottom: 0; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+  z-index: 60; max-width: 90vw;
+  /* ★知らせるだけの表示なので、押せてはいけない。
+     指定が無いと、画面下に数秒居座って**その下のボタンのタップを吸う**
+     （スマホはボタンが画面下にある。2026-08-05 実機検証で再現） */
+  pointer-events: none;
+  padding: 10px 18px;
+  background: rgba(20,16,26,0.96);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.9em;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+.toast[hidden] { display: none; }
+
+/* ---------- 探索画面の「還り」（地図の右下・2026-08-16） ----------
+
+   オーナー指摘「還りの陣を踏んだ時ですが、下までスクロールしないと還れることに
+   気付かない人がいました」→ まず画面の右下に固定で浮かせた。
+   同日さらに「還りボタンはマップ上の右下に常時表示してください」で**地図の中へ**移した。
+
+   ★`position: fixed` はやめた。理由:
+     ① 浮いている玉は本文の上に乗るので、下端のボタンのタップを奪う恐れが常にある
+        （そのために `#app` へ 92px の下余白を足していた。地図に貼れば余白ごと不要）。
+     ② このゲームは iframe 埋め込みで出す。iOS の iframe 内の fixed は
+        親のスクロールに合わせて位置がずれることがある（lessons/app-ios-iframe-fixed-*）。
+        地図に貼れば、その挙動に一切依存しない。
+   ★親は `.map-panel`（`position: relative` 済み）。
+   ★地図の最下段は必ず階段1つで中央に置かれる（floor.js）ので、右下は構造上いつも空いている。
+   ★z-index はモーダル(50)・トースト(60)より下。上に乗ると背景を押して閉じられなくなる。
+   ★下の「引き上げる」ボタンは残してある（下まで見た人がそこで探すため）。
+     同じ確認（askRetreat）を開くので、どちらから入っても中身は同じ。 */
+.explore-fab {
+  position: absolute;
+  right: 8px;
+  /**
+   * ★`bottom: 10px`（2026-08-16 オーナー指示
+   *   「還りボタンはもっと上に設置して。最下段よりもわずかに高めにしよう。
+   *     そしたらマップももう少し縮小できるでしょう。今は還りボタンが最下段になっていて、
+   *     その下に余白も多いです」）。
+   *
+   *   地図の最下段（＝階段の丸）の下の余白を 66→24 単位に詰めたので
+   *   （screen_explore.js の `BOTTOM`）、最下段の中心は枠の下端から約36pxに来る。
+   *   ボタンの中心は 10+31=41px なので、**最下段よりわずかに高い**位置に座る。
+   * ★これ以上は上げないこと。1つ上の層（幅3のとき右端の丸が x=240）の
+   *   押す的とぶつかる。実測の重なり検査（60通りの地図）で確かめてある。
+   */
+  bottom: 10px;
+  z-index: 2;
+  width: 62px; height: 62px;
+  border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.95rem; font-weight: bold;
+  color: var(--fg);
+  background: rgba(20,16,26,0.94);
+  border: 2px solid var(--line);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.6);
+  cursor: pointer;
+}
+/* 何も減らさずに帰れる場面（還りの陣・5階ぶんの潜行・ぬし撃破）だけ金色に光らせる。
+   2026-08-16 オーナー指示「還りボタンは5階層分の潜行、もしくはボス撃破、もしくは
+   還りの陣を踏んだ時は黄色に光るようにしよう」。判定は retreatInfo().lit。
+   ★還り札しか無いときは光らせない（消耗品なので「使っても損しない」ように見せない） */
+.explore-fab--on {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(46,36,16,0.96);
+}
+/* 引き上げられない階。押すと「なぜ駄目か」が出るので、消しも無効化もしない */
+.explore-fab--off { opacity: 0.55; }
+.explore-fab:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* ---------- テキスト入力 ---------- */
+
+input[type="text"], textarea {
+  width: 100%;
+  padding: 9px 10px;
+  font-family: inherit;
+  font-size: 1em;
+  color: var(--ink);
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+textarea { min-height: 90px; resize: vertical; word-break: break-all; }
+
+select {
+  font-family: inherit; font-size: 0.95em; color: var(--ink);
+  background: #241e2e; border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 10px; min-height: var(--tap);
+}
+
+/* ---------- 横画面 ---------- */
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .title-logo { font-size: 1.6rem; padding: 10px 0 2px; }
+  .title-sub { padding-bottom: 8px; }
+  .enemies { min-height: 0; padding: 2px 0 6px; }
+  .battle-log { height: 76px; }
+  .mon--lg { width: 56px; height: 56px; }
+  .mon--lg.mon--glyph { font-size: 26px; }
+}
+
+/* ---------- 会話画面（spec §9） ---------- */
+
+.screen--talk {
+  display: flex; flex-direction: column;
+  /* 本文が下寄りに座って見えるよう、画面の高さをだいたい使い切る。
+     100vh にすると #app の余白ぶんだけ縦スクロールが出るので少し引く */
+  min-height: 84vh;
+}
+
+/* ★2026-08-09 に会話へ背景を敷いたので、見出しが絵の上に乗るようになった。
+   `.talk__place` は dim（薄い文字）なので、影を付けないと絵に溶けて読めない */
+.talk__head {
+  padding: 2px 8px 8px; border-bottom: 1px solid var(--line); margin-bottom: 10px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .85), 0 0 10px rgba(0, 0, 0, .6);
+}
+.talk__head[hidden] { display: none; }
+.talk__title { color: var(--gold-lit); font-size: 1.05em; letter-spacing: 0.04em; }
+.talk__place { margin-top: 2px; }
+
+/* 立ち絵の置き場。絵が無くても高さが変わらない＝絵を入れてもレイアウトが動かない */
+/* ★`flex-shrink` は **0** にすること（2026-08-11 オーナー指摘
+   「選択肢を選ぶときに枠が普段より大きくなって、他キャラの画像が上に押し出される」）。
+   以前は `flex: 1 1 auto` だった。この画面は縦のflexで、下にある `.talk__box` が
+   選択肢のぶん（ボタン2つ＝約106px）伸びると、**その伸びたぶんだけ立ち絵の枠が縮む**。
+   立ち絵は下端ぞろえなので、枠が縮むと絵がそのまま上へ持ち上がっていた。
+   縮ませなければ、絵も本文の書き出し位置も1pxも動かない
+   （選択肢のぶんはページの下側に伸びる）。 */
+.talk__stage {
+  flex: 1 0 auto;
+  min-height: 150px;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 6px;
+}
+.talk__chara { display: flex; align-items: flex-end; justify-content: center; height: 100%; }
+/* ★立ち絵は透過PNGなので、背景を敷くと輪郭が絵に同化する。
+   縁取りではなく落ち影にしているのは、線を足すと絵の作画とぶつかるため */
+.talk__img {
+  max-height: 34vh; max-width: 100%; object-fit: contain;
+  filter: drop-shadow(0 0 12px rgba(0, 0, 0, .6));
+}
+.talk__glyph {
+  display: grid; place-items: center;
+  width: 92px; height: 92px; border-radius: 50%;
+  font-size: 42px; color: var(--c, var(--gold));
+  border: 2px solid var(--c, var(--gold));
+  background: rgba(0,0,0,0.35);
+}
+
+/* 本文。押した場所で進むので、透明ボタンを本文の下に敷く */
+.talk__body { position: relative; }
+.talk__tap {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  background: transparent; border: 0; padding: 0; margin: 0;
+  cursor: pointer; z-index: 1;
+}
+.talk__tap:focus-visible { outline: 2px solid var(--gold-lit); outline-offset: -3px; border-radius: var(--r); }
+
+.talk__box {
+  position: relative;
+  background: rgba(20,16,26,0.92);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 12px 14px 10px;
+  min-height: 116px;
+}
+.talk__who {
+  display: inline-block; margin-bottom: 6px;
+  color: var(--c, var(--gold-lit));
+  font-size: 0.95em; letter-spacing: 0.08em;
+}
+.talk__who[hidden] { display: none; }
+.talk__text { line-height: 1.85; white-space: pre-wrap; word-break: normal; overflow-wrap: anywhere; }
+.talk__text--narr { color: var(--ink-dim); }
+
+/* 選択肢は本文の上に出す（透明ボタンより手前） */
+/* ★空のときも**高さを先に取っておく**こと（2026-08-11 オーナー指示
+   「枠は大きめに取っておいて、同じ位置に設置できないの？」）。
+   以前は `:empty { display:none }` で畳んでいたため、選択肢が出た瞬間に
+   本文の枠が 116px → 211px に伸び、その伸びたぶんだけ上の立ち絵の枠から
+   高さが奪われて、**立ち絵が 95px 跳ね上がっていた**（実機で計測）。
+   ここを常に確保しておけば、選択肢の有無で1pxも動かない。
+   106px ＝ ボタン44px×2 ＋ ボタンのmargin-top 6px×2 ＋ gap 6px。
+   ★シナリオの選択肢は最大2つ（data/scenario.js を機械的に数えて確認・40箇所）。
+     3つに増やすときは、この数字も一緒に増やすこと。 */
+/* ★枠自体はクリックを**通す**こと。`.talk__opts` は本文を進めるための透明ボタン
+   `.talk__tap`（z-index:1）より手前にいるので、高さを先取りした瞬間に
+   その106pxが当たり判定を奪い、**本文を押しても会話が進まなくなる**
+   （2026-08-11 の実機検証で、選択肢の枠が click を横取りして即座に出た）。
+   受け取ってよいのは中のボタンだけ。 */
+.talk__opts {
+  position: relative; z-index: 2; display: grid; gap: 6px;
+  min-height: 106px;
+  pointer-events: none;
+}
+.talk__opts > .btn { pointer-events: auto; }
+/* ★選択肢は左詰め（2026-08-04 オーナー指示）。
+   本文と行頭がそろって、選ぶものだと分かりやすい。 */
+.talk__opts > .btn { margin: 6px 0 0; text-align: left; }
+
+.talk__next { text-align: right; color: var(--gold); animation: talkBlink 1.2s ease-in-out infinite; }
+@keyframes talkBlink { 0%,100% { opacity: 0.25; } 50% { opacity: 1; } }
+
+.talk__foot { display: flex; justify-content: flex-end; margin-top: 8px; }
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .talk__stage { min-height: 0; }
+  .talk__img { max-height: 24vh; }
+  .talk__glyph { width: 56px; height: 56px; font-size: 26px; }
+  .talk__box { min-height: 84px; }
+  /* 横向きは画面が低いので、選択肢の枠を先取りすると本文が入らなくなる。
+     ここだけは畳む（立ち絵はもともと小さいので、多少動いても目立たない） */
+  .talk__opts { min-height: 0; }
+  .talk__opts:empty { display: none; }
+}
+
+/* ---------- 大ダメージの画面揺れ（2026-08-08 オーナー要望） ---------- */
+/* ★掛ける相手は .battle-stage（数字とエフェクトの層を含む）。
+   外側に掛けると、座標を測ってから飛ばす数字が敵からズレる。 */
+@keyframes shakeSmall {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-3px, 1px); }
+  40% { transform: translate(3px, -1px); }
+  60% { transform: translate(-2px, 0); }
+  80% { transform: translate(2px, 1px); }
+}
+@keyframes shakeBig {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-7px, 2px) rotate(-0.4deg); }
+  25% { transform: translate(7px, -3px) rotate(0.4deg); }
+  40% { transform: translate(-6px, 3px) rotate(-0.3deg); }
+  55% { transform: translate(6px, -2px) rotate(0.3deg); }
+  70% { transform: translate(-4px, 1px); }
+  85% { transform: translate(4px, -1px); }
+}
+.shake--small { animation: shakeSmall 260ms ease-in-out both; }
+.shake--big   { animation: shakeBig 420ms ease-in-out both; }
+/* 塔の中の設定ボタン（状態バーの右端・2026-08-08） */
+.statusbar__gear { flex: 0 0 auto; margin-left: 6px; }
+
+/* ==========================================================================
+   開いて読む項目（2026-08-12 オーナー指摘
+   「持ち物や戦歴は縦に長すぎる」「説明文の背景が暗くフォントも小さい」）
+   ========================================================================== */
+
+.fold {
+  border: 1px solid rgba(201, 162, 39, 0.15);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+.fold[open] { border-color: var(--line); }
+
+.fold__sum {
+  display: flex; align-items: center; gap: 8px;
+  min-height: var(--tap);
+  padding: 8px 10px;
+  cursor: pointer;
+  /* 既定の三角マーカーを消す。Safari は擬似要素側でしか消せない */
+  list-style: none;
+}
+.fold__sum::-webkit-details-marker { display: none; }
+/* 開けることが分かる目印。文字なので画像も font も足さずに済む */
+.fold__sum::after {
+  content: '▼';
+  flex: 0 0 auto;
+  font-size: 0.72em;
+  color: var(--gold-lit);
+  transition: transform 0.15s ease;
+}
+.fold[open] .fold__sum::after { transform: rotate(180deg); }
+.fold__sum:hover { background: rgba(201, 162, 39, 0.06); }
+.fold__sum:focus-visible { outline: 2px solid var(--gold-lit); outline-offset: -2px; }
+.fold__main  { flex: 1 1 auto; min-width: 0; }
+.fold__right { flex: 0 0 auto; font-size: 0.92em; text-align: right; }
+.fold--off .fold__sum { opacity: 0.55; }
+
+/**
+ * 説明文の本体。
+ * ★背景を**明るい側**に振る（オーナー指摘「背景が暗く読みづらい」）。
+ *   生成りの紙をうっすら敷いた見え方にして、囲みの中だけ明度を上げる。
+ */
+.fold__body {
+  padding: 10px 12px;
+  background: rgba(236, 227, 208, 0.09);
+  border-top: 1px solid rgba(201, 162, 39, 0.18);
+  font-size: 0.98em;
+  line-height: 1.8;
+  color: var(--ink);
+}
+.fold__body .list__sub,
+.fold__body .small { font-size: 0.92em; }
+.fold__body .kv { padding: 2px 0; }
+.fold__body > * + * { margin-top: 4px; }
+
+/* 章のまとまり（図鑑の「敵」「装備」など）。既定は閉じている */
+.foldsec {
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: linear-gradient(180deg, var(--paper), var(--paper2));
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.foldsec__sum {
+  display: flex; align-items: center; gap: 8px;
+  min-height: var(--tap);
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--gold-lit);
+}
+.foldsec__sum::-webkit-details-marker { display: none; }
+.foldsec__sum::after {
+  content: '▼';
+  margin-left: auto;
+  font-size: 0.72em;
+  transition: transform 0.15s ease;
+}
+.foldsec[open] .foldsec__sum::after { transform: rotate(180deg); }
+.foldsec__sum:focus-visible { outline: 2px solid var(--gold-lit); outline-offset: -2px; }
+.foldsec__title { font-size: 1.02em; }
+.foldsec__count { font-size: 0.9em; color: var(--ink-sub); }
+.foldsec__body { padding: 0 10px 10px; }
+
+/* 覚えた技（結果画面・2026-08-12）。数字の差分に埋もれないよう1行独立させる */
+.levelup__learn { font-size: 0.95em; letter-spacing: 0.04em; margin-top: 2px; }
+
+/* ==========================================================================
+   人物帳（2026-08-14 新設）
+   ステータスは「並べて比べる」、プロフィールは「立ち絵と一緒に読む」。
+   どちらも390px幅で横スクロールを出さないこと。
+   ========================================================================== */
+
+/* 人を選ぶ帯。ここだけボタンを伸ばさない（8人並ぶので、伸ばすと2文字で1行を食う） */
+.btn-row--wrap > .btn { flex: 0 1 auto; min-width: 0; padding-left: 12px; padding-right: 12px; }
+
+/* 1人ぶんの札。縦に積むので、既定の中央そろえを解く */
+.chars-row { align-items: flex-start; cursor: default; }
+
+/* ステータスの升目。3列×3段（7項目なので最後は2つ）。
+   ★横に7列並べない。390pxでは1列が20pxを切って数字が読めない */
+.statgrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px 8px;
+  margin-top: 6px;
+}
+.statgrid__cell {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 4px;
+  border-bottom: 1px solid rgba(201,162,39,0.12);
+  padding-bottom: 2px;
+}
+.statgrid__k { font-size: 0.82em; color: var(--ink-dim); }
+.statgrid__v { font-size: 0.98em; font-variant-numeric: tabular-nums; }
+
+/* プロフィールの見出し（立ち絵＋名前） */
+.chars-head {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: linear-gradient(180deg, var(--paper), var(--paper2));
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 10px 12px;
+}
+.chars-face {
+  width: 96px; height: 96px;
+  object-fit: cover; object-position: center 18%;   /* 顔が切れないよう上寄り */
+  border-radius: 8px;
+  border: 1px solid rgba(201,162,39,0.25);
+  background: rgba(0,0,0,0.3);
+  flex: 0 0 auto;
+}
+/* 立ち絵が無い人は紋の1字で代用する（会話画面と同じ落とし方） */
+.chars-face--mon {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.6em;
+}
+.chars-head__text { min-width: 0; }
+.chars-name { font-size: 1.15em; letter-spacing: 0.06em; }
+
+/* 露店の「持っている銭」（2026-08-14 オーナー指摘
+   「銭の位置ももっと右側にして、"〇文"と近い位置にしようか」）。
+   ★kv（両端そろえ）を使わない。画面の両端に離れると、見出しと数の対応が読めない */
+.shop-purse {
+  display: flex; justify-content: flex-end; align-items: baseline; gap: 8px;
+  margin-top: 6px;
+}
+
+/* 探索の地図（2026-08-14）。「？」を右上に重ねて、説明の1行ぶん縦を詰める */
+.map-panel { position: relative; }
+.map-panel__help {
+  position: absolute; top: 4px; right: 4px; z-index: 1;
+}
+
+/* 地図の記号の説明（1行に収める・2026-08-14 オーナー指示）。
+   ★kv（左右に振り分け）だと、狭い画面で説明が折り返して2行になる */
+.legend-row {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(201,162,39,0.1);
+}
+.legend-row__icon { flex: 0 0 1.4em; text-align: center; }
+.legend-row__text { font-size: 0.88em; color: var(--ink-sub); }
+
+/**
+ * 詰めた版（2026-08-16 オーナー指摘
+ * 「装備の言葉に関するヘルプマークだけど、スクロール数を減らしたいのだけど」）。
+ *
+ * 装備の言葉は頭11＋後ろ11＝22行あり、1行33pxでは1画面に収まらなかった。
+ * ★減らすのは**行の高さだけ**にする。言葉そのものを削ると、
+ *   拾った装備の名前を読み解く手がかりが消える（この表の唯一の役目）。
+ * ★2列にはしない。効果の文（「HP+60・気+8・運+10」）が幅170pxで折り返して
+ *   1件2行になり、行数を半分にしても高さは変わらない（実測して確かめた）。
+ */
+.legend-row--tight { padding: 0; line-height: 1.45; }
+.legend-row--tight:last-child { border-bottom: 0; }
+
+/* 装備を選んで売る（2026-08-15）。チェック箱は指で押せる大きさを確保する */
+.equipsel {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin: 6px 0;
+}
+.equipsel__box { width: 22px; height: 22px; flex: 0 0 auto; accent-color: var(--gold); }
+.equipsel__lock { flex: 0 0 auto; width: 3em; text-align: center; }
+
+/* 立ち絵の拡大（2026-08-15）。全身が1枚に収まる高さで止める */
+.chars-face-btn {
+  background: none; border: 0; padding: 0; cursor: zoom-in;
+  flex: 0 0 auto; line-height: 0;
+}
+.chars-zoom { text-align: center; }
+.chars-zoom__img {
+  max-width: 100%;
+  max-height: 62vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+/**
+ * 起動のローディング（2026-08-16 オーナー指摘
+ * 「毎回起動時は最初にローディングの時間を設けた方がいいのでは？」）。
+ *
+ * ★`#app` の外・`body` 直下に出す（`render()` が #app を空にするため）。
+ * ★背景の絵はまだ読めていないので、**単色で成立させる**こと。
+ *   ここで背景画像を敷くと、ローディング画面自体が読み込み待ちになる。
+ * ★埋め込み（iframe）でも下端が切れないよう、高さは 100% ではなく固定配置で取る。
+ */
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: 60;                 /* モーダル(#modal)より下・本文より上 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d0b12;         /* theme-color と同じ。継ぎ目を作らない */
+}
+.boot__inner { width: min(280px, 74vw); text-align: center; }
+.boot__title {
+  font-size: 1.25em;
+  letter-spacing: 0.22em;
+  color: var(--gold-lit);
+  margin-bottom: 14px;
+}
+.boot__bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.10);
+  overflow: hidden;
+}
+.boot__fill {
+  height: 100%;
+  width: 0%;
+  background: var(--gold-lit);
+  transition: width 0.18s linear;
+}
+.boot__note {
+  margin-top: 10px;
+  font-size: 0.85em;
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
