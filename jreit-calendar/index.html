@@ -125,10 +125,22 @@
   .bar .bv { width: 86px; font-size: 11.5px; text-align: right; color: #44574f; flex-shrink: 0; }
 
   .cand { border: 1px solid #e4ede9; border-radius: 10px; padding: 9px 10px; margin-bottom: 8px; background: #fcfefd; }
-  .cand .cline { display: flex; align-items: center; justify-content: space-between; gap: 9px; }
   .cand .ct { font-size: 13px; color: #33463f; }
-  .cand .ct b { color: #14614a; }
-  .cand .cs { font-size: 11.5px; color: #74867f; margin-top: 2px; }
+
+  /* 組み合わせカード: 決算月の枠ごとに、該当銘柄を横一列のチップで並べる。
+     縦に列挙すると「上のほうが良い」という順位に見えるため、同じ枠は必ず横並びにする。 */
+  .combo { border: 1px solid #e4ede9; border-radius: 10px; padding: 10px 11px; margin-bottom: 8px; background: #fcfefd; }
+  .combo .chead { display: flex; align-items: center; justify-content: space-between; gap: 9px; }
+  .combo .ctitle { font-size: 13px; color: #33463f; }
+  .combo .ctitle b { color: #14614a; }
+  .grp { margin-top: 7px; }
+  .grp .gl { font-size: 11.5px; color: #74867f; line-height: 1.45; }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+  .chip {
+    font-size: 12px; font-weight: 700; font-family: inherit; padding: 5px 10px;
+    border-radius: 999px; border: 1px solid #cddcd5; background: #fff; color: #3d6b5c; cursor: pointer;
+  }
+  .chip.on { background: #1b7a5a; border-color: #1b7a5a; color: #fff; }
   .btn {
     padding: 7px 13px; font-size: 12.5px; font-weight: 700; font-family: inherit;
     color: #fff; background: #1b7a5a; border: none; border-radius: 8px; cursor: pointer; white-space: nowrap;
@@ -210,8 +222,12 @@
     .bar .bfill.zero { background: #6b463f; }
     .cand { background: #14261f; border-color: #26443a; }
     .cand .ct { color: #d3e2dc; }
-    .cand .ct b { color: #6fd4ab; }
-    .cand .cs { color: #90a49c; }
+    .combo { background: #14261f; border-color: #26443a; }
+    .combo .ctitle { color: #d3e2dc; }
+    .combo .ctitle b { color: #6fd4ab; }
+    .grp .gl { color: #90a49c; }
+    .chip { background: #172b25; border-color: #2b6b55; color: #9fd8c2; }
+    .chip.on { background: #2b9b74; border-color: #2b9b74; color: #06231a; }
     .btn { background: #2b9b74; color: #06231a; }
     .btn.ghost { background: #172b25; color: #6fd4ab; border-color: #2b6b55; }
     .note { color: #a9bdb5; }
@@ -245,7 +261,7 @@
       <div class="lbl"><small id="basisHelp" style="margin-top:7px;">分配金は決算日（権利確定日）に確定し、口座に入るのはその後です。</small></div>
 
       <div class="lagbox" id="lagBox">
-        <div class="lbl"><small style="margin-top:0;">ETFの分配金は決算日から40日程度で支払われます（運用会社の解説による）。収録している7銘柄の決算日はいずれも月の前半（4〜15日）なので、口座に入るのは<strong>決算の翌月</strong>になります。ここではそれを共通のめやすとして計算しています。<br><strong>銘柄ごとの正確な支払開始日は、どの運用会社も一覧を公表していません。</strong>実際の入金日は証券会社によっても前後します。</small></div>
+        <div class="lbl"><small style="margin-top:0;">ETFの分配金は決算日から40日程度で支払われます（運用会社の解説による）。収録している12銘柄の決算日はいずれも月の前半（4〜15日）なので、口座に入るのは<strong>決算の翌月</strong>になります。ここではそれを共通のめやすとして計算しています。<br><strong>銘柄ごとの正確な支払開始日は、どの運用会社も一覧を公表していません。</strong>実際の入金日は証券会社によっても前後します。</small></div>
       </div>
     </div>
 
@@ -267,7 +283,7 @@
   <!-- 銘柄の選択 -->
   <div class="card">
     <h2>銘柄を選ぶ（証券コード順）</h2>
-    <p class="note" style="margin:-4px 0 10px;">初期状態は、下の「12ヶ月すべてに受け取りがある組み合わせ」の1件目を機械的に置いたものです。銘柄の優劣や購入の推奨を示すものではありません。</p>
+    <p class="note" style="margin:-4px 0 10px;">初期状態は、12ヶ月が埋まる3つの枠から、それぞれ証券コードがいちばん小さい銘柄を機械的に1本ずつ置いたものです。銘柄の優劣や購入の推奨を示すものではありません。</p>
     <div id="fundList"></div>
     <div class="row" style="border-top:1px solid #e8f0ec;">
       <div class="lbl">合計の投資金額</div>
@@ -303,14 +319,14 @@
   <div class="card" id="gapCard" style="display:none;">
     <h2>受け取りのない月に、受け取りがある銘柄</h2>
     <div id="candList"></div>
-    <p class="note" style="margin-top:8px;">決算月から機械的に抽出した該当銘柄です。銘柄の優劣や購入の推奨を示すものではありません。</p>
+    <p class="note" style="margin-top:8px;">決算月から機械的に抽出した該当銘柄です。同じ行に並ぶ銘柄は<strong>空いている月のうち埋まる月が同じ</strong>なので、どれを選んでも埋まる月は変わりません（決算月そのものは違うことがあります）。銘柄の優劣や購入の推奨を示すものではありません。</p>
   </div>
 
   <!-- 組み合わせ -->
   <div class="card">
     <h2>12ヶ月すべてに受け取りがある組み合わせ</h2>
     <div id="comboList"></div>
-    <p class="note" style="margin-top:8px;">収録している銘柄から、条件を満たす組み合わせを本数の少ない順に機械的に並べたものです。銘柄の優劣や購入の推奨を示すものではありません。</p>
+    <p class="note" style="margin-top:8px;">どれか1つの枠を外すと12ヶ月が埋まらなくなる組み合わせだけを、枠の少ない順に機械的に並べたものです。<strong>枠が少ないことは銘柄が優れていることを意味しません。</strong>同じ枠の中の銘柄は決算月が同じで、どれを選んでも受け取れる月は変わりません。銘柄の優劣や購入の推奨を示すものではありません。</p>
   </div>
 
   <!-- 注記 -->
@@ -355,8 +371,11 @@
 
 </div>
 
-<script src="data.js"></script>
-<script src="logic.js"></script>
+<!-- ?v= は sw.js の CACHE 名と必ず同じ番号にする。
+     付けないと「新しい index.html ＋ ブラウザに残った古い logic.js」が混ざり、
+     L.patternCombos is not a function で画面が動かなくなる（2026-08-08の同型事故の予防）。 -->
+<script src="data.js?v=2"></script>
+<script src="logic.js?v=2"></script>
 <script>
 (function () {
   "use strict";
@@ -366,7 +385,7 @@
   var STORE_KEY = "jreit-calendar:v1";
 
   // 入金月のめやす: 決算の翌月で固定する。
-  // ETFの分配金は決算日から40日程度で支払われ、収録7銘柄の決算日はすべて月の前半なので、
+  // ETFの分配金は決算日から40日程度で支払われ、収録12銘柄の決算日はすべて月の前半なので、
   // 入金は必ず翌月になる。銘柄ごとの支払開始日は公表されていないため、これ以上細かくしない。
   var LAG_MONTHS = 1;
 
@@ -375,7 +394,10 @@
     lagMonths: LAG_MONTHS,
     afterTax: true,
     commonYield: 4,
-    selected: {}   // code -> amount(number)
+    selected: {},  // code -> amount(number)
+    // 組み合わせカードで、各枠のどの銘柄を選んでいるか（"組み合わせキー@枠キー" -> code）。
+    // 画面上の一時的な選択なので localStorage には保存しない。未設定の枠は枠の先頭（コード最小）。
+    comboPick: {}
   };
 
   function $(id) { return document.getElementById(id); }
@@ -386,7 +408,13 @@
 
   /* ---------- 保存・復元 ---------- */
   function save() {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* 保存できなくても動作は続ける */ }
+    // comboPick は画面上の一時的な選択なので保存しない（load側も読まない）。
+    // state を丸ごと入れると comboPick まで書き込まれてコメントと挙動が食い違うため、明示的に組み立てる。
+    var persist = {
+      basis: state.basis, lagMonths: state.lagMonths, afterTax: state.afterTax,
+      commonYield: state.commonYield, selected: state.selected
+    };
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(persist)); } catch (e) { /* 保存できなくても動作は続ける */ }
   }
   function load() {
     try {
@@ -414,6 +442,14 @@
     return list.join("・") + "月";
   }
 
+  /** innerHTML と属性値に data.js の文字列を入れるときは必ずこれを通す。
+      現在のデータに & < > " ' は無いが、note のような自由文フィールドが増えたので恒久的に塞いでおく。 */
+  function esc(v) {
+    return String(v == null ? "" : v)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
   function buildFundList() {
     var host = $("fundList");
     host.innerHTML = "";
@@ -429,7 +465,7 @@
       var payoutHi = state.basis === "payout" ? " hi" : "";
 
       var art = f.articlePath
-        ? '<a href="https://rinne-blog.com' + f.articlePath + '" target="_blank" rel="noopener">この銘柄の解説記事</a>'
+        ? '<a href="https://rinne-blog.com' + esc(f.articlePath) + '" target="_blank" rel="noopener">この銘柄の解説記事</a>'
         : "";
 
       box.innerHTML =
@@ -437,18 +473,19 @@
           '<input type="checkbox" class="chk" ' + (isSel ? "checked" : "") + ' aria-label="' + f.code + ' を選ぶ">' +
           '<div class="info">' +
             '<div class="code">' + f.code + '</div>' +
-            '<div class="nm">' + f.name + '</div>' +
-            '<div class="co">' + f.company + '</div>' +
+            '<div class="nm">' + esc(f.name) + '</div>' +
+            '<div class="co">' + esc(f.company) + '</div>' +
             '<div class="badges">' +
               '<span class="badge' + settleHi + '">権利確定 ' + monthsLabel(settle) + '（各' + f.settlementDay + '日）</span>' +
               '<span class="badge' + payoutHi + '">入金めやす ' + monthsLabel(payout) + '</span>' +
             '</div>' +
+            (f.note ? '<div class="co" style="margin-top:4px;">' + esc(f.note) + '</div>' : "") +
           '</div>' +
         '</label>' +
         '<div class="amt"><span>投資金額</span><span style="display:flex;align-items:center;gap:5px;"><input type="number" class="amtin" min="0" max="1000000000" step="10000" value="' +
           (isSel ? state.selected[f.code] : 1000000) + '"><span style="font-size:12px;">円</span></span></div>' +
         '<div class="links">' + art +
-          '<a href="' + f.officialUrl + '" target="_blank" rel="noopener">運用会社の公式ページ</a>' +
+          '<a href="' + esc(f.officialUrl) + '" target="_blank" rel="noopener">運用会社の公式ページ</a>' +
         '</div>';
 
       var chk = box.querySelector(".chk");
@@ -619,12 +656,21 @@
     }
     card.style.display = "block";
     var basisWord = state.basis === "payout" ? "入金" : "権利確定";
+    // 同じ空白月を埋める銘柄は最大4本あるので、「埋まる月(covered)」が同じものをまとめて横一列で出す。
+    // ※ここは決算月ごとのグルーピングではない。空白月との積集合が同じなら、決算月が違う銘柄も同じ行に入る
+    //   （例: 空白月が5・11月のとき、偶数月決算の2552と1・4・7・10月決算の2556が同じ行に並ぶ）。
+    // 縦に並べると先頭の銘柄が推奨されているように見えるため横並びにしている。
+    var groups = L.groupCandidates(list);
     var html = "";
-    list.forEach(function (c) {
-      html += '<div class="cand"><div class="cline"><div>' +
-                '<div class="ct">' + monthsLabel(c.covered) + 'に' + basisWord + 'があるのは <b>' + c.code + '</b></div>' +
-                '<div class="cs">' + c.name + '</div>' +
-              '</div><button type="button" class="btn addBtn" data-code="' + c.code + '">追加</button></div></div>';
+    groups.forEach(function (g) {
+      html += '<div class="cand">' +
+                '<div class="ct">' + monthsLabel(g.covered) + 'に' + basisWord + 'があるのは、次の' +
+                  (g.codes.length > 1 ? g.codes.length + '銘柄です（どれでも埋まる月は同じ）' : '銘柄です') + '</div>' +
+                '<div class="chips">';
+      g.codes.forEach(function (code) {
+        html += '<button type="button" class="chip addBtn" data-code="' + code + '">' + code + ' ＋追加</button>';
+      });
+      html += '</div></div>';
     });
     host.innerHTML = html;
 
@@ -648,24 +694,63 @@
     return avg > 0 ? avg : 1000000;
   }
 
+  /** 組み合わせ（枠の集合）を識別するキー。
+      決算月ベースの settleKey を使う。受け取り月ベースだと入金月／権利確定月を切り替えたときに
+      キーが変わってしまい、ユーザーが選んだチップが理由もなく先頭に巻き戻る。 */
+  function comboKey(c) {
+    return c.groups.map(function (g) { return g.settleKey; }).join("|");
+  }
+
+  /** その枠でいま選ばれている銘柄コード。未選択なら枠の先頭（＝証券コード最小） */
+  function pickedCode(ck, g) {
+    var v = state.comboPick[ck + "@" + g.settleKey];
+    return (v && g.codes.indexOf(v) >= 0) ? v : g.codes[0];
+  }
+
   function drawCombos() {
-    var list = L.monthlyCombos(FUNDS, state.basis, state.lagMonths, 5);
+    var list = L.patternCombos(FUNDS, state.basis, state.lagMonths);
     var host = $("comboList");
     if (list.length === 0) {
       host.innerHTML = '<p class="note">収録している銘柄の組み合わせでは、12ヶ月すべてを埋められません。</p>';
       return;
     }
     var cur = Object.keys(state.selected).sort().join(",");
+    var basisWord = state.basis === "payout" ? "入金" : "権利確定";
     var html = "";
     list.forEach(function (c) {
-      var same = c.codes.join(",") === cur;
-      html += '<div class="cand"><div class="cline"><div>' +
-                '<div class="ct"><b>' + c.codes.join(" ＋ ") + '</b></div>' +
-                '<div class="cs">' + c.size + '銘柄で12ヶ月すべてをカバー</div>' +
-              '</div><button type="button" class="btn ' + (same ? "ghost" : "") + ' setBtn" data-codes="' + c.codes.join(",") + '">' +
-                (same ? "選択中" : "これにする") + '</button></div></div>';
+      var ck = comboKey(c);
+      var codes = c.groups.map(function (g) { return pickedCode(ck, g); }).sort();
+      var same = codes.join(",") === cur;
+      html += '<div class="combo">' +
+                '<div class="chead">' +
+                  '<div class="ctitle"><b>' + c.size + '銘柄</b>で12ヶ月すべてに受け取りがあります</div>' +
+                  '<button type="button" class="btn ' + (same ? "ghost" : "") + ' setBtn" data-codes="' + codes.join(",") + '">' +
+                    (same ? "選択中" : "これにする") + '</button>' +
+                '</div>';
+      c.groups.forEach(function (g) {
+        var pick = pickedCode(ck, g);
+        html += '<div class="grp">' +
+                  '<div class="gl">' + monthsLabel(g.months) + 'に' + basisWord + 'がある枠' +
+                    (g.codes.length > 1 ? '（' + g.codes.length + '銘柄。どれを選んでも受け取れる月は同じ）' : '') + '</div>' +
+                  '<div class="chips" role="radiogroup" aria-label="' + monthsLabel(g.months) + 'の枠から1銘柄を選ぶ">';
+        g.codes.forEach(function (code) {
+          var on = (pick === code);
+          html += '<button type="button" class="chip' + (on ? " on" : "") + '" role="radio" aria-checked="' +
+                    (on ? "true" : "false") + '" data-ck="' + ck + '" data-gk="' + g.settleKey + '" data-code="' + code + '">' +
+                    code + '</button>';
+        });
+        html += '</div></div>';
+      });
+      html += '</div>';
     });
     host.innerHTML = html;
+
+    Array.prototype.forEach.call(host.querySelectorAll(".chip"), function (b) {
+      b.addEventListener("click", function () {
+        state.comboPick[b.getAttribute("data-ck") + "@" + b.getAttribute("data-gk")] = b.getAttribute("data-code");
+        drawCombos();   // 枠の選択を変えるだけなので、カレンダー全体の再計算はしない
+      });
+    });
 
     Array.prototype.forEach.call(host.querySelectorAll(".setBtn"), function (b) {
       b.addEventListener("click", function () {
@@ -729,12 +814,14 @@
       save(); render();
     });
 
-    // 初回は「12ヶ月すべてに受け取りがある組み合わせ」の一覧の1件目を機械的に初期値として置く。
-    // （本数が少ない順→銘柄コードの辞書順で決まる並びの先頭であり、編集上の推奨ではない。
-    //   その旨は銘柄選択カードの冒頭に文章としても表示している）
+    // 初回の選択は logic.js の defaultSelection が決める。
+    // 規則は「12ヶ月が埋まる極小の組み合わせのうち3枠のものを採り、各枠で証券コードが
+    // いちばん小さい銘柄を1本ずつ」。編集上の推奨ではなく機械的な規則で、
+    // その旨は銘柄選択カードの冒頭に文章としても表示している。
     if (Object.keys(state.selected).length === 0) {
-      var first = L.monthlyCombos(FUNDS, state.basis, state.lagMonths, 1);
-      if (first.length > 0) first[0].codes.forEach(function (c) { state.selected[c] = 1000000; });
+      L.defaultSelection(FUNDS, state.basis, state.lagMonths).forEach(function (c) {
+        state.selected[c] = 1000000;
+      });
     }
 
     setBasis(state.basis);

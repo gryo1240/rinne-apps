@@ -8,7 +8,7 @@
  *
  * 注意: 銘柄ごとの「決算日→支払開始日」の一覧は、どの運用会社も公表していない。
  *       一般則として「ETFの分配金は決算日から40日程度で支払われる」ことは運用会社の解説に明記されており
- *       （出典は data.js のヘッダーコメント参照）、収録7銘柄の決算日はすべて月の前半なので
+ *       （出典は data.js のヘッダーコメント参照）、収録12銘柄の決算日はすべて月の前半なので
  *       入金は必ず翌月になる。そのため lagMonths は銘柄ごとに持たず、
  *       呼び出し側が渡す共通の「めやす」（アプリ本体では常に1＝翌月）として扱う。
  */
@@ -165,9 +165,121 @@
   }
 
   /**
+   * 空白月の候補を「受け取り月のパターン」ごとにまとめる。
+   * 12銘柄あると同じ月を埋める銘柄が最大4本並ぶため、銘柄を縦に列挙すると
+   * 「上のほうが良い」という順位に見えてしまう。同じ枠は横一列にまとめて同格であることを示す。
+   * 入力（fillCandidates の結果）が covered降順→コード昇順で並んでいる前提で、その順序を保つ。
+   */
+  function groupCandidates(cands) {
+    var order = [], map = {};
+    (cands || []).forEach(function (c) {
+      var key = c.covered.join(",");
+      if (!map[key]) { map[key] = { key: key, covered: c.covered, codes: [] }; order.push(key); }
+      map[key].codes.push(c.code);
+    });
+    return order.map(function (k) { return map[k]; });
+  }
+
+  /**
+   * 受け取り月がまったく同じ銘柄をひとまとめにする。
+   * 収録12銘柄に対してパターンは5種類しかない（2/5/8/11・3/6/9/12・1/4/7/10・奇数月・偶数月）。
+   * 枠の並び順は FUNDS の並び順（＝証券コード昇順）における初出順で決まるので、
+   * データが同じなら常に同じ順序になる。優劣の判断は含まない。
+   */
+  function patternGroups(funds, basis, lagMonths) {
+    var order = [], map = {};
+    (funds || []).forEach(function (f) {
+      var months = receiveMonths(f, basis, lagMonths);
+      var key = months.join(",");
+      if (!map[key]) {
+        var mask = 0;
+        months.forEach(function (m) { mask |= (1 << (m - 1)); });
+        // settleKey は basis に依存しない枠の識別子。
+        // ラグは全銘柄一律なので、受け取り月が同じ銘柄は決算月も必ず同じ。
+        // 画面側の「枠内でどの銘柄を選んだか」の記憶に使う（basisを切り替えても選択が飛ばないように）。
+        map[key] = { key: key, settleKey: f.settlementMonths.join(","), months: months, mask: mask, codes: [] };
+        order.push(key);
+      }
+      map[key].codes.push(f.code);
+    });
+    return order.map(function (k) { return map[k]; });
+  }
+
+  /**
+   * 12ヶ月すべてに受け取りがある「決算月パターンの組み合わせ」を列挙する。
+   * 銘柄単位ではなく枠単位で探すので、12銘柄でも探索は 2^5 = 32 通りで済み、
+   * 「先頭2コードが同じだけのほぼ同一の提案」が並ぶ問題も起きない。
+   *
+   * 極小のものだけを返す ＝ どれか1枠を外すと12ヶ月が埋まらなくなる組み合わせだけ。
+   * 冗長な上位集合（例: 奇数月＋偶数月＋2/5/8/11月）は選択の役に立たないため外す。
+   * この基準は「1つ外すと埋まらなくなるか」だけで決まり、銘柄の優劣を一切含まない。
+   *
+   * 並び順は枠数の少ない順 → 各枠の先頭コードの辞書順。
+   */
+  function patternCombos(funds, basis, lagMonths) {
+    var groups = patternGroups(funds, basis, lagMonths);
+    var n = groups.length;
+    var out = [];
+    if (n === 0 || n > 20) return out;
+    var FULL = (1 << 12) - 1;
+
+    for (var s = 1; s < (1 << n); s++) {
+      var cover = 0, idx = [];
+      for (var i = 0; i < n; i++) {
+        if (s & (1 << i)) { cover |= groups[i].mask; idx.push(i); }
+      }
+      if (cover !== FULL) continue;
+      var minimal = idx.every(function (drop) {
+        var c = 0;
+        idx.forEach(function (j) { if (j !== drop) c |= groups[j].mask; });
+        return c !== FULL;
+      });
+      if (!minimal) continue;
+      out.push({
+        size: idx.length,
+        groups: idx.map(function (j) { return groups[j]; })
+      });
+    }
+
+    out.sort(function (a, b) {
+      if (a.size !== b.size) return a.size - b.size;
+      var x = a.groups.map(function (g) { return g.codes[0]; }).join(",");
+      var y = b.groups.map(function (g) { return g.codes[0]; }).join(",");
+      return x < y ? -1 : (x > y ? 1 : 0);
+    });
+    return out;
+  }
+
+  /**
+   * 初期表示で選んでおく銘柄を決める。
+   *
+   * 規則: 12ヶ月が埋まる極小の組み合わせのうち「3枠のもの」を採り、
+   *       各枠で証券コードがいちばん小さい銘柄を1本ずつ。3枠のものが無ければ先頭の組み合わせ。
+   *
+   * 最短は2枠（奇数月＋偶数月）だが、それを初期表示にすると収録12本のうち
+   * その2本だけを強く推しているように見えるため、あえて3枠のほうを既定にしている。
+   * 「最少本数だから優れている」という含意を初期表示に持たせないための判断
+   * （2026-08-25 オーナー判断）。
+   */
+  function defaultSelection(funds, basis, lagMonths) {
+    var combos = patternCombos(funds, basis, lagMonths);
+    if (combos.length === 0) return [];
+    var pick = null;
+    for (var i = 0; i < combos.length; i++) {
+      if (combos[i].size === 3) { pick = combos[i]; break; }
+    }
+    if (!pick) pick = combos[0];
+    return pick.groups.map(function (g) { return g.codes[0]; }).sort();
+  }
+
+  /**
    * 12ヶ月すべてに受け取りがある組み合わせを、全部分集合の総当たりで列挙する。
    * 推奨ではなく「条件を満たす解の列挙」。金額には一切依存しない。
+   * patternCombos と同じく極小のものだけを返す（冗長な上位集合を外す）。
    * 並び順は本数の少ない順 → 銘柄コードの辞書順。
+   *
+   * 画面では patternCombos のほうを使う。こちらは検算用の独立した実装として残してある
+   * （test.js で「パターン単位の解を銘柄に展開したもの」と一致するかを突き合わせている）。
    */
   function monthlyCombos(funds, basis, lagMonths, maxResults) {
     var n = funds.length;
@@ -189,10 +301,18 @@
       for (var i = 0; i < n; i++) {
         if (s & (1 << i)) { cover |= masks[i]; codes.push(funds[i].code); }
       }
-      if (cover === FULL) {
-        codes.sort();
-        results.push({ codes: codes, size: codes.length });
+      if (cover !== FULL) continue;
+      // 極小性: どれか1銘柄を外すと12ヶ月が埋まらなくなること
+      var minimal = true;
+      for (var d = 0; d < n && minimal; d++) {
+        if (!(s & (1 << d))) continue;
+        var c2 = 0;
+        for (var j = 0; j < n; j++) if ((s & (1 << j)) && j !== d) c2 |= masks[j];
+        if (c2 === FULL) minimal = false;
       }
+      if (!minimal) continue;
+      codes.sort();
+      results.push({ codes: codes, size: codes.length });
     }
 
     results.sort(function (a, b) {
@@ -210,6 +330,10 @@
     annualDist: annualDist,
     calcPortfolio: calcPortfolio,
     fillCandidates: fillCandidates,
+    groupCandidates: groupCandidates,
+    patternGroups: patternGroups,
+    patternCombos: patternCombos,
+    defaultSelection: defaultSelection,
     monthlyCombos: monthlyCombos
   };
 });
