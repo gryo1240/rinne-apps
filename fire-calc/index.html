@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIREシミュレーター｜何歳で経済的自由に到達できる？</title>
+<meta name="description" content="毎月の積立と想定利回りから、経済的自由（FIRE）に何年・何歳で届くかを無料で試算。目標年齢から必要な積立額を逆算することもできます。登録不要・数値は端末外に送信されません。">
+<meta name="theme-color" content="#f4f7fc">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
+    background: #f4f7fc;
+    color: #263143;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px 28px; }
+
+  .head { text-align: center; padding: 10px 0 14px; }
+  .head h1 { font-size: 21px; letter-spacing: 0.02em; color: #1d4fc4; }
+  .head p { font-size: 12.5px; color: #5c6a7d; margin-top: 3px; }
+
+  .tabs { display: flex; gap: 8px; margin: 10px 0 14px; }
+  .tab {
+    flex: 1; padding: 10px 6px; font-size: 14px; font-weight: 700;
+    color: #47576b; background: #e6ecf9; border: 1px solid #d3ddf2;
+    border-radius: 10px; cursor: pointer; text-align: center;
+    transition: background .15s, color .15s;
+  }
+  .tab.active { background: #2f6df6; border-color: #2f6df6; color: #fff; }
+
+  .card {
+    background: #fff; border: 1px solid #e2e8f5; border-radius: 14px;
+    padding: 16px 16px 14px; margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(30, 60, 130, .06);
+  }
+  .card h2 { font-size: 14px; color: #1d4fc4; margin-bottom: 10px; }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 2px; }
+  .field .row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .field label { font-size: 13.5px; font-weight: 700; color: #34404f; }
+  .field .val { display: flex; align-items: baseline; gap: 4px; flex-shrink: 0; }
+  .field input[type="number"] {
+    width: 96px; padding: 5px 8px; font-size: 16px; font-weight: 700;
+    color: #2452c9; text-align: right;
+    border: 1px solid #c8d5ee; border-radius: 8px; background: #fafcff;
+  }
+  .field .unit { font-size: 13px; color: #5c6a7d; }
+  .field input[type="range"] {
+    width: 100%; margin-top: 8px; accent-color: #2f6df6; height: 22px;
+  }
+
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+  .toggle-row label { font-size: 13.5px; font-weight: 700; color: #34404f; }
+  .switch { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; cursor: pointer; }
+  .switch .track {
+    position: absolute; inset: 0; background: #d3ddf2; border-radius: 12px; transition: background .15s;
+  }
+  .switch .track::before {
+    content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px;
+    background: #fff; border-radius: 50%; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2);
+  }
+  .switch input:checked + .track { background: #2f6df6; }
+  .switch input:checked + .track::before { transform: translateX(18px); }
+
+  details.adv { margin-top: 4px; }
+  details.adv summary { cursor: pointer; font-size: 13px; font-weight: 700; color: #2a4fa8; padding: 4px 0; }
+  details.adv .inner { padding-top: 8px; }
+
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .presets button {
+    flex: 1; min-width: 30%; padding: 8px 4px; font-size: 12px; font-weight: 700;
+    color: #2a4fa8; background: #eef2fc; border: 1px solid #d3ddf2; border-radius: 9px; cursor: pointer;
+  }
+
+  .result { text-align: center; padding-top: 4px; }
+  .result .label { font-size: 13px; color: #5c6a7d; }
+  .result .big { font-size: 27px; font-weight: 800; color: #2f6df6; letter-spacing: 0.01em; line-height: 1.35; }
+  .result .sub { font-size: 13.5px; color: #34404f; margin-top: 6px; }
+  .stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .stat { flex: 1; min-width: 45%; background: #eef2fc; border-radius: 10px; padding: 8px 4px; text-align: center; }
+  .stat .k { font-size: 11.5px; color: #5c6a7d; }
+  .stat .v { font-size: 15px; font-weight: 700; color: #263143; }
+  .stat .v.plus { color: #206a45; }
+
+  .warn {
+    margin-top: 12px; font-size: 12.5px; color: #6b4f10;
+    background: #fbf3de; border-left: 4px solid #c99a2f; border-radius: 6px;
+    padding: 8px 10px; text-align: left;
+  }
+
+  .chart-box { position: relative; }
+  canvas { width: 100%; height: 220px; display: block; }
+  .legend { display: flex; gap: 16px; justify-content: center; margin-top: 8px; font-size: 12px; color: #47576b; flex-wrap: wrap; }
+  .legend span::before {
+    content: ""; display: inline-block; width: 11px; height: 3px;
+    margin-right: 5px; vertical-align: 2px;
+  }
+  .legend .lg-principal::before { background: #9db2dd; }
+  .legend .lg-value::before { background: #2f6df6; }
+  .legend .lg-target::before { background: #d9862f; }
+
+  .rule-box {
+    font-size: 13px; color: #34404f; background: #eef2fc; border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 14px;
+  }
+  .rule-box strong { color: #1d4fc4; }
+  .rule-box a { color: #1d4fc4; font-weight: 700; }
+
+  .disclaimer {
+    font-size: 11.5px; color: #6a7789; background: #e9edf6; line-height: 1.7;
+    border-radius: 10px; padding: 10px 12px; margin-top: 2px;
+  }
+  .disclaimer strong { color: #47576b; }
+  .privacy { font-size: 11.5px; color: #5c6a7d; text-align: center; margin: 10px 0 2px; }
+
+  details.faq summary { cursor: pointer; font-size: 13.5px; font-weight: 700; color: #1d4fc4; padding: 6px 0; }
+  details.faq .qa { padding: 6px 2px 10px; font-size: 13px; color: #34404f; }
+  details.faq .qa + .qa { border-top: 1px solid #edf1f9; }
+
+  .links ul { list-style: none; }
+  .links li { padding: 6px 0; border-bottom: 1px solid #edf1f9; font-size: 13px; }
+  .links a { color: #1d4fc4; font-weight: 700; text-decoration: none; }
+  .links .desc { color: #6a7789; font-size: 12px; }
+
+  .hidden { display: none; }
+
+  @media (max-width: 430px) {
+    .head h1 { font-size: 18px; }
+    .result .big { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <h1>🔥 FIREシミュレーター</h1>
+    <p>働かなくても暮らせる資産に、何年で届く？</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" id="tabFwd" type="button">何年で届く？</button>
+    <button class="tab" id="tabRev" type="button">毎月いくら必要？</button>
+  </div>
+
+  <!-- ===== 順算 ===== -->
+  <section id="paneFwd">
+    <div class="card">
+      <h2>プリセットから選ぶ（任意）</h2>
+      <div class="presets">
+        <button type="button" data-preset="yutori">ゆとりFIRE<br>生活費420万</button>
+        <button type="button" data-preset="standard">標準<br>生活費360万</button>
+        <button type="button" data-preset="side">サイドFIRE<br>生活費240万・3%</button>
+      </div>
+      <p style="font-size:11.5px;color:#6a7789;margin-top:-6px;">※あくまで一例です。推奨額ではありません</p>
+    </div>
+
+    <div class="card">
+      <h2>条件を入れてください</h2>
+      <div class="field">
+        <div class="row">
+          <label for="fwP">現在の資産</label>
+          <span class="val"><input type="number" id="fwP" value="300" min="0" max="100000" step="10"><span class="unit">万円</span></span>
+        </div>
+        <input type="range" id="fwPR" value="300" min="0" max="5000" step="10" aria-label="現在の資産">
+      </div>
+      <div class="field">
+        <div class="row">
+          <label for="fwPMT">毎月の積立額</label>
+          <span class="val"><input type="number" id="fwPMT" value="50000" min="0" max="10000000" step="1000"><span class="unit">円</span></span>
+        </div>
+        <input type="range" id="fwPMTR" value="50000" min="0" max="300000" step="1000" aria-label="毎月の積立額">
+      </div>
+      <div class="field">
+        <div class="row">
+          <label for="fwR">想定年利</label>
+          <span class="val"><input type="number" id="fwR" value="4" min="0" max="15" step="0.1"><span class="unit">%</span></span>
+        </div>
+        <input type="range" id="fwRR" value="4" min="0" max="15" step="0.1" aria-label="想定年利">
+      </div>
+      <div class="field">
+        <div class="row">
+          <label for="fwExp">目標: 年間生活費</label>
+          <span class="val"><input type="number" id="fwExp" value="360" min="60" max="10000" step="10"><span class="unit">万円</span></span>
+        </div>
+        <input type="range" id="fwExpR" value="360" min="60" max="1200" step="10" aria-label="年間生活費">
+      </div>
+      <div class="field">
+        <div class="row">
+          <label for="fwWr">取り崩し率</label>
+          <span class="val"><input type="number" id="fwWr" value="4" min="1" max="10" step="0.5"><span class="unit">%</span></span>
+        </div>
+        <input type="range" id="fwWrR" value="4" min="1" max="10" step="0.5" aria-label="取り崩し率">
+      </div>
+      <details class="adv">
+        <summary>詳細設定（現在の年齢・インフレ調整）</summary>
+        <div class="inner">
+          <div class="field">
+            <div class="row">
+              <label for="fwAge">現在の年齢（任意）</label>
+              <span class="val"><input type="number" id="fwAge" value="30" min="0" max="99" step="1"><span class="unit">歳</span></span>
+            </div>
+            <input type="range" id="fwAgeR" value="30" min="0" max="99" step="1" aria-label="現在の年齢">
+          </div>
+          <div class="toggle-row">
+            <label for="fwInfToggle">実質利回り（インフレ調整）</label>
+            <span class="switch"><input type="checkbox" id="fwInfToggle"><span class="track"></span></span>
+          </div>
+          <div class="field hidden" id="fwInfField">
+            <div class="row">
+              <label for="fwInf">想定インフレ率</label>
+              <span class="val"><input type="number" id="fwInf" value="0" min="0" max="10" step="0.5"><span class="unit">%</span></span>
+            </div>
+            <input type="range" id="fwInfR" value="0" min="0" max="10" step="0.5" aria-label="想定インフレ率">
+            <p style="font-size:11.5px;color:#6a7789;margin-top:6px;">計算に使う年利: <span id="fwUsedRate">4</span>%</p>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <div class="result" aria-live="polite">
+        <div class="label">FIREまでの見込み</div>
+        <div class="big" id="fwBig">—</div>
+        <div class="sub" id="fwSub"></div>
+      </div>
+      <div class="stats" id="fwStats"></div>
+      <div class="warn hidden" id="fwWarn"></div>
+    </div>
+
+    <div class="card chart-box">
+      <h2>資産推移</h2>
+      <canvas id="chartFwd" width="680" height="220" role="img" aria-label="資産推移グラフ（元本・評価額・目標ライン）"></canvas>
+      <div class="legend">
+        <span class="lg-principal">積立元本</span>
+        <span class="lg-value">評価額</span>
+        <span class="lg-target">目標資産</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 逆算 ===== -->
+  <section id="paneRev" class="hidden">
+    <div class="card">
+      <h2>条件を入れてください</h2>
+      <div class="field">
+        <div class="row">
+          <label for="rvP">現在の資産</label>
+          <span class="val"><input type="number" id="rvP" value="300" min="0" max="100000" step="10"><span class="unit">万円</span></span>
+        </div>
+        <input type="range" id="rvPR" value="300" min="0" max="5000" step="10" aria-label="現在の資産">
+      </div>
+      <div class="field">
+        <div class="row">
+          <label for="rvR">想定年利</label>
+          <span class="val"><input type="number" id="rvR" value="4" min="0" max="15" step="0.1"><span class="unit">%</span></span>
+        </div>
+        <input type="range" id="rvRR" value="4" min="0" max="15" step="0.1" aria-label="想定年利">
+      </div>
+      <div class="field">
+        <div class="row">
+          <label for="rvExp">目標: 年間生活費</label>
+          <span class="val"><input type="number" id="rvExp" value="360" min="60" max="10000" step="10"><span class="unit">万円</span></span>
+        </div>
+        <input type="range" id="rvExpR" value="360" min="60" max="1200" step="10" aria-label="年間生活費">
+      </div>
+      <div class="field">
+        <div class="row">
+          <label for="rvWr">取り崩し率</label>
+          <span class="val"><input type="number" id="rvWr" value="4" min="1" max="10" step="0.5"><span class="unit">%</span></span>
+        </div>
+        <input type="range" id="rvWrR" value="4" min="1" max="10" step="0.5" aria-label="取り崩し率">
+      </div>
+      <div class="field">
+        <div class="row">
+          <label for="rvAge">現在の年齢</label>
+          <span class="val"><input type="number" id="rvAge" value="30" min="0" max="99" step="1"><span class="unit">歳</span></span>
+        </div>
+        <input type="range" id="rvAgeR" value="30" min="0" max="99" step="1" aria-label="現在の年齢">
+      </div>
+      <div class="field">
+        <div class="row">
+          <label for="rvTAge">目標年齢</label>
+          <span class="val"><input type="number" id="rvTAge" value="55" min="1" max="100" step="1"><span class="unit">歳</span></span>
+        </div>
+        <input type="range" id="rvTAgeR" value="55" min="1" max="100" step="1" aria-label="目標年齢">
+      </div>
+      <details class="adv">
+        <summary>詳細設定（インフレ調整）</summary>
+        <div class="inner">
+          <div class="toggle-row">
+            <label for="rvInfToggle">実質利回り（インフレ調整）</label>
+            <span class="switch"><input type="checkbox" id="rvInfToggle"><span class="track"></span></span>
+          </div>
+          <div class="field hidden" id="rvInfField">
+            <div class="row">
+              <label for="rvInf">想定インフレ率</label>
+              <span class="val"><input type="number" id="rvInf" value="0" min="0" max="10" step="0.5"><span class="unit">%</span></span>
+            </div>
+            <input type="range" id="rvInfR" value="0" min="0" max="10" step="0.5" aria-label="想定インフレ率">
+            <p style="font-size:11.5px;color:#6a7789;margin-top:6px;">計算に使う年利: <span id="rvUsedRate">4</span>%</p>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <div class="result" aria-live="polite">
+        <div class="label">目標達成に必要な積立額</div>
+        <div class="big" id="rvBig">—</div>
+        <div class="sub" id="rvSub"></div>
+      </div>
+      <div class="stats" id="rvStats"></div>
+    </div>
+
+    <div class="card chart-box">
+      <h2>資産推移</h2>
+      <canvas id="chartRev" width="680" height="220" role="img" aria-label="資産推移グラフ（元本・評価額・目標ライン）"></canvas>
+      <div class="legend">
+        <span class="lg-principal">積立元本</span>
+        <span class="lg-value">評価額</span>
+        <span class="lg-target">目標資産</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule-box">
+    <strong>4%ルールって？</strong><br>
+    「年間生活費の25倍（取り崩し率4%の場合）」を目安に、資産を運用しながら取り崩すと大きく減らずに暮らせる、という考え方です。取り崩し率を上げると必要な目標額は減りますが、資産が長持ちしにくくなります。取り崩し後に資産が何年もつかは
+    <a href="https://rinne-blog.com/nisa-torikuzushi-simulator" target="_blank" rel="noopener noreferrer">新NISA取り崩しシミュレーター</a>
+    で確認できます。
+  </div>
+
+  <div class="card">
+    <details class="faq">
+      <summary>あそびかた / よくある質問</summary>
+      <div class="qa"><strong>Q. 何を入力すればいい？</strong><br>「何年で届く？」タブでは現在の資産・毎月の積立額・想定利回りと、目標にしたい年間生活費を入れると到達年数が出ます。「毎月いくら必要？」タブでは目標年齢を決めると必要な積立額が出ます。</div>
+      <div class="qa"><strong>Q. 4%ルールとは？</strong><br>米国の過去データから「年間生活費の25倍（年4%の取り崩し）」なら資産が長期間もちやすい、とされる目安です。取り崩し率は自由に変更できます。</div>
+      <div class="qa"><strong>Q. 税金は考慮されていますか？</strong><br>目標資産額は税引き前で計算しています。取り崩し額のうち運用益部分には通常約20.315%の課税があります（新NISA枠は非課税）。精緻な税計算はこのアプリでは行っていません。</div>
+      <div class="qa"><strong>Q. インフレ（物価上昇）はどう扱われますか？</strong><br>「実質利回り」トグルをONにすると、想定年利からインフレ率を差し引いた利率（実質利回り）で計算します。今の物価に換算した金額ベースで試算されるため、物価上昇を考慮しない場合より到達までの期間が長く出ます。</div>
+      <div class="qa"><strong>Q. これは投資助言ですか？</strong><br>いいえ。入力した条件をもとにした概算シミュレーションであり、特定の金融商品の購入を勧めるものでも投資助言でもありません。</div>
+    </details>
+  </div>
+
+  <div class="disclaimer">
+    <strong>ご注意</strong>: このシミュレーションは、入力した条件をもとにした<strong>概算</strong>です。実際の運用成績・物価・税金・制度は変動し、将来の結果を保証するものではありません。特定の金融商品の購入を勧めるものでも、投資助言でもありません。投資はご自身の判断と責任で行い、必要に応じて専門家にご相談ください。「4%ルール」は米国の過去データに基づく一つの目安であり、日本・将来の環境では当てはまらない場合があります。概算です・将来を保証しません・投資助言ではありません。
+  </div>
+  <p class="privacy">🔒 入力した数値は端末内で計算し、どこにも送信されません</p>
+
+  <div class="card links">
+    <h2>あわせてどうぞ</h2>
+    <ul>
+      <li><a href="https://rinne-blog.com/tsumitate-simulator" target="_blank" rel="noopener noreferrer">つみたてシミュレーター</a><br><span class="desc">毎月の積立が将来いくらになるかを試算</span></li>
+      <li><a href="https://rinne-blog.com/dividend" target="_blank" rel="noopener noreferrer">配当金シミュレーター</a><br><span class="desc">配当でどれくらい受け取れるかを試算</span></li>
+      <li><a href="https://rinne-blog.com/nisa-torikuzushi-simulator" target="_blank" rel="noopener noreferrer">新NISA取り崩しシミュレーター</a><br><span class="desc">貯めた資産が何年もつかを試算</span></li>
+      <li><a href="https://rinne-blog.com/apps" target="_blank" rel="noopener noreferrer">無料Webアプリ一覧</a></li>
+    </ul>
+  </div>
+
+</div>
+
+<script src="logic.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var MAN = 10000;
+  var F = window.FIRE;
+
+  function num(id) {
+    var el = $(id);
+    var v = parseFloat(el.value);
+    if (isNaN(v)) v = parseFloat(el.min) || 0;
+    v = Math.min(Math.max(v, parseFloat(el.min)), parseFloat(el.max));
+    if (String(v) !== el.value) el.value = v;
+    return v;
+  }
+
+  function pair(numId, rngId, onChange) {
+    var n = $(numId), r = $(rngId);
+    n.addEventListener("input", function () { r.value = n.value; onChange(); });
+    n.addEventListener("change", function () { onChange(); });
+    r.addEventListener("input", function () { n.value = r.value; onChange(); });
+  }
+
+  function fmtMan(yen) {
+    var man = yen / MAN;
+    if (Math.abs(man) >= 10000) return (Math.round(man / 100) / 100).toLocaleString() + "億円";
+    return Math.round(man).toLocaleString() + "万円";
+  }
+  function fmtYen(yen) { return Math.round(yen).toLocaleString() + "円"; }
+  function fmtYm(months) {
+    var y = Math.floor(months / 12), m = months % 12;
+    if (y === 0 && m === 0) return "今すぐ";
+    return m === 0 ? (y + "年") : (y + "年" + m + "ヶ月");
+  }
+
+  // ---- プリセット ----
+  var PRESETS = {
+    yutori: { exp: 420, wr: 4 },
+    standard: { exp: 360, wr: 4 },
+    side: { exp: 240, wr: 3 }
+  };
+  document.querySelectorAll(".presets button").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var p = PRESETS[btn.getAttribute("data-preset")];
+      $("fwExp").value = p.exp; $("fwExpR").value = p.exp;
+      $("fwWr").value = p.wr; $("fwWrR").value = p.wr;
+      calcFwd();
+    });
+  });
+
+  // ---- 順算 ----
+  function calcFwd() {
+    var P = num("fwP") * MAN;
+    var PMT = num("fwPMT");
+    var annual = num("fwR");
+    var expense = num("fwExp") * MAN;
+    var wRate = num("fwWr");
+    var age = Math.round(num("fwAge"));
+    var useReal = $("fwInfToggle").checked;
+    var inflation = num("fwInf");
+    var annualUsed = F.effectiveAnnual(annual, inflation, useReal);
+    $("fwUsedRate").textContent = annualUsed;
+
+    var target = F.fireTarget(expense, wRate);
+    var months = F.monthsToFire(P, PMT, annualUsed, target);
+
+    if (months === null) {
+      $("fwBig").textContent = "見直しが必要です";
+      $("fwSub").textContent = "";
+      $("fwWarn").classList.remove("hidden");
+      $("fwWarn").textContent = "この条件では現実的な期間内に到達しません。積立額・利回り・目標額を見直してみましょう。";
+      months = F.CAP_MONTHS;
+    } else if (months === 0) {
+      $("fwBig").textContent = "すでに到達しています";
+      $("fwSub").textContent = "現在の資産が目標額を上回っています";
+      $("fwWarn").classList.add("hidden");
+    } else {
+      $("fwBig").textContent = "あと " + fmtYm(months) + " で到達";
+      var endAge = age + Math.floor(months / 12);
+      var endM = months % 12;
+      $("fwSub").textContent = $("fwAge").value ? (endAge + "歳" + (endM ? endM + "ヶ月" : "") + "ごろの見込み") : "";
+      $("fwWarn").classList.add("hidden");
+    }
+
+    var monthlyRate = annualUsed / 100 / 12;
+    var fv = F.futureValue(P, PMT, monthlyRate, months);
+    var principalTotal = P + PMT * months;
+    var gain = fv - principalTotal;
+    $("fwStats").innerHTML =
+      '<div class="stat"><div class="k">目標資産額</div><div class="v">' + fmtMan(target) + '（生活費の' + Math.round(100 / wRate) + '倍）</div></div>' +
+      '<div class="stat"><div class="k">到達時の年間取り崩し額</div><div class="v">' + fmtMan(target * wRate / 100) + '</div></div>' +
+      '<div class="stat"><div class="k">積立総額</div><div class="v">' + fmtMan(principalTotal) + '</div></div>' +
+      '<div class="stat"><div class="k">運用益</div><div class="v plus">+' + fmtMan(Math.max(0, gain)) + '</div></div>';
+
+    drawChart("chartFwd", F.series(P, PMT, annualUsed, months), target);
+  }
+
+  // ---- 逆算 ----
+  function calcRev() {
+    var P = num("rvP") * MAN;
+    var annual = num("rvR");
+    var expense = num("rvExp") * MAN;
+    var wRate = num("rvWr");
+    var curAge = Math.round(num("rvAge"));
+    $("rvTAge").min = curAge + 1;
+    $("rvTAgeR").min = curAge + 1;
+    var targetAge = Math.max(curAge + 1, Math.round(num("rvTAge")));
+    var useReal = $("rvInfToggle").checked;
+    var inflation = num("rvInf");
+    var annualUsed = F.effectiveAnnual(annual, inflation, useReal);
+    $("rvUsedRate").textContent = annualUsed;
+
+    var target = F.fireTarget(expense, wRate);
+    var months = (targetAge - curAge) * 12;
+    var pmt = F.requiredPMT(P, annualUsed, target, months);
+
+    if (pmt <= 0) {
+      $("rvBig").textContent = "積立ゼロで到達";
+      $("rvSub").textContent = "現在の資産だけで目標に届く見込みです";
+    } else {
+      $("rvBig").textContent = "毎月 " + fmtYen(pmt);
+      $("rvSub").textContent = curAge + "歳から" + targetAge + "歳までの" + Math.round(months / 12) + "年間積み立てる場合";
+    }
+
+    $("rvStats").innerHTML =
+      '<div class="stat"><div class="k">目標資産額</div><div class="v">' + fmtMan(target) + '（生活費の' + Math.round(100 / wRate) + '倍）</div></div>' +
+      '<div class="stat"><div class="k">到達時の年間取り崩し額</div><div class="v">' + fmtMan(target * wRate / 100) + '</div></div>';
+
+    drawChart("chartRev", F.series(P, Math.max(0, pmt), annualUsed, months), target);
+  }
+
+  // ---- グラフ ----
+  function drawChart(canvasId, series, target) {
+    var cv = $(canvasId);
+    var dpr = window.devicePixelRatio || 1;
+    var cssW = cv.clientWidth || 680, cssH = 220;
+    cv.width = cssW * dpr; cv.height = cssH * dpr;
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    var padL = 50, padR = 12, padT = 12, padB = 24;
+    var w = cssW - padL - padR, h = cssH - padT - padB;
+    var maxM = series[series.length - 1].month || 1;
+    var maxV = target;
+    for (var k = 0; k < series.length; k++) if (series[k].value > maxV) maxV = series[k].value;
+    maxV = maxV * 1.05;
+    if (maxV <= 0) maxV = 1;
+
+    ctx.strokeStyle = "#e2e8f5"; ctx.fillStyle = "#8a96a6";
+    ctx.font = "10.5px sans-serif"; ctx.lineWidth = 1;
+    var steps = 4;
+    for (var s = 0; s <= steps; s++) {
+      var y = padT + h - (h * s / steps);
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + w, y); ctx.stroke();
+      ctx.textAlign = "right";
+      ctx.fillText(Math.round(maxV * s / steps / MAN).toLocaleString() + "万", padL - 5, y + 3.5);
+    }
+    var yearStep = Math.max(1, Math.ceil(maxM / 12 / 6));
+    ctx.textAlign = "center";
+    for (var yy = 0; yy * 12 <= maxM; yy += yearStep) {
+      var x = padL + w * (yy * 12) / maxM;
+      ctx.fillText(yy + "年", x, padT + h + 16);
+    }
+
+    function lineFor(key, color) {
+      ctx.beginPath();
+      for (var j = 0; j < series.length; j++) {
+        var px = padL + w * series[j].month / maxM;
+        var py = padT + h - h * Math.max(0, series[j][key]) / maxV;
+        if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.stroke();
+    }
+    lineFor("principal", "#9db2dd");
+    lineFor("value", "#2f6df6");
+
+    var ty = padT + h - h * target / maxV;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = "#d9862f"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(padL, ty); ctx.lineTo(padL + w, ty); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // ---- タブ切替 ----
+  $("tabFwd").addEventListener("click", function () {
+    this.classList.add("active"); $("tabRev").classList.remove("active");
+    $("paneFwd").classList.remove("hidden"); $("paneRev").classList.add("hidden");
+    calcFwd();
+  });
+  $("tabRev").addEventListener("click", function () {
+    this.classList.add("active"); $("tabFwd").classList.remove("active");
+    $("paneRev").classList.remove("hidden"); $("paneFwd").classList.add("hidden");
+    calcRev();
+  });
+
+  $("fwInfToggle").addEventListener("change", function () {
+    $("fwInfField").classList.toggle("hidden", !this.checked);
+    calcFwd();
+  });
+  $("rvInfToggle").addEventListener("change", function () {
+    $("rvInfField").classList.toggle("hidden", !this.checked);
+    calcRev();
+  });
+
+  pair("fwP", "fwPR", calcFwd);
+  pair("fwPMT", "fwPMTR", calcFwd);
+  pair("fwR", "fwRR", calcFwd);
+  pair("fwExp", "fwExpR", calcFwd);
+  pair("fwWr", "fwWrR", calcFwd);
+  pair("fwAge", "fwAgeR", calcFwd);
+  pair("fwInf", "fwInfR", calcFwd);
+
+  pair("rvP", "rvPR", calcRev);
+  pair("rvR", "rvRR", calcRev);
+  pair("rvExp", "rvExpR", calcRev);
+  pair("rvWr", "rvWrR", calcRev);
+  pair("rvAge", "rvAgeR", calcRev);
+  pair("rvTAge", "rvTAgeR", calcRev);
+  pair("rvInf", "rvInfR", calcRev);
+
+  window.addEventListener("resize", function () {
+    if (!$("paneFwd").classList.contains("hidden")) calcFwd();
+    if (!$("paneRev").classList.contains("hidden")) calcRev();
+  });
+
+  calcFwd();
+  calcRev();
+})();
+</script>
+<script>
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  }
+</script>
+</body>
+</html>

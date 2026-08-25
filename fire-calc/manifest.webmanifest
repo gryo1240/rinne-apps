@@ -1,0 +1,14 @@
+{
+  "name": "FIREシミュレーター",
+  "short_name": "FIRE計算",
+  "description": "毎月の積立と想定利回りから、経済的自由（FIRE）に何年・何歳で届くかを無料で試算するシミュレーター。目標年齢から必要な積立額の逆算も。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f7fc",
+  "theme_color": "#2f6df6",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
