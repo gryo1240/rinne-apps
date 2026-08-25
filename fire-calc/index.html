@@ -346,6 +346,7 @@
       <div class="qa"><strong>Q. 税金は考慮されていますか？</strong><br>目標資産額は税引き前で計算しています。取り崩し額のうち運用益部分には通常約20.315%の課税があります（新NISA枠は非課税）。精緻な税計算はこのアプリでは行っていません。</div>
       <div class="qa"><strong>Q. インフレ（物価上昇）はどう扱われますか？</strong><br>「実質利回り」トグルをONにすると、想定年利からインフレ率を差し引いた利率（実質利回り）で計算します。今の物価に換算した金額ベースで試算されるため、物価上昇を考慮しない場合より到達までの期間が長く出ます。</div>
       <div class="qa"><strong>Q. これは投資助言ですか？</strong><br>いいえ。入力した条件をもとにした概算シミュレーションであり、特定の金融商品の購入を勧めるものでも投資助言でもありません。</div>
+      <div class="qa"><strong>Q. 入力した数値はどこかに送信されますか？</strong><br>いいえ。入力した数値は端末内で計算し、どこにも送信されません。</div>
     </details>
   </div>
 
@@ -374,19 +375,26 @@
   var MAN = 10000;
   var F = window.FIRE;
 
+  // 計算用に値を読んでクランプするだけで、number欄への書き戻しはしない
+  // （入力中の"input"イベントごとに書き戻すと、欄を空にした瞬間に最小値へスナップして
+  //   打鍵不能になるため。表示への書き戻しはblur時のwriteBackClamp()でのみ行う）
   function num(id) {
     var el = $(id);
     var v = parseFloat(el.value);
     if (isNaN(v)) v = parseFloat(el.min) || 0;
-    v = Math.min(Math.max(v, parseFloat(el.min)), parseFloat(el.max));
+    return Math.min(Math.max(v, parseFloat(el.min)), parseFloat(el.max));
+  }
+
+  function writeBackClamp(id) {
+    var el = $(id);
+    var v = num(id);
     if (String(v) !== el.value) el.value = v;
-    return v;
   }
 
   function pair(numId, rngId, onChange) {
     var n = $(numId), r = $(rngId);
-    n.addEventListener("input", function () { r.value = n.value; onChange(); });
-    n.addEventListener("change", function () { onChange(); });
+    n.addEventListener("input", function () { if (n.value !== "") r.value = n.value; onChange(); });
+    n.addEventListener("blur", function () { writeBackClamp(numId); r.value = num(numId); onChange(); });
     r.addEventListener("input", function () { n.value = r.value; onChange(); });
   }
 
@@ -474,6 +482,7 @@
     $("rvTAge").min = curAge + 1;
     $("rvTAgeR").min = curAge + 1;
     var targetAge = Math.max(curAge + 1, Math.round(num("rvTAge")));
+    if (document.activeElement !== $("rvTAge")) { $("rvTAge").value = targetAge; $("rvTAgeR").value = targetAge; }
     var useReal = $("rvInfToggle").checked;
     var inflation = num("rvInf");
     var annualUsed = F.effectiveAnnual(annual, inflation, useReal);
@@ -491,9 +500,16 @@
       $("rvSub").textContent = curAge + "歳から" + targetAge + "歳までの" + Math.round(months / 12) + "年間積み立てる場合";
     }
 
+    var actualPmt = Math.max(0, pmt);
+    var monthlyRateRev = annualUsed / 100 / 12;
+    var fvRev = F.futureValue(P, actualPmt, monthlyRateRev, months);
+    var principalTotalRev = P + actualPmt * months;
+    var gainRev = fvRev - principalTotalRev;
     $("rvStats").innerHTML =
       '<div class="stat"><div class="k">目標資産額</div><div class="v">' + fmtMan(target) + '（生活費の' + Math.round(100 / wRate) + '倍）</div></div>' +
-      '<div class="stat"><div class="k">到達時の年間取り崩し額</div><div class="v">' + fmtMan(target * wRate / 100) + '</div></div>';
+      '<div class="stat"><div class="k">到達時の年間取り崩し額</div><div class="v">' + fmtMan(target * wRate / 100) + '</div></div>' +
+      '<div class="stat"><div class="k">積立総額</div><div class="v">' + fmtMan(principalTotalRev) + '</div></div>' +
+      '<div class="stat"><div class="k">運用益</div><div class="v plus">+' + fmtMan(Math.max(0, gainRev)) + '</div></div>';
 
     drawChart("chartRev", F.series(P, Math.max(0, pmt), annualUsed, months), target);
   }
