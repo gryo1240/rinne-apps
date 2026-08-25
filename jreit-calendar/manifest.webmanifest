@@ -1,0 +1,14 @@
+{
+  "name": "毎月分配カレンダー",
+  "short_name": "分配カレンダー",
+  "description": "J-REIT ETFを組み合わせて、分配金が何月に入るかを12ヶ月カレンダーで確認できる無料ツール。受け取りのない空白月と、その月に受け取りがある銘柄が分かります。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f8f5",
+  "theme_color": "#1b7a5a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>毎月分配カレンダー｜J-REIT ETFの組み合わせで毎月分配金をもらう</title>
+<meta name="description" content="J-REIT ETFを選ぶだけで、分配金が何月に入るかを12ヶ月カレンダーで表示。受け取りのない空白月と、その月に受け取りがある銘柄が分かります。登録不要・入力した数値は端末外に送信されません。">
+<meta name="theme-color" content="#f2f8f5">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
+    background: #f2f8f5;
+    color: #22322c;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px 28px; }
+
+  .head { text-align: center; padding: 8px 0 12px; }
+  .head h1 { font-size: 20px; letter-spacing: .02em; color: #14614a; }
+  .head p { font-size: 12.5px; color: #5d6f68; margin-top: 4px; }
+  .privacy { font-size: 11.5px; color: #6b7d76; margin-top: 6px; }
+
+  .card {
+    background: #fff; border: 1px solid #dde9e3; border-radius: 14px;
+    padding: 14px 14px 12px; margin-bottom: 13px;
+    box-shadow: 0 1px 4px rgba(20, 90, 70, .06);
+  }
+  .card > h2 {
+    font-size: 14.5px; color: #14614a; margin-bottom: 10px;
+    padding-bottom: 7px; border-bottom: 1px solid #e8f0ec;
+  }
+
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; }
+  .row + .row { border-top: 1px dashed #eaf1ee; }
+  .row .lbl { font-size: 13px; color: #33463f; }
+  .row .lbl small { display: block; font-size: 11px; color: #74867f; line-height: 1.45; }
+
+  /* トグルスイッチ: 必ず <label> で包む（見た目の部分をクリックしても反応させるため） */
+  .switch { position: relative; width: 44px; height: 25px; flex-shrink: 0; display: inline-block; cursor: pointer; }
+  .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; cursor: pointer; z-index: 2; }
+  .switch .track {
+    position: absolute; inset: 0; background: #c7d6cf; border-radius: 999px; transition: background .15s; pointer-events: none;
+  }
+  .switch .track::before {
+    content: ""; position: absolute; left: 3px; top: 3px; width: 19px; height: 19px;
+    background: #fff; border-radius: 50%; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2);
+  }
+  .switch input:checked + .track { background: #1b7a5a; }
+  .switch input:checked + .track::before { transform: translateX(19px); }
+
+  .seg { display: flex; gap: 6px; }
+  .seg button {
+    flex: 1; padding: 9px 4px; font-size: 13px; font-weight: 700; font-family: inherit;
+    color: #3d534b; background: #e7f1ec; border: 1px solid #d5e5dd;
+    border-radius: 9px; cursor: pointer;
+  }
+  .seg button.on { background: #1b7a5a; border-color: #1b7a5a; color: #fff; }
+
+  .lagbox { margin-top: 9px; padding-top: 9px; border-top: 1px dashed #eaf1ee; }
+  .lagbox.hidden { display: none; }
+
+  input[type=number], input[type=range] { font-family: inherit; }
+  input[type=number] {
+    width: 122px; padding: 7px 9px; font-size: 14px; text-align: right;
+    border: 1px solid #cddcd5; border-radius: 8px; background: #fff; color: #22322c;
+  }
+  input[type=range] { width: 100%; accent-color: #1b7a5a; height: 26px; }
+
+  /* 銘柄カード */
+  .fund { border: 1px solid #e2ece7; border-radius: 11px; padding: 10px 11px; margin-bottom: 9px; background: #fcfefd; }
+  .fund.sel { border-color: #1b7a5a; background: #f4fbf8; }
+  .fund .top { display: flex; align-items: flex-start; gap: 9px; cursor: pointer; }
+  .fund .chk { width: 20px; height: 20px; margin-top: 2px; flex-shrink: 0; accent-color: #1b7a5a; cursor: pointer; }
+  .fund .info { flex: 1; min-width: 0; }
+  .fund .code { font-size: 14px; font-weight: 700; color: #14614a; }
+  .fund .nm { font-size: 12px; color: #44574f; line-height: 1.4; }
+  .fund .co { font-size: 11px; color: #7b8d86; margin-top: 1px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .badge { font-size: 11px; padding: 2px 7px; border-radius: 999px; background: #e8f1ed; color: #3d6b5c; }
+  .badge.hi { background: #1b7a5a; color: #fff; }
+  .fund .amt { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .fund .amt span { font-size: 12px; color: #55675f; }
+  .links { margin-top: 7px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .links a { font-size: 11.5px; color: #1b7a5a; }
+
+  /* カレンダー */
+  .calwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table.cal { border-collapse: collapse; width: 100%; min-width: 228px; font-size: 12px; table-layout: fixed; }
+  table.cal th, table.cal td { border: 1px solid #e4ede9; padding: 5px 0; text-align: center; }
+  table.cal th { background: #edf5f1; color: #3d6b5c; font-weight: 700; font-size: 10.5px; }
+  table.cal th.rowhead, table.cal td.rowhead {
+    text-align: left; padding-left: 6px; white-space: nowrap; position: sticky; left: 0;
+    background: #f7fbf9; font-size: 11px; width: 38px;
+  }
+  table.cal td.hit { color: #1b7a5a; font-weight: 700; font-size: 12.5px; }
+  table.cal td.miss { color: #cfdcd6; }
+  table.cal tr.total td { background: #f4fbf8; font-weight: 700; }
+  table.cal tr.total td.gap { background: #fdf1f0; color: #c0554a; }
+  table.cal tr.total td.hit { color: #14614a; }
+
+  .summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; }
+  .sm { background: #f4fbf8; border: 1px solid #e0ede8; border-radius: 10px; padding: 9px 10px; }
+  .sm .k { font-size: 11px; color: #6c7f77; }
+  .sm .v { font-size: 16px; font-weight: 700; color: #14614a; margin-top: 1px; }
+  .sm .v.warn { color: #c0554a; }
+
+  .verdict { margin-top: 11px; padding: 10px 11px; border-radius: 10px; font-size: 13px; line-height: 1.55; }
+  .verdict.good { background: #eaf7f1; border: 1px solid #c9e6da; color: #17614a; }
+  .verdict.bad { background: #fdf3f2; border: 1px solid #f0d6d2; color: #9d4438; }
+  .verdict.none { background: #f4f6f5; border: 1px solid #e2e8e5; color: #5d6f68; }
+
+  /* 金額バー */
+  .bars { margin-top: 12px; }
+  .bars .bhead { font-size: 12px; color: #6c7f77; margin-bottom: 6px; }
+  .bar { display: flex; align-items: center; gap: 7px; padding: 2px 0; }
+  .bar .bm { width: 30px; font-size: 11.5px; color: #6c7f77; text-align: right; flex-shrink: 0; }
+  .bar .btrack { flex: 1; height: 15px; background: #eef4f1; border-radius: 4px; overflow: hidden; }
+  .bar .bfill { height: 100%; background: #1b7a5a; border-radius: 4px; }
+  .bar .bfill.zero { background: #e3c9c5; }
+  .bar .bv { width: 86px; font-size: 11.5px; text-align: right; color: #44574f; flex-shrink: 0; }
+
+  .cand { border: 1px solid #e4ede9; border-radius: 10px; padding: 9px 10px; margin-bottom: 8px; background: #fcfefd; }
+  .cand .cline { display: flex; align-items: center; justify-content: space-between; gap: 9px; }
+  .cand .ct { font-size: 13px; color: #33463f; }
+  .cand .ct b { color: #14614a; }
+  .cand .cs { font-size: 11.5px; color: #74867f; margin-top: 2px; }
+  .btn {
+    padding: 7px 13px; font-size: 12.5px; font-weight: 700; font-family: inherit;
+    color: #fff; background: #1b7a5a; border: none; border-radius: 8px; cursor: pointer; white-space: nowrap;
+  }
+  .btn.ghost { background: #fff; color: #1b7a5a; border: 1px solid #b9d8cb; }
+
+  .note { font-size: 11.5px; color: #5d6f68; line-height: 1.65; }
+  .note li { margin-left: 1.1em; margin-bottom: 5px; }
+  .disc {
+    background: #fbfaf4; border: 1px solid #e9e4cf; border-radius: 10px;
+    padding: 11px 12px; font-size: 11.5px; color: #6a6448; line-height: 1.7;
+  }
+
+  details.faq { border-top: 1px solid #eaf1ee; padding: 9px 0; }
+  details.faq:first-of-type { border-top: none; }
+  details.faq summary { font-size: 13px; color: #14614a; cursor: pointer; font-weight: 700; list-style-position: inside; }
+  details.faq p { font-size: 12.5px; color: #44574f; margin-top: 7px; line-height: 1.7; }
+
+  .rel { display: flex; flex-wrap: wrap; gap: 8px; }
+  .rel a {
+    font-size: 12px; color: #1b7a5a; text-decoration: none;
+    border: 1px solid #cfe4da; border-radius: 999px; padding: 5px 11px; background: #fff;
+  }
+
+  /* 極小幅の端末: 余白と文字を詰めて折り返しを減らす（縦の伸びを抑えてiframe高さを安定させる） */
+  @media (max-width: 350px) {
+    .wrap { padding: 12px 9px 22px; }
+    .card { padding: 12px 10px 10px; }
+    .fund { padding: 9px 8px; }
+    .fund .nm { font-size: 11px; }
+    .fund .co { font-size: 10.5px; }
+    .badge { font-size: 10px; padding: 2px 5px; }
+    .links a { font-size: 11px; }
+    .row .lbl small { font-size: 10.5px; }
+    .note, .disc { font-size: 11px; }
+    input[type=number] { width: 104px; }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    body { background: #10201b; color: #dfeae5; }
+    .head h1 { color: #6fd4ab; }
+    .head p, .privacy { color: #93a8a0; }
+    .card { background: #172b25; border-color: #234137; box-shadow: none; }
+    .card > h2 { color: #6fd4ab; border-bottom-color: #234137; }
+    .row + .row { border-top-color: #22392f; }
+    .row .lbl { color: #d3e2dc; }
+    .row .lbl small { color: #90a49c; }
+    .seg button { background: #1e372f; border-color: #2b4a3f; color: #b6cdc4; }
+    .seg button.on { background: #2b9b74; border-color: #2b9b74; color: #06231a; }
+    .switch .track { background: #3a5a4e; }
+    .switch input:checked + .track { background: #2b9b74; }
+    input[type=number] { background: #12251f; border-color: #2b4a3f; color: #dfeae5; }
+    .fund { background: #14261f; border-color: #234137; }
+    .fund.sel { background: #16332a; border-color: #2b9b74; }
+    .fund .code { color: #6fd4ab; }
+    .fund .nm { color: #c2d6ce; }
+    .fund .co { color: #8fa39b; }
+    .badge { background: #1e3a31; color: #8fd8bb; }
+    .badge.hi { background: #2b9b74; color: #06231a; }
+    .fund .amt span { color: #a9bdb5; }
+    .links a { color: #6fd4ab; }
+    table.cal th { background: #1c332b; color: #8fd8bb; }
+    table.cal th, table.cal td { border-color: #26443a; }
+    table.cal th.rowhead, table.cal td.rowhead { background: #14261f; }
+    table.cal td.hit { color: #6fd4ab; }
+    table.cal td.miss { color: #37544a; }
+    table.cal tr.total td { background: #16332a; }
+    table.cal tr.total td.gap { background: #3a231f; color: #f0a094; }
+    .sm { background: #14261f; border-color: #26443a; }
+    .sm .k { color: #93a8a0; }
+    .sm .v { color: #6fd4ab; }
+    .sm .v.warn { color: #f0a094; }
+    .verdict.good { background: #14332a; border-color: #266b52; color: #8fd8bb; }
+    .verdict.bad { background: #35211d; border-color: #6b3a31; color: #f0a094; }
+    .verdict.none { background: #1a2a25; border-color: #2b4a3f; color: #a9bdb5; }
+    .bars .bhead, .bar .bm, .bar .bv { color: #a9bdb5; }
+    .bar .btrack { background: #1e352d; }
+    .bar .bfill { background: #2b9b74; }
+    .bar .bfill.zero { background: #6b463f; }
+    .cand { background: #14261f; border-color: #26443a; }
+    .cand .ct { color: #d3e2dc; }
+    .cand .ct b { color: #6fd4ab; }
+    .cand .cs { color: #90a49c; }
+    .btn { background: #2b9b74; color: #06231a; }
+    .btn.ghost { background: #172b25; color: #6fd4ab; border-color: #2b6b55; }
+    .note { color: #a9bdb5; }
+    .disc { background: #262218; border-color: #4a442f; color: #c9c19d; }
+    details.faq { border-top-color: #234137; }
+    details.faq summary { color: #6fd4ab; }
+    details.faq p { color: #c2d6ce; }
+    .rel a { background: #172b25; border-color: #2b6b55; color: #6fd4ab; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <h1>毎月分配カレンダー</h1>
+    <p>J-REIT ETFを組み合わせて、分配金が何月に入るかを12ヶ月で見える化</p>
+    <p class="privacy">登録不要／入力した数値はこの端末の中だけで計算され、どこにも送信されません</p>
+  </div>
+
+  <!-- 表示設定 -->
+  <div class="card">
+    <h2>表示の設定</h2>
+
+    <div class="row" style="display:block;">
+      <div class="lbl" style="margin-bottom:7px;">どの月で見るか</div>
+      <div class="seg">
+        <button type="button" id="basisPayout" class="on">入金月のめやす</button>
+        <button type="button" id="basisSettle">権利確定月</button>
+      </div>
+      <div class="lbl"><small id="basisHelp" style="margin-top:7px;">分配金は決算日（権利確定日）に確定し、口座に入るのはその後です。</small></div>
+
+      <div class="lagbox" id="lagBox">
+        <div class="lbl"><small style="margin-top:0;">ETFの分配金は決算日から40日程度で支払われます（運用会社の解説による）。収録している7銘柄の決算日はいずれも月の前半（4〜15日）なので、口座に入るのは<strong>決算の翌月</strong>になります。ここではそれを共通のめやすとして計算しています。<br><strong>銘柄ごとの正確な支払開始日は、どの運用会社も一覧を公表していません。</strong>実際の入金日は証券会社によっても前後します。</small></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="lbl">税引後で表示する<small>上場株式等の税率20.315%で計算。NISA口座なら非課税です。</small></div>
+      <label class="switch"><input type="checkbox" id="taxToggle" checked><span class="track"></span></label>
+    </div>
+
+    <div class="row" style="display:block;">
+      <div class="lbl" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>想定分配金利回り（年）</span>
+        <input type="number" id="yieldNum" min="0" max="15" step="0.1" value="4">
+      </div>
+      <input type="range" id="yieldRange" min="0" max="15" step="0.1" value="4">
+      <div class="lbl"><small>あなたが仮に置く数値です。実績でも予想でもありません。金額の目安を出すためだけに使います。</small></div>
+    </div>
+  </div>
+
+  <!-- 銘柄の選択 -->
+  <div class="card">
+    <h2>銘柄を選ぶ（証券コード順）</h2>
+    <p class="note" style="margin:-4px 0 10px;">初期状態は、下の「12ヶ月すべてに受け取りがある組み合わせ」の1件目を機械的に置いたものです。銘柄の優劣や購入の推奨を示すものではありません。</p>
+    <div id="fundList"></div>
+    <div class="row" style="border-top:1px solid #e8f0ec;">
+      <div class="lbl">合計の投資金額</div>
+      <div style="font-size:15px;font-weight:700;color:#14614a;" id="totalAmount">0円</div>
+    </div>
+  </div>
+
+  <!-- 結果 -->
+  <div class="card">
+    <h2>受け取りカレンダー</h2>
+    <div class="calwrap">
+      <table class="cal" id="calTable"></table>
+    </div>
+
+    <div id="verdict" class="verdict none">銘柄を選んでください。</div>
+
+    <div class="summary">
+      <div class="sm"><div class="k">受け取りのある月</div><div class="v" id="smMonths">0 / 12ヶ月</div></div>
+      <div class="sm"><div class="k">受け取りのない月</div><div class="v warn" id="smGaps">—</div></div>
+      <div class="sm"><div class="k">年間の受取額（目安）</div><div class="v" id="smYear">0円</div></div>
+      <div class="sm"><div class="k">1ヶ月あたり平均</div><div class="v" id="smAvg">0円</div></div>
+    </div>
+
+    <div class="bars">
+      <div class="bhead" id="barHead">月ごとの受取額の目安</div>
+      <div id="barList"></div>
+    </div>
+
+    <p class="note" style="margin-top:10px;">1回あたりの分配金は「年間の想定額 ÷ 年間の決算回数」で均等に割った概算です。実際は回ごとに増減します。</p>
+  </div>
+
+  <!-- 空白月を埋める -->
+  <div class="card" id="gapCard" style="display:none;">
+    <h2>受け取りのない月に、受け取りがある銘柄</h2>
+    <div id="candList"></div>
+    <p class="note" style="margin-top:8px;">決算月から機械的に抽出した該当銘柄です。銘柄の優劣や購入の推奨を示すものではありません。</p>
+  </div>
+
+  <!-- 組み合わせ -->
+  <div class="card">
+    <h2>12ヶ月すべてに受け取りがある組み合わせ</h2>
+    <div id="comboList"></div>
+    <p class="note" style="margin-top:8px;">収録している銘柄から、条件を満たす組み合わせを本数の少ない順に機械的に並べたものです。銘柄の優劣や購入の推奨を示すものではありません。</p>
+  </div>
+
+  <!-- 注記 -->
+  <div class="card">
+    <h2>ご利用にあたって</h2>
+    <div class="disc">
+      このシミュレーターは、決算月と想定利回りから受取分配金の目安を計算する概算ツールです。実際の分配金額・分配回数・支払日は運用状況により変動し、分配金が支払われない場合もあります。表示される金額は将来の受取額を保証するものではありません。特定の銘柄の購入を推奨するものではなく、投資助言ではありません。投資はご自身の判断と責任で行い、必要に応じて専門家にご相談ください。
+    </div>
+    <ul class="note" style="margin-top:10px;">
+      <li>分配金の額・回数は運用状況により変動し、支払われないこともあります。</li>
+      <li>入金月は「決算月の翌月」で計算しためやすです（ETFの分配金は決算日から40日程度で支払われるという運用会社の解説に基づきます）。銘柄ごとの正確な支払開始日は公表されておらず、証券会社によっても前後します。</li>
+      <li>表示している決算月は<strong>2026年8月25日時点</strong>の各運用会社の公表情報に基づきます。最新は各銘柄の「運用会社の公式ページ」でご確認ください。</li>
+      <li>入力した数値はこの端末の中だけで計算され、どこにも送信されません。</li>
+    </ul>
+  </div>
+
+  <!-- FAQ -->
+  <div class="card">
+    <h2>よくある質問</h2>
+    <details class="faq"><summary>権利確定月と入金月は何が違いますか？</summary>
+      <p>権利確定月（決算月）は「その分配金を受け取る権利が確定する月」です。実際にお金が証券口座に入るのは、そこから遅れて支払開始日を迎えてからになります。ETFの分配金は決算日から40日程度で支払われるため、たとえば8月10日が決算日なら、入金は9月になります。「決算月をずらして組み合わせた」つもりでも、お金が入る月は後ろにずれます。</p></details>
+    <details class="faq"><summary>分配金は毎回同じ金額ですか？</summary>
+      <p>いいえ。同じ銘柄でも決算回ごとに分配金の額は変わります。このツールは「年間の想定額 ÷ 年間の決算回数」で均等に割った概算を表示しているため、実際の受取額は月ごとに増減します。金額よりも「どの月に受け取りがあるか」を見るためのツールとお考えください。</p></details>
+    <details class="faq"><summary>入力した数値はどこかに送信されますか？</summary>
+      <p>されません。計算はすべてお使いの端末の中だけで行われ、投資金額や利回りの数値が外部に送られることはありません。前回の入力内容はブラウザの中にだけ保存され、次に開いたときに復元されます。</p></details>
+    <details class="faq"><summary>NISA口座だとどうなりますか？</summary>
+      <p>NISA口座（成長投資枠）で保有している分の分配金は非課税です。その場合は「税引後で表示する」をオフにすると、税金を引かない金額で表示できます。課税口座の場合は上場株式等の税率20.315%（所得税15%＋復興特別所得税0.315%＋住民税5%）がかかります。</p></details>
+    <details class="faq"><summary>この組み合わせのとおりに買えば必ず毎月もらえますか？</summary>
+      <p>いいえ、保証はできません。表示しているのは「決算月の組み合わせ上、12ヶ月すべてに受け取りの機会がある」という事実だけです。分配金は運用状況によって変動し、支払われないこともあります。また権利を得るには決算日（権利確定日）の時点で保有している必要があります。</p></details>
+  </div>
+
+  <!-- 関連 -->
+  <div class="card">
+    <h2>関連するツール・記事</h2>
+    <div class="rel">
+      <a href="https://rinne-blog.com/jreit-monthly-dividend" target="_blank" rel="noopener">J-REIT ETFの組み合わせで毎月もらう方法</a>
+      <a href="https://rinne-blog.com/dividend" target="_blank" rel="noopener">配当金シミュレーター</a>
+      <a href="https://rinne-blog.com/tsumitate-simulator" target="_blank" rel="noopener">つみたてシミュレーター</a>
+      <a href="https://rinne-blog.com/nisa-torikuzushi-simulator" target="_blank" rel="noopener">新NISA取り崩しシミュレーター</a>
+    </div>
+  </div>
+
+</div>
+
+<script src="data.js"></script>
+<script src="logic.js"></script>
+<script>
+(function () {
+  "use strict";
+  var FUNDS = window.FUNDS;
+  var L = window.JreitLogic;
+  var TAX = window.TAX_RATE;
+  var STORE_KEY = "jreit-calendar:v1";
+
+  // 入金月のめやす: 決算の翌月で固定する。
+  // ETFの分配金は決算日から40日程度で支払われ、収録7銘柄の決算日はすべて月の前半なので、
+  // 入金は必ず翌月になる。銘柄ごとの支払開始日は公表されていないため、これ以上細かくしない。
+  var LAG_MONTHS = 1;
+
+  var state = {
+    basis: "payout",
+    lagMonths: LAG_MONTHS,
+    afterTax: true,
+    commonYield: 4,
+    selected: {}   // code -> amount(number)
+  };
+
+  function $(id) { return document.getElementById(id); }
+  function yen(v) {
+    if (!isFinite(v)) v = 0;
+    return Math.round(v).toLocaleString("ja-JP") + "円";
+  }
+
+  /* ---------- 保存・復元 ---------- */
+  function save() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* 保存できなくても動作は続ける */ }
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return;
+      var o = JSON.parse(raw);
+      if (!o || typeof o !== "object") return;
+      if (o.basis === "settlement" || o.basis === "payout") state.basis = o.basis;
+      if (typeof o.afterTax === "boolean") state.afterTax = o.afterTax;
+      if (typeof o.commonYield === "number" && isFinite(o.commonYield)) {
+        state.commonYield = Math.min(15, Math.max(0, o.commonYield));
+      }
+      if (o.selected && typeof o.selected === "object") {
+        Object.keys(o.selected).forEach(function (code) {
+          var known = FUNDS.some(function (f) { return f.code === code; });
+          var v = Number(o.selected[code]);
+          if (known && isFinite(v) && v >= 0) state.selected[code] = Math.min(1000000000, v);
+        });
+      }
+    } catch (e) { /* 壊れた保存内容は無視して初期状態で動かす */ }
+  }
+
+  /* ---------- 銘柄カード ---------- */
+  function monthsLabel(list) {
+    return list.join("・") + "月";
+  }
+
+  function buildFundList() {
+    var host = $("fundList");
+    host.innerHTML = "";
+    FUNDS.forEach(function (f) {
+      var isSel = Object.prototype.hasOwnProperty.call(state.selected, f.code);
+      var box = document.createElement("div");
+      box.className = "fund" + (isSel ? " sel" : "");
+      box.setAttribute("data-code", f.code);
+
+      var settle = L.receiveMonths(f, "settlement", 0);
+      var payout = L.receiveMonths(f, "payout", state.lagMonths);
+      var settleHi = state.basis === "settlement" ? " hi" : "";
+      var payoutHi = state.basis === "payout" ? " hi" : "";
+
+      var art = f.articlePath
+        ? '<a href="https://rinne-blog.com' + f.articlePath + '" target="_blank" rel="noopener">この銘柄の解説記事</a>'
+        : "";
+
+      box.innerHTML =
+        '<label class="top">' +
+          '<input type="checkbox" class="chk" ' + (isSel ? "checked" : "") + ' aria-label="' + f.code + ' を選ぶ">' +
+          '<div class="info">' +
+            '<div class="code">' + f.code + '</div>' +
+            '<div class="nm">' + f.name + '</div>' +
+            '<div class="co">' + f.company + '</div>' +
+            '<div class="badges">' +
+              '<span class="badge' + settleHi + '">権利確定 ' + monthsLabel(settle) + '（各' + f.settlementDay + '日）</span>' +
+              '<span class="badge' + payoutHi + '">入金めやす ' + monthsLabel(payout) + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</label>' +
+        '<div class="amt"><span>投資金額</span><span style="display:flex;align-items:center;gap:5px;"><input type="number" class="amtin" min="0" max="1000000000" step="10000" value="' +
+          (isSel ? state.selected[f.code] : 1000000) + '"><span style="font-size:12px;">円</span></span></div>' +
+        '<div class="links">' + art +
+          '<a href="' + f.officialUrl + '" target="_blank" rel="noopener">運用会社の公式ページ</a>' +
+        '</div>';
+
+      var chk = box.querySelector(".chk");
+      var amtin = box.querySelector(".amtin");
+
+      chk.addEventListener("change", function () {
+        if (chk.checked) state.selected[f.code] = clampAmount(amtin.value);
+        else delete state.selected[f.code];
+        box.className = "fund" + (chk.checked ? " sel" : "");
+        save(); render();
+      });
+
+      // 打鍵中にDOMへ書き戻すと0へスナップして入力できなくなるため、
+      // 計算用の読み取り(input)と表示への書き戻し(blur)を分ける。
+      amtin.addEventListener("input", function () {
+        if (!chk.checked) return;
+        state.selected[f.code] = clampAmount(amtin.value);
+        save(); render();
+      });
+      amtin.addEventListener("blur", function () {
+        var v = clampAmount(amtin.value);
+        amtin.value = v;
+        if (chk.checked) { state.selected[f.code] = v; save(); render(); }
+      });
+
+      host.appendChild(box);
+    });
+  }
+
+  function clampAmount(v) {
+    var n = Number(v);
+    if (!isFinite(n) || n < 0) n = 0;
+    return Math.min(1000000000, Math.round(n));
+  }
+
+  /* 選択状態が変わっても入力欄の値は保持したいので、バッジだけ更新する */
+  function refreshBadges() {
+    FUNDS.forEach(function (f) {
+      var box = document.querySelector('.fund[data-code="' + f.code + '"]');
+      if (!box) return;
+      var badges = box.querySelectorAll(".badge");
+      if (badges.length < 2) return;
+      var payout = L.receiveMonths(f, "payout", state.lagMonths);
+      badges[0].className = "badge" + (state.basis === "settlement" ? " hi" : "");
+      badges[1].className = "badge" + (state.basis === "payout" ? " hi" : "");
+      badges[1].textContent = "入金めやす " + monthsLabel(payout);
+    });
+  }
+
+  /* ---------- 計算と描画 ---------- */
+  function currentSelection() {
+    var s = {};
+    Object.keys(state.selected).forEach(function (code) {
+      s[code] = { amount: state.selected[code], yieldPct: state.commonYield };
+    });
+    return s;
+  }
+
+  function render() {
+    refreshBadges();
+
+    var r = L.calcPortfolio({
+      funds: FUNDS,
+      selection: currentSelection(),
+      basis: state.basis,
+      lagMonths: state.lagMonths,
+      afterTax: state.afterTax,
+      taxRate: TAX
+    });
+
+    $("totalAmount").textContent = yen(r.totalAmount);
+    drawCalendar(r);
+    drawSummary(r);
+    drawBars(r);
+    drawCandidates(r);
+    drawCombos();
+  }
+
+  function drawCalendar(r) {
+    var t = $("calTable");
+    var head = "<tr><th class='rowhead'>銘柄</th>";
+    for (var m = 1; m <= 12; m++) head += "<th>" + m + "</th>";
+    head += "</tr>";
+
+    var body = "";
+    r.rows.forEach(function (row) {
+      body += "<tr><td class='rowhead'>" + row.code + "</td>";
+      for (var m = 0; m < 12; m++) {
+        body += row.flags[m] ? "<td class='hit'>●</td>" : "<td class='miss'>・</td>";
+      }
+      body += "</tr>";
+    });
+
+    if (r.rows.length === 0) {
+      body += "<tr><td class='rowhead'>—</td>";
+      for (var k = 0; k < 12; k++) body += "<td class='miss'>・</td>";
+      body += "</tr>";
+    }
+
+    var total = "<tr class='total'><td class='rowhead'>合計</td>";
+    for (var j = 1; j <= 12; j++) {
+      var hasIt = r.receivedMonths.indexOf(j) >= 0;
+      total += hasIt ? "<td class='hit'>●</td>" : "<td class='gap'>✕</td>";
+    }
+    total += "</tr>";
+
+    t.innerHTML = head + body + total;
+  }
+
+  function drawSummary(r) {
+    $("smMonths").textContent = r.paidMonthCount + " / 12ヶ月";
+    $("smGaps").textContent = r.gapMonths.length === 0 ? "なし" : monthsLabel(r.gapMonths);
+    $("smYear").textContent = yen(r.yearTotal);
+    $("smAvg").textContent = yen(r.monthAvg);
+
+    var v = $("verdict");
+    var basisWord = state.basis === "payout" ? "入金" : "権利確定";
+    if (r.rows.length === 0) {
+      v.className = "verdict none";
+      v.textContent = "銘柄を選んでください。";
+    } else if (r.isMonthly) {
+      v.className = "verdict good";
+      v.textContent = "この組み合わせなら、12ヶ月すべてに" + basisWord + "があります。";
+    } else {
+      v.className = "verdict bad";
+      v.textContent = monthsLabel(r.gapMonths) + "は" + basisWord + "がありません（" +
+        r.paidMonthCount + "ヶ月に" + basisWord + "があります）。";
+    }
+  }
+
+  function drawBars(r) {
+    $("barHead").textContent = "月ごとの受取額の目安" +
+      (state.afterTax ? "（税引後）" : "（税引前）") +
+      "／" + (state.basis === "payout" ? "入金月のめやす" : "権利確定月") + "で表示";
+
+    var max = 0;
+    r.byMonth.forEach(function (v) { if (v > max) max = v; });
+
+    var html = "";
+    for (var m = 1; m <= 12; m++) {
+      var v = r.byMonth[m - 1];
+      var pct = max > 0 ? (v / max * 100) : 0;
+      var hasIt = r.receivedMonths.indexOf(m) >= 0;
+      // 受け取りはあるが金額0（投資金額未入力）のときも棒が見えるように最小幅を持たせる
+      var w = hasIt && pct < 2 ? 2 : pct;
+      html += '<div class="bar">' +
+                '<div class="bm">' + m + '月</div>' +
+                '<div class="btrack"><div class="bfill' + (hasIt ? "" : " zero") + '" style="width:' + w.toFixed(1) + '%"></div></div>' +
+                '<div class="bv">' + (hasIt ? yen(v) : "—") + '</div>' +
+              '</div>';
+    }
+    $("barList").innerHTML = html;
+  }
+
+  function drawCandidates(r) {
+    var card = $("gapCard");
+    var host = $("candList");
+    if (r.rows.length === 0 || r.gapMonths.length === 0) {
+      card.style.display = "none";
+      host.innerHTML = "";
+      return;
+    }
+    var list = L.fillCandidates(FUNDS, Object.keys(state.selected), r.gapMonths, state.basis, state.lagMonths);
+    if (list.length === 0) {
+      card.style.display = "block";
+      host.innerHTML = '<p class="note">収録している銘柄の中に、空いている月に受け取りがあるものはありません。</p>';
+      return;
+    }
+    card.style.display = "block";
+    var basisWord = state.basis === "payout" ? "入金" : "権利確定";
+    var html = "";
+    list.forEach(function (c) {
+      html += '<div class="cand"><div class="cline"><div>' +
+                '<div class="ct">' + monthsLabel(c.covered) + 'に' + basisWord + 'があるのは <b>' + c.code + '</b></div>' +
+                '<div class="cs">' + c.name + '</div>' +
+              '</div><button type="button" class="btn addBtn" data-code="' + c.code + '">追加</button></div></div>';
+    });
+    host.innerHTML = html;
+
+    Array.prototype.forEach.call(host.querySelectorAll(".addBtn"), function (b) {
+      b.addEventListener("click", function () {
+        var code = b.getAttribute("data-code");
+        state.selected[code] = defaultAmount();
+        save();
+        buildFundList();
+        render();
+      });
+    });
+  }
+
+  function defaultAmount() {
+    var codes = Object.keys(state.selected);
+    if (codes.length === 0) return 1000000;
+    var sum = 0;
+    codes.forEach(function (c) { sum += state.selected[c]; });
+    var avg = Math.round(sum / codes.length);
+    return avg > 0 ? avg : 1000000;
+  }
+
+  function drawCombos() {
+    var list = L.monthlyCombos(FUNDS, state.basis, state.lagMonths, 5);
+    var host = $("comboList");
+    if (list.length === 0) {
+      host.innerHTML = '<p class="note">収録している銘柄の組み合わせでは、12ヶ月すべてを埋められません。</p>';
+      return;
+    }
+    var cur = Object.keys(state.selected).sort().join(",");
+    var html = "";
+    list.forEach(function (c) {
+      var same = c.codes.join(",") === cur;
+      html += '<div class="cand"><div class="cline"><div>' +
+                '<div class="ct"><b>' + c.codes.join(" ＋ ") + '</b></div>' +
+                '<div class="cs">' + c.size + '銘柄で12ヶ月すべてをカバー</div>' +
+              '</div><button type="button" class="btn ' + (same ? "ghost" : "") + ' setBtn" data-codes="' + c.codes.join(",") + '">' +
+                (same ? "選択中" : "これにする") + '</button></div></div>';
+    });
+    host.innerHTML = html;
+
+    Array.prototype.forEach.call(host.querySelectorAll(".setBtn"), function (b) {
+      b.addEventListener("click", function () {
+        var codes = b.getAttribute("data-codes").split(",");
+        var amt = defaultAmount();
+        state.selected = {};
+        codes.forEach(function (c) { state.selected[c] = amt; });
+        save();
+        buildFundList();
+        render();
+      });
+    });
+  }
+
+  /* ---------- 配線 ---------- */
+  function setBasis(b) {
+    state.basis = b;
+    $("basisPayout").className = b === "payout" ? "on" : "";
+    $("basisSettle").className = b === "settlement" ? "on" : "";
+    $("lagBox").className = "lagbox" + (b === "payout" ? "" : " hidden");
+    $("basisHelp").textContent = b === "payout"
+      ? "分配金は決算日（権利確定日）に確定し、口座に入るのはその後です。ここでは入金される月のめやすで表示しています。"
+      : "権利確定月（決算月）で表示しています。この月の決算日に保有していると分配金を受け取る権利が得られます。";
+    save(); render();
+  }
+
+  function clampYield(v) {
+    var n = Number(v);
+    if (!isFinite(n) || n < 0) n = 0;
+    return Math.min(15, Math.round(n * 10) / 10);
+  }
+
+  function init() {
+    load();
+
+    $("basisPayout").addEventListener("click", function () { setBasis("payout"); });
+    $("basisSettle").addEventListener("click", function () { setBasis("settlement"); });
+
+    $("taxToggle").checked = state.afterTax;
+    $("taxToggle").addEventListener("change", function () {
+      state.afterTax = $("taxToggle").checked;
+      save(); render();
+    });
+
+    $("yieldNum").value = state.commonYield;
+    $("yieldRange").value = state.commonYield;
+    $("yieldRange").addEventListener("input", function () {
+      state.commonYield = clampYield($("yieldRange").value);
+      $("yieldNum").value = state.commonYield;
+      save(); render();
+    });
+    $("yieldNum").addEventListener("input", function () {
+      state.commonYield = clampYield($("yieldNum").value);
+      $("yieldRange").value = state.commonYield;
+      save(); render();
+    });
+    $("yieldNum").addEventListener("blur", function () {
+      state.commonYield = clampYield($("yieldNum").value);
+      $("yieldNum").value = state.commonYield;
+      $("yieldRange").value = state.commonYield;
+      save(); render();
+    });
+
+    // 初回は「12ヶ月すべてに受け取りがある組み合わせ」の一覧の1件目を機械的に初期値として置く。
+    // （本数が少ない順→銘柄コードの辞書順で決まる並びの先頭であり、編集上の推奨ではない。
+    //   その旨は銘柄選択カードの冒頭に文章としても表示している）
+    if (Object.keys(state.selected).length === 0) {
+      var first = L.monthlyCombos(FUNDS, state.basis, state.lagMonths, 1);
+      if (first.length > 0) first[0].codes.forEach(function (c) { state.selected[c] = 1000000; });
+    }
+
+    setBasis(state.basis);
+    buildFundList();
+    render();
+  }
+
+  init();
+})();
+</script>
+<script>
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  }
+</script>
+</body>
+</html>
