@@ -1,0 +1,16 @@
+{
+  "name": "三河の旬カレンダー（非公式）",
+  "short_name": "三河の旬",
+  "description": "愛知県西三河8市町の「いま旬のもの」を月から探せる非公式ツール。ふるさと納税サイトで使う検索ワードをコピーできます。",
+  "lang": "ja",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f8f4",
+  "theme_color": "#4a7c3f",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

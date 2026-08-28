@@ -1,0 +1,450 @@
+/* 三河の旬カレンダー（非公式） 品目マスタ
+ *
+ * 仕様: .company/ceo/strategy/spec-mikawa-shun.md
+ * 裏付け台帳: apps/mikawa-shun/data-sources.md
+ *   ← このファイルを直すときは台帳も必ず直す。台帳には原文の該当行を残してある。
+ *
+ * 【厳守】
+ * - 個別商品名・寄付金額・在庫・件数・人気順は持たない（仕様 §2-3）
+ * - 旬はポータルの商品ページから取らない。自治体公式・JA公式のみ（§3-1）
+ * - seasonKind は出典が使っている語をそのまま使う。「収穫」と書いてあるものを
+ *   「出荷」に言い換えない（§3-2-1）。収穫期と出荷期は1〜2か月ずれることがある
+ * - 出典に終期が書かれていない品目は、終期を推測して月を足さない（筆柿が該当）
+ *
+ * checkedAt は 2026-08-28（一次情報を実際に開いて確認した日）
+ */
+
+const ITEMS = [
+  /* ---------------- 安城市 ---------------- */
+  {
+    id: "anjo-nashi",
+    city: "安城市",
+    item: "梨",
+    itemNote: "甘ひびき・愛甘水・幸水・豊水・あきづき・新高",
+    category: "果物",
+    seasonMonths: [7, 8, 9],
+    seasonKind: "出荷期",
+    seasonNote: "例年7月下旬〜9月下旬ごろに出荷されます（品種により時期が異なります）",
+    background: "明治30年ごろから栽培が続く「安城梨」。甘ひびきと愛甘水は安城で生まれた品種",
+    searchWord: "安城市 梨",
+    officialUrl: "https://www.city.anjo.aichi.jp/shisei/hurusato/hurusatokifukin.html",
+    sourceName: "JAあいち中央",
+    sourceUrl: "https://www.jaac.or.jp/agriculture/product/nashi/index.html",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+  {
+    id: "anjo-ichijiku",
+    city: "安城市",
+    item: "いちじく",
+    itemNote: "桝井ドーフィン・サマーレッド",
+    category: "果物",
+    seasonMonths: [4, 5, 6, 7, 8, 9, 10],
+    seasonKind: "出荷期",
+    seasonNote: "ハウスは例年4月上旬〜8月中旬、露地は例年8月上旬〜10月下旬に出荷されます",
+    background: "愛知県は全国有数のいちじく産地。ハウスと露地で春から秋まで長く続く",
+    searchWord: "安城市 いちじく",
+    officialUrl: "https://www.city.anjo.aichi.jp/shisei/hurusato/hurusatokifukin.html",
+    sourceName: "JAあいち中央",
+    sourceUrl: "https://www.jaac.or.jp/agriculture/product/ichijiku/index.html",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+
+  /* ---------------- 西尾市 ---------------- */
+  {
+    id: "nishio-tencha",
+    city: "西尾市",
+    item: "てん茶",
+    itemNote: "抹茶の原料になる茶葉",
+    category: "茶",
+    seasonMonths: [5],
+    seasonKind: "収穫期",
+    seasonNote: "てん茶（抹茶の原料）の収穫期は例年5月上旬〜中旬です。抹茶そのものは通年で流通します",
+    background: "「西尾の抹茶」は特許庁の地域団体商標。市の年間出荷量は334トン",
+    searchWord: "西尾市 抹茶",
+    officialUrl: "https://www.city.nishio.aichi.jp/kurashi/zeikin/1001422/index.html",
+    sourceName: "JA西三河",
+    sourceUrl: "https://www.ja-nishimikawa.or.jp/agriculture/products/introduce.php",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+  {
+    id: "nishio-ichigo",
+    city: "西尾市",
+    item: "いちご",
+    itemNote: "紅ほっぺなど",
+    category: "果物",
+    seasonMonths: [10, 11, 12, 1, 2, 3, 4, 5, 6],
+    seasonKind: "収穫期",
+    seasonNote: "例年10月末〜6月上旬が収穫期です（出荷のピークは3〜4月ごろ）",
+    background: "吉良・幡豆地区を中心に栽培され、県内トップクラスの生産量",
+    searchWord: "西尾市 いちご",
+    officialUrl: "https://www.city.nishio.aichi.jp/kurashi/zeikin/1001422/index.html",
+    sourceName: "JA西三河",
+    sourceUrl: "https://www.ja-nishimikawa.or.jp/agriculture/products/introduce.php",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+  {
+    id: "nishio-ichijiku",
+    city: "西尾市",
+    item: "いちじく",
+    itemNote: "一文字整枝法で栽培される",
+    category: "果物",
+    seasonMonths: [4, 5, 6, 7, 8, 9, 10, 11],
+    seasonKind: "収穫期",
+    seasonNote: "ハウスは例年4月〜8月上旬、露地は例年7月下旬〜11月上旬が収穫期です",
+    background: "吉良・幡豆地区を中心に栽培。幹を地面に這わせる「一文字整枝法」が特徴",
+    searchWord: "西尾市 いちじく",
+    officialUrl: "https://www.city.nishio.aichi.jp/kurashi/zeikin/1001422/index.html",
+    sourceName: "JA西三河",
+    sourceUrl: "https://www.ja-nishimikawa.or.jp/agriculture/products/introduce.php",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+  {
+    id: "nishio-carnation",
+    city: "西尾市",
+    item: "カーネーション",
+    itemNote: "",
+    category: "花き",
+    seasonMonths: [9, 10, 11, 12, 1, 2, 3, 4, 5, 6],
+    seasonKind: "収穫期",
+    seasonNote: "例年9月下旬〜6月中旬が収穫期です（母の日前がピーク）",
+    background: "旧一色町地域で昭和35年から生産。年間1,900万本以上を生産する全国有数の産地",
+    searchWord: "西尾市 カーネーション",
+    officialUrl: "https://www.city.nishio.aichi.jp/kurashi/zeikin/1001422/index.html",
+    sourceName: "JA西三河",
+    sourceUrl: "https://www.ja-nishimikawa.or.jp/agriculture/products/introduce.php",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+  {
+    id: "nishio-kome",
+    city: "西尾市",
+    item: "米",
+    itemNote: "コシヒカリ・あいちのかおり",
+    category: "米",
+    seasonMonths: [8, 9, 10],
+    seasonKind: "収穫期",
+    seasonNote: "例年8月中旬〜9月中旬（コシヒカリ）、9月下旬〜10月下旬（あいちのかおり）が収穫期です",
+    background: "市内産の米は「矢作の恵」として販売される。市の年間出荷量は9,330トン",
+    searchWord: "西尾市 米",
+    officialUrl: "https://www.city.nishio.aichi.jp/kurashi/zeikin/1001422/index.html",
+    sourceName: "JA西三河",
+    sourceUrl: "https://www.ja-nishimikawa.or.jp/agriculture/products/introduce.php",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+
+  /* ---------------- 碧南市 ---------------- */
+  {
+    id: "hekinan-ninjin",
+    city: "碧南市",
+    item: "にんじん",
+    itemNote: "へきなん美人・へきなんにんじん",
+    category: "野菜",
+    seasonMonths: [11, 12, 1, 2, 3],
+    seasonKind: "収穫期",
+    seasonNote: "例年11月中旬〜3月下旬が収穫期です",
+    background: "昭和42年に冬にんじんの指定産地となった県下1番の生産地。矢作川の砂質土壌で育つ",
+    searchWord: "碧南市 にんじん",
+    officialUrl: "https://www.city.hekinan.lg.jp/furusato/index.html",
+    sourceName: "碧南市",
+    sourceUrl: "https://www.city.hekinan.lg.jp/soshiki/keizai_kankyo/nogyo_suisan/1/4963.html",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+  {
+    id: "hekinan-tamanegi",
+    city: "碧南市",
+    item: "たまねぎ",
+    itemNote: "へきなんサラダたまねぎ・へきなんたまねぎ",
+    category: "野菜",
+    seasonMonths: [3, 4, 5, 6],
+    seasonKind: "出荷期",
+    seasonNote: "例年3月下旬〜6月下旬に出荷されます",
+    background: "にんじんとの輪作体系のなかで昭和35年ごろから栽培され、昭和45年度に指定産地となった",
+    searchWord: "碧南市 たまねぎ",
+    officialUrl: "https://www.city.hekinan.lg.jp/furusato/index.html",
+    sourceName: "碧南市",
+    sourceUrl: "https://www.city.hekinan.lg.jp/soshiki/keizai_kankyo/nogyo_suisan/1/4963.html",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+  {
+    id: "hekinan-kansho",
+    city: "碧南市",
+    item: "かんしょ",
+    itemNote: "早堀かんしょ",
+    category: "野菜",
+    seasonMonths: [7, 8],
+    seasonKind: "出荷期",
+    seasonNote: "例年7月〜8月に出荷されます。新物が少ない時期に出回るのが特徴です",
+    background: "明治末期から栽培。砂土の特性を生かした早堀りで、新物の少ない時期に出せる",
+    searchWord: "碧南市 さつまいも",
+    officialUrl: "https://www.city.hekinan.lg.jp/furusato/index.html",
+    sourceName: "碧南市",
+    sourceUrl: "https://www.city.hekinan.lg.jp/soshiki/keizai_kankyo/nogyo_suisan/1/4963.html",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+  {
+    id: "hekinan-tomato",
+    city: "碧南市",
+    item: "トマト",
+    itemNote: "",
+    category: "野菜",
+    seasonMonths: [11, 12, 1, 2, 3, 4, 5, 6, 7],
+    seasonKind: "出荷期",
+    seasonNote: "例年11月上旬〜7月上旬に出荷されます",
+    background: "昭和30年代から碧南南部地区で生産が盛んに。土壌と気候が栽培に適している",
+    searchWord: "碧南市 トマト",
+    officialUrl: "https://www.city.hekinan.lg.jp/furusato/index.html",
+    sourceName: "JAあいち中央",
+    sourceUrl: "https://www.jaac.or.jp/agriculture/product/tomato/index.html",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+
+  /* ---------------- 刈谷市 ---------------- */
+  {
+    id: "kariya-satoimo",
+    city: "刈谷市",
+    item: "サトイモ",
+    itemNote: "西境地区を中心に栽培",
+    category: "野菜",
+    seasonMonths: [10, 11, 12, 1, 2],
+    seasonKind: "出荷期",
+    seasonNote: "例年11月〜1月下旬（共選）、10月下旬〜2月上旬（産直）に出荷されます",
+    background: "愛知県東部から種芋を導入し、長年の選別で「刈谷のサトイモ」として定着。市の学校給食にも使われる",
+    searchWord: "刈谷市 里芋",
+    officialUrl: "https://www.city.kariya.lg.jp/kurashi/zeikin/furusato/1003195.html",
+    sourceName: "JAあいち中央",
+    sourceUrl: "https://www.jaac.or.jp/agriculture/product/satoimo/index.html",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+  {
+    id: "kariya-suika",
+    city: "刈谷市",
+    item: "スイカ",
+    itemNote: "",
+    category: "果物",
+    seasonMonths: [6, 7],
+    seasonKind: "旬",
+    seasonNote: "旬は例年6月中旬から7月上旬ごろです",
+    background: "刈谷市北部で栽培される。旬の時期には産直センター刈谷北部でスイカトラック朝市が開かれる",
+    searchWord: "刈谷市 すいか",
+    officialUrl: "https://www.city.kariya.lg.jp/kurashi/zeikin/furusato/1003195.html",
+    sourceName: "JAあいち中央",
+    sourceUrl: "https://www.jaac.or.jp/agriculture/product/rojiengei/index.html",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+
+  /* ---------------- 岡崎市 ---------------- */
+  {
+    id: "okazaki-jinenjo",
+    city: "岡崎市",
+    item: "自然薯",
+    itemNote: "夢とろろ・P16",
+    category: "野菜",
+    seasonMonths: [11, 12],
+    seasonKind: "販売期",
+    seasonNote: "例年11月〜12月の2か月間に販売されます",
+    background: "岡崎市東部の山間地（旧額田町）で額田自然薯部会が栽培している",
+    searchWord: "岡崎市 自然薯",
+    officialUrl: "https://www.city.okazaki.lg.jp/1300/1301/1316/index.html",
+    sourceName: "JAあいち三河",
+    sourceUrl: "https://www.ja-aichimikawa.or.jp/product/product_jinenjyo.php",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+  {
+    id: "okazaki-kuri",
+    city: "岡崎市",
+    item: "栗",
+    itemNote: "「ぬかたの栗」",
+    category: "果物",
+    seasonMonths: [9, 10],
+    seasonKind: "出荷期",
+    seasonNote: "例年9月中旬〜10月上旬に出荷されます",
+    background: "岡崎市東部の額田地域で栽培され、「ぬかたの栗」の名称で出荷される",
+    searchWord: "岡崎市 栗",
+    officialUrl: "https://www.city.okazaki.lg.jp/1300/1301/1316/index.html",
+    sourceName: "JAあいち三河",
+    sourceUrl: "https://www.ja-aichimikawa.or.jp/product/product_kuri.php",
+    cityVerifiedInSource: false,
+    citySourceName: "岡崎市",
+    citySourceUrl: "https://www.city.okazaki.lg.jp/1400/1404/1414/p015520.html",
+    checkedAt: "2026-08-28"
+  },
+
+  /* ---------------- 豊田市 ---------------- */
+  {
+    id: "toyota-momo",
+    city: "豊田市",
+    item: "桃",
+    itemNote: "ちよひめ・日川白鳳など8品種",
+    category: "果物",
+    seasonMonths: [6, 7, 8, 9],
+    seasonKind: "出荷期",
+    seasonNote: "例年6月中旬〜9月中旬に出荷されます（品種により時期が異なります）",
+    background: "豊田市北部の猿投地区は県内有数の農業地域。53ヘクタールで8品種を406トン出荷（令和6年度）",
+    searchWord: "豊田市 桃",
+    officialUrl: "https://www.city.toyota.aichi.jp/kurashi/zeikin/kihu/index.html",
+    sourceName: "JAあいち豊田",
+    sourceUrl: "https://www.ja-aichitoyota.or.jp/product/",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+  {
+    id: "toyota-tencha",
+    city: "豊田市",
+    item: "てん茶",
+    itemNote: "抹茶の原料になる茶葉",
+    category: "茶",
+    seasonMonths: [5],
+    seasonKind: "収穫期",
+    seasonNote: "手摘みの収穫は例年5月から本格化します。抹茶そのものは通年で流通します",
+    background: "豊田市茶業組合が豊栄町・住吉町・吉原町などで栽培している",
+    searchWord: "豊田市 抹茶",
+    officialUrl: "https://www.city.toyota.aichi.jp/kurashi/zeikin/kihu/index.html",
+    sourceName: "JAあいち豊田",
+    sourceUrl: "https://www.ja-aichitoyota.or.jp/product/",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+  {
+    id: "toyota-bareisho",
+    city: "豊田市",
+    item: "じゃがいも",
+    itemNote: "男爵・キタアカリ",
+    category: "野菜",
+    seasonMonths: [6, 7],
+    seasonKind: "出荷期",
+    seasonNote: "例年6月下旬から7月にかけて出荷されます",
+    background: "猿投・小原地区で栽培され、豊田市内の学校給食を中心に出荷されている",
+    searchWord: "豊田市 じゃがいも",
+    officialUrl: "https://www.city.toyota.aichi.jp/kurashi/zeikin/kihu/index.html",
+    sourceName: "JAあいち豊田",
+    sourceUrl: "https://www.ja-aichitoyota.or.jp/product/",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+  {
+    id: "toyota-shiitake",
+    city: "豊田市",
+    item: "しいたけ",
+    itemNote: "「木の娘」「香嵐渓特産しいたけ」",
+    category: "野菜",
+    seasonMonths: [],
+    seasonKind: "通年",
+    seasonNote: "1年を通じて出荷されています",
+    background: "松平地区と足助地区で国産の菌床を使って栽培されている",
+    searchWord: "豊田市 しいたけ",
+    officialUrl: "https://www.city.toyota.aichi.jp/kurashi/zeikin/kihu/index.html",
+    sourceName: "JAあいち豊田",
+    sourceUrl: "https://www.ja-aichitoyota.or.jp/product/",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+
+  /* ---------------- 高浜市 ---------------- */
+  {
+    id: "takahama-sanshu-kawara",
+    city: "高浜市",
+    item: "三州瓦",
+    itemNote: "",
+    category: "工芸品",
+    seasonMonths: [],
+    seasonKind: "通年",
+    seasonNote: "通年で製造・販売されています",
+    background: "高浜市が地場産業として「ふるさと名物応援宣言」を行っている。鬼瓦を作る鬼師の技が受け継がれる",
+    searchWord: "高浜市 三州瓦",
+    officialUrl: "https://www.city.takahama.lg.jp/site/furusato/",
+    sourceName: "高浜市",
+    sourceUrl: "https://www.city.takahama.lg.jp/soshiki/keizai/815.html",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+
+  /* ---------------- 幸田町 ---------------- */
+  {
+    id: "kota-fudegaki",
+    city: "幸田町",
+    item: "筆柿",
+    itemNote: "別名「珍宝柿」",
+    category: "果物",
+    seasonMonths: [9],
+    seasonKind: "出荷期",
+    seasonNote: "他の品種より早く、例年9月中旬より出荷されます",
+    background: "徳川時代から町南西部で栽培され、生産量は全国一。形が毛筆に似ることから名づけられた",
+    searchWord: "幸田町 筆柿",
+    officialUrl: "https://www.town.kota.lg.jp/life/4/31/174/",
+    sourceName: "JAあいち三河",
+    sourceUrl: "https://www.ja-aichimikawa.or.jp/product/product_kaki.php",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+  {
+    id: "kota-ichigo",
+    city: "幸田町",
+    item: "いちご",
+    itemNote: "とちおとめ",
+    category: "果物",
+    seasonMonths: [10, 11, 12, 1, 2, 3, 4, 5],
+    seasonKind: "収穫期",
+    seasonNote: "例年10月下旬〜5月上旬に栽培・収穫されます",
+    background: "食味が良いことから選ばれている「とちおとめ」を町内の農家が栽培している",
+    searchWord: "幸田町 いちご",
+    officialUrl: "https://www.town.kota.lg.jp/life/4/31/174/",
+    sourceName: "幸田町",
+    sourceUrl: "https://www.town.kota.lg.jp/soshiki/13/764.html",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+  {
+    id: "kota-momo",
+    city: "幸田町",
+    item: "もも",
+    itemNote: "温室もも・露地もも",
+    category: "果物",
+    seasonMonths: [5, 6, 7],
+    seasonKind: "出荷期",
+    seasonNote: "例年5月下旬〜7月に出荷されます",
+    background: "須美地区で栽培されてきた。糖度が高く、ひとあし早く夏の訪れを知らせる",
+    searchWord: "幸田町 もも",
+    officialUrl: "https://www.town.kota.lg.jp/life/4/31/174/",
+    sourceName: "幸田町",
+    sourceUrl: "https://www.town.kota.lg.jp/soshiki/13/764.html",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  },
+  {
+    id: "kota-nasu",
+    city: "幸田町",
+    item: "なす",
+    itemNote: "露地なす・促成なす",
+    category: "野菜",
+    seasonMonths: [],
+    seasonKind: "通年",
+    seasonNote: "年間を通じて出荷されています",
+    background: "古くから町の南部地区で栽培されてきた。煮て、焼いて、漬けて良しといわれる",
+    searchWord: "幸田町 なす",
+    officialUrl: "https://www.town.kota.lg.jp/life/4/31/174/",
+    sourceName: "幸田町",
+    sourceUrl: "https://www.town.kota.lg.jp/soshiki/13/764.html",
+    cityVerifiedInSource: true,
+    checkedAt: "2026-08-28"
+  }
+];
+
+/* 分類は実データから導出する（ハードコードしない）。市町リストも同様（仕様 §0-1(A)） */
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { ITEMS };
+} else {
+  window.ITEMS = ITEMS;
+}

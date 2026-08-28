@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>三河の旬カレンダー（非公式）｜西三河8市町の旬を月から探す</title>
+<meta name="description" content="愛知県西三河の8市町で、いま何が旬なのかを月から探せる非公式ツールです。ふるさと納税サイトで使う検索ワードをそのままコピーできます。">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4a7c3f">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+/* 仕様 §5: 1画面完結・単一スクロール・position:fixed 不使用。
+   外部CDN/外部フォント/外部画像を一切読み込まない（new-app 規約） */
+:root{
+  --ink:#2f3b2c; --sub:#5f6b5c; --line:#dfe3d9; --bg:#f7f8f4; --card:#ffffff;
+  --accent:#4a7c3f; --accent-weak:#eaf1e5; --warn-bg:#fff8e6; --warn-line:#e6cf8a;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:16px 14px 32px; background:var(--bg); color:var(--ink);
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;
+  line-height:1.75; font-size:15px; max-width:680px; margin-left:auto; margin-right:auto;
+  -webkit-text-size-adjust:100%;
+}
+h1{font-size:1.32rem; margin:0 0 4px; letter-spacing:.02em}
+.lead{margin:0 0 14px; color:var(--sub); font-size:.9rem}
+.notice-top{
+  background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:8px;
+  padding:10px 12px; margin:0 0 18px; font-size:.83rem; color:#6b5a2a;
+}
+.controls{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:20px}
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.field > .label{display:block; font-size:.8rem; font-weight:bold; color:var(--sub); margin-bottom:6px}
+select{
+  font:inherit; padding:9px 10px; border:1px solid var(--line); border-radius:8px;
+  background:#fff; color:var(--ink); width:100%; max-width:220px;
+}
+.chips{display:flex; flex-wrap:wrap; gap:6px}
+.chip{
+  font:inherit; font-size:.83rem; padding:7px 12px; border-radius:999px; cursor:pointer;
+  border:1px solid var(--line); background:#fff; color:var(--sub); min-height:36px;
+}
+.chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:#fff}
+.chip-actions{margin-top:8px}
+.linkbtn{
+  font:inherit; font-size:.8rem; background:none; border:none; color:var(--accent);
+  text-decoration:underline; cursor:pointer; padding:4px 0;
+}
+h2{font-size:1.05rem; margin:26px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--accent-weak)}
+h3{font-size:.92rem; margin:18px 0 8px; color:var(--accent); font-weight:bold}
+.card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:13px 14px; margin-bottom:10px}
+.card h4{margin:0 0 2px; font-size:1.02rem; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.tag{font-size:.72rem; font-weight:normal; background:var(--accent-weak); color:var(--accent); border-radius:4px; padding:2px 7px}
+.variety{margin:0 0 8px; font-size:.83rem; color:var(--sub)}
+.season{margin:0 0 8px; font-size:.88rem; background:var(--accent-weak); border-radius:6px; padding:7px 10px}
+.bg{margin:0 0 10px; font-size:.85rem; color:var(--sub)}
+.searchbox{border-top:1px dashed var(--line); padding-top:10px; margin-top:10px}
+.searchbox .label{display:block; font-size:.76rem; color:var(--sub); margin-bottom:5px}
+.searchrow{display:flex; gap:8px; align-items:stretch; flex-wrap:wrap}
+.word{
+  flex:1 1 150px; min-width:0; font:inherit; font-size:.95rem; background:#f3f5ef;
+  border:1px solid var(--line); border-radius:6px; padding:8px 10px;
+  user-select:all; -webkit-user-select:all; word-break:break-all;
+}
+.copy{
+  font:inherit; font-size:.85rem; padding:8px 14px; border-radius:6px; cursor:pointer;
+  border:1px solid var(--accent); background:var(--accent); color:#fff; min-height:38px; white-space:nowrap;
+}
+.copy:disabled{opacity:.6; cursor:default}
+.copy-msg{font-size:.78rem; color:var(--accent); margin:6px 0 0; min-height:1.2em}
+.copy-msg.err{color:#a8482f}
+.links{margin:10px 0 0; font-size:.82rem}
+.links a{color:var(--accent)}
+.src{margin:6px 0 0; font-size:.76rem; color:var(--sub)}
+.src a{color:var(--sub)}
+.empty{background:var(--card); border:1px dashed var(--line); border-radius:10px; padding:18px 14px; color:var(--sub); font-size:.9rem}
+.howto{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px}
+.howto ol{margin:0; padding-left:1.3em}
+.howto li{margin-bottom:6px; font-size:.88rem}
+.howto li:last-child{margin-bottom:0}
+.notes{font-size:.8rem; color:var(--sub); margin-top:26px; border-top:1px solid var(--line); padding-top:14px}
+.notes ul{padding-left:1.2em; margin:8px 0 0}
+.notes li{margin-bottom:6px}
+/* コピーのフォールバック用の一時要素。仕様§4-4により position:fixed は使わない */
+#copy-helper{position:absolute; left:-9999px; top:0; opacity:0}
+</style>
+</head>
+<body>
+
+<h1>三河の旬カレンダー（非公式）</h1>
+<p class="lead">西三河8市町の「いま旬のもの」を月から探せます。</p>
+
+<p class="notice-top">本ツールは、各自治体・各ふるさと納税ポータルとは関係のない個人ブログが作成した<strong>非公式</strong>のツールです。</p>
+
+<div class="controls">
+  <div class="field">
+    <label class="label" for="month">月</label>
+    <select id="month"></select>
+  </div>
+  <div class="field">
+    <span class="label" id="label-city">市町</span>
+    <div class="chips" id="cities" role="group" aria-labelledby="label-city"></div>
+    <div class="chip-actions"><button type="button" class="linkbtn" id="reset-cities">市町の選択をすべて外す</button></div>
+  </div>
+  <div class="field">
+    <span class="label" id="label-cat">分類</span>
+    <div class="chips" id="categories" role="group" aria-labelledby="label-cat"></div>
+    <div class="chip-actions"><button type="button" class="linkbtn" id="reset-categories">分類の選択をすべて外す</button></div>
+  </div>
+</div>
+
+<section id="result-section">
+  <h2 id="result-heading">読み込み中</h2>
+  <div id="results" aria-live="polite"></div>
+</section>
+
+<section id="year-round-section" hidden>
+  <h2>通年で手に入るもの</h2>
+  <p class="lead">月の選択に関わらず表示しています。上の件数には含めていません。</p>
+  <div id="year-round"></div>
+</section>
+
+<h2>探し方</h2>
+<div class="howto">
+  <ol>
+    <li>気になった品目の<strong>検索ワードをコピー</strong>します。</li>
+    <li>ふるさと納税サイトの<strong>検索窓に貼り付け</strong>ます。</li>
+    <li>表示された中から<strong>金額帯で絞り込み</strong>ます。</li>
+  </ol>
+</div>
+
+<div class="notes">
+  <strong>ご利用にあたって</strong>
+  <ul>
+    <li>掲載しているのは「例年の旬の目安」であり、その年の天候や生育状況により前後します。</li>
+    <li>返礼品として実際に取り扱われているか、寄付金額、在庫、発送時期は、各ふるさと納税サイトおよび各自治体の公式ページで必ずご確認ください。</li>
+    <li>各品目の情報は記載の確認日時点のものです。</li>
+    <li>特定の返礼品・ポータルサイトの利用を推奨するものではありません。</li>
+  </ul>
+</div>
+
+<textarea id="copy-helper" readonly aria-hidden="true" tabindex="-1"></textarea>
+
+<script src="data.js"></script>
+<script src="logic.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* 仕様§4-5: data.js が空・破損していても白画面にしない */
+  var ITEMS = (typeof window.ITEMS !== "undefined") ? window.ITEMS : null;
+  var L = window.MikawaShun;
+  var headingEl = document.getElementById("result-heading");
+  var resultsEl = document.getElementById("results");
+
+  if (!Array.isArray(ITEMS) || ITEMS.length === 0 || !L) {
+    headingEl.textContent = "データを読み込めませんでした";
+    resultsEl.innerHTML = "";
+    var p = document.createElement("p");
+    p.className = "empty";
+    p.textContent = "ページを再読み込みしてもこの表示が続く場合は、時間をおいてからお試しください。";
+    resultsEl.appendChild(p);
+    return;
+  }
+
+  var state = {
+    month: L.currentMonth(),
+    cities: [],      /* 空配列＝絞り込みなし（仕様§4-2） */
+    categories: []
+  };
+
+  /* ---------- コントロールの組み立て（市町・分類は data.js から導出する） ---------- */
+  var monthEl = document.getElementById("month");
+  for (var m = 1; m <= 12; m++) {
+    monthEl.appendChild(new Option(m + "月", String(m)));
+  }
+  monthEl.appendChild(new Option("通年のもの", "year-round"));
+  monthEl.appendChild(new Option("すべて", "all"));
+  monthEl.value = String(state.month);
+
+  function buildChips(containerId, values, key) {
+    var box = document.getElementById(containerId);
+    values.forEach(function (v) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip";
+      b.textContent = v;
+      b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", function () {
+        var i = state[key].indexOf(v);
+        if (i === -1) { state[key].push(v); } else { state[key].splice(i, 1); }
+        b.setAttribute("aria-pressed", i === -1 ? "true" : "false");
+        render();
+      });
+      box.appendChild(b);
+    });
+  }
+  buildChips("cities", L.cityList(ITEMS), "cities");
+  buildChips("categories", L.categoryList(ITEMS), "categories");
+
+  function clearChips(containerId, key) {
+    state[key] = [];
+    var box = document.getElementById(containerId);
+    Array.prototype.forEach.call(box.querySelectorAll(".chip"), function (b) {
+      b.setAttribute("aria-pressed", "false");
+    });
+    render();
+  }
+  document.getElementById("reset-cities").addEventListener("click", function () { clearChips("cities", "cities"); });
+  document.getElementById("reset-categories").addEventListener("click", function () { clearChips("categories", "categories"); });
+
+  monthEl.addEventListener("change", function () {
+    var v = monthEl.value;
+    state.month = (v === "all" || v === "year-round") ? v : parseInt(v, 10);
+    render();
+  });
+
+  /* ---------- カードの生成（textContent のみ。HTML文字列を組み立てない） ---------- */
+  function el(tag, className, text) {
+    var e = document.createElement(tag);
+    if (className) e.className = className;
+    if (text !== undefined && text !== null) e.textContent = text;
+    return e;
+  }
+
+  function link(href, text) {
+    var a = document.createElement("a");
+    a.href = href;
+    a.textContent = text;
+    a.target = "_blank";
+    a.rel = "noopener";
+    return a;
+  }
+
+  function buildCard(item) {
+    var card = el("article", "card");
+
+    var h = el("h4");
+    h.appendChild(document.createTextNode(item.item));
+    h.appendChild(el("span", "tag", item.category));
+    card.appendChild(h);
+
+    if (item.itemNote) card.appendChild(el("p", "variety", item.itemNote));
+    card.appendChild(el("p", "season", item.seasonNote));
+    if (item.background) card.appendChild(el("p", "bg", item.background));
+
+    var box = el("div", "searchbox");
+    box.appendChild(el("span", "label", "ふるさと納税サイトでの検索ワード"));
+    var row = el("div", "searchrow");
+    var word = el("span", "word", item.searchWord);
+    var btn = el("button", "copy", "コピー");
+    btn.type = "button";
+    var msg = el("p", "copy-msg", "");
+    btn.addEventListener("click", function () { copyWord(item.searchWord, msg); });
+    row.appendChild(word);
+    row.appendChild(btn);
+    box.appendChild(row);
+    box.appendChild(msg);
+    card.appendChild(box);
+
+    var links = el("p", "links");
+    links.appendChild(document.createTextNode("→ "));
+    links.appendChild(link(item.officialUrl, item.city + "の公式ふるさと納税ページ"));
+    card.appendChild(links);
+
+    var src = el("p", "src");
+    src.appendChild(document.createTextNode("出典: "));
+    src.appendChild(link(item.sourceUrl, item.sourceName));
+    src.appendChild(document.createTextNode("（" + item.checkedAt + " 確認）"));
+    card.appendChild(src);
+
+    /* 仕様§5-1-1: 旬の出典が産地を名指ししていないときだけ2行目を足す */
+    if (item.cityVerifiedInSource === false && item.citySourceUrl) {
+      var src2 = el("p", "src");
+      src2.appendChild(document.createTextNode("産地の確認: "));
+      src2.appendChild(link(item.citySourceUrl, item.citySourceName || item.city));
+      card.appendChild(src2);
+    }
+    return card;
+  }
+
+  function renderGroups(container, items) {
+    container.innerHTML = "";
+    L.groupByCity(items).forEach(function (g) {
+      container.appendChild(el("h3", null, g.city));
+      g.items.forEach(function (item) { container.appendChild(buildCard(item)); });
+    });
+  }
+
+  /* ---------- 描画 ---------- */
+  function render() {
+    var list = L.filterItems(ITEMS, state);
+
+    if (state.month === "all") {
+      headingEl.textContent = "掲載しているものすべて（" + list.length + "件）";
+    } else if (state.month === "year-round") {
+      headingEl.textContent = "通年で手に入るもの（" + list.length + "件）";
+    } else {
+      headingEl.textContent = state.month + "月に旬を迎えるもの（" + list.length + "件）";
+    }
+
+    if (list.length === 0) {
+      resultsEl.innerHTML = "";
+      resultsEl.appendChild(el("p", "empty", "この条件に当てはまる品目はありません。月や市町を変えてみてください。"));
+    } else {
+      renderGroups(resultsEl, list);
+    }
+
+    /* 通年の別セクションは「月を数字で選んでいるとき」だけ出す。
+       「通年のもの」「すべて」を選んでいるときは上の一覧と中身が重なるため隠す */
+    var yrSection = document.getElementById("year-round-section");
+    if (typeof state.month === "number") {
+      var yr = L.yearRoundItems(ITEMS, state);
+      if (yr.length > 0) {
+        yrSection.hidden = false;
+        renderGroups(document.getElementById("year-round"), yr);
+      } else {
+        yrSection.hidden = true;
+      }
+    } else {
+      yrSection.hidden = true;
+    }
+  }
+
+  /* ---------- 検索ワードのコピー（仕様§4-4） ----------
+     iframe内では navigator.clipboard が権限ポリシーで失敗することがある。
+     失敗しても検索ワードは画面上に選択可能なテキストとして常に残る設計。 */
+  function copyWord(text, msgEl) {
+    function ok() { show("コピーしました", false); }
+    function ng() { show("コピーできませんでした。上の文字を長押しして選択してください", true); }
+    function show(t, isErr) {
+      msgEl.textContent = t;
+      msgEl.className = "copy-msg" + (isErr ? " err" : "");
+      window.setTimeout(function () {
+        if (msgEl.textContent === t) { msgEl.textContent = ""; }
+      }, 4000);
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(ok, function () {
+        if (!legacyCopy(text)) { ng(); } else { ok(); }
+      });
+      return;
+    }
+    if (legacyCopy(text)) { ok(); } else { ng(); }
+  }
+
+  function legacyCopy(text) {
+    var helper = document.getElementById("copy-helper");
+    try {
+      helper.value = text;
+      helper.removeAttribute("readonly");
+      helper.select();
+      helper.setSelectionRange(0, text.length);
+      var done = document.execCommand("copy");
+      helper.setAttribute("readonly", "readonly");
+      return !!done;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  render();
+
+  /* PWA。file:// で開いたときやServiceWorker非対応でも例外で止まらないようにする */
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () { /* 失敗しても本体は動く */ });
+    });
+  }
+})();
+</script>
+</body>
+</html>
