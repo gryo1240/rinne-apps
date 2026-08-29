@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>配当金なに買える？｜配当・分配金を身近なモノに換算</title>
+<meta name="description" content="受け取った配当金・分配金が、身近なモノでいくつ分になるかを換算します。価格は自分で書き換えられます。登録不要・無料。">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1f6f5c">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+/* 単一スクロール・position:fixed 不使用。外部CDN/フォント/画像を読み込まない */
+:root{
+  --ink:#25302e; --sub:#5d6b68; --line:#dde5e2; --bg:#f6f9f8; --card:#fff;
+  --accent:#1f6f5c; --accent-weak:#e6f2ee; --gold:#b8893b; --warn-bg:#fff8e6; --warn-line:#e6cf8a;
+}
+*{box-sizing:border-box}
+body{
+  margin:0 auto; padding:16px 14px 32px; background:var(--bg); color:var(--ink);
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;
+  line-height:1.75; font-size:15px; max-width:680px; -webkit-text-size-adjust:100%;
+}
+h1{font-size:1.3rem; margin:0 0 4px}
+.lead{margin:0 0 14px; color:var(--sub); font-size:.9rem}
+h2{font-size:1.05rem; margin:26px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--accent-weak)}
+.panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:18px}
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.label{display:block; font-size:.8rem; font-weight:bold; color:var(--sub); margin-bottom:6px}
+.amount-row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+#amount{
+  font:inherit; font-size:1.35rem; font-weight:bold; padding:10px 12px; width:190px;
+  border:1px solid var(--line); border-radius:8px; text-align:right; background:#fff; color:var(--ink);
+}
+.yen{font-size:1.05rem; font-weight:bold}
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff}
+.seg button{
+  font:inherit; font-size:.85rem; padding:9px 14px; border:none; background:#fff; color:var(--sub);
+  cursor:pointer; min-height:40px;
+}
+.seg button[aria-pressed="true"]{background:var(--accent); color:#fff}
+.chips{display:flex; flex-wrap:wrap; gap:6px}
+.chip{
+  font:inherit; font-size:.83rem; padding:7px 12px; border-radius:999px; cursor:pointer;
+  border:1px solid var(--line); background:#fff; color:var(--sub); min-height:36px;
+}
+.chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:#fff}
+.toggle{display:flex; align-items:center; gap:8px; font-size:.85rem; color:var(--sub); margin-top:10px}
+.toggle input{width:18px; height:18px}
+
+.headline{
+  background:linear-gradient(180deg,#fff,#f2f8f6); border:2px solid var(--accent-weak);
+  border-radius:12px; padding:18px 16px; text-align:center; margin-bottom:16px;
+}
+.headline .small{font-size:.85rem; color:var(--sub); display:block}
+.headline .big{font-size:1.5rem; font-weight:bold; line-height:1.5; display:block; margin-top:4px}
+.headline .big .em{color:var(--accent)}
+.headline .emoji{font-size:2.4rem; display:block; line-height:1.2; margin-bottom:2px}
+
+.row{
+  background:var(--card); border:1px solid var(--line); border-radius:10px;
+  padding:11px 13px; margin-bottom:8px; display:flex; align-items:center; gap:12px;
+}
+.row .ico{font-size:1.6rem; line-height:1; width:2rem; text-align:center; flex:none}
+.row .mid{flex:1 1 auto; min-width:0}
+.row .name{font-size:.92rem; font-weight:bold}
+.row .price{font-size:.76rem; color:var(--sub); display:flex; align-items:center; gap:4px; margin-top:2px; flex-wrap:wrap}
+.row .price input{
+  font:inherit; font-size:.76rem; width:74px; padding:3px 6px; text-align:right;
+  border:1px solid var(--line); border-radius:5px; background:#fdfdfd; color:var(--ink);
+}
+.row .cnt{flex:none; text-align:right; white-space:nowrap}
+.row .cnt b{font-size:1.35rem; color:var(--accent)}
+.row .cnt .u{font-size:.8rem; color:var(--sub); margin-left:2px}
+.row.zero{opacity:.55}
+.row.zero .cnt b{color:var(--sub)}
+
+.share textarea{
+  width:100%; font:inherit; font-size:.85rem; line-height:1.7; padding:10px;
+  border:1px solid var(--line); border-radius:8px; background:#fdfdfd; color:var(--ink);
+  min-height:8.5em; resize:vertical;
+}
+.btnrow{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
+.btn{
+  font:inherit; font-size:.88rem; padding:10px 16px; border-radius:8px; cursor:pointer;
+  border:1px solid var(--accent); background:var(--accent); color:#fff; min-height:42px;
+}
+.btn.ghost{background:#fff; color:var(--accent)}
+.msg{font-size:.8rem; color:var(--accent); margin:8px 0 0; min-height:1.2em}
+.msg.err{color:#a8482f}
+#cardimg{max-width:100%; height:auto; border:1px solid var(--line); border-radius:8px; display:none; margin-top:10px}
+.hint{font-size:.78rem; color:var(--sub); margin:6px 0 0}
+
+.notes{font-size:.8rem; color:var(--sub); margin-top:24px; border-top:1px solid var(--line); padding-top:14px}
+.notes ul{padding-left:1.2em; margin:8px 0 0}
+.notes li{margin-bottom:6px}
+.notes a{color:var(--accent)}
+#copy-helper{position:absolute; left:-9999px; top:0; opacity:0}
+</style>
+</head>
+<body>
+
+<h1>配当金なに買える？</h1>
+<p class="lead">受け取った配当金・分配金が、身近なモノでいくつ分になるかを並べます。</p>
+
+<div class="panel">
+  <div class="field">
+    <label class="label" for="amount">受け取った金額（税引後の手取り）</label>
+    <div class="amount-row">
+      <input id="amount" type="number" inputmode="numeric" min="0" step="100" value="3000">
+      <span class="yen">円</span>
+      <span class="seg" role="group" aria-label="期間">
+        <button type="button" id="p-month" aria-pressed="true">ひと月</button>
+        <button type="button" id="p-year" aria-pressed="false">1年</button>
+      </span>
+    </div>
+  </div>
+  <div class="field">
+    <span class="label" id="label-cat">見たい分類</span>
+    <div class="chips" id="cats" role="group" aria-labelledby="label-cat"></div>
+  </div>
+  <label class="toggle"><input type="checkbox" id="hide-amount"> 金額を出さずに結果だけ見る（共有用）</label>
+</div>
+
+<div id="headline" class="headline" aria-live="polite"></div>
+
+<p class="hint" style="margin:0 0 8px">価格はすべて<strong>目安</strong>です。数字を書き換えると、その場で計算し直します。</p>
+<div id="rows"></div>
+
+<h2>結果を共有する</h2>
+<div class="panel share">
+  <label class="label" for="sharetext">そのまま貼れる文章</label>
+  <textarea id="sharetext" readonly></textarea>
+  <div class="btnrow">
+    <button type="button" class="btn" id="copy">文章をコピー</button>
+    <button type="button" class="btn ghost" id="makeimg">画像にする</button>
+  </div>
+  <p class="msg" id="share-msg"></p>
+  <img id="cardimg" alt="配当金で買えるものをまとめた画像">
+  <p class="hint" id="imghint" style="display:none">画像を長押し（パソコンなら右クリック）で保存できます。</p>
+</div>
+
+<h2>使い方</h2>
+<div class="panel">
+  <p style="margin:0 0 8px">受け取った金額を入れるだけです。金額は<strong>税金が引かれたあとの手取り</strong>で入れてください。</p>
+  <p style="margin:0 0 8px">価格はすべて<strong>目安</strong>です。実際と違うと感じたら、各行の価格をその場で書き換えられます。書き換えるとすぐ計算し直します。</p>
+  <p style="margin:0">配当金そのものを計算したいときは<a href="https://rinne-blog.com/dividend">配当金シミュレーター</a>をどうぞ。あちらは「いくらもらえるか」、こちらは「もらった金額が何になるか」を担当しています。</p>
+</div>
+
+<div class="notes">
+  <strong>ご利用にあたって</strong>
+  <ul>
+    <li>表示している価格は<strong>目安</strong>であり、店舗・地域・時期によって変わります。出典を持たない概算です。</li>
+    <li>配当金・分配金は<strong>増減します</strong>。支払われないこともあります。</li>
+    <li>このツールは特定の銘柄・金融商品の購入を<strong>推奨するものではありません</strong>。投資の判断はご自身の責任でお願いします。</li>
+    <li>入力した金額は端末の外に送信されません。保存もしていません。</li>
+  </ul>
+</div>
+
+<textarea id="copy-helper" readonly aria-hidden="true" tabindex="-1"></textarea>
+<canvas id="cv" width="1200" height="630" style="display:none"></canvas>
+
+<script src="data.js"></script>
+<script src="logic.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var ITEMS_SRC = (typeof window.CONVERT_ITEMS !== "undefined") ? window.CONVERT_ITEMS : null;
+  var L = window.NaniKaeru;
+  var headEl = document.getElementById("headline");
+  var rowsEl = document.getElementById("rows");
+
+  /* データが壊れていても白画面にしない */
+  if (!Array.isArray(ITEMS_SRC) || ITEMS_SRC.length === 0 || !L) {
+    headEl.innerHTML = "";
+    headEl.textContent = "データを読み込めませんでした。ページを再読み込みしてみてください。";
+    return;
+  }
+
+  /* 価格はユーザーが書き換えるので、元データを壊さないよう複製して持つ */
+  var items = ITEMS_SRC.map(function (it) {
+    return { id: it.id, label: it.label, unit: it.unit, emoji: it.emoji, price: it.price, category: it.category };
+  });
+
+  var state = { amount: 3000, period: "month", categories: [], hideAmount: false };
+  var PAGE_URL = "https://rinne-blog.com/haitou-nanikaeru";
+
+  /* ---------- コントロール ---------- */
+  var amountEl = document.getElementById("amount");
+  amountEl.addEventListener("input", function () {
+    state.amount = L.normalizeAmount(amountEl.value);
+    render();
+  });
+
+  function setPeriod(p) {
+    state.period = p;
+    document.getElementById("p-month").setAttribute("aria-pressed", String(p === "month"));
+    document.getElementById("p-year").setAttribute("aria-pressed", String(p === "year"));
+    render();
+  }
+  document.getElementById("p-month").addEventListener("click", function () { setPeriod("month"); });
+  document.getElementById("p-year").addEventListener("click", function () { setPeriod("year"); });
+
+  var catsBox = document.getElementById("cats");
+  L.categoryList(items).forEach(function (c) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip";
+    b.textContent = c;
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", function () {
+      var i = state.categories.indexOf(c);
+      if (i === -1) { state.categories.push(c); } else { state.categories.splice(i, 1); }
+      b.setAttribute("aria-pressed", i === -1 ? "true" : "false");
+      render();
+    });
+    catsBox.appendChild(b);
+  });
+
+  document.getElementById("hide-amount").addEventListener("change", function () {
+    state.hideAmount = this.checked;
+    render();
+  });
+
+  /* ---------- 描画 ---------- */
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined && text !== null) e.textContent = text;
+    return e;
+  }
+
+  var lastRows = [];
+  var lastMonthly = 0;
+
+  function render() {
+    var monthly = L.toMonthly(state.amount, state.period);
+    var rows = L.convert(monthly, items, { categories: state.categories });
+    lastRows = rows;
+    lastMonthly = monthly;
+
+    /* 見出し */
+    headEl.innerHTML = "";
+    var top = L.pickHighlight(rows);
+    if (monthly === 0) {
+      headEl.appendChild(el("span", "small", "金額を入れると、何が買えるか出ます"));
+    } else if (!top) {
+      headEl.appendChild(el("span", "emoji", "🪙"));
+      headEl.appendChild(el("span", "small",
+        (state.hideAmount ? "ひと月あたり" : "ひと月あたり " + L.formatYen(monthly) + "円")));
+      headEl.appendChild(el("span", "big", "まだ1つも届きませんが、ここからです"));
+    } else {
+      headEl.appendChild(el("span", "emoji", top.item.emoji));
+      headEl.appendChild(el("span", "small",
+        (state.hideAmount ? "ひと月あたりの配当金は" : "ひと月あたり " + L.formatYen(monthly) + "円 は")));
+      var big = el("span", "big");
+      var em = el("span", "em", top.item.label + " " + L.formatYen(top.count) + top.item.unit);
+      big.appendChild(em);
+      big.appendChild(document.createTextNode(" ぶんです"));
+      headEl.appendChild(big);
+    }
+
+    /* 一覧 */
+    rowsEl.innerHTML = "";
+    rows.forEach(function (r) {
+      var row = el("div", "row" + (r.count === 0 ? " zero" : ""));
+      row.appendChild(el("span", "ico", r.item.emoji));
+
+      var mid = el("div", "mid");
+      mid.appendChild(el("div", "name", r.item.label));
+      var price = el("div", "price");
+      price.appendChild(document.createTextNode("1" + r.item.unit + " ="));
+      var inp = document.createElement("input");
+      inp.type = "number";
+      inp.min = "1";
+      inp.step = "10";
+      inp.value = String(r.price);
+      inp.setAttribute("aria-label", r.item.label + "の価格（円）");
+      inp.addEventListener("input", function () {
+        var v = L.normalizePrice(inp.value);
+        if (v !== null) {
+          for (var i = 0; i < items.length; i++) {
+            if (items[i].id === r.item.id) { items[i].price = v; break; }
+          }
+          render();
+        }
+      });
+      price.appendChild(inp);
+      price.appendChild(document.createTextNode("円"));
+      mid.appendChild(price);
+      row.appendChild(mid);
+
+      var cnt = el("div", "cnt");
+      var b = document.createElement("b");
+      b.textContent = L.formatYen(r.count);
+      cnt.appendChild(b);
+      cnt.appendChild(el("span", "u", r.item.unit));
+      row.appendChild(cnt);
+
+      rowsEl.appendChild(row);
+    });
+
+    if (rows.length === 0) {
+      rowsEl.appendChild(el("div", "panel", "この分類には項目がありません。分類の選択を外してみてください。"));
+    }
+
+    /* 共有文 */
+    document.getElementById("sharetext").value =
+      L.buildShareText(monthly, rows, { hideAmount: state.hideAmount, url: PAGE_URL });
+
+    /* 入力が変わったら前に作った画像は消す（古い結果を配ってしまわないように） */
+    var img = document.getElementById("cardimg");
+    img.style.display = "none";
+    document.getElementById("imghint").style.display = "none";
+  }
+
+  /* ---------- コピー（iframe内で clipboard が失敗する前提のフォールバック付き） ---------- */
+  var msgEl = document.getElementById("share-msg");
+  function showMsg(t, isErr) {
+    msgEl.textContent = t;
+    msgEl.className = "msg" + (isErr ? " err" : "");
+    window.setTimeout(function () { if (msgEl.textContent === t) msgEl.textContent = ""; }, 4000);
+  }
+
+  function legacyCopy(text) {
+    var helper = document.getElementById("copy-helper");
+    try {
+      helper.value = text;
+      helper.removeAttribute("readonly");
+      helper.select();
+      helper.setSelectionRange(0, text.length);
+      var done = document.execCommand("copy");
+      helper.setAttribute("readonly", "readonly");
+      return !!done;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  document.getElementById("copy").addEventListener("click", function () {
+    var text = document.getElementById("sharetext").value;
+    function ok() { showMsg("コピーしました", false); }
+    function ng() { showMsg("コピーできませんでした。上の文章を長押しして選択してください", true); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(ok, function () {
+        if (legacyCopy(text)) { ok(); } else { ng(); }
+      });
+      return;
+    }
+    if (legacyCopy(text)) { ok(); } else { ng(); }
+  });
+
+  /* ---------- 画像化（ダウンロードAPIに頼らず、imgとして出して長押し保存させる） ---------- */
+  document.getElementById("makeimg").addEventListener("click", function () {
+    try {
+      var cv = document.getElementById("cv");
+      var g = cv.getContext("2d");
+      var W = cv.width, H = cv.height;
+
+      g.fillStyle = "#f6f9f8"; g.fillRect(0, 0, W, H);
+      g.fillStyle = "#1f6f5c"; g.fillRect(0, 0, W, 14);
+      g.fillStyle = "#25302e";
+      g.textAlign = "center";
+      g.font = "bold 40px 'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif";
+      g.fillText(state.hideAmount ? "ひと月の配当金で買えるもの"
+                                  : "ひと月の配当金 " + L.formatYen(lastMonthly) + "円 で買えるもの", W / 2, 92);
+
+      var top3 = lastRows.filter(function (r) { return r.count >= 1; }).slice(0, 3);
+      if (top3.length === 0) {
+        g.font = "bold 54px 'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif";
+        g.fillText("まだ1つも届きませんが、ここからです", W / 2, H / 2 + 10);
+      } else {
+        var y = 200;
+        top3.forEach(function (r) {
+          g.font = "64px 'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif";
+          g.fillText(r.item.emoji, 250, y + 12);
+          g.textAlign = "left";
+          g.fillStyle = "#25302e";
+          g.font = "bold 40px 'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif";
+          g.fillText(r.item.label, 330, y - 8);
+          g.fillStyle = "#1f6f5c";
+          g.font = "bold 52px 'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif";
+          g.fillText(L.formatYen(r.count) + r.item.unit, 330, y + 48);
+          g.textAlign = "center";
+          g.fillStyle = "#25302e";
+          y += 130;
+        });
+      }
+
+      g.fillStyle = "#5d6b68";
+      g.font = "26px 'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif";
+      g.fillText("配当金なに買える？ ／ りんねブログ", W / 2, H - 76);
+      g.font = "22px 'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif";
+      g.fillText("価格は目安です。配当金は増減します。", W / 2, H - 38);
+
+      var img = document.getElementById("cardimg");
+      img.src = cv.toDataURL("image/png");
+      img.style.display = "block";
+      document.getElementById("imghint").style.display = "block";
+      showMsg("画像を作りました", false);
+    } catch (e) {
+      showMsg("画像を作れませんでした。文章のコピーをお使いください", true);
+    }
+  });
+
+  render();
+
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () { /* 失敗しても本体は動く */ });
+    });
+  }
+})();
+</script>
+</body>
+</html>

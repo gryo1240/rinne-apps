@@ -1,0 +1,16 @@
+{
+  "name": "配当金なに買える？",
+  "short_name": "なに買える？",
+  "description": "受け取った配当金・分配金が、身近なモノでいくつ分になるかを換算します。価格は自分で書き換えられます。",
+  "lang": "ja",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f9f8",
+  "theme_color": "#1f6f5c",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
