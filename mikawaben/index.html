@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>三河弁ジェネレーター｜標準語を三河の言葉に変換</title>
+<meta name="description" content="入力した文章を三河弁っぽく変換します。こてこて度を3段階で選べて、どの言葉が変わったかも見られます。登録不要・無料の遊びツールです。">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2d4a6b">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+/* 単一スクロール・position:fixed 不使用。外部CDN/フォント/画像を読み込まない */
+:root{
+  --ink:#2b2a26; --sub:#6b675e; --line:#e2ddd2; --bg:#faf7f0; --card:#fff;
+  --accent:#2d4a6b; --accent-weak:#e7edf4; --warm:#c4693a;
+}
+*{box-sizing:border-box}
+body{
+  margin:0 auto; padding:16px 14px 32px; background:var(--bg); color:var(--ink);
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;
+  line-height:1.75; font-size:15px; max-width:680px; -webkit-text-size-adjust:100%;
+}
+h1{font-size:1.3rem; margin:0 0 4px}
+.lead{margin:0 0 14px; color:var(--sub); font-size:.9rem}
+h2{font-size:1.05rem; margin:24px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--accent-weak)}
+.panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:16px}
+.label{display:block; font-size:.8rem; font-weight:bold; color:var(--sub); margin-bottom:6px}
+textarea{
+  width:100%; font:inherit; font-size:1rem; line-height:1.8; padding:11px;
+  border:1px solid var(--line); border-radius:8px; background:#fdfcf9; color:var(--ink);
+  min-height:6.5em; resize:vertical;
+}
+.btnrow{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+.btn{
+  font:inherit; font-size:.88rem; padding:10px 16px; border-radius:8px; cursor:pointer;
+  border:1px solid var(--accent); background:var(--accent); color:#fff; min-height:42px;
+}
+.btn.ghost{background:#fff; color:var(--accent)}
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff; margin-top:4px}
+.seg button{
+  font:inherit; font-size:.85rem; padding:9px 14px; border:none; background:#fff; color:var(--sub);
+  cursor:pointer; min-height:42px;
+}
+.seg button[aria-pressed="true"]{background:var(--accent); color:#fff}
+.seg-note{font-size:.78rem; color:var(--sub); margin:6px 0 0}
+
+.result{
+  background:linear-gradient(180deg,#fff,#fbf7ee); border:2px solid var(--accent-weak);
+  border-radius:12px; padding:16px; margin-bottom:12px;
+}
+.result .out{font-size:1.12rem; line-height:1.9; white-space:pre-wrap; word-break:break-word; margin:0}
+.result .out.empty{color:var(--sub); font-size:.95rem}
+.comment{margin:12px 0 0; font-size:.88rem; color:var(--warm); font-weight:bold}
+
+.applied{margin:0; padding:0; list-style:none}
+.applied li{
+  background:var(--card); border:1px solid var(--line); border-radius:8px;
+  padding:9px 12px; margin-bottom:7px;
+}
+.applied .rule{font-size:.9rem; font-weight:bold}
+.applied .note{font-size:.78rem; color:var(--sub); margin-top:2px}
+.applied .lv{
+  font-size:.7rem; background:var(--accent-weak); color:var(--accent);
+  border-radius:4px; padding:2px 6px; margin-left:6px; font-weight:normal;
+}
+.none{color:var(--sub); font-size:.88rem}
+.msg{font-size:.8rem; color:var(--accent); margin:8px 0 0; min-height:1.2em}
+.msg.err{color:#a8482f}
+.notes{font-size:.8rem; color:var(--sub); margin-top:24px; border-top:1px solid var(--line); padding-top:14px}
+.notes ul{padding-left:1.2em; margin:8px 0 0}
+.notes li{margin-bottom:6px}
+.notes a{color:var(--accent)}
+#copy-helper{position:absolute; left:-9999px; top:0; opacity:0}
+</style>
+</head>
+<body>
+
+<h1>三河弁ジェネレーター</h1>
+<p class="lead">入力した文章を、三河の言葉っぽく置き換えます。</p>
+
+<div class="panel">
+  <label class="label" for="src">変換したい文章</label>
+  <textarea id="src" placeholder="ここに文章を入れてください">今日はとても疲れたよ。自転車で行くでしょう。そうだね、これは捨てるよ。</textarea>
+  <div class="btnrow">
+    <button type="button" class="btn ghost" id="sample">例文を入れる</button>
+    <button type="button" class="btn ghost" id="clear">消す</button>
+  </div>
+  <div style="margin-top:14px">
+    <span class="label" id="lv-label">こてこて度</span>
+    <span class="seg" role="group" aria-labelledby="lv-label">
+      <button type="button" id="lv1" aria-pressed="false">ひかえめ</button>
+      <button type="button" id="lv2" aria-pressed="true">ふつう</button>
+      <button type="button" id="lv3" aria-pressed="false">こてこて</button>
+    </span>
+    <p class="seg-note" id="lv-note"></p>
+  </div>
+</div>
+
+<h2>変換結果</h2>
+<div class="result">
+  <p class="out" id="out"></p>
+  <p class="comment" id="comment"></p>
+</div>
+<div class="btnrow" style="margin-bottom:6px">
+  <button type="button" class="btn" id="copy">結果をコピー</button>
+</div>
+<p class="msg" id="msg"></p>
+
+<h2>変わった言葉</h2>
+<ul class="applied" id="applied"></ul>
+<p class="none" id="applied-none" style="display:none">変わった言葉はありませんでした。</p>
+
+<div class="notes">
+  <strong>ご利用にあたって</strong>
+  <ul>
+    <li>これは<strong>遊び</strong>のツールです。方言の学術的な正確さを保証するものではありません。</li>
+    <li>三河弁の言い方は<strong>地域</strong>や<strong>世代</strong>で変わります。ここに出るのは「よく知られている形」のひとつで、<strong>諸説あり</strong>ます。</li>
+    <li>置き換えは単純な文字の入れ替えです。文脈によっては不自然になります。</li>
+    <li>入力した文章は端末の外に送信されません。保存もしていません。</li>
+  </ul>
+</div>
+
+<textarea id="copy-helper" readonly aria-hidden="true" tabindex="-1"></textarea>
+
+<script src="data.js"></script>
+<script src="logic.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var RULES = window.RULES;
+  var COMMENTS = window.COMMENTS;
+  var L = window.MikawaBen;
+  var outEl = document.getElementById("out");
+
+  if (!Array.isArray(RULES) || RULES.length === 0 || !L) {
+    outEl.textContent = "データを読み込めませんでした。ページを再読み込みしてみてください。";
+    return;
+  }
+
+  var SAMPLES = [
+    "今日はとても疲れたよ。自転車で行くでしょう。そうだね、これは捨てるよ。",
+    "そこ、怖いでしょう。見て。だから言ったよね。",
+    "していたことを全部話しますです。とても大変だったよ。",
+    "鍵をかけてから机を運ぶよ。すぐに終わるでしょう。"
+  ];
+  var sampleIdx = 0;
+  var level = 2;
+  var LV_NOTE = {
+    1: "語尾だけを置き換えます。読みやすさは残ります。",
+    2: "語尾に加えて、よく使う言葉も置き換えます。",
+    3: "地域差・世代差の大きい言葉まで置き換えます。通じにくくなります。"
+  };
+
+  var srcEl = document.getElementById("src");
+  var msgEl = document.getElementById("msg");
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined && text !== null) e.textContent = text;
+    return e;
+  }
+
+  function setLevel(lv) {
+    level = lv;
+    [1, 2, 3].forEach(function (n) {
+      document.getElementById("lv" + n).setAttribute("aria-pressed", String(n === lv));
+    });
+    document.getElementById("lv-note").textContent = LV_NOTE[lv];
+    render();
+  }
+
+  function render() {
+    var src = srcEl.value;
+    var r = L.convert(src, RULES, level);
+
+    /* 出力は textContent で入れる。HTMLとして解釈させない */
+    if (!src.trim()) {
+      outEl.textContent = "文章を入れると、ここに三河弁が出ます。";
+      outEl.className = "out empty";
+      document.getElementById("comment").textContent = "";
+    } else {
+      outEl.textContent = r.text;
+      outEl.className = "out";
+      document.getElementById("comment").textContent = L.pickComment(r.applied.length, COMMENTS);
+    }
+
+    var list = document.getElementById("applied");
+    list.innerHTML = "";
+    var noneEl = document.getElementById("applied-none");
+    if (r.applied.length === 0) {
+      noneEl.style.display = src.trim() ? "block" : "none";
+    } else {
+      noneEl.style.display = "none";
+      r.applied.forEach(function (rule) {
+        var li = document.createElement("li");
+        var head = el("div", "rule", rule.label);
+        var lv = el("span", "lv", ["", "ひかえめ", "ふつう", "こてこて"][rule.level]);
+        head.appendChild(lv);
+        li.appendChild(head);
+        li.appendChild(el("div", "note", rule.note.replace(/\*\*/g, "")));
+        list.appendChild(li);
+      });
+    }
+  }
+
+  srcEl.addEventListener("input", render);
+  document.getElementById("lv1").addEventListener("click", function () { setLevel(1); });
+  document.getElementById("lv2").addEventListener("click", function () { setLevel(2); });
+  document.getElementById("lv3").addEventListener("click", function () { setLevel(3); });
+
+  document.getElementById("sample").addEventListener("click", function () {
+    sampleIdx = (sampleIdx + 1) % SAMPLES.length;
+    srcEl.value = SAMPLES[sampleIdx];
+    render();
+  });
+  document.getElementById("clear").addEventListener("click", function () {
+    srcEl.value = "";
+    render();
+    srcEl.focus();
+  });
+
+  /* ---------- コピー（iframe内で clipboard が失敗する前提のフォールバック付き） ---------- */
+  function showMsg(t, isErr) {
+    msgEl.textContent = t;
+    msgEl.className = "msg" + (isErr ? " err" : "");
+    window.setTimeout(function () { if (msgEl.textContent === t) msgEl.textContent = ""; }, 4000);
+  }
+
+  function legacyCopy(text) {
+    var helper = document.getElementById("copy-helper");
+    try {
+      helper.value = text;
+      helper.removeAttribute("readonly");
+      helper.select();
+      helper.setSelectionRange(0, text.length);
+      var done = document.execCommand("copy");
+      helper.setAttribute("readonly", "readonly");
+      return !!done;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  document.getElementById("copy").addEventListener("click", function () {
+    var r = L.convert(srcEl.value, RULES, level);
+    if (!srcEl.value.trim()) { showMsg("先に文章を入れてください", true); return; }
+    var text = L.buildShareText(srcEl.value, r.text, { url: "https://rinne-blog.com/mikawaben" });
+    function ok() { showMsg("コピーしました", false); }
+    function ng() { showMsg("コピーできませんでした。上の文章を長押しして選択してください", true); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(ok, function () {
+        if (legacyCopy(text)) { ok(); } else { ng(); }
+      });
+      return;
+    }
+    if (legacyCopy(text)) { ok(); } else { ng(); }
+  });
+
+  setLevel(2);
+
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () { /* 失敗しても本体は動く */ });
+    });
+  }
+})();
+</script>
+</body>
+</html>
