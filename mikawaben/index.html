@@ -49,11 +49,17 @@ textarea{
   background:linear-gradient(180deg,#fff,#fbf7ee); border:2px solid var(--accent-weak);
   border-radius:12px; padding:16px; margin-bottom:12px;
 }
-.result .out{font-size:1.12rem; line-height:1.9; white-space:pre-wrap; word-break:break-word; margin:0}
+.result .out{
+  font-size:1.12rem; line-height:1.9; white-space:pre-wrap; word-break:break-word; margin:0;
+  max-height:18em; overflow-y:auto;
+}
 .result .out.empty{color:var(--sub); font-size:.95rem}
 .comment{margin:12px 0 0; font-size:.88rem; color:var(--warm); font-weight:bold}
 
-.applied{margin:0; padding:0; list-style:none}
+/* 入力量・該当ルール数に比例して無制限に伸びないよう内部スクロール化する
+   （2026-09-02: 埋め込みiframeの高さを静的pxで固定しているため、この要素の高さに上限が無いと
+   ページ全体が際限なく伸びる。31ルール全部が一致する人工的な入力だと3400px超まで伸びることを実測済み） */
+.applied{margin:0; padding:0; list-style:none; max-height:26em; overflow-y:auto}
 .applied li{
   background:var(--card); border:1px solid var(--line); border-radius:8px;
   padding:9px 12px; margin-bottom:7px;
