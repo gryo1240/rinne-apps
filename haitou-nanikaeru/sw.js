@@ -1,5 +1,5 @@
 // 配当金なに買える？ Service Worker（キャッシュ優先・オフライン動作）
-const CACHE = "haitou-nanikaeru-v1";
+const CACHE = "haitou-nanikaeru-v2";
 const ASSETS = ["./", "./index.html", "./data.js", "./logic.js", "./manifest.json",
   "./icon-192.png", "./icon-512.png"];
 

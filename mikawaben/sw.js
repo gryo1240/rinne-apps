@@ -1,5 +1,5 @@
 // 三河弁ジェネレーター Service Worker（キャッシュ優先・オフライン動作）
-const CACHE = "mikawaben-v4";
+const CACHE = "mikawaben-v5";
 const ASSETS = ["./", "./index.html", "./data.js", "./logic.js", "./manifest.json",
   "./icon-192.png", "./icon-512.png"];
 
