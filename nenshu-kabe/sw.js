@@ -1,5 +1,5 @@
 // 年収の壁シミュレーター Service Worker (キャッシュ優先・オフライン動作)
-const CACHE = "nenshu-kabe-v1";
+const CACHE = "nenshu-kabe-v2";
 const ASSETS = ["./", "./index.html", "./calc.js", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {

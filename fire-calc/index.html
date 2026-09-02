@@ -619,5 +619,13 @@
     navigator.serviceWorker.register("sw.js").catch(function(){});
   }
 </script>
+
+<!-- rb-blog-link: りんね☆ブログ導線。iframe埋め込み時は非表示なので埋め込み高さに影響しない -->
+<div id="rb-blog-link" style="display:none;padding:16px 12px 24px;text-align:center;font-size:13px;line-height:1.7">
+<a href="https://rinne-blog.com/apps" target="_blank" rel="noopener" style="color:inherit;opacity:.7">りんね☆ブログの無料アプリ一覧</a>
+</div>
+<script>
+(function(){try{if(window.self===window.top){var e=document.getElementById("rb-blog-link");if(e){e.style.display="block";}}}catch(err){}})();
+</script>
 </body>
 </html>
