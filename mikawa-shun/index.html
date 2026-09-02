@@ -14,7 +14,7 @@
    外部CDN/外部フォント/外部画像を一切読み込まない（new-app 規約） */
 :root{
   --ink:#2f3b2c; --sub:#5f6b5c; --line:#dfe3d9; --bg:#f7f8f4; --card:#ffffff;
-  --accent:#4a7c3f; --accent-weak:#eaf1e5; --warn-bg:#fff8e6; --warn-line:#e6cf8a;
+  --accent:#4a7c3f; --accent-weak:#eaf1e5;
 }
 *{box-sizing:border-box}
 body{
@@ -25,10 +25,6 @@ body{
 }
 h1{font-size:1.32rem; margin:0 0 4px; letter-spacing:.02em}
 .lead{margin:0 0 14px; color:var(--sub); font-size:.9rem}
-.notice-top{
-  background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:8px;
-  padding:10px 12px; margin:0 0 18px; font-size:.83rem; color:#6b5a2a;
-}
 .controls{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:20px}
 .field{margin-bottom:14px}
 .field:last-child{margin-bottom:0}
@@ -50,6 +46,21 @@ select{
 }
 h2{font-size:1.05rem; margin:26px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--accent-weak)}
 h3{font-size:.92rem; margin:18px 0 8px; color:var(--accent); font-weight:bold}
+/* 縦を短くするため結果リストは内部スクロール（2026-09-03 オーナー指示「3件くらい表示できたらあとはスクロールで十分」）。
+   カード1枚は333〜406px（幅により変動）なので、3枚強が収まる高さで頭打ちにする。
+   埋め込みiframeの高さを短く保つための仕組みなので、値を変えたら必ず高さを測り直すこと。 */
+#results, #year-round{
+  max-height:1180px; overflow-y:auto; overscroll-behavior:contain;
+  padding-right:4px;
+}
+#year-round{max-height:560px}
+/* スクロールできることが分かるように、続きがある側に薄い影を出す */
+#results, #year-round{
+  background:
+    linear-gradient(var(--bg) 30%, rgba(255,255,255,0)) top / 100% 24px no-repeat,
+    linear-gradient(rgba(255,255,255,0), var(--bg) 70%) bottom / 100% 24px no-repeat;
+  background-attachment:local, local;
+}
 .card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:13px 14px; margin-bottom:10px}
 .card h4{margin:0 0 2px; font-size:1.02rem; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
 .tag{font-size:.72rem; font-weight:normal; background:var(--accent-weak); color:var(--accent); border-radius:4px; padding:2px 7px}
@@ -92,7 +103,6 @@ h3{font-size:.92rem; margin:18px 0 8px; color:var(--accent); font-weight:bold}
 <h1>三河の旬カレンダー（非公式）</h1>
 <p class="lead">西三河8市町の「いま旬のもの」を月から探せます。</p>
 
-<p class="notice-top">本ツールは、各自治体・各ふるさと納税ポータルとは関係のない個人ブログが作成した<strong>非公式</strong>のツールです。</p>
 
 <div class="controls">
   <div class="field">
@@ -134,6 +144,7 @@ h3{font-size:.92rem; margin:18px 0 8px; color:var(--accent); font-weight:bold}
 <div class="notes">
   <strong>ご利用にあたって</strong>
   <ul>
+    <li>本ツールは、各自治体・各ふるさと納税ポータルとは関係のない個人ブログが作成した<strong>非公式</strong>のツールです。</li>
     <li>掲載しているのは「例年の旬の目安」であり、その年の天候や生育状況により前後します。</li>
     <li>返礼品として実際に取り扱われているか、寄付金額、在庫、発送時期は、各ふるさと納税サイトおよび各自治体の公式ページで必ずご確認ください。</li>
     <li>各品目の情報は記載の確認日時点のものです。</li>
