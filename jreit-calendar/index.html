@@ -85,6 +85,55 @@
   .badge.hi { background: #1b7a5a; color: #fff; }
   .fund .amt { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .fund .amt span { font-size: 12px; color: #55675f; }
+
+  /* ============================================================
+     内部スクロール化（2026-09-05・オーナー指示）
+     ねらいは「短くする」ことよりも **状態で総高が変わらないようにする** こと。
+     記事のiframeは「取りうる最大の高さ」で固定するため、状態差はそのまま余白として見える。
+     実測(カラム630px)では 初期5,241px / 1銘柄+FAQ全開6,031px ＝ **790pxが余白**だった。
+
+     ⚠ ここのメディアクエリを 630〜720px の帯に置かないこと。
+        この帯はブログ本文の既定段が1つの高さで受け持つ幅で、ここで切り替えると
+        記事側の階段と食い違って見切れる（lessons/app-iframe-height-measure-inner-width.md 7項目目）。
+        本アプリの body max-width は 720px なので、haitou(680px)より帯が広い。
+     ============================================================ */
+
+  /* 銘柄リスト: 高さ固定・表示枚数は幅にまかせる。
+     **枚数を固定して高さを可変にしない**。カード1枚の高さは実測で
+     幅630px=179px / 343px=197px / 208px=328px と幅で大きく変わるため、
+     「ちょうどN枚」をCSS変数で決めると狭い幅で静かに崩れる（実測 2026-09-05）。 */
+  #fundList {
+    --fundbox-h: 900px;
+    height: var(--fundbox-h); overflow-y: auto; overscroll-behavior: contain;
+    padding-right: 4px;
+    /* 実機Windowsはスクロールバーが約15px幅を取るがヘッドレスは0。
+       確保しないと「手元では収まったのに実機で折り返す」環境差が出る */
+    scrollbar-gutter: stable;
+    background:
+      linear-gradient(#fff 30%, rgba(255,255,255,0)) top / 100% 18px no-repeat,
+      linear-gradient(rgba(255,255,255,0), #fff 70%) bottom / 100% 18px no-repeat;
+    background-attachment: local, local;
+  }
+  /* 選択中の銘柄が枠の外にあっても分かるようにする（内部スクロール化の副作用対策）。
+     チップの「＋追加」を押しても画面が変わらないように見えるのを防ぐ */
+  .selnow { font-size: 12px; color: #44574f; background: #f4fbf8; border: 1px solid #d8ebe3;
+            border-radius: 9px; padding: 7px 9px; margin: 0 0 9px; line-height: 1.5; }
+  .selnow b { color: #14614a; }
+
+  /* 受け取りカレンダー: 行数(選択銘柄数+2)で 92〜433px 動く。高さを固定して変動を消す */
+  .calbox { height: 300px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+  .calbox .calwrap { overflow-x: auto; }
+
+  /* 空白月カード: 従来は display:none ↔ 表示で 0〜465px 動いていた（選択を減らすほど背が伸びる）。
+     常時表示＋高さ固定にして変動を消す */
+  #gapBody { height: 210px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+
+  /* FAQ: details を開くと 630px幅で +375px、343px幅で +651px 伸びる。
+     開いても枠の外に出ないようにして変動を消す */
+  .faqbox { height: 230px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+
+  /* 組み合わせ一覧: 418〜484px。ほぼ一定だが幅で変わるので上限だけ与える */
+  #comboList { max-height: 430px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
   .links { margin-top: 7px; display: flex; flex-wrap: wrap; gap: 10px; }
   .links a { font-size: 11.5px; color: #1b7a5a; }
 
@@ -170,6 +219,13 @@
     .wrap { padding: 12px 9px 22px; }
     .card { padding: 12px 10px 10px; }
     .fund { padding: 9px 8px; }
+    /* 狭い幅では1枚が大きくなる（343px=197px / 208px=328px）ので枠も少し広げる。
+       ※ 620px以下にしか効かないので、630〜720pxの既定段には影響しない */
+    #fundList { --fundbox-h: 700px; }
+    .calbox { height: 330px; }
+    #gapBody { height: 250px; }
+    .faqbox { height: 270px; }
+    #comboList { max-height: 500px; }
     .fund .nm { font-size: 11px; }
     .fund .co { font-size: 10.5px; }
     .badge { font-size: 10px; padding: 2px 5px; }
@@ -194,6 +250,12 @@
     .switch input:checked + .track { background: #2b9b74; }
     input[type=number] { background: #12251f; border-color: #2b4a3f; color: #dfeae5; }
     .fund { background: #14261f; border-color: #234137; }
+    #fundList { background:
+      linear-gradient(#0f1c17 30%, rgba(15,28,23,0)) top / 100% 18px no-repeat,
+      linear-gradient(rgba(15,28,23,0), #0f1c17 70%) bottom / 100% 18px no-repeat;
+      background-attachment: local, local; }
+    .selnow { background: #16332a; border-color: #2b9b74; color: #c2d6ce; }
+    .selnow b { color: #6fd4ab; }
     .fund.sel { background: #16332a; border-color: #2b9b74; }
     .fund .code { color: #6fd4ab; }
     .fund .nm { color: #c2d6ce; }
@@ -284,6 +346,7 @@
   <div class="card">
     <h2>銘柄を選ぶ（証券コード順）</h2>
     <p class="note" style="margin:-4px 0 10px;">初期状態は、12ヶ月が埋まる3つの枠から、それぞれ証券コードがいちばん小さい銘柄を機械的に1本ずつ置いたものです。銘柄の優劣や購入の推奨を示すものではありません。</p>
+    <div class="selnow" id="selNow">選択中: <b>—</b></div>
     <div id="fundList"></div>
     <div class="row" style="border-top:1px solid #e8f0ec;">
       <div class="lbl">合計の投資金額</div>
@@ -294,8 +357,10 @@
   <!-- 結果 -->
   <div class="card">
     <h2>受け取りカレンダー</h2>
-    <div class="calwrap">
-      <table class="cal" id="calTable"></table>
+    <div class="calbox">
+      <div class="calwrap">
+        <table class="cal" id="calTable"></table>
+      </div>
     </div>
 
     <div id="verdict" class="verdict none">銘柄を選んでください。</div>
@@ -316,9 +381,9 @@
   </div>
 
   <!-- 空白月を埋める -->
-  <div class="card" id="gapCard" style="display:none;">
+  <div class="card" id="gapCard">
     <h2>受け取りのない月に、受け取りがある銘柄</h2>
-    <div id="candList"></div>
+    <div id="gapBody"><div id="candList"></div></div>
     <p class="note" style="margin-top:8px;">決算月から機械的に抽出した該当銘柄です。同じ行に並ぶ銘柄は<strong>空いている月のうち埋まる月が同じ</strong>なので、どれを選んでも埋まる月は変わりません（決算月そのものは違うことがあります）。銘柄の優劣や購入の推奨を示すものではありません。</p>
   </div>
 
@@ -346,6 +411,7 @@
   <!-- FAQ -->
   <div class="card">
     <h2>よくある質問</h2>
+    <div class="faqbox">
     <details class="faq"><summary>権利確定月と入金月は何が違いますか？</summary>
       <p>権利確定月（決算月）は「その分配金を受け取る権利が確定する月」です。実際にお金が証券口座に入るのは、そこから遅れて支払開始日を迎えてからになります。ETFの分配金は決算日から40日程度で支払われるため、たとえば8月10日が決算日なら、入金は9月になります。「決算月をずらして組み合わせた」つもりでも、お金が入る月は後ろにずれます。</p></details>
     <details class="faq"><summary>分配金は毎回同じ金額ですか？</summary>
@@ -356,6 +422,7 @@
       <p>NISA口座（成長投資枠）で保有している分の分配金は非課税です。その場合は「税引後で表示する」をオフにすると、税金を引かない金額で表示できます。課税口座の場合は上場株式等の税率20.315%（所得税15%＋復興特別所得税0.315%＋住民税5%）がかかります。</p></details>
     <details class="faq"><summary>この組み合わせのとおりに買えば必ず毎月もらえますか？</summary>
       <p>いいえ、保証はできません。表示しているのは「決算月の組み合わせ上、12ヶ月すべてに受け取りの機会がある」という事実だけです。分配金は運用状況によって変動し、支払われないこともあります。また権利を得るには決算日（権利確定日）の時点で保有している必要があります。</p></details>
+    </div>
   </div>
 
   <!-- 関連 -->
@@ -374,8 +441,8 @@
 <!-- ?v= は sw.js の CACHE 名と必ず同じ番号にする。
      付けないと「新しい index.html ＋ ブラウザに残った古い logic.js」が混ざり、
      L.patternCombos is not a function で画面が動かなくなる（2026-08-08の同型事故の予防）。 -->
-<script src="data.js?v=2"></script>
-<script src="logic.js?v=2"></script>
+<script src="data.js?v=4"></script>
+<script src="logic.js?v=4"></script>
 <script>
 (function () {
   "use strict";
@@ -561,6 +628,7 @@
     drawSummary(r);
     drawBars(r);
     drawCandidates(r);
+    drawSelectedNow();
     drawCombos();
   }
 
@@ -640,21 +708,35 @@
     $("barList").innerHTML = html;
   }
 
+  // 銘柄リストを内部スクロールにしたので、選択中の銘柄が枠の外にあると
+  // 「＋追加」を押しても何も起きていないように見える。枠の上に常に出しておく。
+  function drawSelectedNow() {
+    var codes = Object.keys(state.selected).filter(function (c) { return state.selected[c]; });
+    codes.sort();
+    var el = $("selNow");
+    if (!el) return;
+    el.innerHTML = "選択中: <b>" + (codes.length ? codes.join(" / ") : "—") + "</b>"
+      + (codes.length ? "（" + codes.length + "銘柄）" : "");
+  }
+
   function drawCandidates(r) {
-    var card = $("gapCard");
     var host = $("candList");
+    // ⚠ 2026-09-05: display の切り替えをやめた。
+    //    以前は空のとき display:none にしていたため、**選択を減らすほどカードが現れて背が伸び**、
+    //    記事のiframe高さ（最大で固定）との差がそのまま余白になっていた（実測で最大465px）。
+    //    常に出して枠の高さを固定し、中身だけ入れ替える。
     if (r.rows.length === 0 || r.gapMonths.length === 0) {
-      card.style.display = "none";
-      host.innerHTML = "";
+      host.innerHTML = '<p class="note">' +
+        (r.rows.length === 0
+          ? '銘柄を選ぶと、受け取りのない月を埋められる銘柄がここに出ます。'
+          : '受け取りのない月はありません。') + '</p>';
       return;
     }
     var list = L.fillCandidates(FUNDS, Object.keys(state.selected), r.gapMonths, state.basis, state.lagMonths);
     if (list.length === 0) {
-      card.style.display = "block";
       host.innerHTML = '<p class="note">収録している銘柄の中に、空いている月に受け取りがあるものはありません。</p>';
       return;
     }
-    card.style.display = "block";
     var basisWord = state.basis === "payout" ? "入金" : "権利確定";
     // 同じ空白月を埋める銘柄は最大4本あるので、「埋まる月(covered)」が同じものをまとめて横一列で出す。
     // ※ここは決算月ごとのグルーピングではない。空白月との積集合が同じなら、決算月が違う銘柄も同じ行に入る
