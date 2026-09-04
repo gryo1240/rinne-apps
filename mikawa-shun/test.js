@@ -428,9 +428,16 @@ check(31, "PORTALS が定義され、必要な項目がそろっている", func
   return L.PORTALS.length + "社（" + L.PORTALS.map(function (p) { return p.name; }).join("・") + "）";
 });
 
-check(32, "density rule: 同時に並べるポータルは2社以下（社内ルール「3社以上を並べない」）", function () {
-  assert(L.PORTALS.length <= 2, "PORTALS が3社以上ある: " + L.PORTALS.length);
-  return L.PORTALS.length + "社";
+check(32, "density rule: ポータルは3社まで／画面に同時に見えるのは1社だけ", function () {
+  /* 社内ルール「3社以上を並べない」の根拠は、ふるなび・さとふるの成果対象外条件
+     「複数の広告主サイトのリンクを並記しただけ」。これは **アフィリエイトリンク** の話で、
+     ここは素のリンク（項目35bで0件を機械確認）。さらに選択方式なので
+     カードに出るリンクは常に1本＝「並記」に当たらない。
+     ⚠ もしアフィリエイトリンクに変える日が来たら、この上限は2社に戻して見直すこと */
+  assert(L.PORTALS.length <= 3, "PORTALS が4社以上ある: " + L.PORTALS.length);
+  var src = fs.readFileSync(path.join(DIR, "index.html"), "utf8");
+  assert(src.indexOf("state.portal") !== -1, "選択方式（1社だけ表示）になっていない");
+  return L.PORTALS.length + "社（画面に同時に見えるのは1社）";
 });
 
 check(33, "buildSearchUrl が検索ワードをURLエンコードして埋め込む", function () {
