@@ -46,19 +46,41 @@ function matchesChips(item, cities, categories) {
   return true;
 }
 
+/* 選ばれた月を数値の配列に正規化する（仕様§4-2-2・2026-09-04）。
+   opts.months（複数選択）を正とし、無ければ opts.month（旧・単一選択）を1件の配列として扱う。
+   後方互換のために両方を受けるが、**画面側は months だけを渡すこと**。
+   重複と範囲外を落とし、昇順に並べる（見出しの「5月・9月」の順が選んだ順で変わらないように） */
+function normalizeMonths(opts) {
+  var o = opts || {};
+  var raw = Array.isArray(o.months) ? o.months
+    : (typeof o.month === "number" ? [o.month] : []);
+  var seen = {};
+  var out = [];
+  raw.forEach(function (m) {
+    var n = (typeof m === "number") ? m : parseInt(m, 10);
+    if (!(n >= 1 && n <= 12)) return;
+    if (seen[n]) return;
+    seen[n] = true;
+    out.push(n);
+  });
+  return out.sort(function (a, b) { return a - b; });
+}
+
 /**
  * 品目を絞り込む。
  * @param {Array} items 品目配列（ITEMS）
- * @param {Object} opts { month, cities, categories }
- *   month: 1〜12 → その月が旬の品目「のみ」。通年品目は含めない（仕様 §4-2-1）
- *          "all"       → 全件（通年も含む）
- *          "year-round"→ 通年品目のみ
+ * @param {Object} opts { months, month, cities, categories }
+ *   months: 数値の配列 → **いずれかの月**が旬の品目（OR結合）。通年品目は含めない（仕様§4-2-1）
+ *           **空配列＝月で絞らない＝全件（通年も含む）**。市町・分類と同じ流儀（仕様§4-2-2）
+ *   month:  後方互換。数値なら months:[その月] と同じ。
+ *           "all" → 全件 ／ "year-round" → 通年品目のみ。**months より優先する**
  * @returns {Array} 市町五十音順→品目五十音順の新しい配列（引数は破壊しない）
  */
 function filterItems(items, opts) {
   if (!Array.isArray(items)) return [];
   var o = opts || {};
   var month = o.month;
+  var months = normalizeMonths(o);
   var cities = o.cities;
   var categories = o.categories;
 
@@ -66,11 +88,32 @@ function filterItems(items, opts) {
     if (!matchesChips(item, cities, categories)) return false;
     if (month === "all") return true;
     if (month === "year-round") return isYearRound(item);
+    /* 月を1つも選んでいない＝月で絞らない。通年も含めて全件返す */
+    if (months.length === 0) return true;
     /* 数値の月。通年品目はここに混ぜない（見出し「N月に旬を迎えるもの」が嘘になるため） */
     if (isYearRound(item)) return false;
-    return item.seasonMonths.indexOf(month) !== -1;
+    for (var i = 0; i < months.length; i++) {
+      if (item.seasonMonths.indexOf(months[i]) !== -1) return true;
+    }
+    return false;
   });
   return sortItems(hit);
+}
+
+/* 見出しの文言の正本（仕様§4-2-2）。**画面側で文字列を組み立てないこと。**
+   4つ以上を「5月・6月・7月・9月に旬を迎えるもの」と並べると日本語として読めなくなるので、
+   3つまでは並べ、4つ以上は「選んだNか月」とまとめる。この閾値はここにしか書かない */
+var MONTH_LIST_MAX = 3;
+
+function monthHeading(months, count, mode) {
+  var list = normalizeMonths({ months: months });
+  var n = "（" + count + "件）";
+  if (mode === "year-round") return "通年で手に入るもの" + n;
+  if (mode === "all" || list.length === 0) return "掲載しているものすべて" + n;
+  if (list.length <= MONTH_LIST_MAX) {
+    return list.map(function (m) { return m + "月"; }).join("・") + "に旬を迎えるもの" + n;
+  }
+  return "選んだ" + list.length + "か月に旬を迎えるもの" + n;
 }
 
 /**
@@ -79,6 +122,8 @@ function filterItems(items, opts) {
  */
 function yearRoundItems(items, opts) {
   var o = opts || {};
+  /* months は渡さない。month:"year-round" が優先されるが、
+     読み手が「月の選択が効くのでは」と誤解しないよう明示的に外す */
   return filterItems(items, {
     month: "year-round",
     cities: o.cities,
@@ -189,6 +234,9 @@ function portalById(portalId) {
 
 var API = {
   PORTALS: PORTALS,
+  normalizeMonths: normalizeMonths,
+  monthHeading: monthHeading,
+  MONTH_LIST_MAX: MONTH_LIST_MAX,
   buildSearchUrl: buildSearchUrl,
   portalById: portalById,
   filterItems: filterItems,

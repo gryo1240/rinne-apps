@@ -1,5 +1,5 @@
 // 三河の旬カレンダー（非公式） Service Worker（キャッシュ優先・オフライン動作）
-const CACHE = "mikawa-shun-v6";
+const CACHE = "mikawa-shun-v7";
 const ASSETS = ["./", "./index.html", "./data.js", "./logic.js", "./manifest.json",
   "./icon-192.png", "./icon-512.png"];
 

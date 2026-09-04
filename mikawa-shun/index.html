@@ -34,12 +34,17 @@ select{
   background:#fff; color:var(--ink); width:100%; max-width:220px;
 }
 .chips{display:flex; flex-wrap:wrap; gap:6px}
+/* 月は12個あるので grid にする（2026-09-04）。flex-wrap だと文字幅次第で折り返し位置が
+   不規則に動き、iframe高さの階段が作れなくなる。grid なら列数が幅に対して単調に決まる */
+.chips-month{display:grid; grid-template-columns:repeat(auto-fit,minmax(46px,1fr)); gap:5px}
+.chips-month .chip{padding:7px 2px; text-align:center; font-size:.8rem}
+.chips-special{margin-top:6px}
 .chip{
   font:inherit; font-size:.83rem; padding:7px 12px; border-radius:999px; cursor:pointer;
   border:1px solid var(--line); background:#fff; color:var(--sub); min-height:36px;
 }
 .chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:#fff}
-.chip-actions{margin-top:8px}
+.chip-actions{margin-top:8px; display:flex; flex-wrap:wrap; gap:14px}
 .linkbtn{
   font:inherit; font-size:.8rem; background:none; border:none; color:var(--accent);
   text-decoration:underline; cursor:pointer; padding:4px 0;
@@ -119,8 +124,15 @@ a.gosearch:hover,a.gosearch:focus{background:var(--accent); color:#fff}
 
 <div class="controls">
   <div class="field">
-    <label class="label" for="month">月</label>
-    <select id="month"></select>
+    <span class="label" id="label-month">月</span>
+    <div class="chips chips-month" id="months" role="group" aria-labelledby="label-month"></div>
+    <div class="chips chips-special">
+      <button type="button" class="chip" id="chip-year-round" aria-pressed="false">通年のもの</button>
+    </div>
+    <div class="chip-actions">
+      <button type="button" class="linkbtn" id="reset-month">今月に戻す</button>
+      <button type="button" class="linkbtn" id="clear-months">月の選択をすべて外す</button>
+    </div>
   </div>
   <div class="field">
     <span class="label" id="label-city">市町</span>
@@ -169,7 +181,6 @@ a.gosearch:hover,a.gosearch:focus{background:var(--accent); color:#fff}
     <li>各品目の情報は記載の確認日時点のものです。</li>
     <li>特定の返礼品・ポータルサイトの利用を推奨するものではありません。</li>
     <li>「探す」は各サイトの検索結果ページへ移動します。<strong>掲載順は五十音順</strong>で優劣や推奨ではなく、<strong>検索結果に該当の品目が出ないこともあります</strong>。</li>
-    <li>当ブログは一部のふるさと納税サイトとアフィリエイト提携をしていますが、<strong>このツール内のリンクは提携リンクではありません</strong>。</li>
   </ul>
 </div>
 
@@ -198,7 +209,12 @@ a.gosearch:hover,a.gosearch:focus{background:var(--accent); color:#fff}
   }
 
   var state = {
-    month: L.currentMonth(),
+    /* 月は複数選択（仕様§4-2-2・2026-09-04 オーナー指示）。
+       空配列＝月で絞らない＝全件。開いたときは今月を1つだけ選んだ状態にする */
+    months: [L.currentMonth()],
+    /* null ＝ 月の選択で絞る ／ "year-round" ＝ 通年品目のみ（月の選択は解除される）。
+       filterItems には month として渡す（"all" は months:[] で表すのでここでは使わない） */
+    mode: null,
     cities: [],      /* 空配列＝絞り込みなし（仕様§4-2） */
     categories: [],
     /* 検索先のふるさと納税サイト（仕様§6-2）。既定は「実測で検証できたもの」を採る。
@@ -208,13 +224,65 @@ a.gosearch:hover,a.gosearch:focus{background:var(--accent); color:#fff}
   };
 
   /* ---------- コントロールの組み立て（市町・分類は data.js から導出する） ---------- */
-  var monthEl = document.getElementById("month");
+  var monthsBox = document.getElementById("months");
+  var yearRoundChip = document.getElementById("chip-year-round");
   for (var m = 1; m <= 12; m++) {
-    monthEl.appendChild(new Option(m + "月", String(m)));
+    monthsBox.appendChild(monthChip(m));
   }
-  monthEl.appendChild(new Option("通年のもの", "year-round"));
-  monthEl.appendChild(new Option("すべて", "all"));
-  monthEl.value = String(state.month);
+
+  function monthChip(m) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip";
+    b.textContent = m + "月";
+    b.setAttribute("data-month", String(m));
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", function () { toggleMonth(m); });
+    return b;
+  }
+
+  /* 押下状態は state から作り直す（トグルの度に個別に書き換えると、
+     「今月に戻す」など一括で変える操作とズレる） */
+  function syncMonthChips() {
+    Array.prototype.forEach.call(monthsBox.querySelectorAll(".chip"), function (b) {
+      var m = parseInt(b.getAttribute("data-month"), 10);
+      b.setAttribute("aria-pressed", state.months.indexOf(m) !== -1 ? "true" : "false");
+    });
+    yearRoundChip.setAttribute("aria-pressed", state.mode === "year-round" ? "true" : "false");
+  }
+
+  function toggleMonth(m) {
+    state.mode = null;   /* 月を押したら「通年のもの」は解除する */
+    var i = state.months.indexOf(m);
+    if (i === -1) { state.months.push(m); } else { state.months.splice(i, 1); }
+    syncMonthChips();
+    render();
+  }
+
+  yearRoundChip.addEventListener("click", function () {
+    if (state.mode === "year-round") {
+      state.mode = null;
+    } else {
+      state.mode = "year-round";
+      state.months = [];   /* 月の選択と混ぜない（仕様§4-2-1の分離の趣旨） */
+    }
+    syncMonthChips();
+    render();
+  });
+
+  /* 複数選択にすると全部外せてしまうので、開いたときの状態に戻す手段を必ず置く（仕様§4-2-2） */
+  document.getElementById("reset-month").addEventListener("click", function () {
+    state.months = [L.currentMonth()];
+    state.mode = null;
+    syncMonthChips();
+    render();
+  });
+  document.getElementById("clear-months").addEventListener("click", function () {
+    state.months = [];
+    state.mode = null;
+    syncMonthChips();
+    render();
+  });
 
   function buildChips(containerId, values, key) {
     var box = document.getElementById(containerId);
@@ -235,6 +303,7 @@ a.gosearch:hover,a.gosearch:focus{background:var(--accent); color:#fff}
   }
   buildChips("cities", L.cityList(ITEMS), "cities");
   buildChips("categories", L.categoryList(ITEMS), "categories");
+  syncMonthChips();
 
   function clearChips(containerId, key) {
     state[key] = [];
@@ -246,12 +315,6 @@ a.gosearch:hover,a.gosearch:focus{background:var(--accent); color:#fff}
   }
   document.getElementById("reset-cities").addEventListener("click", function () { clearChips("cities", "cities"); });
   document.getElementById("reset-categories").addEventListener("click", function () { clearChips("categories", "categories"); });
-
-  monthEl.addEventListener("change", function () {
-    var v = monthEl.value;
-    state.month = (v === "all" || v === "year-round") ? v : parseInt(v, 10);
-    render();
-  });
 
   /* ---------- 検索するサイトの選択（仕様§6-2・2026-09-04） ----------
      ポータルが1つも定義されていない場合は選択UIごと隠す（リンクも出ない） */
@@ -359,15 +422,13 @@ a.gosearch:hover,a.gosearch:focus{background:var(--accent); color:#fff}
 
   /* ---------- 描画 ---------- */
   function render() {
-    var list = L.filterItems(ITEMS, state);
+    var list = L.filterItems(ITEMS, {
+      months: state.months, month: state.mode,
+      cities: state.cities, categories: state.categories
+    });
 
-    if (state.month === "all") {
-      headingEl.textContent = "掲載しているものすべて（" + list.length + "件）";
-    } else if (state.month === "year-round") {
-      headingEl.textContent = "通年で手に入るもの（" + list.length + "件）";
-    } else {
-      headingEl.textContent = state.month + "月に旬を迎えるもの（" + list.length + "件）";
-    }
+    /* 見出しの文面は logic.js の monthHeading が正本。ここで組み立てない（仕様§4-2-2） */
+    headingEl.textContent = L.monthHeading(state.months, list.length, state.mode);
 
     if (list.length === 0) {
       resultsEl.innerHTML = "";
@@ -376,10 +437,11 @@ a.gosearch:hover,a.gosearch:focus{background:var(--accent); color:#fff}
       renderGroups(resultsEl, list);
     }
 
-    /* 通年の別セクションは「月を数字で選んでいるとき」だけ出す。
-       「通年のもの」「すべて」を選んでいるときは上の一覧と中身が重なるため隠す */
+    /* 通年の別セクションは「月を1つ以上選んでいるとき」だけ出す。
+       「通年のもの」を選んでいるときも、月を全部外したときも、
+       上の一覧と中身が重なるため隠す */
     var yrSection = document.getElementById("year-round-section");
-    if (typeof state.month === "number") {
+    if (state.mode === null && state.months.length > 0) {
       var yr = L.yearRoundItems(ITEMS, state);
       if (yr.length > 0) {
         yrSection.hidden = false;
