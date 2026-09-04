@@ -54,16 +54,58 @@ function normalizeMonths(opts) {
   var o = opts || {};
   var raw = Array.isArray(o.months) ? o.months
     : (typeof o.month === "number" ? [o.month] : []);
+  return normalizeMonthList(raw);
+}
+
+/* 数値の配列に正規化する本体。受け付けるのは **1〜12の整数**（数字だけの文字列も可）。
+   小数・0・13以上・"5abc" のような混ざり物は落とす
+   （2026-09-04のレビュー指摘: 5.5 が範囲チェックを通り、見出しが「5.5月に旬を迎えるもの」になっていた） */
+function normalizeMonthList(raw) {
   var seen = {};
   var out = [];
-  raw.forEach(function (m) {
-    var n = (typeof m === "number") ? m : parseInt(m, 10);
-    if (!(n >= 1 && n <= 12)) return;
+  (raw || []).forEach(function (m) {
+    var n;
+    if (typeof m === "number") {
+      n = m;
+    } else if (typeof m === "string" && /^\d+$/.test(m)) {
+      n = parseInt(m, 10);
+    } else {
+      return;
+    }
+    if (!(n >= 1 && n <= 12) || n !== Math.floor(n)) return;
     if (seen[n]) return;
     seen[n] = true;
     out.push(n);
   });
   return out.sort(function (a, b) { return a - b; });
+}
+
+/* 月の指定を1か所で解釈する（2026-09-04 レビュー指摘の fail-open 対策）。
+   @returns {{mode: (string|null), list: number[], invalid: boolean}}
+
+   **invalid が true なら呼び出し側の誤り**なので、filterItems は「全件」ではなく「0件」を返す。
+   月を1つも選んでいない状態（months:[]）と、
+   「9月のつもりで 0 や 13 や NaN を渡してしまった状態」を同じ扱いにすると、
+   **絞り込みが黙って全解除される**（レビューで month:0/NaN/13 が24件を返すのを実測）。 */
+function monthSpec(opts) {
+  var o = opts || {};
+  var mode = (o.month === "all" || o.month === "year-round") ? o.month : null;
+  var raw;
+  if (Array.isArray(o.months)) {
+    raw = o.months;                       /* 空配列＝月で絞らない（画面の既定の表現） */
+  } else if (o.months !== undefined && o.months !== null) {
+    raw = [o.months];                     /* 配列でない値も1件として検証にかける */
+  } else if (mode === null && o.month !== undefined && o.month !== null) {
+    raw = [o.month];                      /* 旧API。months が無いときだけ使う */
+  } else {
+    raw = [];
+  }
+  var list = normalizeMonthList(raw);
+  return {
+    mode: mode,
+    list: list,
+    invalid: (mode === null && raw.length > 0 && list.length === 0)
+  };
 }
 
 /**
@@ -72,22 +114,28 @@ function normalizeMonths(opts) {
  * @param {Object} opts { months, month, cities, categories }
  *   months: 数値の配列 → **いずれかの月**が旬の品目（OR結合）。通年品目は含めない（仕様§4-2-1）
  *           **空配列＝月で絞らない＝全件（通年も含む）**。市町・分類と同じ流儀（仕様§4-2-2）
- *   month:  後方互換。数値なら months:[その月] と同じ。
- *           "all" → 全件 ／ "year-round" → 通年品目のみ。**months より優先する**
+ *   month:  "all" → 全件 ／ "year-round" → 通年品目のみ。**この2つは months より優先する**。
+ *           数値は後方互換で、**months が無いときだけ** months:[その月] と同じ扱いになる
+ *           （months を渡しているなら months が正。2026-09-04にJSDocを実装に合わせて訂正）
+ *
+ *   ⚠ **月を指定したのに1つも有効でない値だった場合（0・13・NaN・"5abc" など）は0件を返す。**
+ *      全件に落とすと、絞り込みが黙って外れたことに誰も気づけない
  * @returns {Array} 市町五十音順→品目五十音順の新しい配列（引数は破壊しない）
  */
 function filterItems(items, opts) {
   if (!Array.isArray(items)) return [];
   var o = opts || {};
-  var month = o.month;
-  var months = normalizeMonths(o);
+  var spec = monthSpec(o);
   var cities = o.cities;
   var categories = o.categories;
 
+  if (spec.invalid) return [];
+
+  var months = spec.list;
   var hit = items.filter(function (item) {
     if (!matchesChips(item, cities, categories)) return false;
-    if (month === "all") return true;
-    if (month === "year-round") return isYearRound(item);
+    if (spec.mode === "all") return true;
+    if (spec.mode === "year-round") return isYearRound(item);
     /* 月を1つも選んでいない＝月で絞らない。通年も含めて全件返す */
     if (months.length === 0) return true;
     /* 数値の月。通年品目はここに混ぜない（見出し「N月に旬を迎えるもの」が嘘になるため） */
@@ -235,6 +283,7 @@ function portalById(portalId) {
 var API = {
   PORTALS: PORTALS,
   normalizeMonths: normalizeMonths,
+  monthSpec: monthSpec,
   monthHeading: monthHeading,
   MONTH_LIST_MAX: MONTH_LIST_MAX,
   buildSearchUrl: buildSearchUrl,

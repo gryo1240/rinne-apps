@@ -215,6 +215,9 @@ a.gosearch:hover,a.gosearch:focus{background:var(--accent); color:#fff}
     /* null ＝ 月の選択で絞る ／ "year-round" ＝ 通年品目のみ（月の選択は解除される）。
        filterItems には month として渡す（"all" は months:[] で表すのでここでは使わない） */
     mode: null,
+    /* 「通年のもの」を押す直前の月の選択。OFFにしたときに戻すために覚えておく
+       （覚えないと、ONの直前が「9月」でもOFFで全24件に飛んでトグルの逆操作にならない） */
+    monthsBeforeYearRound: null,
     cities: [],      /* 空配列＝絞り込みなし（仕様§4-2） */
     categories: [],
     /* 検索先のふるさと納税サイト（仕様§6-2）。既定は「実測で検証できたもの」を採る。
@@ -253,6 +256,7 @@ a.gosearch:hover,a.gosearch:focus{background:var(--accent); color:#fff}
 
   function toggleMonth(m) {
     state.mode = null;   /* 月を押したら「通年のもの」は解除する */
+    state.monthsBeforeYearRound = null;
     var i = state.months.indexOf(m);
     if (i === -1) { state.months.push(m); } else { state.months.splice(i, 1); }
     syncMonthChips();
@@ -261,9 +265,13 @@ a.gosearch:hover,a.gosearch:focus{background:var(--accent); color:#fff}
 
   yearRoundChip.addEventListener("click", function () {
     if (state.mode === "year-round") {
+      /* OFF: 押す直前の月の選択に戻す（トグルの逆操作になるように） */
       state.mode = null;
+      state.months = state.monthsBeforeYearRound || [];
+      state.monthsBeforeYearRound = null;
     } else {
       state.mode = "year-round";
+      state.monthsBeforeYearRound = state.months.slice();
       state.months = [];   /* 月の選択と混ぜない（仕様§4-2-1の分離の趣旨） */
     }
     syncMonthChips();
@@ -274,12 +282,14 @@ a.gosearch:hover,a.gosearch:focus{background:var(--accent); color:#fff}
   document.getElementById("reset-month").addEventListener("click", function () {
     state.months = [L.currentMonth()];
     state.mode = null;
+    state.monthsBeforeYearRound = null;
     syncMonthChips();
     render();
   });
   document.getElementById("clear-months").addEventListener("click", function () {
     state.months = [];
     state.mode = null;
+    state.monthsBeforeYearRound = null;
     syncMonthChips();
     render();
   });
