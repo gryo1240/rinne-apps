@@ -120,10 +120,18 @@ h2{font-size:1.05rem; margin:18px 0 8px; padding-bottom:6px; border-bottom:2px s
 .row.zero{opacity:.55}
 .row.zero .cnt b{color:var(--sub)}
 
-.share textarea{
-  width:100%; font:inherit; font-size:.85rem; line-height:1.7; padding:10px;
+/* 【2026-09-04 オーナー指示・その3】「アプリの下の余白をもっと消してほしい」
+   原因は**状態によって高さが変わること**だった。記事のiframeの高さは
+   「アプリが取りうる最大の高さ」で固定するので、画像を出すと217px伸びる設計だと、
+   読者が最初に見る初期状態では**その217pxがまるごと空白になる**（実測315px）。
+   → 共有文と画像を**同じ固定高さの枠に重ねて**、切り替えるようにした。
+   これで「画像を作っても総高が1pxも変わらない」＝空白が消える。
+   ⚠ この枠の高さを変えたら記事のiframe高さを測り直すこと */
+.preview{height:110px; position:relative}
+.preview textarea{
+  width:100%; height:100%; font:inherit; font-size:.85rem; line-height:1.7; padding:10px;
   border:1px solid var(--line); border-radius:8px; background:#fdfdfd; color:var(--ink);
-  min-height:5.5em; resize:vertical;   /* 縦を詰めた。足りなければ読者が引き伸ばせる */
+  resize:none;   /* 枠が固定なので伸ばさせない（伸ばされるとiframeからはみ出す） */
 }
 .btnrow{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
 .btn{
@@ -131,13 +139,19 @@ h2{font-size:1.05rem; margin:18px 0 8px; padding-bottom:6px; border-bottom:2px s
   border:1px solid var(--accent); background:var(--accent); color:#fff; min-height:42px;
 }
 .btn.ghost{background:#fff; color:var(--accent)}
-.msg{font-size:.8rem; color:var(--accent); margin:8px 0 0; min-height:1.2em}
+/* 2行ぶん先に確保しておく。画像を作ったときの案内文がここに出るが、
+   **出た瞬間に高さが変わると空白対策が台無しになる**ので最初から場所を取っておく */
+.msg{font-size:.8rem; color:var(--accent); margin:8px 0 0; min-height:2.4em}
+/* 狭い画面では案内文が2行になるので、その分も先に確保する。
+   しきい値420pxは記事の既定段が受け持つ帯(630〜680px)の外に置いてある */
+@media (max-width:420px){ .msg{min-height:3.6em} }
 .msg.err{color:#a8482f}
 /* 表示だけ小さくする。**保存される画像は canvas の 1200x630 のまま**なので画質は落ちない
    （長押し保存の対象は img の src＝フルサイズのデータURL） */
-#cardimg{max-width:100%; max-height:150px; width:auto; height:auto; object-fit:contain;
-  border:1px solid var(--line); border-radius:8px; display:none; margin-top:10px}
-.hint{font-size:.78rem; color:var(--sub); margin:6px 0 0}
+/* 共有文と同じ枠にぴったり重ねる。**保存される画像は canvas の 1200x630 のまま**なので
+   画面で小さく見えても画質は落ちない（長押し保存の対象は img の src＝フルサイズのデータURL） */
+#cardimg{position:absolute; inset:0; width:100%; height:100%; object-fit:contain;
+  border:1px solid var(--line); border-radius:8px; background:#fdfdfd; display:none}
 
 .notes{font-size:.8rem; color:var(--sub); margin-top:16px; border-top:1px solid var(--line); padding-top:14px}
 .notes ul{padding-left:1.2em; margin:8px 0 0}
@@ -178,14 +192,15 @@ h2{font-size:1.05rem; margin:18px 0 8px; padding-bottom:6px; border-bottom:2px s
 <h2>結果を共有する</h2>
 <div class="panel share">
   <label class="label" for="sharetext">そのまま貼れる文章</label>
-  <textarea id="sharetext" readonly></textarea>
+  <div class="preview">
+    <textarea id="sharetext" readonly></textarea>
+    <img id="cardimg" alt="配当金で買えるものをまとめた画像">
+  </div>
   <div class="btnrow">
     <button type="button" class="btn" id="copy">文章をコピー</button>
     <button type="button" class="btn ghost" id="makeimg">画像にする</button>
   </div>
   <p class="msg" id="share-msg"></p>
-  <img id="cardimg" alt="配当金で買えるものをまとめた画像">
-  <p class="hint" id="imghint" style="display:none">ここでは小さく表示していますが、<strong>保存されるのは大きいままの画像</strong>です。長押し（パソコンなら右クリック）で保存できます。</p>
 </div>
 
 <h2>使い方</h2>
@@ -358,9 +373,22 @@ h2{font-size:1.05rem; margin:18px 0 8px; padding-bottom:6px; border-bottom:2px s
       L.buildShareText(monthly, rows, { hideAmount: state.hideAmount, url: PAGE_URL });
 
     /* 入力が変わったら前に作った画像は消す（古い結果を配ってしまわないように） */
-    var img = document.getElementById("cardimg");
-    img.style.display = "none";
-    document.getElementById("imghint").style.display = "none";
+    showText();
+  }
+
+  /* ---------- 共有枠の切り替え（文章 ⇄ 画像。**枠の高さは変わらない**） ---------- */
+  function showText() {
+    document.getElementById("cardimg").style.display = "none";
+    document.getElementById("sharetext").style.display = "";
+    document.getElementById("makeimg").textContent = "画像にする";
+  }
+  function showImage() {
+    document.getElementById("cardimg").style.display = "block";
+    document.getElementById("sharetext").style.display = "none";
+    document.getElementById("makeimg").textContent = "文章にもどす";
+  }
+  function imageShown() {
+    return document.getElementById("cardimg").style.display === "block";
   }
 
   /* ---------- コピー（iframe内で clipboard が失敗する前提のフォールバック付き） ---------- */
@@ -401,6 +429,7 @@ h2{font-size:1.05rem; margin:18px 0 8px; padding-bottom:6px; border-bottom:2px s
 
   /* ---------- 画像化（ダウンロードAPIに頼らず、imgとして出して長押し保存させる） ---------- */
   document.getElementById("makeimg").addEventListener("click", function () {
+    if (imageShown()) { showText(); showMsg("", false); return; }
     try {
       var cv = document.getElementById("cv");
       var g = cv.getContext("2d");
@@ -444,9 +473,8 @@ h2{font-size:1.05rem; margin:18px 0 8px; padding-bottom:6px; border-bottom:2px s
 
       var img = document.getElementById("cardimg");
       img.src = cv.toDataURL("image/png");
-      img.style.display = "block";
-      document.getElementById("imghint").style.display = "block";
-      showMsg("画像を作りました", false);
+      showImage();
+      showMsg("長押し（右クリック）で保存できます。保存されるのは大きい画像です。", false);
     } catch (e) {
       showMsg("画像を作れませんでした。文章のコピーをお使いください", true);
     }
