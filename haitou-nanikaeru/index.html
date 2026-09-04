@@ -58,6 +58,20 @@ h2{font-size:1.05rem; margin:26px 0 10px; padding-bottom:6px; border-bottom:2px 
 .headline .big .em{color:var(--accent)}
 .headline .emoji{font-size:2.4rem; display:block; line-height:1.2; margin-bottom:2px}
 
+/* 結果リストは内部スクロール（2026-09-04 オーナー指示「アプリの縦サイズを半分以下に。
+   それぞれの換算結果をスクロールするようにしてくれれば良い」）。
+   ここが全体の高さの約6割を占めていた（実測 3,525px 中 2,128px）。
+   ⚠ **この値を変えたら iframe の高さを測り直すこと**（記事側のCSSは実測値で固定している）。
+   三河の旬カレンダーと同じ方式。項目を増やしても外側の高さが伸びないので、
+   今後の追加でオーナーに高さの相談をしなくて済む */
+#rows{
+  max-height:300px; overflow-y:auto; overscroll-behavior:contain; padding-right:4px;
+  /* 続きがあることが分かるように、上下に薄い影を出す */
+  background:
+    linear-gradient(var(--bg) 30%, rgba(255,255,255,0)) top / 100% 20px no-repeat,
+    linear-gradient(rgba(255,255,255,0), var(--bg) 70%) bottom / 100% 20px no-repeat;
+  background-attachment:local, local;
+}
 .row{
   background:var(--card); border:1px solid var(--line); border-radius:10px;
   padding:11px 13px; margin-bottom:8px; display:flex; align-items:center; gap:12px;
@@ -79,7 +93,7 @@ h2{font-size:1.05rem; margin:26px 0 10px; padding-bottom:6px; border-bottom:2px 
 .share textarea{
   width:100%; font:inherit; font-size:.85rem; line-height:1.7; padding:10px;
   border:1px solid var(--line); border-radius:8px; background:#fdfdfd; color:var(--ink);
-  min-height:8.5em; resize:vertical;
+  min-height:5.5em; resize:vertical;   /* 縦を詰めた。足りなければ読者が引き伸ばせる */
 }
 .btnrow{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
 .btn{
@@ -89,7 +103,10 @@ h2{font-size:1.05rem; margin:26px 0 10px; padding-bottom:6px; border-bottom:2px 
 .btn.ghost{background:#fff; color:var(--accent)}
 .msg{font-size:.8rem; color:var(--accent); margin:8px 0 0; min-height:1.2em}
 .msg.err{color:#a8482f}
-#cardimg{max-width:100%; height:auto; border:1px solid var(--line); border-radius:8px; display:none; margin-top:10px}
+/* 表示だけ小さくする。**保存される画像は canvas の 1200x630 のまま**なので画質は落ちない
+   （長押し保存の対象は img の src＝フルサイズのデータURL） */
+#cardimg{max-width:100%; max-height:150px; width:auto; height:auto; object-fit:contain;
+  border:1px solid var(--line); border-radius:8px; display:none; margin-top:10px}
 .hint{font-size:.78rem; color:var(--sub); margin:6px 0 0}
 
 .notes{font-size:.8rem; color:var(--sub); margin-top:24px; border-top:1px solid var(--line); padding-top:14px}
@@ -125,7 +142,7 @@ h2{font-size:1.05rem; margin:26px 0 10px; padding-bottom:6px; border-bottom:2px 
 
 <div id="headline" class="headline" aria-live="polite"></div>
 
-<p class="hint" style="margin:0 0 8px">価格はすべて<strong>目安</strong>です。数字を書き換えると、その場で計算し直します。</p>
+<p class="hint" style="margin:0 0 8px">価格はすべて<strong>目安</strong>です。数字を書き換えると、その場で計算し直します。<strong>下へスクロール</strong>すると続きが見られます。</p>
 <div id="rows"></div>
 
 <h2>結果を共有する</h2>
@@ -138,7 +155,7 @@ h2{font-size:1.05rem; margin:26px 0 10px; padding-bottom:6px; border-bottom:2px 
   </div>
   <p class="msg" id="share-msg"></p>
   <img id="cardimg" alt="配当金で買えるものをまとめた画像">
-  <p class="hint" id="imghint" style="display:none">画像を長押し（パソコンなら右クリック）で保存できます。</p>
+  <p class="hint" id="imghint" style="display:none">ここでは小さく表示していますが、<strong>保存されるのは大きいままの画像</strong>です。長押し（パソコンなら右クリック）で保存できます。</p>
 </div>
 
 <h2>使い方</h2>

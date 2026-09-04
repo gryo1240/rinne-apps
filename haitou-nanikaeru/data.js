@@ -39,7 +39,18 @@ const CONVERT_ITEMS = [
   { id: "bread",          label: "食パン",             unit: "斤", emoji: "🍞", price: 200, category: "くらし" },
   { id: "egg",            label: "卵（10個入り）",     unit: "パック", emoji: "🥚", price: 300, category: "くらし" },
   { id: "rice5kg",        label: "お米（5kg）",        unit: "袋", emoji: "🌾", price: 3500, category: "くらし" },
-  { id: "haircut",        label: "散髪",               unit: "回", emoji: "💇", price: 3500, category: "くらし" }
+  { id: "haircut",        label: "散髪",               unit: "回", emoji: "💇", price: 3500, category: "くらし" },
+
+  /* ---- 毎月の支払い（2026-09-04 オーナー指示で追加） ----
+     配当金の使い道として「生活費のこの部分が賄えている」と実感しやすいので入れた。
+     単価が大きいので、少額のうちは 0 が並ぶ。それ自体が現在地の情報になる（隠さない）。
+     **金額は世帯・地域・季節で大きく違う。** ここも他と同じく「目安」で、画面上で書き換えられる。
+     出典は持たない（持つと更新義務が発生する。data.js 冒頭の設計の前提を参照） */
+  { id: "denki",          label: "電気代（1か月）",    unit: "か月", emoji: "💡", price: 11000, category: "毎月の支払い" },
+  { id: "gas",            label: "ガス代（1か月）",    unit: "か月", emoji: "🔥", price: 5500, category: "毎月の支払い" },
+  { id: "suido",          label: "水道代（1か月）",    unit: "か月", emoji: "🚰", price: 4000, category: "毎月の支払い" },
+  { id: "denwa",          label: "電話代（1か月）",    unit: "か月", emoji: "📱", price: 5000, category: "毎月の支払い" },
+  { id: "yachin",         label: "家賃（1か月）",      unit: "か月", emoji: "🏠", price: 60000, category: "毎月の支払い" }
 ];
 
 if (typeof module !== "undefined" && module.exports) {
