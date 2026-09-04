@@ -51,21 +51,25 @@ select{
 }
 h2{font-size:1.05rem; margin:26px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--accent-weak)}
 h3{font-size:.92rem; margin:18px 0 8px; color:var(--accent); font-weight:bold}
-/* 縦を短くするため結果リストは内部スクロール（2026-09-03 オーナー指示「3件くらい表示できたらあとはスクロールで十分」）。
-   カード1枚は333〜406px（幅により変動）なので、3枚強が収まる高さで頭打ちにする。
-   埋め込みiframeの高さを短く保つための仕組みなので、値を変えたら必ず高さを測り直すこと。 */
-#results, #year-round{
+/* 縦を短くするためリストは内部スクロール（2026-09-03 オーナー指示「3件くらい表示できたら
+   あとはスクロールで十分」）。カード1枚は333〜406px（幅により変動）なので、3枚強が収まる高さ。
+
+   【2026-09-04 オーナー指示】「月の結果と通年の結果でそれぞれにスクロールバーがあるけど、統一しよう」
+   → **スクロール枠は #lists の1つだけ**。月の結果と通年の結果を同じ枠に入れる。
+      枠が2つあったころは 1180 + 通年の見出し・説明 + 560 = 約1,800px を占めていた。
+   ⚠ **埋め込みiframeの高さを短く保つための仕組み。値を変えたら必ず高さを測り直すこと**
+      （python tools/measure_iframe_heights.py mikawa-shun --live）。 */
+#lists{
   max-height:1180px; overflow-y:auto; overscroll-behavior:contain;
   padding-right:4px;
-}
-#year-round{max-height:560px}
-/* スクロールできることが分かるように、続きがある側に薄い影を出す */
-#results, #year-round{
+  /* スクロールできることが分かるように、続きがある側に薄い影を出す */
   background:
     linear-gradient(var(--bg) 30%, rgba(255,255,255,0)) top / 100% 24px no-repeat,
     linear-gradient(rgba(255,255,255,0), var(--bg) 70%) bottom / 100% 24px no-repeat;
   background-attachment:local, local;
 }
+/* 枠の中の1つ目の見出しは、上に余白を取らない（枠の上端に張り付かせる） */
+#lists #year-round-section h2{margin-top:20px}
 .card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:13px 14px; margin-bottom:10px}
 .card h4{margin:0 0 2px; font-size:1.02rem; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
 .tag{font-size:.72rem; font-weight:normal; background:var(--accent-weak); color:var(--accent); border-radius:4px; padding:2px 7px}
@@ -154,13 +158,16 @@ a.gosearch:hover,a.gosearch:focus{background:var(--accent); color:#fff}
 
 <section id="result-section">
   <h2 id="result-heading">読み込み中</h2>
-  <div id="results" aria-live="polite"></div>
-</section>
-
-<section id="year-round-section" hidden>
-  <h2>通年で手に入るもの</h2>
-  <p class="lead">月の選択に関わらず表示しています。上の件数には含めていません。</p>
-  <div id="year-round"></div>
+  <!-- スクロール枠は1つだけ（2026-09-04 オーナー指示）。
+       件数の見出しは枠の外に置いて、スクロールしても消えないようにしている -->
+  <div id="lists">
+    <div id="results" aria-live="polite"></div>
+    <section id="year-round-section" hidden>
+      <h2>通年で手に入るもの</h2>
+      <p class="lead">月の選択に関わらず表示しています。上の件数には含めていません。</p>
+      <div id="year-round"></div>
+    </section>
+  </div>
 </section>
 
 <h2>探し方</h2>

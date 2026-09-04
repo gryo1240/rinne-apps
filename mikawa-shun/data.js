@@ -108,7 +108,7 @@ const ITEMS = [
     city: "西尾市",
     item: "カーネーション",
     itemNote: "",
-    category: "花き",
+    category: "花",
     seasonMonths: [9, 10, 11, 12, 1, 2, 3, 4, 5, 6],
     seasonKind: "収穫期",
     seasonNote: "例年9月下旬〜6月中旬が収穫期です（母の日前がピーク）",
