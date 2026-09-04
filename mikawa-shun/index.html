@@ -86,15 +86,17 @@ h3{font-size:.92rem; margin:18px 0 8px; color:var(--accent); font-weight:bold}
 .links a{color:var(--accent)}
 /* 検索するサイトの選択（仕様§6-2・2026-09-04） */
 .portal-pick{background:var(--card); border:1px solid var(--line); border-radius:10px;
-  padding:12px 14px; margin-bottom:16px}
-.portal-pick > .label{display:block; font-size:.8rem; font-weight:bold; color:var(--sub); margin-bottom:6px}
-.portal-note{margin:6px 0 0; font-size:.74rem; color:var(--sub); line-height:1.5}
-/* 主導線なので、出典リンクより明確に押せる見た目にする。
-   幅290pxでも1本しか出ないので折り返しによる押し間違いは起きない（仕様§5-1-1） */
-.links a.gosearch{display:inline-block; padding:7px 12px; border:1px solid var(--accent);
-  border-radius:6px; text-decoration:none; font-weight:bold; line-height:1.3}
-.links a.gosearch::after{content:" ↗"; font-weight:normal}
-.links a.gosearch:hover,.links a.gosearch:focus{background:var(--accent); color:#fff}
+  padding:8px 12px; margin-bottom:14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.portal-pick > .label{font-size:.8rem; font-weight:bold; color:var(--sub); white-space:nowrap}
+.portal-pick > select{flex:0 1 auto}
+.portal-note{font-size:.72rem; color:var(--sub)}
+/* 検索ワードのコピーと同じ行に置く小さなリンク（2026-09-04オーナー指示で文面を廃止）。
+   コピーと押し間違えないよう枠線の色で区別し、狭い幅では折り返して2段になる */
+a.gosearch{display:inline-block; padding:7px 10px; border:1px solid var(--accent);
+  border-radius:6px; text-decoration:none; font-weight:bold; line-height:1.3;
+  color:var(--accent); white-space:nowrap; font-size:.82rem}
+a.gosearch::after{content:" ↗"; font-weight:normal}
+a.gosearch:hover,a.gosearch:focus{background:var(--accent); color:#fff}
 .src{margin:6px 0 0; font-size:.76rem; color:var(--sub)}
 .src a{color:var(--sub)}
 .empty{background:var(--card); border:1px dashed var(--line); border-radius:10px; padding:18px 14px; color:var(--sub); font-size:.9rem}
@@ -135,7 +137,7 @@ h3{font-size:.92rem; margin:18px 0 8px; color:var(--accent); font-weight:bold}
 <div class="portal-pick">
   <label class="label" for="portal">検索するサイト</label>
   <select id="portal"></select>
-  <p class="portal-note">各品目の「このワードで探す」の飛び先です。掲載順は五十音順で、優劣ではありません。</p>
+  <span class="portal-note">各品目の「探す」の飛び先</span>
 </div>
 
 <section id="result-section">
@@ -153,9 +155,8 @@ h3{font-size:.92rem; margin:18px 0 8px; color:var(--accent); font-weight:bold}
 <div class="howto">
   <ol>
     <li>上の「検索するサイト」で<strong>使いたいふるさと納税サイトを選び</strong>ます。</li>
-    <li>気になった品目の<strong>「このワードで探す」を押す</strong>と、そのサイトの検索結果が開きます。</li>
+    <li>気になった品目の<strong>「探す」を押す</strong>と、そのサイトの検索結果が開きます（うまく開けないときは<strong>コピー</strong>して検索窓に貼り付け）。</li>
     <li>表示された中から<strong>金額帯で絞り込み</strong>ます。</li>
-    <li>うまく開けないときは<strong>検索ワードをコピー</strong>して、検索窓に貼り付けてください。</li>
   </ol>
 </div>
 
@@ -167,8 +168,7 @@ h3{font-size:.92rem; margin:18px 0 8px; color:var(--accent); font-weight:bold}
     <li>返礼品として実際に取り扱われているか、寄付金額、在庫、発送時期は、各ふるさと納税サイトおよび各自治体の公式ページで必ずご確認ください。</li>
     <li>各品目の情報は記載の確認日時点のものです。</li>
     <li>特定の返礼品・ポータルサイトの利用を推奨するものではありません。</li>
-    <li>ふるさと納税サイトへのリンクは各サイトの検索結果ページへ移動するもので、<strong>掲載順は五十音順</strong>です。優劣や当ブログの推奨を示すものではありません。</li>
-    <li>検索結果に<strong>該当の品目が表示されないことがあります</strong>（取扱いがない時期・サイトがあるため）。</li>
+    <li>「探す」は各サイトの検索結果ページへ移動します。<strong>掲載順は五十音順</strong>で優劣や推奨ではなく、<strong>検索結果に該当の品目が出ないこともあります</strong>。</li>
     <li>当ブログは一部のふるさと納税サイトとアフィリエイト提携をしていますが、<strong>このツール内のリンクは提携リンクではありません</strong>。</li>
   </ul>
 </div>
@@ -309,21 +309,22 @@ h3{font-size:.92rem; margin:18px 0 8px; color:var(--accent); font-weight:bold}
     btn.addEventListener("click", function () { copyWord(item.searchWord, msg); });
     row.appendChild(word);
     row.appendChild(btn);
-    box.appendChild(row);
-    box.appendChild(msg);
-    card.appendChild(box);
-
-    /* 主導線: 選んだふるさと納税サイトの検索結果へ直接飛ぶ（仕様§6-2・2026-09-04）。
-       素のリンクでアフィリエイトではない（§6-1）。URLが作れないときはリンクを出さない */
+    /* 主導線: 選んだふるさと納税サイトの検索結果へ直接飛ぶ（仕様§6-2）。
+       素のリンクでアフィリエイトではない（§6-1）。
+       2026-09-04オーナー指示で「このワードで○○を探す」の文面を廃し、
+       コピーと同じ行に短いリンクとして置く（飛び先は上の「検索するサイト」に出ている）。
+       画面に文字が出ないぶん、スクリーンリーダー向けに aria-label で行き先を補う */
     var portal = L.portalById(state.portal);
     var searchUrl = L.buildSearchUrl(state.portal, item.searchWord);
     if (searchUrl && portal) {
-      var go = el("p", "links");
-      var a = link(searchUrl, "このワードで" + portal.name + "を探す");
+      var a = link(searchUrl, "探す");
       a.className = "gosearch";
-      go.appendChild(a);
-      card.appendChild(go);
+      a.setAttribute("aria-label", item.searchWord + " を" + portal.name + "で探す");
+      row.appendChild(a);
     }
+    box.appendChild(row);
+    box.appendChild(msg);
+    card.appendChild(box);
 
     /* 副導線: 市の公式ページ（§7-2で併記が必須）。
        ここは「検索する場所」ではなく「制度・寄付の詳細を見る場所」だと分かる文言にする */
