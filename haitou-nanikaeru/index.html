@@ -191,7 +191,7 @@ h2{font-size:1.05rem; margin:18px 0 8px; padding-bottom:6px; border-bottom:2px s
 
 <h2>結果を共有する</h2>
 <div class="panel share">
-  <label class="label" for="sharetext">そのまま貼れる文章</label>
+  <label class="label" for="sharetext" id="share-label">そのまま貼れる文章</label>
   <div class="preview">
     <textarea id="sharetext" readonly></textarea>
     <img id="cardimg" alt="配当金で買えるものをまとめた画像">
@@ -381,11 +381,14 @@ h2{font-size:1.05rem; margin:18px 0 8px; padding-bottom:6px; border-bottom:2px s
     document.getElementById("cardimg").style.display = "none";
     document.getElementById("sharetext").style.display = "";
     document.getElementById("makeimg").textContent = "画像にする";
+    document.getElementById("share-label").textContent = "そのまま貼れる文章";
   }
   function showImage() {
     document.getElementById("cardimg").style.display = "block";
     document.getElementById("sharetext").style.display = "none";
     document.getElementById("makeimg").textContent = "文章にもどす";
+    /* 枠の中身が入れ替わるのでラベルも入れ替える。**どちらも1行なので高さは変わらない** */
+    document.getElementById("share-label").textContent = "共有用の画像";
   }
   function imageShown() {
     return document.getElementById("cardimg").style.display === "block";
