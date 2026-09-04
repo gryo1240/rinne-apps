@@ -104,36 +104,43 @@
      「ちょうどN枚」をCSS変数で決めると狭い幅で静かに崩れる（実測 2026-09-05）。 */
   #fundList {
     --fundbox-h: 900px;
-    height: var(--fundbox-h); overflow-y: auto; overscroll-behavior: contain;
+    height: var(--fundbox-h); overflow-y: auto;
     padding-right: 4px;
     /* 実機Windowsはスクロールバーが約15px幅を取るがヘッドレスは0。
        確保しないと「手元では収まったのに実機で折り返す」環境差が出る */
     scrollbar-gutter: stable;
-    background:
-      linear-gradient(#fff 30%, rgba(255,255,255,0)) top / 100% 18px no-repeat,
-      linear-gradient(rgba(255,255,255,0), #fff 70%) bottom / 100% 18px no-repeat;
-    background-attachment: local, local;
   }
   /* 選択中の銘柄が枠の外にあっても分かるようにする（内部スクロール化の副作用対策）。
      チップの「＋追加」を押しても画面が変わらないように見えるのを防ぐ */
   .selnow { font-size: 12px; color: #44574f; background: #f4fbf8; border: 1px solid #d8ebe3;
             border-radius: 9px; padding: 7px 9px; margin: 0 0 9px; line-height: 1.5; }
   .selnow b { color: #14614a; }
+  /* スクロールできることの手掛かり。
+     ⚠ 枠の内側にグラデーションを敷く定番の手は、**このアプリでは効かない**。
+        銘柄カードが不透明な背景を持つため、影がカードの裏に隠れて見えない（2026-09-05に実測）。
+        枠の外に文字で出すほうが確実で、高さも一定に保てる */
+  .scrollhint { font-size: 11px; color: #7b8d86; margin: 6px 0 0; line-height: 1.5; }
+  /* キーボードで枠を選んだことが分かるように（tabindexを付けた枠用） */
+  .calbox:focus-visible, #fundList:focus-visible { outline: 2px solid #1b7a5a; outline-offset: 2px; }
 
   /* 受け取りカレンダー: 行数(選択銘柄数+2)で 92〜433px 動く。高さを固定して変動を消す */
-  .calbox { height: 300px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+  /* 表は12銘柄でも433pxで頭打ち（全幅で実測・2026-09-05）。
+     440pxにしておけば **通常はスクロールが起きず、合計行が必ず見える**。
+     記事本文が「カレンダーの合計行を見る」と誘導しているため、ここを隠してはいけない。
+     overflow-y は保険（将来行が増えたとき用）。tabindex はキーボードでも操作できるようにするため */
+  .calbox { height: 440px; overflow-y: auto; scrollbar-gutter: stable; }
   .calbox .calwrap { overflow-x: auto; }
 
   /* 空白月カード: 従来は display:none ↔ 表示で 0〜465px 動いていた（選択を減らすほど背が伸びる）。
      常時表示＋高さ固定にして変動を消す */
-  #gapBody { height: 210px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+  #gapBody { height: 210px; overflow-y: auto; scrollbar-gutter: stable; }
 
   /* FAQ: details を開くと 630px幅で +375px、343px幅で +651px 伸びる。
      開いても枠の外に出ないようにして変動を消す */
-  .faqbox { height: 230px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+  .faqbox { height: 230px; overflow-y: auto; scrollbar-gutter: stable; }
 
   /* 組み合わせ一覧: 418〜484px。ほぼ一定だが幅で変わるので上限だけ与える */
-  #comboList { max-height: 430px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+  #comboList { max-height: 430px; overflow-y: auto; scrollbar-gutter: stable; }
   .links { margin-top: 7px; display: flex; flex-wrap: wrap; gap: 10px; }
   .links a { font-size: 11.5px; color: #1b7a5a; }
 
@@ -219,10 +226,10 @@
     .wrap { padding: 12px 9px 22px; }
     .card { padding: 12px 10px 10px; }
     .fund { padding: 9px 8px; }
-    /* 狭い幅では1枚が大きくなる（343px=197px / 208px=328px）ので枠も少し広げる。
-       ※ 620px以下にしか効かないので、630〜720pxの既定段には影響しない */
-    #fundList { --fundbox-h: 700px; }
-    .calbox { height: 330px; }
+    /* 狭い幅では1枚が大きくなる（343px=197px / 208px=328px）ので枠を調整する。
+       ※ このブロックは **@media (max-width: 350px)**。350 < 630 なので、
+          630〜720pxの既定段が受け持つ帯には影響しない（7項目目の教訓） */
+    #fundList { --fundbox-h: 520px; }
     #gapBody { height: 250px; }
     .faqbox { height: 270px; }
     #comboList { max-height: 500px; }
@@ -250,11 +257,8 @@
     .switch input:checked + .track { background: #2b9b74; }
     input[type=number] { background: #12251f; border-color: #2b4a3f; color: #dfeae5; }
     .fund { background: #14261f; border-color: #234137; }
-    #fundList { background:
-      linear-gradient(#0f1c17 30%, rgba(15,28,23,0)) top / 100% 18px no-repeat,
-      linear-gradient(rgba(15,28,23,0), #0f1c17 70%) bottom / 100% 18px no-repeat;
-      background-attachment: local, local; }
     .selnow { background: #16332a; border-color: #2b9b74; color: #c2d6ce; }
+    .scrollhint { color: #8fa39b; }
     .selnow b { color: #6fd4ab; }
     .fund.sel { background: #16332a; border-color: #2b9b74; }
     .fund .code { color: #6fd4ab; }
@@ -348,6 +352,7 @@
     <p class="note" style="margin:-4px 0 10px;">初期状態は、12ヶ月が埋まる3つの枠から、それぞれ証券コードがいちばん小さい銘柄を機械的に1本ずつ置いたものです。銘柄の優劣や購入の推奨を示すものではありません。</p>
     <div class="selnow" id="selNow">選択中: <b>—</b></div>
     <div id="fundList"></div>
+    <p class="scrollhint">枠の中を下にスクロールすると、全12銘柄を確認できます。</p>
     <div class="row" style="border-top:1px solid #e8f0ec;">
       <div class="lbl">合計の投資金額</div>
       <div style="font-size:15px;font-weight:700;color:#14614a;" id="totalAmount">0円</div>
@@ -357,7 +362,7 @@
   <!-- 結果 -->
   <div class="card">
     <h2>受け取りカレンダー</h2>
-    <div class="calbox">
+    <div class="calbox" tabindex="0" role="region" aria-label="受け取りカレンダー（縦にスクロールできます）">
       <div class="calwrap">
         <table class="cal" id="calTable"></table>
       </div>
@@ -384,6 +389,7 @@
   <div class="card" id="gapCard">
     <h2>受け取りのない月に、受け取りがある銘柄</h2>
     <div id="gapBody"><div id="candList"></div></div>
+    <p class="scrollhint">候補が多いときは、枠の中をスクロールすると続きが見られます。</p>
     <p class="note" style="margin-top:8px;">決算月から機械的に抽出した該当銘柄です。同じ行に並ぶ銘柄は<strong>空いている月のうち埋まる月が同じ</strong>なので、どれを選んでも埋まる月は変わりません（決算月そのものは違うことがあります）。銘柄の優劣や購入の推奨を示すものではありません。</p>
   </div>
 
@@ -411,6 +417,7 @@
   <!-- FAQ -->
   <div class="card">
     <h2>よくある質問</h2>
+    <p class="scrollhint" style="margin-top:-2px;">枠の中をスクロールすると、すべての質問が見られます。</p>
     <div class="faqbox">
     <details class="faq"><summary>権利確定月と入金月は何が違いますか？</summary>
       <p>権利確定月（決算月）は「その分配金を受け取る権利が確定する月」です。実際にお金が証券口座に入るのは、そこから遅れて支払開始日を迎えてからになります。ETFの分配金は決算日から40日程度で支払われるため、たとえば8月10日が決算日なら、入金は9月になります。「決算月をずらして組み合わせた」つもりでも、お金が入る月は後ろにずれます。</p></details>
@@ -441,8 +448,8 @@
 <!-- ?v= は sw.js の CACHE 名と必ず同じ番号にする。
      付けないと「新しい index.html ＋ ブラウザに残った古い logic.js」が混ざり、
      L.patternCombos is not a function で画面が動かなくなる（2026-08-08の同型事故の予防）。 -->
-<script src="data.js?v=4"></script>
-<script src="logic.js?v=4"></script>
+<script src="data.js?v=5"></script>
+<script src="logic.js?v=5"></script>
 <script>
 (function () {
   "use strict";
@@ -711,7 +718,9 @@
   // 銘柄リストを内部スクロールにしたので、選択中の銘柄が枠の外にあると
   // 「＋追加」を押しても何も起きていないように見える。枠の上に常に出しておく。
   function drawSelectedNow() {
-    var codes = Object.keys(state.selected).filter(function (c) { return state.selected[c]; });
+    // ⚠ state.selected の値は **金額（数値）**。真偽値ではない。
+    //    truthy判定でふるうと「金額0円の銘柄」が消える（他の箇所はすべてキーの有無で判定している）
+    var codes = Object.keys(state.selected);
     codes.sort();
     var el = $("selNow");
     if (!el) return;
