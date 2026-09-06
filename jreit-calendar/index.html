@@ -21,9 +21,9 @@
   .wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px 28px; }
 
   .head { text-align: center; padding: 8px 0 12px; }
-  .head h1 { font-size: 20px; letter-spacing: .02em; color: #14614a; }
-  .head p { font-size: 12.5px; color: #5d6f68; margin-top: 4px; }
-  .privacy { font-size: 11.5px; color: #6b7d76; margin-top: 6px; }
+  .head h1 { font-size: 22px; letter-spacing: .02em; color: #14614a; }
+  .head p { font-size: 14.5px; color: #5d6f68; margin-top: 4px; }
+  .privacy { font-size: 13.5px; color: #6b7d76; margin-top: 6px; }
 
   .card {
     background: #fff; border: 1px solid #dde9e3; border-radius: 14px;
@@ -31,14 +31,14 @@
     box-shadow: 0 1px 4px rgba(20, 90, 70, .06);
   }
   .card > h2 {
-    font-size: 14.5px; color: #14614a; margin-bottom: 10px;
+    font-size: 16.5px; color: #14614a; margin-bottom: 10px;
     padding-bottom: 7px; border-bottom: 1px solid #e8f0ec;
   }
 
   .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; }
   .row + .row { border-top: 1px dashed #eaf1ee; }
-  .row .lbl { font-size: 13px; color: #33463f; }
-  .row .lbl small { display: block; font-size: 11px; color: #74867f; line-height: 1.45; }
+  .row .lbl { font-size: 15px; color: #33463f; }
+  .row .lbl small { display: block; font-size: 13px; color: #74867f; line-height: 1.45; }
 
   /* トグルスイッチ: 必ず <label> で包む（見た目の部分をクリックしても反応させるため） */
   .switch { position: relative; width: 44px; height: 25px; flex-shrink: 0; display: inline-block; cursor: pointer; }
@@ -55,7 +55,7 @@
 
   .seg { display: flex; gap: 6px; }
   .seg button {
-    flex: 1; padding: 9px 4px; font-size: 13px; font-weight: 700; font-family: inherit;
+    flex: 1; padding: 9px 4px; font-size: 15px; font-weight: 700; font-family: inherit;
     color: #3d534b; background: #e7f1ec; border: 1px solid #d5e5dd;
     border-radius: 9px; cursor: pointer;
   }
@@ -66,7 +66,7 @@
 
   input[type=number], input[type=range] { font-family: inherit; }
   input[type=number] {
-    width: 122px; padding: 7px 9px; font-size: 14px; text-align: right;
+    width: 122px; padding: 7px 9px; font-size: 16px; text-align: right;
     border: 1px solid #cddcd5; border-radius: 8px; background: #fff; color: #22322c;
   }
   input[type=range] { width: 100%; accent-color: #1b7a5a; height: 26px; }
@@ -77,14 +77,14 @@
   .fund .top { display: flex; align-items: flex-start; gap: 9px; cursor: pointer; }
   .fund .chk { width: 20px; height: 20px; margin-top: 2px; flex-shrink: 0; accent-color: #1b7a5a; cursor: pointer; }
   .fund .info { flex: 1; min-width: 0; }
-  .fund .code { font-size: 14px; font-weight: 700; color: #14614a; }
-  .fund .nm { font-size: 12px; color: #44574f; line-height: 1.4; }
-  .fund .co { font-size: 11px; color: #7b8d86; margin-top: 1px; }
+  .fund .code { font-size: 16px; font-weight: 700; color: #14614a; }
+  .fund .nm { font-size: 14px; color: #44574f; line-height: 1.4; }
+  .fund .co { font-size: 13px; color: #7b8d86; margin-top: 1px; }
   .badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
-  .badge { font-size: 11px; padding: 2px 7px; border-radius: 999px; background: #e8f1ed; color: #3d6b5c; }
+  .badge { font-size: 13px; padding: 2px 7px; border-radius: 999px; background: #e8f1ed; color: #3d6b5c; }
   .badge.hi { background: #1b7a5a; color: #fff; }
   .fund .amt { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  .fund .amt span { font-size: 12px; color: #55675f; }
+  .fund .amt span { font-size: 14px; color: #55675f; }
 
   /* ============================================================
      内部スクロール化（2026-09-05・オーナー指示）
@@ -112,14 +112,14 @@
   }
   /* 選択中の銘柄が枠の外にあっても分かるようにする（内部スクロール化の副作用対策）。
      チップの「＋追加」を押しても画面が変わらないように見えるのを防ぐ */
-  .selnow { font-size: 12px; color: #44574f; background: #f4fbf8; border: 1px solid #d8ebe3;
+  .selnow { font-size: 14px; color: #44574f; background: #f4fbf8; border: 1px solid #d8ebe3;
             border-radius: 9px; padding: 7px 9px; margin: 0 0 9px; line-height: 1.5; }
   .selnow b { color: #14614a; }
   /* スクロールできることの手掛かり。
      ⚠ 枠の内側にグラデーションを敷く定番の手は、**このアプリでは効かない**。
         銘柄カードが不透明な背景を持つため、影がカードの裏に隠れて見えない（2026-09-05に実測）。
         枠の外に文字で出すほうが確実で、高さも一定に保てる */
-  .scrollhint { font-size: 11px; color: #7b8d86; margin: 6px 0 0; line-height: 1.5; }
+  .scrollhint { font-size: 13px; color: #7b8d86; margin: 6px 0 0; line-height: 1.5; }
   /* キーボードで枠を選んだことが分かるように（tabindexを付けた枠用） */
   .calbox:focus-visible, #fundList:focus-visible { outline: 2px solid #1b7a5a; outline-offset: 2px; }
 
@@ -142,18 +142,18 @@
   /* 組み合わせ一覧: 418〜484px。ほぼ一定だが幅で変わるので上限だけ与える */
   #comboList { max-height: 430px; overflow-y: auto; scrollbar-gutter: stable; }
   .links { margin-top: 7px; display: flex; flex-wrap: wrap; gap: 10px; }
-  .links a { font-size: 11.5px; color: #1b7a5a; }
+  .links a { font-size: 13.5px; color: #1b7a5a; }
 
   /* カレンダー */
   .calwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table.cal { border-collapse: collapse; width: 100%; min-width: 228px; font-size: 12px; table-layout: fixed; }
+  table.cal { border-collapse: collapse; width: 100%; min-width: 228px; font-size: 14px; table-layout: fixed; }
   table.cal th, table.cal td { border: 1px solid #e4ede9; padding: 5px 0; text-align: center; }
-  table.cal th { background: #edf5f1; color: #3d6b5c; font-weight: 700; font-size: 10.5px; }
+  table.cal th { background: #edf5f1; color: #3d6b5c; font-weight: 700; font-size: 12.5px; }
   table.cal th.rowhead, table.cal td.rowhead {
     text-align: left; padding-left: 6px; white-space: nowrap; position: sticky; left: 0;
-    background: #f7fbf9; font-size: 11px; width: 38px;
+    background: #f7fbf9; font-size: 13px; width: 38px;
   }
-  table.cal td.hit { color: #1b7a5a; font-weight: 700; font-size: 12.5px; }
+  table.cal td.hit { color: #1b7a5a; font-weight: 700; font-size: 14.5px; }
   table.cal td.miss { color: #cfdcd6; }
   table.cal tr.total td { background: #f4fbf8; font-weight: 700; }
   table.cal tr.total td.gap { background: #fdf1f0; color: #c0554a; }
@@ -161,63 +161,63 @@
 
   .summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; }
   .sm { background: #f4fbf8; border: 1px solid #e0ede8; border-radius: 10px; padding: 9px 10px; }
-  .sm .k { font-size: 11px; color: #6c7f77; }
-  .sm .v { font-size: 16px; font-weight: 700; color: #14614a; margin-top: 1px; }
+  .sm .k { font-size: 13px; color: #6c7f77; }
+  .sm .v { font-size: 18px; font-weight: 700; color: #14614a; margin-top: 1px; }
   .sm .v.warn { color: #c0554a; }
 
-  .verdict { margin-top: 11px; padding: 10px 11px; border-radius: 10px; font-size: 13px; line-height: 1.55; }
+  .verdict { margin-top: 11px; padding: 10px 11px; border-radius: 10px; font-size: 15px; line-height: 1.55; }
   .verdict.good { background: #eaf7f1; border: 1px solid #c9e6da; color: #17614a; }
   .verdict.bad { background: #fdf3f2; border: 1px solid #f0d6d2; color: #9d4438; }
   .verdict.none { background: #f4f6f5; border: 1px solid #e2e8e5; color: #5d6f68; }
 
   /* 金額バー */
   .bars { margin-top: 12px; }
-  .bars .bhead { font-size: 12px; color: #6c7f77; margin-bottom: 6px; }
+  .bars .bhead { font-size: 14px; color: #6c7f77; margin-bottom: 6px; }
   .bar { display: flex; align-items: center; gap: 7px; padding: 2px 0; }
-  .bar .bm { width: 30px; font-size: 11.5px; color: #6c7f77; text-align: right; flex-shrink: 0; }
+  .bar .bm { width: 30px; font-size: 13.5px; color: #6c7f77; text-align: right; flex-shrink: 0; }
   .bar .btrack { flex: 1; height: 15px; background: #eef4f1; border-radius: 4px; overflow: hidden; }
   .bar .bfill { height: 100%; background: #1b7a5a; border-radius: 4px; }
   .bar .bfill.zero { background: #e3c9c5; }
-  .bar .bv { width: 86px; font-size: 11.5px; text-align: right; color: #44574f; flex-shrink: 0; }
+  .bar .bv { width: 86px; font-size: 13.5px; text-align: right; color: #44574f; flex-shrink: 0; }
 
   .cand { border: 1px solid #e4ede9; border-radius: 10px; padding: 9px 10px; margin-bottom: 8px; background: #fcfefd; }
-  .cand .ct { font-size: 13px; color: #33463f; }
+  .cand .ct { font-size: 15px; color: #33463f; }
 
   /* 組み合わせカード: 決算月の枠ごとに、該当銘柄を横一列のチップで並べる。
      縦に列挙すると「上のほうが良い」という順位に見えるため、同じ枠は必ず横並びにする。 */
   .combo { border: 1px solid #e4ede9; border-radius: 10px; padding: 10px 11px; margin-bottom: 8px; background: #fcfefd; }
   .combo .chead { display: flex; align-items: center; justify-content: space-between; gap: 9px; }
-  .combo .ctitle { font-size: 13px; color: #33463f; }
+  .combo .ctitle { font-size: 15px; color: #33463f; }
   .combo .ctitle b { color: #14614a; }
   .grp { margin-top: 7px; }
-  .grp .gl { font-size: 11.5px; color: #74867f; line-height: 1.45; }
+  .grp .gl { font-size: 13.5px; color: #74867f; line-height: 1.45; }
   .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
   .chip {
-    font-size: 12px; font-weight: 700; font-family: inherit; padding: 5px 10px;
+    font-size: 14px; font-weight: 700; font-family: inherit; padding: 5px 10px;
     border-radius: 999px; border: 1px solid #cddcd5; background: #fff; color: #3d6b5c; cursor: pointer;
   }
   .chip.on { background: #1b7a5a; border-color: #1b7a5a; color: #fff; }
   .btn {
-    padding: 7px 13px; font-size: 12.5px; font-weight: 700; font-family: inherit;
+    padding: 7px 13px; font-size: 14.5px; font-weight: 700; font-family: inherit;
     color: #fff; background: #1b7a5a; border: none; border-radius: 8px; cursor: pointer; white-space: nowrap;
   }
   .btn.ghost { background: #fff; color: #1b7a5a; border: 1px solid #b9d8cb; }
 
-  .note { font-size: 11.5px; color: #5d6f68; line-height: 1.65; }
+  .note { font-size: 13.5px; color: #5d6f68; line-height: 1.65; }
   .note li { margin-left: 1.1em; margin-bottom: 5px; }
   .disc {
     background: #fbfaf4; border: 1px solid #e9e4cf; border-radius: 10px;
-    padding: 11px 12px; font-size: 11.5px; color: #6a6448; line-height: 1.7;
+    padding: 11px 12px; font-size: 13.5px; color: #6a6448; line-height: 1.7;
   }
 
   details.faq { border-top: 1px solid #eaf1ee; padding: 9px 0; }
   details.faq:first-of-type { border-top: none; }
-  details.faq summary { font-size: 13px; color: #14614a; cursor: pointer; font-weight: 700; list-style-position: inside; }
-  details.faq p { font-size: 12.5px; color: #44574f; margin-top: 7px; line-height: 1.7; }
+  details.faq summary { font-size: 15px; color: #14614a; cursor: pointer; font-weight: 700; list-style-position: inside; }
+  details.faq p { font-size: 14.5px; color: #44574f; margin-top: 7px; line-height: 1.7; }
 
   .rel { display: flex; flex-wrap: wrap; gap: 8px; }
   .rel a {
-    font-size: 12px; color: #1b7a5a; text-decoration: none;
+    font-size: 14px; color: #1b7a5a; text-decoration: none;
     border: 1px solid #cfe4da; border-radius: 999px; padding: 5px 11px; background: #fff;
   }
 
@@ -233,12 +233,12 @@
     #gapBody { height: 250px; }
     .faqbox { height: 270px; }
     #comboList { max-height: 500px; }
-    .fund .nm { font-size: 11px; }
-    .fund .co { font-size: 10.5px; }
-    .badge { font-size: 10px; padding: 2px 5px; }
-    .links a { font-size: 11px; }
-    .row .lbl small { font-size: 10.5px; }
-    .note, .disc { font-size: 11px; }
+    .fund .nm { font-size: 13px; }
+    .fund .co { font-size: 12.5px; }
+    .badge { font-size: 12px; padding: 2px 5px; }
+    .links a { font-size: 13px; }
+    .row .lbl small { font-size: 12.5px; }
+    .note, .disc { font-size: 13px; }
     input[type=number] { width: 104px; }
   }
 
@@ -355,7 +355,7 @@
     <p class="scrollhint">枠の中を下にスクロールすると、全12銘柄を確認できます。</p>
     <div class="row" style="border-top:1px solid #e8f0ec;">
       <div class="lbl">合計の投資金額</div>
-      <div style="font-size:15px;font-weight:700;color:#14614a;" id="totalAmount">0円</div>
+      <div style="font-size:17px;font-weight:700;color:#14614a;" id="totalAmount">0円</div>
     </div>
   </div>
 
@@ -557,7 +557,7 @@
           '</div>' +
         '</label>' +
         '<div class="amt"><span>投資金額</span><span style="display:flex;align-items:center;gap:5px;"><input type="number" class="amtin" min="0" max="1000000000" step="10000" value="' +
-          (isSel ? state.selected[f.code] : 1000000) + '"><span style="font-size:12px;">円</span></span></div>' +
+          (isSel ? state.selected[f.code] : 1000000) + '"><span style="font-size:14px;">円</span></span></div>' +
         '<div class="links">' + art +
           '<a href="' + esc(f.officialUrl) + '" target="_blank" rel="noopener">運用会社の公式ページ</a>' +
         '</div>';
@@ -930,7 +930,7 @@
 </script>
 
 <!-- rb-blog-link: りんね☆ブログ導線。iframe埋め込み時は非表示なので埋め込み高さに影響しない -->
-<div id="rb-blog-link" style="display:none;padding:16px 12px 24px;text-align:center;font-size:13px;line-height:1.7">
+<div id="rb-blog-link" style="display:none;padding:16px 12px 24px;text-align:center;font-size:15px;line-height:1.7">
 <a href="https://rinne-blog.com/apps" target="_blank" rel="noopener" style="color:inherit;opacity:.7">りんね☆ブログの無料アプリ一覧</a>
 </div>
 <script>

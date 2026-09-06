@@ -1,7 +1,7 @@
 // 毎月分配カレンダー Service Worker
 // 決算日データ(data.js)は年単位で見直すため、nenshu-kabe と同じく network-first にする。
 // （キャッシュ優先だと、決算日を直しても CACHE 名を上げるまで既存ユーザーに届かない）
-const CACHE = "jreit-calendar-v5";
+const CACHE = "jreit-calendar-v6";
 const ASSETS = ["./", "./index.html", "./data.js?v=5", "./logic.js?v=5", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
