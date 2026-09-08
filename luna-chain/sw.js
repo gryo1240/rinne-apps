@@ -11,15 +11,12 @@
  */
 const CACHE = 'lunachain-v2';
 const AUDIO_CACHE = 'lunachain-audio-v1';
+/* ★先読みするのは「版が付かないURL」だけ★
+   JSは importmap で `?v=中身のハッシュ` 付きのURLとして読まれるので、
+   版なしのURLを先読みしても実際には使われない（容量を食うだけ）。
+   JS・CSSは下の fetch ハンドラが、実際に読まれたURLのまま溜めていく。 */
 const ASSETS = [
   './', './index.html', './manifest.json',
-  './style/base.css',
-  './src/ui/app.js', './src/ui/render.js', './src/ui/audio.js',
-  './src/game.js',
-  './src/core/rng.js', './src/core/board.js', './src/core/rules.js',
-  './src/ai/ai.js',
-  './src/meta/code.js', './src/meta/daily.js', './src/meta/progress.js',
-  './data/cards.js', './data/unlock.js',
   './icon-192.png', './icon-512.png',
 ];
 

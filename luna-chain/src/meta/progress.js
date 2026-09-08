@@ -105,16 +105,19 @@ export function adjustTier(tier, recent) {
 }
 
 /** 1戦終わったときの更新。★負けても必ずかけらが増える★ */
-export function recordMatch(save, { won, placed, captured, deck }) {
+export function recordMatch(save, { won, placed, captured, deck, countForTier = true }) {
   const gained = shardsForMatch({ placed, captured, won });
-  const recent = [...save.recent, !!won].slice(-10);
+  // ★段位の自動調整に混ぜるのは「ふつうの対戦」だけ★
+  //   デイリー（固定強度）・詰めルナ（1手詰め）・かげ戦（相手の編成が違う）を混ぜると、
+  //   CPUの強さ合わせが狂う。かけら・戦績はどの遊び方でも貯まる
+  const recent = countForTier ? [...save.recent, !!won].slice(-10) : save.recent;
   const next = {
     ...save,
     shards: save.shards + gained,
     played: save.played + 1,
     wins: save.wins + (won ? 1 : 0),
     recent,
-    tier: adjustTier(save.tier, recent),
+    tier: countForTier ? adjustTier(save.tier, recent) : save.tier,
   };
   // じぶんのかげ（直近の自分の編成）。友達がいなくてもコードが意味を持つようにするための土台
   if (Array.isArray(deck) && deck.length) {

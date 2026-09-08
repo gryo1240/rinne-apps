@@ -215,8 +215,14 @@ function cpuTurn() {
       const rc = useCard(match, c.cardId, c.cells);
       if (rc.ok) {
         Audio.SE.card();
+        for (const ev of rc.events) if (ev.t === 'boom') Audio.SE.boom(ev.chain);
+        // ★カードは盤を直接いじるので、イベントの再生ではなく現状の取り込みで見せる★
+        //   （applyEvent はカードの盤面変更を知らないので、再生すると表示が一時的に狂う）
+        view.sync(match.state);
+        updateHud();
         busy = false;
-        return afterMove({ ...rc, events: rc.events }, () => setTimeout(cpuTurn, 200));
+        if (match.state.winner) return finish();
+        return setTimeout(cpuTurn, 220);
       }
     }
     const i = cpuMove(match, rng);
@@ -356,8 +362,12 @@ function finish() {
     writeSave(save);
   } else {
     const before = save.shards;
+    // ★段位の自動調整に使うのは「ふつうの対戦」だけ★
+    //   デイリーは固定強度、詰めルナは1手詰め、かげ戦は相手の編成が違う。
+    //   これらの勝敗を混ぜると、CPUの強さ合わせ（テスターがいない本作の生命線）が狂う
     const res = recordMatch(save, {
       won, placed: match.stats.placed[me], captured: match.stats.captured[me], deck: match.decks[me],
+      countForTier: mode === 'normal',
     });
     save = res.save;
     // ★勝ったときだけ記録する★（負けた手数が自己ベストとして残ると記録が意味を失う）
@@ -384,7 +394,7 @@ function renderTitle() {
   const c = $('credits');
   // ★実素材を入れるまでクレジットは出さない（無いものを名乗らない）
   c.innerHTML = Audio.hasRealAssets()
-    ? '音楽：<a href="https://maou.audio/" target="_blank" rel="noopener">魔王魂</a>／効果音：<a href="https://www.springin.org/sound-stock/" target="_blank" rel="noopener">Springin\' Sound Stock</a>'
+    ? '音楽：<a href="https://maou.audio/" target="_blank" rel="noopener noreferrer">魔王魂</a>／効果音：<a href="https://www.springin.org/sound-stock/" target="_blank" rel="noopener noreferrer">Springin\' Sound Stock</a>'
     : '';
 }
 
