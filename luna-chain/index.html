@@ -11,24 +11,22 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style/base.css?v=c9ef2437">
+<link rel="stylesheet" href="style/base.css?v=e444b442">
 <!-- BEGIN importmap (tools/gen_importmap.py が生成。手で書き換えない) -->
 <script type="importmap">
 {"imports":{
   "./src/ai/ai.js":"./src/ai/ai.js?v=ab3c9361",
   "./src/core/board.js":"./src/core/board.js?v=1c452115",
   "./src/core/rng.js":"./src/core/rng.js?v=84ad8f5e",
-  "./src/core/rules.js":"./src/core/rules.js?v=b4dbad8d",
-  "./src/game.js":"./src/game.js?v=64d37ebd",
-  "./src/meta/code.js":"./src/meta/code.js?v=61e58a52",
-  "./src/meta/daily.js":"./src/meta/daily.js?v=c18d183c",
-  "./src/meta/progress.js":"./src/meta/progress.js?v=6d9c963d",
-  "./src/ui/app.js":"./src/ui/app.js?v=1fed0aa8",
-  "./src/ui/audio.js":"./src/ui/audio.js?v=9c4d5a7a",
-  "./src/ui/render.js":"./src/ui/render.js?v=360f7c5e",
-  "./data/cards.js":"./data/cards.js?v=489e1872",
-  "./data/tutorial.js":"./data/tutorial.js?v=9b51c858",
-  "./data/unlock.js":"./data/unlock.js?v=d0806418"
+  "./src/core/rules.js":"./src/core/rules.js?v=07803093",
+  "./src/game.js":"./src/game.js?v=3e0893bf",
+  "./src/meta/daily.js":"./src/meta/daily.js?v=b222b847",
+  "./src/meta/progress.js":"./src/meta/progress.js?v=a2ab4529",
+  "./src/ui/app.js":"./src/ui/app.js?v=9ee14fce",
+  "./src/ui/audio.js":"./src/ui/audio.js?v=e18f5c07",
+  "./src/ui/coach.js":"./src/ui/coach.js?v=101ec48c",
+  "./src/ui/render.js":"./src/ui/render.js?v=d6822eb0",
+  "./data/tutorial.js":"./data/tutorial.js?v=9b51c858"
 }}
 </script>
 <!-- END importmap -->
@@ -41,7 +39,7 @@
     <button id="btnBack" class="icon" aria-label="やめる">◀</button>
     <div class="who">
       <span id="myCells" class="cells p1">0</span>
-      <div class="gauge" aria-label="つきのゲージ"><i id="gaugeFill"></i><span id="gaugeMoon">🌑</span></div>
+      <div class="gauge" aria-label="じんちのわりあい"><i id="gaugeFill"></i></div>
       <span id="oppCells" class="cells p2">0</span>
     </div>
     <div id="oppInfo" class="opp"><span id="oppName">ルナ</span><span id="oppStars">★</span></div>
@@ -50,9 +48,9 @@
   <main id="stage">
     <div id="boardBox"><canvas id="board"></canvas></div>
     <div id="handSign" hidden>👆</div>
+    <!-- 対戦中の案内。★同時に1行だけ・24字以内★（src/ui/coach.js が正本） -->
+    <div id="coach" hidden></div>
   </main>
-
-  <footer id="cardbar" hidden></footer>
 
   <!-- タイトル -->
   <section id="scTitle" class="screen show">
@@ -65,7 +63,6 @@
     <nav class="menu">
       <button data-go="howto" class="lead">あそびかた</button>
       <button data-go="daily">きょうの月</button>
-      <button data-go="deck">カード</button>
       <button data-go="records">きろく</button>
       <button data-go="settings">せってい</button>
     </nav>
@@ -76,8 +73,7 @@
   <section id="scResult" class="screen">
     <h2 id="resultTitle"></h2>
     <p id="resultSub" class="sub"></p>
-    <div id="shardBox" class="shard"></div>
-    <div id="unlockBox" class="unlock" hidden></div>
+    <div id="chainBox" class="chainline"></div>
     <div class="row">
       <button id="btnAgain" class="big">もういちど</button>
       <button id="btnToTitle" class="ghost">やめる</button>
@@ -95,24 +91,17 @@
     <details class="more">
       <summary>もっと くわしく</summary>
       <ul>
-        <li>カードは <b>つきが まんまるに なると 1回だけ</b> つかえる。れんさを おこすと つきが たまる</li>
-        <li>あそぶと「つきのかけら」が たまって、あたらしい カードが ひらく。<b>まけても たまる</b></li>
+        <li><b>ゆびを おいたまま</b>にすると、はじけるマスが 光って わかる。はなすと おける</li>
+        <li>ゆびを うごかすと よこくも ついてくる。<b>盤の そとで はなせば</b> おかずに やめられる</li>
         <li><b>大きな丸</b>が かかれたマスは わくが 1つ おおい ＝ はじけにくい</li>
         <li>十字のマスは ひかりの 通り道。おけないが、ひかりは 通りぬける</li>
         <li>もやの かかったマスは しばらく おけない</li>
-        <li>さきに おく人は 1戦ごとに ランダムで きまる</li>
+        <li>さきに おく人は 1戦ごとに ランダムで きまる（どちらも おなじ回数だけ おける）</li>
       </ul>
     </details>
 
     <button id="btnHowtoPlay" class="big">そのまま あそぶ</button>
-    <button class="ghost close" data-go="title">とじる</button>
-  </section>
-
-  <!-- デッキ -->
-  <section id="scDeck" class="screen">
-    <h2>カード</h2>
-    <p id="deckHint" class="sub"></p>
-    <div id="deckList" class="cards"></div>
+    <button id="btnCoachAgain" class="ghost">対戦中の あんないを もういちど 出す</button>
     <button class="ghost close" data-go="title">とじる</button>
   </section>
 
@@ -128,20 +117,11 @@
     <button class="ghost close" data-go="title">とじる</button>
   </section>
 
-  <!-- 記録・合言葉 -->
+  <!-- 記録 -->
   <section id="scRecords" class="screen">
     <h2>きろく</h2>
     <div id="statBox" class="stats"></div>
-    <h3>なまえ</h3>
-    <p class="sub">カタカナ6文字まで。友だちの画面に「◯◯のかげ」と出ます</p>
-    <div class="codeRow"><input id="nickInput" placeholder="ルナ" maxlength="6" autocomplete="off" spellcheck="false"></div>
-    <h3>あいことば</h3>
-    <p class="sub">じぶんの編成コード（友だちにわたすと、きみの「かげ」と戦えます）</p>
-    <div class="codeRow"><code id="myCode">—</code><button id="btnCopy" class="ghost">コピー</button></div>
-    <p class="sub">友だちのコードを入れる</p>
-    <div class="codeRow"><input id="codeInput" placeholder="LC1-…" autocomplete="off" spellcheck="false"><button id="btnCodeGo" class="ghost">よみこむ</button></div>
-    <p id="codeMsg" class="msg"></p>
-    <div id="ghostList" class="ghosts"></div>
+    <p class="sub">記録は この きたい（ブラウザ）だけに のこります</p>
     <button class="ghost close" data-go="title">とじる</button>
   </section>
 
@@ -149,20 +129,14 @@
   <section id="scSettings" class="screen">
     <h2>せってい</h2>
     <label class="opt"><input type="checkbox" id="optSound"> おと</label>
+    <label class="opt"><input type="checkbox" id="optPreview"> れんさの よこく（ゆびを おいたとき）</label>
+    <label class="opt"><input type="checkbox" id="optCoach"> 対戦中の あんない</label>
     <label class="opt"><input type="checkbox" id="optLight"> えんしゅつを ひかえめに</label>
-    <h3>データの ひきつぎ</h3>
-    <p class="sub">きしゅ変更やデータが消えたときのために、このコードを控えておいてください</p>
-    <div class="codeRow"><code id="saveCode">—</code><button id="btnCopySave" class="ghost">コピー</button></div>
-    <div class="codeRow"><input id="saveInput" placeholder="LC1-S…" autocomplete="off" spellcheck="false"><button id="btnSaveGo" class="ghost">もどす</button></div>
-    <p id="saveMsg" class="msg"></p>
     <button class="ghost close" data-go="title">とじる</button>
   </section>
-
-  <!-- カードの対象えらび -->
-  <div id="pickBar" hidden><span id="pickText"></span><button id="btnPickCancel" class="ghost">やめる</button></div>
 </div>
 
-<script type="module" src="src/ui/app.js?v=1fed0aa8"></script>
+<script type="module" src="src/ui/app.js?v=9ee14fce"></script>
 <noscript><p style="color:#fff;padding:2em">このゲームはJavaScriptが必要です。</p></noscript>
 
 <script>

@@ -40,14 +40,14 @@ export function makeTsume(date = ymd(), maxAttempts = 80) {
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const { terrain, wrapX } = generateBoard(rng);
-    const s = newGame({ terrain, wrapX, komi: 0, maxTurns: 400 });
+    const s = newGame({ terrain, wrapX, maxTurns: 400 });
 
     // ★決着（全滅）は実測で75手番あたりから起きる。そこまで打ち進めながら、
     //   「先手が1手で勝てる手をちょうど1つだけ持っている」瞬間を探す。
     //   序盤を調べても勝ち手は存在しないので、CHECK_FROM 手番までは検査を省く（速さのため）。
     const CHECK_FROM = 40;
     for (let ply = 0; ply < 400 && !s.winner; ply++) {
-      if (s.player === 1 && s.left === 1 && ply >= CHECK_FROM) {
+      if (s.player === 1 && ply >= CHECK_FROM) {
         const wins = winningMoves(s, 1);
         if (wins.length === 1) {
           return { state: s, solution: wins[0], date, signature: boardSignature(s), attempts: attempt + 1 };
@@ -67,7 +67,6 @@ export function winningMoves(s, player) {
   for (const i of legalMoves(s, player)) {
     const t = cloneState(s);
     t.player = player;
-    t.left = 1;
     const r = applyMove(t, i);
     if (r.ok && t.winner === player) out.push(i);
   }

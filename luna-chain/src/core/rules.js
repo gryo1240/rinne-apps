@@ -25,8 +25,11 @@ export function newGame(opts = {}) {
     player: 1,
     turn: 0,               // 完了した手番の数
     moves: [0, 0],         // 各プレイヤーの完了手番数
-    left: 1,               // いまの手番であと何回置けるか
-    komi: opts.komi ?? 1,  // 後手の初手だけ追加で置ける数（先手有利の是正・§2-5）
+    // ★komi（後手の初手だけ2回置ける）は 2026-09-08 に廃止★
+    //   先手勝率を55%→44.7%に均す効果はあったが、画面に説明が無く
+    //   **オーナーに「バグ？」と言われた**。ルールを1つ減らすほうを取った。
+    //   先後は1戦ごとにランダムなので、遊び続ければ差は均される（§2-5）。
+    //   ★「先手が有利だから」と言ってこれを復活させないこと。復活させるなら画面で説明すること★
     maxTurns: opts.maxTurns ?? 120,   // 手番（片方の1手）の上限。実測で決着は平均75〜90手番=37〜45ラウンド
     winner: 0,
     endReason: '',
@@ -36,7 +39,7 @@ export function newGame(opts = {}) {
   return s;
 }
 
-/** 地形が変わったら必ず呼ぶ（カードで星屑や雲を足せるため） */
+/** 地形が変わったら必ず呼ぶ */
 export function rebuildGeometry(s) {
   s.geo = buildGeometry(s.terrain, s.wrapX);
 }
@@ -108,9 +111,7 @@ export function applyMove(s, i) {
 
   const chain = resolveChain(s, player, i, events);
 
-  s.left--;
-  if (s.left <= 0) endTurn(s);
-
+  endTurn(s);          // ★1手番＝必ず1回置く★（komi 廃止）
   checkEnd(s, player);
   return { ok: true, events, chain, winner: s.winner };
 }
@@ -120,7 +121,6 @@ function endTurn(s) {
   s.turn++;
   for (let k = 0; k < N; k++) if (s.cloud[k] > 0) s.cloud[k]--;
   s.player = 3 - s.player;
-  s.left = (s.player === 2 && s.moves[1] === 0) ? 1 + s.komi : 1;
 }
 
 /** 両者が1手以上打ったか（開幕は相手のマスが0なので、これを見ないと初手で勝ちになる） */
@@ -159,10 +159,7 @@ function resolveChain(s, player, start, events) {
   return chain;
 }
 
-/**
- * 決着したかを見る。★カードで相手のマスを消したときは applyMove を通らないので、
- * game.js 側から明示的に呼ぶ必要がある★（呼び忘れると、相手0マスのまま対局が続く）
- */
+/** 決着したかを見る */
 export function checkEnd(s, lastPlayer) {
   if (s.winner) return;
   if (bothMoved(s)) {
@@ -188,11 +185,34 @@ export function findWinningMove(s, player) {
   for (const i of legalMoves(s, player)) {
     const t = cloneState(s);
     t.player = player;
-    t.left = 1;
     const r = applyMove(t, i);
     if (r.ok && t.winner === player) return i;
   }
   return -1;
+}
+
+/**
+ * 「このマスを押したら、どこがはじけるか」を先に計算する（連鎖の予告・2026-09-08 追加）。
+ *
+ * ★なぜ必要か★ オーナーが実際に遊んで「何が起こっているか分からないから、
+ *   後半は連打ゲーになっちゃう」と言った。終盤は連鎖が大きくなり、
+ *   結果が読めないまま画面が光るだけになっていた。
+ *
+ * ★ここで盤を絶対に変えないこと★ 必ずクローンの上で試す。
+ * ★連鎖のルールを書き直さないこと★ applyMove をそのまま呼んで、起きた出来事を数える。
+ *
+ * 返り値 { ok, cells, chain }
+ *   cells … はじけるマス（はじけた順・重複あり）。同じマスが2回はじけることもある
+ *   chain … はじけた回数
+ */
+export function previewChain(s, i, player = s.player) {
+  const t = cloneState(s);
+  t.player = player;
+  const r = applyMove(t, i);
+  if (!r.ok) return { ok: false, cells: [], chain: 0 };
+  const cells = [];
+  for (const ev of r.events) if (ev.t === 'boom') cells.push(ev.i);
+  return { ok: true, cells, chain: r.chain };
 }
 
 /**

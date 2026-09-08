@@ -74,9 +74,7 @@ export const SE = {
     tone({ freq: 165 * semitone(n), dur: 0.16, type: 'sine', gain: 0.12 });
   },
   moon: () => { [0, 4, 7, 12].forEach((n, k) => tone({ freq: 440 * semitone(n), dur: 0.3, type: 'sine', gain: 0.14, delay: k * 0.06 })); },
-  card: () => { tone({ freq: 880, dur: 0.1, type: 'triangle', gain: 0.16 }); tone({ freq: 1320, dur: 0.14, type: 'sine', gain: 0.1, delay: 0.05 }); },
   win: () => { [0, 4, 7, 12, 16].forEach((n, k) => tone({ freq: 523 * semitone(n), dur: 0.34, type: 'triangle', gain: 0.16, delay: k * 0.09 })); },
   lose: () => { [0, -3, -7].forEach((n, k) => tone({ freq: 392 * semitone(n), dur: 0.4, type: 'sine', gain: 0.14, delay: k * 0.12 })); },
   tap: () => tone({ freq: 700, dur: 0.05, type: 'sine', gain: 0.1 }),
-  unlockFx: () => { [0, 7, 12].forEach((n, k) => tone({ freq: 660 * semitone(n), dur: 0.26, type: 'triangle', gain: 0.15, delay: k * 0.08 })); },
 };

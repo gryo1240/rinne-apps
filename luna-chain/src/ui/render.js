@@ -20,7 +20,13 @@ export const COLORS = {
   p2: '#7f8cff', p2soft: 'rgba(127,140,255,0.30)',
   text: '#e8ecff', dim: 'rgba(232,236,255,0.55)',
 };
-const ownerColor = (o) => (o === 1 ? COLORS.p1 : o === 2 ? COLORS.p2 : COLORS.dim);
+/**
+ * ★「自分はいつも金色」に統一する★（2026-09-08）
+ *   先手・後手は1戦ごとにランダムなので、席の番号で色を決めると
+ *   **自分が後手の対戦だけ自分の色が青になり、どちらが自分か分からなくなる**。
+ *   （上の数字は金色のままなので、盤と食い違って読めなくなっていた）
+ */
+const seatColor = (o, mySeat) => (o === 0 ? COLORS.dim : (o === mySeat ? COLORS.p1 : COLORS.p2));
 
 /** 演出の総時間の上限（ミリ秒）。20連鎖でも300連鎖でもここに収める */
 export const MAX_ANIM_MS = 2200;
@@ -67,6 +73,8 @@ export class BoardView {
     this.playing = false;
     this.onDone = null;
     this.legal = null;         // ハイライトするマス
+    this.preview = null;       // 連鎖の予告（指を置いている間だけ光らせるマス）
+    this.mySeat = 1;           // 自分の席。★色はこれを基準に決める（自分はいつも金色）★
     this.lastMove = -1;
     this.fx = opts.fx || 'normal';         // 'normal' | 'light'（演出ひかえめ）
     this.reduced = matchMediaReduced();
@@ -76,6 +84,28 @@ export class BoardView {
   }
 
   setEffects(level) { this.fx = level; }
+
+  /** 自分の席を教える。★対戦を始めるたびに必ず呼ぶ★（呼ばないと色が席とずれる） */
+  setSeat(seat) { this.mySeat = seat === 2 ? 2 : 1; this.draw(); }
+
+  /** 持ち主の色（自分＝金・相手＝藍） */
+  colorOf(owner) { return seatColor(owner, this.mySeat); }
+
+  /**
+   * 連鎖の予告を出す（指を置いている間）。★2026-09-08 追加★
+   *   「何が起こっているか分からないから、後半は連打ゲーになっちゃう」（オーナー）
+   *   への対策。押す前に、はじけるマスを光らせる。
+   *   ★ここでは連鎖を計算しない★ 計算は rules.js の previewChain が持つ。
+   */
+  setPreview(cells) {
+    const next = (cells && cells.length) ? [...new Set(cells)] : null;
+    const same = (!next && !this.preview)
+      || (next && this.preview && next.length === this.preview.length
+          && next.every((v, k) => v === this.preview[k]));
+    if (same) return;
+    this.preview = next;
+    if (next) this.start(); else this.draw();
+  }
 
   resize() {
     const box = this.canvas.parentElement;
@@ -175,7 +205,9 @@ export class BoardView {
     this.draw(t);
 
     // 何も動いていなければループを止める（電池を無駄にしない）
-    if (!this.playing && this.particles.length === 0 && this.shake < 0.4 && this.flash < 0.02 && !this.chainPop) {
+    //   ★予告を出している間は止めない★（脈動が固まって「壊れている」ように見える）
+    if (!this.playing && !this.preview && this.particles.length === 0
+        && this.shake < 0.4 && this.flash < 0.02 && !this.chainPop) {
       this.stop();
       this.draw(t);
     }
@@ -185,9 +217,9 @@ export class BoardView {
     if (!this.disp) return;
     applyEvent(this.disp, ev);           // ★ルールは書き直さず、記録を再生するだけ
     if (ev.t === 'place') {
-      this.burst(ev.i, ownerColor(ev.player), 6);
+      this.burst(ev.i, this.colorOf(ev.player), 6);
     } else if (ev.t === 'boom') {
-      const col = ownerColor(ev.player);
+      const col = this.colorOf(ev.player);
       this.burst(ev.i, col, 14);
       for (const j of ev.to) if (j >= 0) this.trail(ev.i, j, col);
       if (this.fx !== 'light' && !this.reduced) {
@@ -276,6 +308,23 @@ export class BoardView {
       }
     }
 
+    // ── 連鎖の予告（押す前に「どこがはじけるか」を見せる）──────────────
+    if (this.preview) {
+      ctx.save();
+      const a = 0.22 + this.pulse * 0.26;
+      for (const i of this.preview) {
+        const x = pad + xOf(i) * cell, y = pad + yOf(i) * cell;
+        ctx.fillStyle = `rgba(247,215,116,${a * 0.55})`;
+        roundRect(ctx, x + 2, y + 2, cell - 4, cell - 4, 10);
+        ctx.fill();
+        ctx.strokeStyle = `rgba(255,246,214,${0.5 + this.pulse * 0.4})`;
+        ctx.lineWidth = Math.max(2, cell * 0.055);
+        roundRect(ctx, x + 3, y + 3, cell - 6, cell - 6, 10);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     // 光の粒
     for (const p of this.particles) {
       ctx.globalAlpha = Math.max(0, p.life) * 0.85;
@@ -333,7 +382,9 @@ export class BoardView {
     }
 
     ctx.save();
-    ctx.fillStyle = owner ? (owner === 1 ? 'rgba(247,215,116,0.13)' : 'rgba(127,140,255,0.13)') : COLORS.cell;
+    ctx.fillStyle = owner
+      ? (owner === this.mySeat ? 'rgba(247,215,116,0.13)' : 'rgba(127,140,255,0.13)')
+      : COLORS.cell;
     roundRect(ctx, x + 2, y + 2, cell - 4, cell - 4, 10);
     ctx.fill();
     ctx.strokeStyle = COLORS.cellEdge; ctx.lineWidth = 1;
@@ -353,7 +404,7 @@ export class BoardView {
     // ★臨界（あと1つでいっぱい）は光る輪で必ず分かるようにする＝戦略が読める
     const cap = capAt(disp, i);
     if (owner && count === cap - 1) {
-      ctx.strokeStyle = owner === 1 ? COLORS.p1 : COLORS.p2;
+      ctx.strokeStyle = this.colorOf(owner);
       ctx.globalAlpha = 0.35 + this.pulse * 0.45;
       ctx.lineWidth = Math.max(1.5, cell * 0.045);
       roundRect(ctx, x + 3, y + 3, cell - 6, cell - 6, 10);
@@ -375,7 +426,7 @@ export class BoardView {
     //   ★輪の数＝capAt（rules.js）をそのまま読む。画面側で容量を計算し直さないこと★
     const slots = (terr !== T_CLOUD && cap >= 1 && cap <= 5) ? DOTS[cap] : null;
     if (slots && count <= cap) {
-      const col = ownerColor(owner);
+      const col = this.colorOf(owner);
       for (let k = 0; k < slots.length; k++) {
         const cx = x + cell / 2 + slots[k][0] * cell;
         const cy = y + cell / 2 + slots[k][1] * cell;
@@ -392,8 +443,8 @@ export class BoardView {
         }
       }
     } else if (count > 0) {
-      // 容量を超えている途中経過（カードで一気に足したときなど）は、これまで通り数で見せる
-      const col = ownerColor(owner);
+      // 容量を超えている途中経過（演出の再生中に一時的にそうなる）は、数で見せる
+      const col = this.colorOf(owner);
       const dots = DOTS[Math.min(5, count)] || DOTS[5];
       ctx.fillStyle = col;
       ctx.shadowColor = col; ctx.shadowBlur = cell * 0.28;
