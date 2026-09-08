@@ -74,6 +74,7 @@ export class BoardView {
     this.onDone = null;
     this.legal = null;         // ハイライトするマス
     this.preview = null;       // 連鎖の予告（指を置いている間だけ光らせるマス）
+    this.hints = null;         // 盤ぜんぶの「押したら何連鎖するか」（自分の手番のあいだ出しっぱなし）
     this.mySeat = 1;           // 自分の席。★色はこれを基準に決める（自分はいつも金色）★
     this.lastMove = -1;
     this.fx = opts.fx || 'normal';         // 'normal' | 'light'（演出ひかえめ）
@@ -84,6 +85,13 @@ export class BoardView {
   }
 
   setEffects(level) { this.fx = level; }
+
+  /**
+   * 盤ぜんぶの連鎖予告を出す（自分の手番のあいだ、ずっと見えている）。
+   * ★2026-09-08★ 「指を置いたマスだけ」では、はじける手が全体の21%しかなく
+   *   4回に3回は何も光らないため「予告が機能していない」と言われた。数える計算は rules.js の chainMap。
+   */
+  setHints(map) { this.hints = map || null; this.draw(); }
 
   /** 自分の席を教える。★対戦を始めるたびに必ず呼ぶ★（呼ばないと色が席とずれる） */
   setSeat(seat) { this.mySeat = seat === 2 ? 2 : 1; this.draw(); }
@@ -417,6 +425,25 @@ export class BoardView {
       ctx.setLineDash([3, 3]); ctx.lineWidth = 1.5;
       roundRect(ctx, x + 5, y + 5, cell - 10, cell - 10, 8);
       ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    // ── 押したら何連鎖するか（自分の手番のあいだ出しっぱなし）──────────
+    const hint = this.hints ? this.hints[i] : 0;
+    if (hint > 0) {
+      ctx.save();
+      // 数が大きいほど明るく・大きく。★数字そのものを出す★（強さの序列が一目で分かる）
+      const big = Math.min(1, hint / 8);
+      ctx.globalAlpha = 0.34 + big * 0.5;
+      ctx.fillStyle = hint >= 8 ? '#ffffff' : hint >= 4 ? '#fff2c4' : COLORS.p1;
+      ctx.font = `bold ${Math.round(cell * (0.44 + big * 0.16))}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      // 光の玉と重なっても読めるように、暗い縁を敷く
+      ctx.shadowColor = 'rgba(0,0,0,0.75)';
+      ctx.shadowBlur = Math.max(3, cell * 0.14);
+      ctx.fillText(String(hint), x + cell / 2, y + cell / 2 + 1);
+      ctx.shadowBlur = 0;
+      ctx.restore();
     }
 
     // ★「あと何個ではじけるか」を盤の上で必ず見せる★（2026-09-08 オーナー実測で追加）

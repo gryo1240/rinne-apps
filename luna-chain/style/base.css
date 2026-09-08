@@ -146,6 +146,11 @@ button.ghost{
 }
 .hcell i.on{border:none; background:var(--p1); box-shadow:0 0 7px var(--p1)}
 .hcell.p2 i.on{background:var(--p2); box-shadow:0 0 7px var(--p2)}
+.hhint{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  font-size:19px; font-weight:800; color:var(--p1); opacity:.75;
+  text-shadow:0 0 4px rgba(0,0,0,.8);
+}
 .harrow{color:var(--dim); font-size:16px}
 .hlabel{font-size:10px; color:var(--dim)}
 .htext{margin:0; font-size:13px; line-height:1.5}

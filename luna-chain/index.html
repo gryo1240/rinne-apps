@@ -11,21 +11,21 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style/base.css?v=e444b442">
+<link rel="stylesheet" href="style/base.css?v=d2aadcce">
 <!-- BEGIN importmap (tools/gen_importmap.py が生成。手で書き換えない) -->
 <script type="importmap">
 {"imports":{
   "./src/ai/ai.js":"./src/ai/ai.js?v=ab3c9361",
   "./src/core/board.js":"./src/core/board.js?v=1c452115",
   "./src/core/rng.js":"./src/core/rng.js?v=84ad8f5e",
-  "./src/core/rules.js":"./src/core/rules.js?v=07803093",
+  "./src/core/rules.js":"./src/core/rules.js?v=b1bd8382",
   "./src/game.js":"./src/game.js?v=3e0893bf",
   "./src/meta/daily.js":"./src/meta/daily.js?v=b222b847",
   "./src/meta/progress.js":"./src/meta/progress.js?v=a2ab4529",
-  "./src/ui/app.js":"./src/ui/app.js?v=9ee14fce",
+  "./src/ui/app.js":"./src/ui/app.js?v=53620331",
   "./src/ui/audio.js":"./src/ui/audio.js?v=e18f5c07",
   "./src/ui/coach.js":"./src/ui/coach.js?v=101ec48c",
-  "./src/ui/render.js":"./src/ui/render.js?v=d6822eb0",
+  "./src/ui/render.js":"./src/ui/render.js?v=f2964461",
   "./data/tutorial.js":"./data/tutorial.js?v=9b51c858"
 }}
 </script>
@@ -91,7 +91,8 @@
     <details class="more">
       <summary>もっと くわしく</summary>
       <ul>
-        <li><b>ゆびを おいたまま</b>にすると、はじけるマスが 光って わかる。はなすと おける</li>
+        <li>マスに出ている<b>数字＝そこを おしたら はじける回数</b>。大きいほど 大きく うばえる</li>
+        <li><b>ゆびを おいたまま</b>にすると、はじける場所が ぜんぶ 光る。はなすと おける</li>
         <li>ゆびを うごかすと よこくも ついてくる。<b>盤の そとで はなせば</b> おかずに やめられる</li>
         <li><b>大きな丸</b>が かかれたマスは わくが 1つ おおい ＝ はじけにくい</li>
         <li>十字のマスは ひかりの 通り道。おけないが、ひかりは 通りぬける</li>
@@ -129,14 +130,14 @@
   <section id="scSettings" class="screen">
     <h2>せってい</h2>
     <label class="opt"><input type="checkbox" id="optSound"> おと</label>
-    <label class="opt"><input type="checkbox" id="optPreview"> れんさの よこく（ゆびを おいたとき）</label>
+    <label class="opt"><input type="checkbox" id="optPreview"> れんさの よこく（マスの数字）</label>
     <label class="opt"><input type="checkbox" id="optCoach"> 対戦中の あんない</label>
     <label class="opt"><input type="checkbox" id="optLight"> えんしゅつを ひかえめに</label>
     <button class="ghost close" data-go="title">とじる</button>
   </section>
 </div>
 
-<script type="module" src="src/ui/app.js?v=9ee14fce"></script>
+<script type="module" src="src/ui/app.js?v=53620331"></script>
 <noscript><p style="color:#fff;padding:2em">このゲームはJavaScriptが必要です。</p></noscript>
 
 <script>

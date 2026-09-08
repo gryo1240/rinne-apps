@@ -14,7 +14,7 @@
  * ★画面はルールを判断しない★ game.js / core を呼ぶだけ。
  */
 import { N, xOf, yOf } from '../core/board.js';
-import { countCells, findWinningMove, cloneState, capAt, previewChain } from '../core/rules.js';
+import { countCells, findWinningMove, cloneState, capAt, previewChain, chainMap } from '../core/rules.js';
 import { createMatch, play, cpuMove } from '../game.js';
 import {
   loadSave, writeSave, loadDevice, writeDevice, recordMatch, recordDaily,
@@ -65,7 +65,7 @@ function show(name) {
   //   やめたはずの対戦の勝敗が記録される（2026-09-08のレビューで発覚）
   if (name) {
     held = -1; pressId = null;
-    if (view) view.setPreview(null);
+    if (view) { view.setPreview(null); view.setHints(null); }
     if (match && !match.state.winner) match.id = ++matchId;
     hideHand();
     sayNothing();
@@ -123,7 +123,7 @@ function boot() {
     device.sound = e.target.checked; writeDevice(device); Audio.setEnabled(device.sound);
   });
   $('optPreview').addEventListener('change', (e) => {
-    device.preview = e.target.checked; writeDevice(device);
+    device.preview = e.target.checked; writeDevice(device); refreshHints();
   });
   $('optCoach').addEventListener('change', (e) => {
     device.coach = e.target.checked; writeDevice(device); if (!device.coach) sayNothing();
@@ -180,6 +180,7 @@ function startTutorial(step = 0) {
   view.sync(s);
   aimHand(st.hand);
   updateHud();
+  refreshHints();
 }
 
 function startTsume() {
@@ -192,6 +193,7 @@ function startTsume() {
   match.state = cloneState(p.state);
   view.sync(match.state);
   updateHud();
+  refreshHints();
 }
 
 function beginMatch({ terrain, wrapX, tier, oppName, date = null, mySeat = null }) {
@@ -218,6 +220,7 @@ function beginMatch({ terrain, wrapX, tier, oppName, date = null, mySeat = null 
   busy = false;
   // ★自分の手番のときだけ「押してみて」と言う★
   //   相手が先手の対戦で出すと、押せないのに押せと言われ、しかも出したことになって二度と出ない
+  refreshHints();
   if (coachOn() && match.state.player === match.mySeat) say(coach.feed({ phase: 'start' }));
   if (match.state.player !== match.mySeat) setTimeout(cpuTurn, 350);
 }
@@ -266,7 +269,24 @@ function onCancel(e) {
   view.setPreview(null);
 }
 
-/** 押す前に「どこがはじけるか」を光らせる。★連鎖の計算は rules.js が持つ★ */
+/**
+ * ★盤ぜんぶに「押したら何連鎖するか」を出す★（2026-09-08）
+ *
+ *   もとは「指を置いたマスだけ」を予告していた。だが実測では
+ *   **はじける手は序盤で5.7%・全体でも21%しかなく**、4回に3回は押しても何も光らない。
+ *   探すには42マスを1つずつ長押しするしかなく、遊ぶ側からは
+ *   「予告が機能していない＝運ゲー」としか見えなかった（オーナー実測）。
+ *   → 自分の手番のあいだ、はじける手ぜんぶに連鎖数を出しっぱなしにする。
+ *   計算は1手番あたり最大0.41ms なので、毎手番作り直してよい。
+ */
+function refreshHints() {
+  if (!match || !view) return;
+  const on = device.preview && !match.state.winner && !busy
+    && match.state.player === match.mySeat;
+  view.setHints(on ? chainMap(match.state, match.mySeat) : null);
+}
+
+/** 指を置いているあいだ、その手で「実際にはじけるマス」を光らせる（数字の裏取り） */
 function showPreview(i) {
   if (i < 0 || !device.preview || !myTurn()) { view.setPreview(null); return; }
   const r = previewChain(match.state, i, match.mySeat);
@@ -286,6 +306,7 @@ function commitMove(i) {
       view.sync(match.state);
       view.lastMove = -1;
       updateHud();
+      refreshHints();
       return;
     }
     if (mode === 'tutorial' && !match.state.winner) {
@@ -293,6 +314,7 @@ function commitMove(i) {
       match.state.player = 1;
       updateHud();
       aimHand(TUTORIALS[tutorialStep].hand);
+      refreshHints();
       return;
     }
     if (coachOn()) say(coach.feed({ phase: 'myMove', chain: r.chain, hasReady: hasReady() }));
@@ -315,6 +337,7 @@ function afterMove(r, next) {
     updateHud();
     busy = false;
     if (match.state.winner) return finish();
+    refreshHints();
     if (next) next();
   });
 }
@@ -325,6 +348,7 @@ function cpuTurn() {
   const seat = 3 - match.mySeat;
   if (match.state.player !== seat) return;
   busy = true;
+  view.setHints(null);          // 相手の手番のあいだは出さない（自分の手の予告なので）
   const gen = match.id;
   const before = Int8Array.from(match.state.owner);
   setTimeout(() => {
@@ -419,6 +443,7 @@ function finish() {
   finished = true;
   held = -1;
   view.setPreview(null);
+  view.setHints(null);
   const won = match.state.winner === match.mySeat;
   const me = match.mySeat;
   view.bigFlash();
@@ -500,9 +525,12 @@ const HOWTO_FIGS = [
     text: 'わくの数は ばしょで ちがう。かどは 2つで はじける' },
   { cells: [{ c: 1, cap: 3, o: 2 }, { arrow: true }, { c: 0, cap: 3, o: 0 }],
     text: 'あいての色が ぜんぶ なくなったら かち' },
+  // ★数字の説明★ これが分からないと、盤の数字がただの飾りに見える
+  { cells: [{ c: 2, cap: 3, o: 1, hint: 4 }],
+    text: 'マスの数字は「ここを おしたら はじける回数」' },
 ];
 
-function figCell({ c = 0, cap = 3, o = 0, boom = false, label = '' }) {
+function figCell({ c = 0, cap = 3, o = 0, boom = false, label = '', hint = 0 }) {
   const wrap = document.createElement('div');
   wrap.className = 'hcellWrap';
   const d = document.createElement('div');
@@ -515,6 +543,12 @@ function figCell({ c = 0, cap = 3, o = 0, boom = false, label = '' }) {
     dot.style.top = `${50 + pos[1] * 100}%`;
     d.appendChild(dot);
   });
+  if (hint > 0) {
+    const n = document.createElement('span');
+    n.className = 'hhint';
+    n.textContent = String(hint);
+    d.appendChild(n);
+  }
   wrap.appendChild(d);
   if (label) {
     const t = document.createElement('span');
