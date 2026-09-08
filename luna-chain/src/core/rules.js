@@ -159,7 +159,11 @@ function resolveChain(s, player, start, events) {
   return chain;
 }
 
-function checkEnd(s, lastPlayer) {
+/**
+ * 決着したかを見る。★カードで相手のマスを消したときは applyMove を通らないので、
+ * game.js 側から明示的に呼ぶ必要がある★（呼び忘れると、相手0マスのまま対局が続く）
+ */
+export function checkEnd(s, lastPlayer) {
   if (s.winner) return;
   if (bothMoved(s)) {
     const oppCells = countCells(s, 3 - lastPlayer);

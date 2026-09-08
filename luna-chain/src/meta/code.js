@@ -57,7 +57,7 @@ class BitReader {
   get(width) {
     let v = 0;
     for (let k = 0; k < width; k++) v = (v << 1) | (this.bits[this.pos++] | 0);
-    return v;
+    return v >>> 0;      // ★32bit読み出しが負値にならないように（bit31を立てると壊れる）
   }
 }
 

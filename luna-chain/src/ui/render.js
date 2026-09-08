@@ -22,10 +22,19 @@ export const COLORS = {
 };
 const ownerColor = (o) => (o === 1 ? COLORS.p1 : o === 2 ? COLORS.p2 : COLORS.dim);
 
-/** 演出の総時間の上限（ミリ秒）。20連鎖でも100連鎖でもここに収める */
-export const MAX_ANIM_MS = 2500;
+/** 演出の総時間の上限（ミリ秒）。20連鎖でも300連鎖でもここに収める */
+export const MAX_ANIM_MS = 2200;
 const BASE_STEP = 130;
-const MIN_STEP = 22;
+const MIN_STEP = 3;   // これ以上短くしても目には追えないが、総時間の上限を守るために必要
+
+/**
+ * はじけ n 回ぶんの「1コマの長さ」。★n × stepFor(n) が MAX_ANIM_MS を超えないこと★
+ * （test/test-render.mjs で機械検査している）
+ */
+export function stepFor(booms) {
+  if (booms <= 1) return BASE_STEP;
+  return Math.max(MIN_STEP, Math.min(BASE_STEP, MAX_ANIM_MS / booms));
+}
 
 /** 光の粒の配置（1〜5個以上） */
 const DOTS = {
@@ -111,11 +120,10 @@ export class BoardView {
    */
   animate(events, onDone) {
     const booms = events.filter((e) => e.t === 'boom').length;
-    // 加速: はじけが多いほど1コマを短くする
-    this.stepMs = booms <= 1 ? BASE_STEP
-      : Math.max(MIN_STEP, Math.min(BASE_STEP, Math.floor(MAX_ANIM_MS / Math.max(1, booms))));
+    this.stepMs = stepFor(booms);      // 加速: はじけが多いほど1コマを短くする
     this.queue = events.slice();
-    this.nextAt = 0;
+    this.index = 0;
+    this.startAt = -1;                 // 最初のtickで決める
     this.onDone = onDone;
     this.playing = true;
     this.start();
@@ -142,12 +150,14 @@ export class BoardView {
       else if (avg < 15 && this.budget < 1) this.budget += 0.02;
     }
 
-    if (this.playing && t >= this.nextAt) {
-      const ev = this.queue.shift();
-      if (ev) {
-        this.consume(ev, t);
-        this.nextAt = t + (ev.t === 'boom' ? this.stepMs : Math.min(90, this.stepMs));
-      } else {
+    if (this.playing) {
+      if (this.startAt < 0) this.startAt = t;
+      // ★1フレームに1つずつしか進めないと、300連鎖で10秒近く操作できなくなる★
+      //   経過時間から「いま何個目まで進んでいるべきか」を出して、遅れている分をまとめて消化する
+      const want = Math.min(this.queue.length, Math.floor((t - this.startAt) / this.stepMs) + 1);
+      let guard = 0;
+      while (this.index < want && guard++ < 400) this.consume(this.queue[this.index++], t);
+      if (this.index >= this.queue.length) {
         this.playing = false;
         const cb = this.onDone; this.onDone = null;
         if (cb) cb();
@@ -155,7 +165,7 @@ export class BoardView {
     }
 
     this.pulse = (Math.sin(t / 420) + 1) / 2;
-    this.shake *= 0.86;
+    this.shake *= 0.62;      // 0.1秒ほどで収まる強さ（0.86だと数秒間ずっと揺れ続ける）
     this.flash *= 0.88;
     this.updateParticles();
     if (this.chainPop && t - this.chainPop.t > 700) this.chainPop = null;

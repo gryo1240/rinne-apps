@@ -52,9 +52,17 @@ export function loadSave(storage = globalThis.localStorage) {
       tier: clampInt(got.tier, 1, TIER_MAX, base.tier),
       recent: Array.isArray(got.recent) ? got.recent.slice(-10).map(Boolean) : [],
       deck: Array.isArray(got.deck) ? got.deck.filter((x) => typeof x === 'string').slice(0, 3) : [],
-      ghosts: Array.isArray(got.ghosts) ? got.ghosts.slice(-GHOST_MAX) : [],
+      // ★要素の中身まで確かめる★（配列かどうかだけ見ていたため、壊れた保存で
+      //   g.join / g.map が例外を投げ、全画面の救済画面が出て遊べなくなっていた）
+      ghosts: Array.isArray(got.ghosts)
+        ? got.ghosts.filter(Array.isArray)
+            .map((a) => a.filter((x) => typeof x === 'string').slice(0, 3))
+            .slice(-GHOST_MAX)
+        : [],
       daily: (got.daily && typeof got.daily === 'object') ? got.daily : {},
       trophies: clampInt(got.trophies, 0, 0xFFFFFFFF, 0),
+      played: clampInt(got.played, 0, 9999999, 0),
+      wins: clampInt(got.wins, 0, 9999999, 0),
     };
   } catch { return base; }
 }

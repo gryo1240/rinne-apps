@@ -18,16 +18,16 @@
   "./src/ai/ai.js":"./src/ai/ai.js?v=ab3c9361",
   "./src/core/board.js":"./src/core/board.js?v=1c452115",
   "./src/core/rng.js":"./src/core/rng.js?v=84ad8f5e",
-  "./src/core/rules.js":"./src/core/rules.js?v=1b18a39c",
-  "./src/game.js":"./src/game.js?v=2636bd29",
-  "./src/meta/code.js":"./src/meta/code.js?v=870c2029",
+  "./src/core/rules.js":"./src/core/rules.js?v=b4dbad8d",
+  "./src/game.js":"./src/game.js?v=64d37ebd",
+  "./src/meta/code.js":"./src/meta/code.js?v=61e58a52",
   "./src/meta/daily.js":"./src/meta/daily.js?v=c18d183c",
-  "./src/meta/progress.js":"./src/meta/progress.js?v=922d800d",
-  "./src/ui/app.js":"./src/ui/app.js?v=4e5e24cb",
+  "./src/meta/progress.js":"./src/meta/progress.js?v=8dd0ffa2",
+  "./src/ui/app.js":"./src/ui/app.js?v=134c84c0",
   "./src/ui/audio.js":"./src/ui/audio.js?v=9c4d5a7a",
-  "./src/ui/render.js":"./src/ui/render.js?v=8564ac58",
-  "./data/cards.js":"./data/cards.js?v=7629e67d",
-  "./data/unlock.js":"./data/unlock.js?v=5c390da4"
+  "./src/ui/render.js":"./src/ui/render.js?v=a844d1fc",
+  "./data/cards.js":"./data/cards.js?v=489e1872",
+  "./data/unlock.js":"./data/unlock.js?v=d0806418"
 }}
 </script>
 <!-- END importmap -->
@@ -106,6 +106,9 @@
   <section id="scRecords" class="screen">
     <h2>きろく</h2>
     <div id="statBox" class="stats"></div>
+    <h3>なまえ</h3>
+    <p class="sub">カタカナ6文字まで。友だちの画面に「◯◯のかげ」と出ます</p>
+    <div class="codeRow"><input id="nickInput" placeholder="ルナ" maxlength="6" autocomplete="off" spellcheck="false"></div>
     <h3>あいことば</h3>
     <p class="sub">じぶんの編成コード（友だちにわたすと、きみの「かげ」と戦えます）</p>
     <div class="codeRow"><code id="myCode">—</code><button id="btnCopy" class="ghost">コピー</button></div>
@@ -133,7 +136,7 @@
   <div id="pickBar" hidden><span id="pickText"></span><button id="btnPickCancel" class="ghost">やめる</button></div>
 </div>
 
-<script type="module" src="src/ui/app.js?v=4e5e24cb"></script>
+<script type="module" src="src/ui/app.js?v=134c84c0"></script>
 <noscript><p style="color:#fff;padding:2em">このゲームはJavaScriptが必要です。</p></noscript>
 
 <script>
@@ -147,9 +150,14 @@
     var d = document.createElement('div');
     d.style.cssText = 'position:fixed;inset:0;z-index:999;background:#070b1c;color:#e8ecff;'
       + 'font:14px/1.7 system-ui,sans-serif;padding:24px;overflow:auto';
-    d.innerHTML = '<h2 style="margin:0 0 8px">うまく はじめられませんでした</h2>'
-      + '<p style="color:#9aa3c9">ページを もういちど よみこんでみてください。</p>'
-      + '<pre style="white-space:pre-wrap;color:#f7d774;font-size:12px">' + String(what) + '</pre>';
+    var h = document.createElement('h2'); h.style.margin = '0 0 8px';
+    h.textContent = 'うまく はじめられませんでした';
+    var p1 = document.createElement('p'); p1.style.color = '#9aa3c9';
+    p1.textContent = 'ページを もういちど よみこんでみてください。';
+    var pre = document.createElement('pre');
+    pre.style.cssText = 'white-space:pre-wrap;color:#f7d774;font-size:12px';
+    pre.textContent = String(what);          // ★エラー文字列を innerHTML に連結しない
+    d.appendChild(h); d.appendChild(p1); d.appendChild(pre);
     document.body.appendChild(d);
   }
   window.addEventListener('error', function (e) {

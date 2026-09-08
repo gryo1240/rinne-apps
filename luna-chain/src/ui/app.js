@@ -74,6 +74,7 @@ function boot() {
   $('btnCopySave').addEventListener('click', () => copy($('saveCode').textContent, $('saveMsg')));
   $('btnCodeGo').addEventListener('click', onFriendCode);
   $('btnSaveGo').addEventListener('click', onRestoreCode);
+  $('nickInput').addEventListener('input', onNickname);
   $('optSound').addEventListener('change', (e) => { device.sound = e.target.checked; writeDevice(device); Audio.setEnabled(device.sound); });
   $('optLight').addEventListener('change', (e) => {
     device.effects = e.target.checked ? 'light' : 'normal';
@@ -117,11 +118,8 @@ function startGhost(cards, name) {
  */
 function startTutorial() {
   mode = 'tutorial';
-  beginMatch({ terrain: new Int8Array(N), wrapX: false, tier: 1, oppName: 'れんしゅう' });
-  // ★チュートリアルは必ず自分が先手席★
-  //   通常戦は席をランダムにしているが、その処理がここにも効くと
-  //   「自分のマスを押せない練習」になって最初の1戦が成立しない（2026-09-08に実際に起きた）
-  match.mySeat = 1;
+  // ★チュートリアルは必ず自分が先手席★（席がランダムだと自分のマスを押せない練習になる）
+  beginMatch({ terrain: new Int8Array(N), wrapX: false, tier: 1, oppName: 'れんしゅう', mySeat: 1 });
   const s = match.state;
   const c = idx(2, 3);
   s.owner[c] = 1; s.count[c] = 1;
@@ -133,14 +131,17 @@ function startTutorial() {
   updateHud();
 }
 
-function beginMatch({ terrain, wrapX, tier, oppName, oppDeck = [], date = null }) {
+function beginMatch({ terrain, wrapX, tier, oppName, oppDeck = [], date = null, mySeat = null }) {
   const deck = sanitizeDeck(save, save.deck);
-  match = createMatch({ terrain, wrapX, komi: 1, tier, myDeck: deck, oppDeck, oppName });
-  match.date = date;
   // ★先手・後手はランダム★
   //   実測では komi=1 でも先手勝率が中位AIで44.7%（5.3pt残る）。komiでは均しきれないと分かったので、
   //   1戦ごとの席をランダムにして、残った差を運に均す（友達との比較は先後を入れ替えた2局で行う）。
-  match.mySeat = Math.random() < 0.5 ? 1 : 2;
+  //   ★席は createMatch に渡す★——あとから match.mySeat を書き換えると、
+  //     デッキが席に配られたあとなので自分のカードがCPUの手に渡る（2026-09-08のレビューで発覚）
+  const seat = mySeat || (Math.random() < 0.5 ? 1 : 2);
+  match = createMatch({ terrain, wrapX, komi: 1, tier, myDeck: deck, oppDeck, oppName, mySeat: seat });
+  match.date = date;
+  finished = false;
   show(null);
   view.sync(match.state);
   view.lastMove = -1;
@@ -166,6 +167,14 @@ function onBoardClick(e) {
   hideHand();
   Audio.SE.place();
   afterMove(r, () => {
+    // ★詰めルナで外しても罰を与えない★ 元の局面に戻して何度でも挑戦できるようにする
+    if (mode === 'tsume' && !match.state.winner) {
+      match.state = cloneState(tsumeData.state);
+      view.sync(match.state);
+      view.lastMove = -1;
+      updateHud();
+      return;
+    }
     if (mode === 'tutorial' && !match.state.winner) {
       // 練習では相手が動かないので、手番を自分に戻してやらないと2回目が押せなくなる
       match.state.player = 1;
@@ -196,7 +205,7 @@ function afterMove(r, next) {
 
 function cpuTurn() {
   if (!match || match.state.winner) return;
-  if (mode === 'tutorial') return;      // 練習では相手は動かない
+  if (mode === 'tutorial' || mode === 'tsume') return;   // 練習・詰めルナでは相手は動かない
   const seat = 3 - match.mySeat;
   if (match.state.player !== seat) return;
   busy = true;
@@ -248,7 +257,7 @@ function beginPick(cardId) {
   Audio.SE.tap();
   if (card.picks === 0) return firePick(cardId, []);
   pick = { cardId, need: card.picks, cells: [] };
-  view.legal = cardTargets(match, cardId, match.mySeat);
+  view.legal = cardTargets(match, cardId, match.mySeat, []);
   el.pickBar.hidden = false;
   el.pickText.textContent = `${card.name}：${card.picks}つ えらぶ`;
   view.draw();
@@ -256,11 +265,14 @@ function beginPick(cardId) {
 }
 
 function onPickCell(i) {
-  if (!view.legal.includes(i) || pick.cells.includes(i)) return;
+  if (!view.legal.includes(i)) return;
   pick.cells.push(i);
   Audio.SE.tap();
+  if (pick.cells.length >= pick.need) return firePick(pick.cardId, pick.cells);
+  // 「となりへ移す」のように、次に選べる場所が前の選択で変わるカードがある
+  view.legal = cardTargets(match, pick.cardId, match.mySeat, pick.cells);
   el.pickText.textContent = `${CARD_BY_ID[pick.cardId].name}：あと ${pick.need - pick.cells.length}つ`;
-  if (pick.cells.length >= pick.need) firePick(pick.cardId, pick.cells);
+  view.draw();
 }
 
 function firePick(cardId, cells) {
@@ -269,13 +281,14 @@ function firePick(cardId, cells) {
   if (!r.ok) return;
   Audio.SE.card();
   for (const ev of r.events) if (ev.t === 'boom') Audio.SE.boom(ev.chain);
-  view.sync(match.state);           // カードは盤を直接いじるので、まず現状を取り込む
-  afterMove({ ...r, events: [] }, null);
+  // カードは盤を直接いじるので、演出の再生ではなく現状の取り込みで見せる
   view.sync(match.state);
   updateHud();
   renderCardBar();
   busy = false;
-  if (match.state.winner) finish();
+  if (match.state.winner) return finish();
+  // ★まきもどしで手番が相手に戻ることがある★——ここでCPUを動かさないと盤が固まる
+  if (match.state.player !== match.mySeat) setTimeout(cpuTurn, 240);
 }
 
 function cancelPick() {
@@ -309,7 +322,14 @@ function showHand(i) {
 const hideHand = () => { el.handSign.hidden = true; };
 
 // ── 決着 ────────────────────────────────────
+let finished = false;
+
 function finish() {
+  // ★二重に走らせない★
+  //   カードで決着したとき、firePick からの直接呼び出しと演出の完了コールバックの
+  //   両方から呼ばれ、かけらと戦績が2回加算されていた（2026-09-08のレビューで発覚）
+  if (finished) return;
+  finished = true;
   const won = match.state.winner === match.mySeat;
   const me = match.mySeat;
   view.bigFlash();
@@ -340,7 +360,8 @@ function finish() {
       won, placed: match.stats.placed[me], captured: match.stats.captured[me], deck: match.decks[me],
     });
     save = res.save;
-    if (mode === 'daily' && match.date) save = recordDaily(save, match.date, match.stats.placed[me]);
+    // ★勝ったときだけ記録する★（負けた手数が自己ベストとして残ると記録が意味を失う）
+    if (mode === 'daily' && won && match.date) save = recordDaily(save, match.date, match.stats.placed[me]);
     if (mode === 'tsume' && won && match.date) save = recordDaily(save, match.date, match.stats.placed[me], 'tsume');
     writeSave(save);
     $('shardBox').textContent = `つきのかけら +${res.gained}（ぜんぶで ${save.shards}）`;
@@ -423,10 +444,10 @@ function startTsume() {
   if (!p) { alert('きょうの詰めルナは おやすみです'); return; }
   tsumeData = p;
   mode = 'tsume';
-  match = createMatch({ terrain: p.state.terrain, wrapX: p.state.wrapX, komi: 0, tier: 1, myDeck: [], oppName: '詰めルナ' });
+  match = createMatch({ terrain: p.state.terrain, wrapX: p.state.wrapX, komi: 0, tier: 1, myDeck: [], oppName: '詰めルナ', mySeat: 1 });
   match.state = cloneState(p.state);
-  match.mySeat = 1;
   match.date = date;
+  finished = false;
   show(null);
   view.sync(match.state);
   view.lastMove = -1;
@@ -448,6 +469,7 @@ function renderRecords() {
     <div>つよさ<b>★${save.tier}</b></div>
     <div>つぎの解放<b>${nx ? `あと${nx.remain}` : 'ぜんぶ'}</b></div>`;
   $('myCode').textContent = pretty(encodeDeck(sanitizeDeck(save, save.deck), save.nickname));
+  $('nickInput').value = save.nickname || '';
   const gl = $('ghostList');
   gl.innerHTML = '';
   for (const g of save.ghosts.slice().reverse()) {
@@ -457,6 +479,18 @@ function renderRecords() {
     b.addEventListener('click', () => startGhost(g, 'じぶんのかげ'));
     gl.appendChild(b);
   }
+}
+
+/** ニックネーム。★使える文字だけに丸めて受け入れる（弾かない）★ 表示前に文字種を制限する */
+function onNickname(e) {
+  const cleaned = [...String(e.target.value)]
+    .filter((c) => NICK_CHARS.includes(c))
+    .slice(0, 6)
+    .join('');
+  if (e.target.value !== cleaned) e.target.value = cleaned;
+  save = { ...save, nickname: cleaned };
+  writeSave(save);
+  $('myCode').textContent = pretty(encodeDeck(sanitizeDeck(save, save.deck), save.nickname));
 }
 
 function onFriendCode() {
@@ -496,10 +530,15 @@ function onRestoreCode() {
 
 // ── その他 ─────────────────────────────────
 function copy(text, msgEl) {
+  // ★writeText は Promise を返す★——拒否を try/catch では捕まえられず、
+  //   unhandledrejection に上がって「うまく はじめられませんでした」が全画面に出る
+  const ng = () => { if (msgEl) msgEl.textContent = '長おしで コピーしてください'; };
   try {
-    navigator.clipboard.writeText(text);
-    if (msgEl) msgEl.textContent = 'コピーしました';
-  } catch { if (msgEl) msgEl.textContent = '長おしで コピーしてください'; }
+    const p = navigator.clipboard && navigator.clipboard.writeText(text);
+    if (p && typeof p.then === 'function') {
+      p.then(() => { if (msgEl) msgEl.textContent = 'コピーしました'; }).catch(ng);
+    } else ng();
+  } catch { ng(); }
 }
 
 boot();

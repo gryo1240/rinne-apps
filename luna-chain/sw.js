@@ -9,7 +9,7 @@
  *   コード側の版を上げるたびに数MBの音源まで道連れで消えて再ダウンロードになるため。
  *   （音源は中身が変わらないので、コードの版とは別に管理する）
  */
-const CACHE = 'lunachain-v1';
+const CACHE = 'lunachain-v2';
 const AUDIO_CACHE = 'lunachain-audio-v1';
 const ASSETS = [
   './', './index.html', './manifest.json',
@@ -41,6 +41,22 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
+
+  /* ★入口のHTMLだけは「まずネットワーク」★
+     index.html をキャッシュ優先にすると、中の importmap（版つきのモジュールURL）が
+     古いまま返り続け、**再デプロイしても既存ユーザーに更新が永久に届かない**。
+     HTMLは小さいので、取れたら最新を使い、オフラインのときだけキャッシュに落とす。 */
+  const isEntry = req.mode === 'navigate'
+    || url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');
+  if (isEntry) {
+    e.respondWith(
+      fetch(req).then((res) => {
+        if (res.ok) caches.open(CACHE).then((c) => c.put(req, res.clone()));
+        return res;
+      }).catch(() => caches.match(req).then((hit) => hit || caches.match('./index.html')))
+    );
+    return;
+  }
 
   // 音源はキャッシュ優先（中身が変わらないので再検証する意味がない）
   if (/\.(mp3|ogg|m4a|wav)$/i.test(url.pathname)) {

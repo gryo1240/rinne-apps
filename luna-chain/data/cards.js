@@ -12,7 +12,7 @@
  * 2026-09-08: 「かがみおき」は廃止。鏡はマスの能力ではなく盤単位の属性になったため、
  *             同じ枠を「ほしよび」（空マスを光の通り道に変える）に差し替えた。
  */
-import { T_CRATER, T_STARDUST } from '../src/core/board.js';
+import { T_CRATER, T_STARDUST, orthOf } from '../src/core/board.js';
 import { rebuildGeometry, capAt, canPlace, isWallAt, isCloudy } from '../src/core/rules.js';
 
 /**
@@ -51,7 +51,7 @@ export const CARDS = [
   {
     id: 'yose', name: 'ひかりよせ', icon: '⇄',
     text: 'じぶんのひかりを 1つ となりへ移す',
-    pick: 'own', picks: 2,                      // 1つ目=移す元、2つ目=移す先
+    pick: 'own', picks: 2, adjacent: true,      // 1つ目=移す元、2つ目=移す先（隣どうしのみ）
     apply: (s, p, cells) => [{ t: 'sub', i: cells[0], n: 1 }, { t: 'add', i: cells[1], n: 1 }],
   },
   {
@@ -96,8 +96,11 @@ export const CARD_BY_ID = Object.fromEntries(CARDS.map((c) => [c.id, c]));
 export const cardIndex = (id) => CARDS.findIndex((c) => c.id === id);
 
 /** そのカードの対象として選べるマスか */
-export function isValidTarget(s, card, i, player) {
+export function isValidTarget(s, card, i, player, picked = []) {
   if (i < 0 || i >= s.owner.length) return false;
+  if (picked.includes(i)) return false;                       // 同じマスは2回選べない
+  // ★「となりへ移す」と書いてあるカードは、本当に隣接だけを選べるようにする★
+  if (card.adjacent && picked.length > 0 && !orthOf(picked[picked.length - 1]).includes(i)) return false;
   switch (card.pick) {
     case 'own':   return s.owner[i] === player && !isCloudy(s, i);
     case 'enemy': return s.owner[i] === 3 - player;

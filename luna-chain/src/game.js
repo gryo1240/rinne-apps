@@ -5,7 +5,7 @@
  */
 import { N } from './core/board.js';
 import {
-  newGame, applyMove, cloneState, legalMoves, countCells, capAt, canPlace,
+  newGame, applyMove, cloneState, legalMoves, countCells, capAt, canPlace, checkEnd,
 } from './core/rules.js';
 import { chooseMove, tierOf } from './ai/ai.js';
 import { CARDS, CARD_BY_ID, applyCardEffect, isValidTarget } from '../data/cards.js';
@@ -17,14 +17,18 @@ const gaugeGain = (chain) => (chain >= 3 ? Math.min(chain, 8) : 0);
 export function createMatch(opts = {}) {
   const {
     terrain, wrapX, komi = 1, tier = 3,
-    myDeck = [], oppDeck = [], oppName = '',
+    myDeck = [], oppDeck = [], oppName = '', mySeat = 1,
   } = opts;
 
   const state = newGame({ terrain, wrapX, komi });
+  // ★デッキは「席」に配る★
+  //   席をあとからランダムに書き換えると、自分のカードがCPUの手に渡る（2026-09-08のレビューで発覚）。
+  //   席の決定はこの関数の中だけで完結させ、外から match.mySeat を書き換えないこと。
   return {
     state,
     tier,
-    decks: { 1: myDeck.slice(0, 3), 2: oppDeck.slice(0, 3) },
+    mySeat,
+    decks: { [mySeat]: myDeck.slice(0, 3), [3 - mySeat]: oppDeck.slice(0, 3) },
     oppName,
     gauge: { 1: 0, 2: 0 },
     usedCards: { 1: new Set(), 2: new Set() },
@@ -56,7 +60,9 @@ export function play(m, i) {
   if (r.chain > m.stats.maxChain[player]) m.stats.maxChain[player] = r.chain;
   m.gauge[player] = Math.min(GAUGE_FULL, m.gauge[player] + gaugeGain(r.chain));
 
-  if (player === 1) m.undoSnapshot = { state: snapshot, gauge: { ...m.gauge }, move: i };
+  // ★人間の席の手だけを覚える★（席1固定にすると、自分が後手のときCPUの手の前に巻き戻り、
+  //   手番が相手のまま誰も動かなくなって盤が固まる）
+  if (player === m.mySeat) m.undoSnapshot = { state: snapshot, gauge: { ...m.gauge }, move: i };
   m.lastMove = i;
   m.history.push(i);
 
@@ -71,11 +77,11 @@ export function canUseCard(m, cardId, player = m.state.player) {
 }
 
 /** カードの対象として選べるマスの一覧（画面のハイライト用） */
-export function cardTargets(m, cardId, player = m.state.player) {
+export function cardTargets(m, cardId, player = m.state.player, picked = []) {
   const card = CARD_BY_ID[cardId];
   if (!card) return [];
   const out = [];
-  for (let i = 0; i < N; i++) if (isValidTarget(m.state, card, i, player)) out.push(i);
+  for (let i = 0; i < N; i++) if (isValidTarget(m.state, card, i, player, picked)) out.push(i);
   return out;
 }
 
@@ -88,8 +94,10 @@ export function useCard(m, cardId, cells = []) {
   const card = CARD_BY_ID[cardId];
   if (!card || !canUseCard(m, cardId, player)) return { ok: false, reason: 'unavailable' };
   if (cells.length !== card.picks) return { ok: false, reason: 'picks' };
-  for (const c of cells) {
-    if (!isValidTarget(m.state, card, c, player)) return { ok: false, reason: 'target' };
+  for (let k = 0; k < cells.length; k++) {
+    if (!isValidTarget(m.state, card, cells[k], player, cells.slice(0, k))) {
+      return { ok: false, reason: 'target' };
+    }
   }
 
   m.usedCards[player].add(cardId);
@@ -123,7 +131,11 @@ export function useCard(m, cardId, cells = []) {
   for (let k = 0; k < N; k++) if (m.state.owner[k] === player && before[k] === 3 - player) captured++;
   m.stats.captured[player] += captured;
 
-  return { ok: true, events, chain, captured };
+  // ★カードで相手のマスを消した場合は applyMove を通らないので、ここで必ず決着を見る★
+  //   （「かげぬり」「しずめ」で相手を0マスにしても勝ちにならない不具合があった）
+  checkEnd(m.state, player);
+
+  return { ok: true, events, chain, captured, winner: m.state.winner };
 }
 
 /**
@@ -142,8 +154,9 @@ function resolveFrom(m, player, i, events) {
   const r = applyMove(m.state, i);
   m.state.left = saveLeft;
   m.state.player = savePlayer;
-  if (r.ok) for (const e of r.events) if (e.t === 'boom') events.push(e);
-  return r.ok ? r.chain : 0;
+  if (!r.ok) { m.state.count[i]++; return 0; }   // ★減らした光を必ず戻す（決着済みで弾かれた場合）
+  for (const e of r.events) if (e.t === 'boom') events.push(e);
+  return r.chain;
 }
 
 /** CPUの手を決める */

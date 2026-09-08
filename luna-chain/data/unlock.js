@@ -36,9 +36,10 @@ export const UNLOCKS = [
   { at: 1400, kind: 'card', value: 'hoshi',   label: 'ほしよび' },
   { at: 1900, kind: 'card', value: 'shizume', label: 'しずめ' },
   { at: 2600, kind: 'card', value: 'haya',    label: 'はやおくり' },
-  { at: 3400, kind: 'skin', value: 'yoake',   label: '夜明けの盤' },
-  { at: 4400, kind: 'skin', value: 'shingetsu', label: '新月の盤' },
-  { at: 5600, kind: 'skin', value: 'aurora',  label: 'オーロラの盤' },
+  // ★盤面スキンとトロフィーは v1 では表に載せない★
+  //   表に書いても読む側が無いと、貯めても無音・無表示で何も起きないのに
+  //   「あと◯」とだけ言い続ける画面になる（教訓 dead-flag-promised-in-text）。
+  //   実装した日に、同じコミットでこの表へ足すこと。
 ];
 
 /** 累計かけらから、いま開いているものを求める */
