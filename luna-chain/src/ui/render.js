@@ -36,8 +36,11 @@ export function stepFor(booms) {
   return Math.max(MIN_STEP, Math.min(BASE_STEP, MAX_ANIM_MS / booms));
 }
 
-/** 光の粒の配置（1〜5個以上） */
-const DOTS = {
+/**
+ * 光の粒の配置（1〜5個以上）。
+ * ★あそびかた画面の図もこの表を読む★（盤と図で玉の位置がずれると説明にならない）
+ */
+export const DOTS = {
   1: [[0, 0]],
   2: [[-0.22, 0], [0.22, 0]],
   3: [[0, -0.24], [-0.23, 0.16], [0.23, 0.16]],
@@ -365,7 +368,31 @@ export class BoardView {
       ctx.stroke(); ctx.setLineDash([]);
     }
 
-    if (count > 0) {
+    // ★「あと何個ではじけるか」を盤の上で必ず見せる★（2026-09-08 オーナー実測で追加）
+    //   容量はマスの位置で違う（かど2・へり3・まんなか4）。ここを描かないと、
+    //   遊んでいる人は盤をいくら見てもルールに気づけない。実際に「ルールが分からない」と言われた。
+    //   空き枠を薄い輪で描き、たまった光がその輪を1つずつ埋めていく形にする。
+    //   ★輪の数＝capAt（rules.js）をそのまま読む。画面側で容量を計算し直さないこと★
+    const slots = (terr !== T_CLOUD && cap >= 1 && cap <= 5) ? DOTS[cap] : null;
+    if (slots && count <= cap) {
+      const col = ownerColor(owner);
+      for (let k = 0; k < slots.length; k++) {
+        const cx = x + cell / 2 + slots[k][0] * cell;
+        const cy = y + cell / 2 + slots[k][1] * cell;
+        if (k < count) {
+          ctx.fillStyle = col;
+          ctx.shadowColor = col; ctx.shadowBlur = cell * 0.28;
+          ctx.beginPath(); ctx.arc(cx, cy, cell * 0.105, 0, Math.PI * 2); ctx.fill();
+          ctx.shadowBlur = 0;
+        } else {
+          // 空き枠。持ち主がいるマスは少し濃く、空きマスはごく薄く（盤がうるさくならない範囲で）
+          ctx.strokeStyle = owner ? 'rgba(255,255,255,0.24)' : 'rgba(255,255,255,0.11)';
+          ctx.lineWidth = Math.max(1, cell * 0.028);
+          ctx.beginPath(); ctx.arc(cx, cy, cell * 0.088, 0, Math.PI * 2); ctx.stroke();
+        }
+      }
+    } else if (count > 0) {
+      // 容量を超えている途中経過（カードで一気に足したときなど）は、これまで通り数で見せる
       const col = ownerColor(owner);
       const dots = DOTS[Math.min(5, count)] || DOTS[5];
       ctx.fillStyle = col;

@@ -31,6 +31,7 @@ export function defaultSave() {
     daily: {},          // { 'YYYY-MM-DD': {best: 手数, tsume: true} }
     played: 0,          // 総対戦数
     wins: 0,
+    tutorialDone: false, // れんしゅうを一度でも終えたか（初回だけ自動で練習に入るため）
   };
 }
 
@@ -63,6 +64,13 @@ export function loadSave(storage = globalThis.localStorage) {
       trophies: clampInt(got.trophies, 0, 0xFFFFFFFF, 0),
       played: clampInt(got.played, 0, 9999999, 0),
       wins: clampInt(got.wins, 0, 9999999, 0),
+      // ★すでに遊んでいる人を練習に戻さない★
+      //   旗が無い古い保存は「1戦でもしていれば済ませた」とみなす。
+      //   ここを単に false にすると、次に「あそぶ」を押した既存プレイヤー全員が
+      //   いきなり練習に飛ばされる（2026-09-08 advisor指摘）
+      tutorialDone: got.tutorialDone === undefined
+        ? clampInt(got.played, 0, 9999999, 0) > 0
+        : !!got.tutorialDone,
     };
   } catch { return base; }
 }

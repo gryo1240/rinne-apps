@@ -17,7 +17,8 @@ import {
 import { dailyBoard, makeTsume, recentDates } from '../meta/daily.js';
 import { encodeDeck, encodeSave, decode, pretty, NICK_CHARS } from '../meta/code.js';
 import { makeRng, seedFromString, ymd } from '../core/rng.js';
-import { BoardView } from './render.js';
+import { TUTORIALS } from '../../data/tutorial.js';
+import { BoardView, DOTS } from './render.js';
 import * as Audio from './audio.js';
 
 const $ = (id) => document.getElementById(id);
@@ -36,11 +37,18 @@ let mode = 'normal';          // normal | tutorial | daily | tsume | ghost
 let busy = false;
 let pick = null;              // { cardId, need, cells:[] }
 let tsumeData = null;
+let tutorialStep = 0;         // れんしゅうの何段目か
+let matchId = 0;              // 対戦の世代。遅れて届くコールバックを捨てるために使う
 let rng = makeRng((Date.now() ^ 0x9e37) >>> 0);
 
 // ── 画面の切り替え ───────────────────────────────
-const SCREENS = { title: 'scTitle', result: 'scResult', deck: 'scDeck', daily: 'scDaily', records: 'scRecords', settings: 'scSettings' };
+const SCREENS = {
+  title: 'scTitle', result: 'scResult', deck: 'scDeck', daily: 'scDaily',
+  records: 'scRecords', settings: 'scSettings', howto: 'scHowto',
+};
+let curScreen = null;          // いま出ている画面（null＝盤）
 function show(name) {
+  curScreen = name;
   for (const [k, id] of Object.entries(SCREENS)) $(id).classList.toggle('show', k === name);
   const inGame = !name;
   el.hud.hidden = !inGame;
@@ -49,6 +57,7 @@ function show(name) {
   if (name === 'daily') renderDaily();
   if (name === 'records') renderRecords();
   if (name === 'settings') renderSettings();
+  if (name === 'howto') renderHowto();
   if (name === 'title') renderTitle();
 }
 
@@ -64,9 +73,26 @@ function boot() {
   window.addEventListener('resize', () => view.resize());
   document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => { Audio.SE.tap(); show(b.dataset.go); }));
   $('btnPlay').addEventListener('click', () => startNormal());
-  $('btnBack').addEventListener('click', () => { if (confirmQuit()) show('title'); });
-  $('btnAgain').addEventListener('click', () => (mode === 'tsume' ? startTsume() : startNormal()));
-  $('btnToTitle').addEventListener('click', () => show('title'));
+  $('btnBack').addEventListener('click', () => {
+    if (confirmQuit()) show(mode === 'tutorial' ? 'howto' : 'title');
+  });
+  // ★「もういちど」は、いま遊んでいた種類に戻す★
+  //   以前はどの種類でも本番対戦が始まっていた（練習のあとに押すといきなり本番、
+  //   デイリーのあとに押すと別の盤）。
+  $('btnAgain').addEventListener('click', () => {
+    if (mode === 'tsume') return startTsume();
+    if (mode === 'daily') return startDaily(match?.date || ymd());
+    if (mode === 'ghost' && lastGhost) return startGhost(lastGhost.cards, lastGhost.name);
+    if (mode === 'tutorial') {
+      return tutorialStep + 1 < TUTORIALS.length ? startTutorial(tutorialStep + 1) : skipToReal();
+    }
+    return startNormal();
+  });
+  $('btnToTitle').addEventListener('click', () => show(mode === 'tutorial' ? 'howto' : 'title'));
+  // ★ラベルどおりに動かす★
+  //   ただ startNormal を呼ぶと、はじめての人は練習1段目に入ってしまい
+  //   「そのまま あそぶ」というラベルと挙動が食い違う
+  $('btnHowtoPlay').addEventListener('click', () => skipToReal());
   $('btnDailyBattle').addEventListener('click', () => startDaily(ymd()));
   $('btnTsume').addEventListener('click', () => startTsume());
   $('btnPickCancel').addEventListener('click', cancelPick);
@@ -88,11 +114,22 @@ function boot() {
   globalThis.__lunaReady = true;
 }
 
-const confirmQuit = () => (match && !match.state.winner) ? confirm('とちゅうでやめますか？') : true;
+// ★練習と詰めルナでは聞かない★（失う記録が無いのに引き止めると、入口が重くなるだけ）
+/** 練習を飛ばして本番へ（あそびかたを見た人・練習を終えた人が使う） */
+function skipToReal() {
+  if (!save.tutorialDone) { save = { ...save, tutorialDone: true }; writeSave(save); }
+  startNormal();
+}
+
+const confirmQuit = () => (match && !match.state.winner && mode !== 'tutorial' && mode !== 'tsume')
+  ? confirm('とちゅうでやめますか？') : true;
 
 // ── 対戦の開始 ──────────────────────────────
 function startNormal() {
-  if (save.played === 0) return startTutorial();
+  // ★played ではなく専用の旗で判定する★
+  //   played で判定すると、引き継ぎコードで復帰した人（played=0のまま）が練習に飛ばされる。
+  //   旗は onRestoreCode でも立てること（旗だけ足して復元側を直さないと、この穴は残る）
+  if (!save.tutorialDone) return startTutorial(0);
   const b = { terrain: undefined, wrapX: false };
   const seed = (Math.random() * 1e9) | 0;
   const board = dailyBoard('rnd-' + seed);
@@ -106,29 +143,48 @@ function startDaily(date) {
   beginMatch({ terrain: b.terrain, wrapX: b.wrapX, tier: b.tier, oppName: 'きょうの月', date });
 }
 
+let lastGhost = null;          // 「もういちど」で同じ相手に戻れるように覚えておく
 function startGhost(cards, name) {
+  lastGhost = { cards: cards.slice(), name };
   const board = dailyBoard('ghost-' + Math.random());
   mode = 'ghost';
   beginMatch({ terrain: board.terrain, wrapX: board.wrapX, tier: save.tier, oppName: name || 'かげ', oppDeck: cards.filter(Boolean) });
 }
 
 /**
- * 最初の1戦（説明文ゼロのチュートリアル）。
- * まん中を3回タップするだけで必ず勝てる固定盤。指マークだけで導く。
+ * れんしゅう（あそびかた）。★盤の中身は data/tutorial.js が持つ★
+ *   説明文は出さず、指マークの場所を叩かせて体で覚えてもらう。
+ *   段ごとに教えるのは1つだけ（かどの容量／まんなかの容量／れんさ）。
+ *   ★盤が「必ず勝てる」ことは test/test-tutorial.mjs が実際に叩いて確かめている★
  */
-function startTutorial() {
+function startTutorial(step = 0) {
+  tutorialStep = Math.max(0, Math.min(TUTORIALS.length - 1, step | 0));
+  const st = TUTORIALS[tutorialStep];
   mode = 'tutorial';
   // ★チュートリアルは必ず自分が先手席★（席がランダムだと自分のマスを押せない練習になる）
-  beginMatch({ terrain: new Int8Array(N), wrapX: false, tier: 1, oppName: 'れんしゅう', mySeat: 1 });
+  beginMatch({ terrain: new Int8Array(N), wrapX: false, tier: 1, oppName: st.name, mySeat: 1 });
   const s = match.state;
-  const c = idx(2, 3);
-  s.owner[c] = 1; s.count[c] = 1;
-  for (const j of [idx(2, 2), idx(2, 4), idx(1, 3), idx(3, 3)]) { s.owner[j] = 2; s.count[j] = 1; }
+  st.setup(s);
   s.moves = [1, 1];            // 開幕判定を抜ける（相手は動かないため）
   s.player = 1; s.left = 1;
   view.sync(s);
-  showHand(c);
+  aimHand(st.hand);
   updateHud();
+  // ★練習ではカードは絶対に使えない★（月ゲージが満ちないので canUseCard が必ず偽）
+  //   押しても反応しないものを出しておくと「壊れている」と読まれる
+  el.cardbar.hidden = true;
+}
+
+/**
+ * 押してほしいマスを示す。★指マークだけに頼らない★
+ *   指マークのアニメは prefers-reduced-motion で止まるので、
+ *   その設定の人には何も伝わらない。金色の輪（view.legal）も一緒に出す。
+ *   view.legal は描画にしか使われず、入力の分岐は pick の有無で決まるので副作用は無い。
+ */
+function aimHand(i) {
+  showHand(i);
+  view.legal = [i];
+  view.draw();
 }
 
 function beginMatch({ terrain, wrapX, tier, oppName, oppDeck = [], date = null, mySeat = null }) {
@@ -141,9 +197,14 @@ function beginMatch({ terrain, wrapX, tier, oppName, oppDeck = [], date = null, 
   const seat = mySeat || (Math.random() < 0.5 ? 1 : 2);
   match = createMatch({ terrain, wrapX, komi: 1, tier, myDeck: deck, oppDeck, oppName, mySeat: seat });
   match.date = date;
+  // ★対戦ごとに世代番号を振る★
+  //   前の対戦のために予約された setTimeout や演出の完了コールバックが
+  //   あとから届いても、世代が違えば降りる。画面を増やすほどここが効く
+  match.id = ++matchId;
   finished = false;
   show(null);
   view.sync(match.state);
+  view.legal = null;
   view.lastMove = -1;
   view.resize();
   updateHud();
@@ -180,7 +241,7 @@ function onBoardClick(e) {
       match.state.player = 1;
       match.state.left = 1;
       updateHud();
-      showHand(idx(2, 3));
+      aimHand(TUTORIALS[tutorialStep].hand);
       return;
     }
     if (!match.state.winner && match.state.player !== match.mySeat) setTimeout(cpuTurn, 260);
@@ -190,10 +251,13 @@ function onBoardClick(e) {
 /** 1手ぶんの演出を流し、終わったら次へ */
 function afterMove(r, next) {
   busy = true;
+  const gen = match.id;
   view.lastMove = r.events.find((e) => e.t === 'place')?.i ?? view.lastMove;
   for (const ev of r.events) if (ev.t === 'boom') Audio.SE.boom(ev.chain);
   if (r.gaugeFull) { view.bigFlash(); Audio.SE.moon(); }
   view.animate(r.events, () => {
+    // ★別の対戦が始まっていたら何もしない★（演出の途中で画面を移った場合）
+    if (!match || match.id !== gen) return;
     view.sync(match.state);
     updateHud();
     renderCardBar();
@@ -209,7 +273,12 @@ function cpuTurn() {
   const seat = 3 - match.mySeat;
   if (match.state.player !== seat) return;
   busy = true;
+  const gen = match.id;
   setTimeout(() => {
+    // ★遅れて届いたものは「何もしない」★
+    //   ここで busy を落とすと、すでに始まっている新しい対戦の入力ロックまで外れる
+    //   （演出の途中で盤が押せてしまい、手番が止まる）。afterMove 側と同じく触らない
+    if (!match || match.id !== gen) return;
     const c = cpuCard(match);
     if (c) {
       const rc = useCard(match, c.cardId, c.cells);
@@ -356,11 +425,22 @@ function finish() {
   $('resultSub').textContent = sub;
 
   if (mode === 'tutorial') {
+    // ★練習は「勝ち負け」ではなく「できた」で終わる★（点数も、かけらも出さない）
+    const st = TUTORIALS[tutorialStep];
+    const more = tutorialStep + 1 < TUTORIALS.length;
+    $('resultTitle').textContent = 'できた！';
+    $('resultTitle').style.color = 'var(--p1)';
+    // ★たね明かしは、遊び終えたこの一瞬だけ出す★（先に読ませると入口が重くなる）
+    $('resultSub').textContent = st.tip;
     $('shardBox').textContent = '';
     $('unlockBox').hidden = true;
-    save = { ...save, played: Math.max(1, save.played) };
+    $('btnAgain').textContent = more ? 'つぎの れんしゅう ▶' : 'ほんばんを あそぶ';
+    $('btnToTitle').textContent = 'あそびかたへ';
+    save = { ...save, tutorialDone: true, played: Math.max(1, save.played) };
     writeSave(save);
   } else {
+    $('btnAgain').textContent = 'もういちど';
+    $('btnToTitle').textContent = 'やめる';
     const before = save.shards;
     // ★段位の自動調整に使うのは「ふつうの対戦」だけ★
     //   デイリーは固定強度、詰めルナは1手詰め、かげ戦は相手の編成が違う。
@@ -386,7 +466,11 @@ function finish() {
       if (!save.deck.length && fresh.length) { save = { ...save, deck: [fresh[0]] }; writeSave(save); }
     } else $('unlockBox').hidden = true;
   }
-  setTimeout(() => show('result'), 700);
+  // ★決着から結果表示までの0.7秒に画面を移っていたら、結果を割り込ませない★
+  const gen = match.id;
+  setTimeout(() => {
+    if (curScreen === null && match && match.id === gen) show('result');
+  }, 700);
 }
 
 // ── タイトル ────────────────────────────────
@@ -396,6 +480,91 @@ function renderTitle() {
   c.innerHTML = Audio.hasRealAssets()
     ? '音楽：<a href="https://maou.audio/" target="_blank" rel="noopener noreferrer">魔王魂</a>／効果音：<a href="https://www.springin.org/sound-stock/" target="_blank" rel="noopener noreferrer">Springin\' Sound Stock</a>'
     : '';
+}
+
+// ── あそびかた ─────────────────────────────
+/**
+ * ★ここだけは文章を置いてよい★
+ *   守っている原則は「読まないと始められない状態を作らない」こと。
+ *   「あそぶ」から入った人は一度も読まずに最後まで遊べる。説明はこの任意の入口の内側にだけ置く。
+ *   （2026-09-08、オーナー実測で「ルールが分からない」と判明。§0-7）
+ *
+ * ★図はキャンバスではなく DOM で組む★
+ *   BoardView をもう1つ動かすと、画面を離れたあともアニメのタイマーが回り続ける、
+ *   親の高さが0でセルが潰れる、resize が片方にしか届かない——の3つを必ず踏む。
+ * ★玉の位置は render.js の DOTS をそのまま読む★（盤と図がずれたら説明にならない）
+ */
+const HOWTO_FIGS = [
+  { cells: [{ c: 1, cap: 3, o: 1 }, { arrow: true }, { c: 2, cap: 3, o: 1 }],
+    text: 'マスを おすと、ひかりが 1つ ふえる' },
+  { cells: [{ c: 3, cap: 3, o: 1, boom: true }],
+    text: 'わくが うまると はじけて、となりのマスを じぶんの色に かえる' },
+  { cells: [{ c: 0, cap: 2, o: 0, label: 'かど' }, { c: 0, cap: 3, o: 0, label: 'へり' }, { c: 0, cap: 4, o: 0, label: 'まんなか' }],
+    text: 'わくの数は ばしょで ちがう。かどは 2つで はじける' },
+  // ★相手の色を実際に出す★（金だけの図で「あいての色」と書いても伝わらない）
+  { cells: [{ c: 1, cap: 3, o: 2 }, { arrow: true }, { c: 0, cap: 3, o: 0 }],
+    text: 'あいての色が ぜんぶ なくなったら かち' },
+];
+
+function figCell({ c = 0, cap = 3, o = 0, boom = false, label = '' }) {
+  const wrap = document.createElement('div');
+  wrap.className = 'hcellWrap';
+  const d = document.createElement('div');
+  d.className = 'hcell' + (o === 1 ? ' p1' : o === 2 ? ' p2' : '') + (boom ? ' boom' : '');
+  const slots = DOTS[cap] || DOTS[4];
+  slots.forEach((pos, k) => {
+    const dot = document.createElement('i');
+    if (k < c) dot.className = 'on';
+    dot.style.left = `${50 + pos[0] * 100}%`;
+    dot.style.top = `${50 + pos[1] * 100}%`;
+    d.appendChild(dot);
+  });
+  wrap.appendChild(d);
+  if (label) {
+    const t = document.createElement('span');
+    t.className = 'hlabel';
+    t.textContent = label;
+    wrap.appendChild(t);
+  }
+  return wrap;
+}
+
+function renderHowto() {
+  const box = $('howtoFig');
+  box.innerHTML = '';
+  for (const f of HOWTO_FIGS) {
+    const row = document.createElement('div');
+    row.className = 'hrow';
+    const cells = document.createElement('div');
+    cells.className = 'hcells';
+    for (const c of f.cells) {
+      if (c.arrow) {
+        const a = document.createElement('span');
+        a.className = 'harrow';
+        a.textContent = '→';
+        cells.appendChild(a);
+      } else cells.appendChild(figCell(c));
+    }
+    const tx = document.createElement('p');
+    tx.className = 'htext';
+    tx.textContent = f.text;
+    row.appendChild(cells);
+    row.appendChild(tx);
+    box.appendChild(row);
+  }
+
+  const btns = $('howtoBtns');
+  btns.innerHTML = '';
+  TUTORIALS.forEach((st, k) => {
+    const b = document.createElement('button');
+    b.className = 'big alt step';
+    const num = document.createElement('b');
+    num.textContent = String(k + 1);
+    b.appendChild(num);
+    b.appendChild(document.createTextNode(st.name));
+    b.addEventListener('click', () => { Audio.SE.tap(); startTutorial(k); });
+    btns.appendChild(b);
+  });
 }
 
 // ── カード画面 ─────────────────────────────
@@ -457,12 +626,18 @@ function startTsume() {
   match = createMatch({ terrain: p.state.terrain, wrapX: p.state.wrapX, komi: 0, tier: 1, myDeck: [], oppName: '詰めルナ', mySeat: 1 });
   match.state = cloneState(p.state);
   match.date = date;
+  // ★対戦ごとに世代番号を振る★
+  //   前の対戦のために予約された setTimeout や演出の完了コールバックが
+  //   あとから届いても、世代が違えば降りる。画面を増やすほどここが効く
+  match.id = ++matchId;
   finished = false;
   show(null);
   view.sync(match.state);
+  view.legal = null;
   view.lastMove = -1;
   view.resize();
   updateHud();
+  hideHand();               // ★前の練習の指マークを消す★（残ると無関係のマスを指す）
   el.cardbar.hidden = true;
   busy = false;
 }
@@ -531,7 +706,9 @@ function onRestoreCode() {
     return;
   }
   if (d.shards < save.shards && !confirm('いまの記録より すくない内容です。もどしますか？')) return;
-  save = { ...save, shards: d.shards, trophies: d.trophies, tier: d.tier };
+  // ★引き継いだ人は別の端末で遊び終えている★
+  //   ここで旗を立てないと、次に「あそぶ」を押したとき練習1段目に飛ばされる
+  save = { ...save, shards: d.shards, trophies: d.trophies, tier: d.tier, tutorialDone: true };
   save.deck = sanitizeDeck(save, save.deck);
   writeSave(save);
   msg.textContent = 'もどしました';

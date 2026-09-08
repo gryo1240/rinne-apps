@@ -104,6 +104,9 @@ button.ghost{
   padding:9px 14px; border-radius:10px; background:rgba(255,255,255,.06);
   border:1px solid var(--line); color:var(--text); font-size:13px; cursor:pointer;
 }
+.menu button.lead{
+  background:rgba(247,215,116,.16); border-color:rgba(247,215,116,.55); color:var(--p1); font-weight:700;
+}
 .row{display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
 .row.col{flex-direction:column; align-items:center}
 .close{margin-top:8px}
@@ -159,9 +162,54 @@ button.ghost{
   background:rgba(10,14,34,.92); border:1px solid rgba(247,215,116,.4);
 }
 #pickBar[hidden]{display:none}
+/* ★hidden 属性を CSS で打ち消さない★
+   #hud / #cardbar は display:flex を指定しているので、要素の hidden 属性（UA既定の
+   display:none）に勝ってしまい、`el.cardbar.hidden = true` が効いていなかった。
+   カードを1枚も持っていない人の画面には、空のバーが下に居座っていた（2026-09-08 発見）。 */
+#hud[hidden], #cardbar[hidden]{display:none}
 #pickText{font-size:14px}
 
 @media (prefers-reduced-motion: reduce){
   #handSign{animation:none}
   .gauge i{transition:none}
 }
+
+
+/* ── あそびかた ─────────────────────────
+   ★盤と同じ見た目で「わく」を見せる★ 玉の位置は render.js の DOTS から流し込む。
+   キャンバスは使わない（BoardView を2つ動かすとタイマーが残る・高さが潰れる） */
+#scHowto{justify-content:flex-start}   /* 中央寄せのままだと縦に長いとき上が切れて読めない */
+.howto{display:flex; flex-direction:column; gap:11px; width:100%; max-width:440px}
+.hrow{
+  display:flex; align-items:center; gap:12px;
+  background:rgba(255,255,255,.05); border:1px solid var(--line); border-radius:12px; padding:9px 11px;
+}
+.hcells{display:flex; align-items:center; gap:7px; flex:0 0 auto}
+.hcellWrap{display:flex; flex-direction:column; align-items:center; gap:2px}
+.hcell{
+  position:relative; width:38px; height:38px; border-radius:9px;
+  background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.10);
+}
+.hcell.p1{background:rgba(247,215,116,.13)}
+.hcell.p2{background:rgba(127,140,255,.13)}
+.hcell.boom{border-color:var(--p1); box-shadow:0 0 14px rgba(247,215,116,.55)}
+.hcell i{
+  position:absolute; width:8px; height:8px; border-radius:50%;
+  transform:translate(-50%,-50%);
+  border:1.2px solid rgba(255,255,255,.24); background:none;   /* 空きわく */
+}
+.hcell i.on{border:none; background:var(--p1); box-shadow:0 0 7px var(--p1)}
+.hcell.p2 i.on{background:var(--p2); box-shadow:0 0 7px var(--p2)}
+.harrow{color:var(--dim); font-size:16px}
+.hlabel{font-size:10px; color:var(--dim)}
+.htext{margin:0; font-size:13px; line-height:1.5}
+#howtoBtns{width:100%; max-width:440px; gap:8px}
+#howtoBtns .step{display:flex; align-items:center; gap:10px; justify-content:flex-start; width:100%; min-width:0; font-size:16px}
+#howtoBtns .step b{
+  flex:0 0 auto; width:24px; height:24px; border-radius:50%;
+  background:rgba(0,0,0,.22); display:flex; align-items:center; justify-content:center; font-size:13px;
+}
+.more{width:100%; max-width:440px; font-size:13px; color:var(--dim)}
+.more summary{cursor:pointer; padding:8px 2px; color:var(--text)}
+.more ul{margin:2px 0 0; padding-left:1.2em; line-height:1.7}
+.more b{color:var(--p1)}
