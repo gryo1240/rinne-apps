@@ -9,6 +9,16 @@
   --safe-b: env(safe-area-inset-bottom, 0px);
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+/* ★hidden 属性を CSS で打ち消さない★（この1行で、この種類の事故を丸ごと止める）
+   display を指定した要素は、hidden 属性（UA既定の display:none）に勝ってしまうので、
+   JS で `el.hidden = true` と書いても消えない。しかも**見た目に出るだけで例外は出ない**。
+   2026-09-08 に3回やった:
+     1回目 #cardbar（空のカード帯が下に居座る）
+     2回目 #hud（やめられなくなる。1回直したのに巻き添えで消えた）
+     3回目 #pauseBtns（タイトルから開いた設定に「さいしょから／タイトルへ」が出る）
+   個別に `#id[hidden]{display:none}` を足していく方式は、**新しい要素を足すたびに再発する**。
+   ここで全部まとめて打ち止めにする。 */
+[hidden]{display:none !important}
 html,body{height:100%; margin:0; overflow:hidden}
 body{
   background:radial-gradient(120% 90% at 50% 0%, #16204a 0%, var(--bg1) 62%);
@@ -23,19 +33,18 @@ body{
   display:flex; align-items:center; gap:10px;
   padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 8px;
 }
-#hud .who{flex:1; display:flex; align-items:center; gap:8px}
-.cells{font-weight:800; font-size:18px; min-width:2ch; text-align:center}
-.cells.p1{color:var(--p1)} .cells.p2{color:var(--p2)}
-.gauge{
-  position:relative; flex:1; height:12px; border-radius:99px;
-  background:rgba(255,255,255,.09); overflow:visible; border:1px solid var(--line);
+/* ★手番の表示★（2026-09-08 マス数・ゲージ・相手の段位と入れ替えた）
+   > 対戦中の上の方にある内容はいらないかも。戦況が動きまくるので、有利不利が意味ない。
+   > あと、どちらの手番かを示してほしいかな。（オーナー）
+   色つきの丸＋ことばの2本立てにする。★色だけに頼らない★（色の見分けがつきにくい人がいる） */
+.turn{flex:1; display:flex; align-items:center; gap:9px; font-size:16px; font-weight:700}
+#turnDot{
+  width:14px; height:14px; border-radius:50%; flex:0 0 auto;
+  background:var(--p1); box-shadow:0 0 10px var(--p1);
 }
-.gauge i{
-  position:absolute; inset:0 auto 0 0; width:0%; border-radius:99px;
-  background:linear-gradient(90deg,#8a7a3a,var(--p1)); transition:width .25s ease;
-}
-.opp{display:flex; flex-direction:column; align-items:flex-end; line-height:1.15}
-#oppName{font-size:13px} #oppStars{font-size:12px; color:var(--p2); letter-spacing:1px}
+/* 自分（人間）が押せるときだけ、丸をゆっくり脈打たせる＝「いま押していい」が一目で分かる */
+#hud.mine #turnDot{animation:turnPulse 1.5s ease-in-out infinite}
+@keyframes turnPulse{0%,100%{transform:scale(1); opacity:1}50%{transform:scale(1.32); opacity:.72}}
 button.icon{
   background:none; border:none; color:var(--dim); font-size:20px; padding:4px 8px; cursor:pointer;
 }
@@ -100,13 +109,23 @@ button.ghost{
 #resultTitle{font-size:40px; letter-spacing:.1em}
 .chainline{font-size:17px; color:var(--p1); font-weight:700}
 
-/* デイリー・記録 */
-.daylist{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; max-width:460px}
-.daylist button{
-  padding:7px 10px; border-radius:9px; font-size:12px; cursor:pointer;
+/* ★きょうの月（.daylist）は 2026-09-08 に撤去した★
+   セレクタだけ消して宣言ブロックを残すと、次のルールまで巻き添えで消える。
+   実際にやったことがあるので、消すときは必ず { } ごと消すこと（通し検証が機械で見張っている）。 */
+
+/* ── えらぶボタンの帯（BGM・音量）─────────────
+   ★スライダー（input[type=range]）にしない★ 子どもの指では当てにくい。3段のボタンにする。 */
+.segs{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; width:100%; max-width:440px}
+.seg{
+  padding:9px 13px; border-radius:10px; font-size:13px; cursor:pointer;
   background:rgba(255,255,255,.06); border:1px solid var(--line); color:var(--text);
 }
-.daylist button.done{border-color:rgba(247,215,116,.5); color:var(--p1)}
+.seg.on{
+  background:rgba(247,215,116,.18); border-color:rgba(247,215,116,.6);
+  color:var(--p1); font-weight:700;
+}
+
+/* 記録 */
 .stats{
   display:grid; grid-template-columns:repeat(2,minmax(120px,1fr)); gap:8px; width:100%; max-width:420px;
 }
@@ -117,7 +136,7 @@ button.ghost{
 
 @media (prefers-reduced-motion: reduce){
   #handSign{animation:none}
-  .gauge i{transition:none}
+  #hud.mine #turnDot{animation:none}
 }
 
 
@@ -125,6 +144,8 @@ button.ghost{
    ★盤と同じ見た目で「わく」を見せる★ 玉の位置は render.js の DOTS から流し込む。
    キャンバスは使わない（BoardView を2つ動かすとタイマーが残る・高さが潰れる） */
 #scHowto{justify-content:flex-start}   /* 中央寄せのままだと縦に長いとき上が切れて読めない */
+/* せっていも同じ理由で上寄せ（BGM選択が増えて縦に長くなった） */
+#scSettings{justify-content:flex-start}
 .howto{display:flex; flex-direction:column; gap:11px; width:100%; max-width:440px}
 .hrow{
   display:flex; align-items:center; gap:12px;
@@ -176,12 +197,10 @@ button.ghost{
   animation:coachIn .28s ease-out;
   pointer-events:none;   /* ★盤の操作を絶対に邪魔しない★ */
 }
+/* ★個別の [hidden] 対策は、ファイル先頭の `[hidden]{display:none !important}` に集約した★
+   ここに1つずつ足していく方式では、要素を増やすたびに同じ事故が起きる（実際に3回起きた）。
+   下の2行は、通し検証が「このルールが消えていないか」を見張るための目印として残す。 */
 #coach[hidden]{display:none}
-/* ★hidden 属性を CSS で打ち消さない★
-   #hud は display:flex を指定しているので、要素の hidden 属性（UA既定の display:none）に
-   勝ってしまい、`el.hud.hidden = true` が効かない。
-   2026-09-08 に一度直したのに、カードバーのCSSを削除したとき巻き添えで消えた。
-   → smoke に「大事なCSSルールが欠けていないか」の検査を足して再発を止めた。 */
 #hud[hidden]{display:none}
 @keyframes coachIn{from{opacity:0; transform:translateX(-50%) translateY(-6px)}to{opacity:1}}
 @media (prefers-reduced-motion: reduce){ #coach{animation:none} }

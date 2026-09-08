@@ -26,7 +26,7 @@ export const COLORS = {
  *   **自分が後手の対戦だけ自分の色が青になり、どちらが自分か分からなくなる**。
  *   （上の数字は金色のままなので、盤と食い違って読めなくなっていた）
  */
-const seatColor = (o, mySeat) => (o === 0 ? COLORS.dim : (o === mySeat ? COLORS.p1 : COLORS.p2));
+const seatColor = (o, goldSeat) => (o === 0 ? COLORS.dim : (o === goldSeat ? COLORS.p1 : COLORS.p2));
 
 /** 演出の総時間の上限（ミリ秒）。20連鎖でも300連鎖でもここに収める */
 export const MAX_ANIM_MS = 2200;
@@ -75,7 +75,11 @@ export class BoardView {
     this.legal = null;         // ハイライトするマス
     this.preview = null;       // 連鎖の予告（指を置いている間だけ光らせるマス）
     this.hints = null;         // 盤ぜんぶの「押したら何連鎖するか」（自分の手番のあいだ出しっぱなし）
-    this.mySeat = 1;           // 自分の席。★色はこれを基準に決める（自分はいつも金色）★
+    // ★名前を goldSeat にしてある（もとは mySeat）★
+    //   「自分の席」と読めると、二人対戦（どちらも自分）で必ず読み違える。
+    //   ここが持っているのは **どちらの席を金色で描くか** だけ。操作権とは無関係。
+    this.goldSeat = 1;
+    this.rings = [];           // はじけた場所から広がる輪（演出）
     this.lastMove = -1;
     this.fx = opts.fx || 'normal';         // 'normal' | 'light'（演出ひかえめ）
     this.reduced = matchMediaReduced();
@@ -93,11 +97,38 @@ export class BoardView {
    */
   setHints(map) { this.hints = map || null; this.draw(); }
 
-  /** 自分の席を教える。★対戦を始めるたびに必ず呼ぶ★（呼ばないと色が席とずれる） */
-  setSeat(seat) { this.mySeat = seat === 2 ? 2 : 1; this.draw(); }
+  /**
+   * どちらの席を金色で描くかを教える。★対戦を始めるたびに必ず呼ぶ★
+   *   CPU戦 … 自分の席を渡す（自分はいつも金色になる）
+   *   二人対戦 … 1 を渡す（先手＝金・後手＝青で固定。どちらも「自分」なので入れ替えない）
+   */
+  setSeat(seat) { this.goldSeat = seat === 2 ? 2 : 1; this.draw(); }
 
-  /** 持ち主の色（自分＝金・相手＝藍） */
-  colorOf(owner) { return seatColor(owner, this.mySeat); }
+  /** 持ち主の色（金の席＝金・もう一方＝藍） */
+  colorOf(owner) { return seatColor(owner, this.goldSeat); }
+
+  /**
+   * ★演出を途中で捨てる★（2026-09-08 アドバイザー指摘で新設）
+   *   tick() は match の世代番号を見ないので、キューは最後まで消化され続ける。
+   *   これまでは中断が「画面遷移＝盤が見えなくなる」経由しかなかったので実害が出なかったが、
+   *   **対戦中の設定から「さいしょから」を押すと、盤に留まったまま新しい対戦が始まる**。
+   *   そのとき古いキューの applyEvent が新しい盤を書き換え、玉数と持ち主が壊れる
+   *   （例外は出ないので「たまに盤がおかしい」としか見えない＝最悪の壊れ方）。
+   */
+  cancelAnimation() {
+    this.queue = [];
+    this.index = 0;
+    this.startAt = -1;
+    this.playing = false;
+    this.onDone = null;
+    this.particles.length = 0;
+    this.rings.length = 0;
+    this.shake = 0;
+    this.flash = 0;
+    this.chainPop = null;
+    this.preview = null;
+    this.stop();
+  }
 
   /**
    * 連鎖の予告を出す（指を置いている間）。★2026-09-08 追加★
@@ -209,12 +240,14 @@ export class BoardView {
     this.shake *= 0.62;      // 0.1秒ほどで収まる強さ（0.86だと数秒間ずっと揺れ続ける）
     this.flash *= 0.88;
     this.updateParticles();
+    this.updateRings();
     if (this.chainPop && t - this.chainPop.t > 700) this.chainPop = null;
     this.draw(t);
 
     // 何も動いていなければループを止める（電池を無駄にしない）
     //   ★予告を出している間は止めない★（脈動が固まって「壊れている」ように見える）
     if (!this.playing && !this.preview && this.particles.length === 0
+        && this.rings.length === 0
         && this.shake < 0.4 && this.flash < 0.02 && !this.chainPop) {
       this.stop();
       this.draw(t);
@@ -228,7 +261,12 @@ export class BoardView {
       this.burst(ev.i, this.colorOf(ev.player), 6);
     } else if (ev.t === 'boom') {
       const col = this.colorOf(ev.player);
-      this.burst(ev.i, col, 14);
+      // ★連鎖が伸びるほど粒を増やす★（オーナー指示「もっと派手な演出を出したいね」）
+      //   ただし this.budget（重いときに下がる）を必ず掛ける。派手さでコマ落ちさせない
+      this.burst(ev.i, col, 14 + Math.min(16, ev.chain * 2));
+      this.ring(ev.i, col, ev.chain);
+      // 大連鎖では白い火花も混ぜて「色が変わった」ように見せる
+      if (ev.chain >= 5) this.burst(ev.i, '#fff6d8', 8);
       for (const j of ev.to) if (j >= 0) this.trail(ev.i, j, col);
       if (this.fx !== 'light' && !this.reduced) {
         this.shake = Math.min(9, 2 + ev.chain * 0.5);
@@ -246,6 +284,33 @@ export class BoardView {
     this.flashAt = t;
     this.flash = 0.55;                           // 白飛びさせない（0.55まで）
     this.start();
+  }
+
+  /**
+   * はじけた場所から広がる輪（衝撃波）。★はじけた瞬間が「点」ではなく「広がり」に見える★
+   *   全画面フラッシュと違って**局所**なので、光過敏の観点でも安全側
+   *   （広い面積の明滅は1秒3回以下という制約は bigFlash 側で守っている）。
+   */
+  ring(i, color, chain = 1) {
+    if (this.reduced || this.fx === 'light') return;
+    if (this.rings.length > 40) return;
+    this.rings.push({
+      x: this.pad + (xOf(i) + 0.5) * this.cell,
+      y: this.pad + (yOf(i) + 0.5) * this.cell,
+      r: this.cell * 0.22,
+      max: this.cell * (1.0 + Math.min(1.4, chain * 0.12)),
+      life: 1,
+      color,
+    });
+  }
+
+  updateRings() {
+    for (let k = this.rings.length - 1; k >= 0; k--) {
+      const r = this.rings[k];
+      r.r += (r.max - r.r) * 0.22;
+      r.life -= 0.075;
+      if (r.life <= 0) this.rings.splice(k, 1);
+    }
   }
 
   burst(i, color, n) {
@@ -333,6 +398,17 @@ export class BoardView {
       ctx.restore();
     }
 
+    // 衝撃波の輪（はじけた場所から広がる）
+    for (const r of this.rings) {
+      ctx.globalAlpha = Math.max(0, r.life) * 0.55;
+      ctx.strokeStyle = r.color;
+      ctx.lineWidth = Math.max(1.5, cell * 0.07 * r.life);
+      ctx.beginPath();
+      ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
     // 光の粒
     for (const p of this.particles) {
       ctx.globalAlpha = Math.max(0, p.life) * 0.85;
@@ -391,7 +467,7 @@ export class BoardView {
 
     ctx.save();
     ctx.fillStyle = owner
-      ? (owner === this.mySeat ? 'rgba(247,215,116,0.13)' : 'rgba(127,140,255,0.13)')
+      ? (owner === this.goldSeat ? 'rgba(247,215,116,0.13)' : 'rgba(127,140,255,0.13)')
       : COLORS.cell;
     roundRect(ctx, x + 2, y + 2, cell - 4, cell - 4, 10);
     ctx.fill();

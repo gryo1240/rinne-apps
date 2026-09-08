@@ -5,12 +5,13 @@
  *   caches.keys() は**オリジン単位**で返るので、絞らないと同じGitHub Pages上の
  *   他アプリのキャッシュまで全部消してしまう。
  *
- * ★音源は別のキャッシュに分ける★
- *   コード側の版を上げるたびに数MBの音源まで道連れで消えて再ダウンロードになるため。
- *   （音源は中身が変わらないので、コードの版とは別に管理する）
+ * ★音源(mp3)はここで一切さわらない★
+ *   Rangeリクエストと Cache API の相性が悪く、溜まらないか、溜まっても再生を壊す。
+ *   詳しくは下の fetch ハンドラの説明を読むこと（2026-09-08 レビューで方針変更）。
  */
-const CACHE = 'lunachain-v2';
-const AUDIO_CACHE = 'lunachain-audio-v1';
+const CACHE = 'lunachain-v3';
+/* ★音源用のキャッシュは 2026-09-08 に廃止した★（下の fetch の説明を読むこと）
+   名前だけ残して activate の掃除対象から外し、古い端末に残った空の棚を消す。 */
 /* ★先読みするのは「版が付かないURL」だけ★
    JSは importmap で `?v=中身のハッシュ` 付きのURLとして読まれるので、
    版なしのURLを先読みしても実際には使われない（容量を食うだけ）。
@@ -27,7 +28,7 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => Promise.all(
-      keys.filter((k) => k.startsWith('lunachain-') && k !== CACHE && k !== AUDIO_CACHE)
+      keys.filter((k) => k.startsWith('lunachain-') && k !== CACHE)
           .map((k) => caches.delete(k))
     )).then(() => self.clients.claim())
   );
@@ -55,17 +56,16 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // 音源はキャッシュ優先（中身が変わらないので再検証する意味がない）
-  if (/\.(mp3|ogg|m4a|wav)$/i.test(url.pathname)) {
-    e.respondWith(caches.open(AUDIO_CACHE).then(async (c) => {
-      const hit = await c.match(req);
-      if (hit) return hit;
-      const res = await fetch(req);
-      if (res.ok && res.status === 200) c.put(req, res.clone());   // 206は入れない
-      return res;
-    }));
-    return;
-  }
+  /* ★音源はService Workerで一切さわらない★（2026-09-08 レビューで方針変更）
+     もとは「キャッシュ優先」で溜めようとしていたが、これは成立しない:
+       - `<audio>` からの取得にはブラウザが `Range: bytes=0-` を付ける。
+         GitHub Pages はこれに **206** で答えるので `cache.put` は入れられない
+         （Cache API は 206 を受け付けない）。つまり**永久に溜まらない**
+       - まぐれで200が溜まった場合は、今度は Range 付きの要求に
+         **フル(200)のレスポンスを返す**ことになり、Safari のメディア要素で再生に失敗しうる
+     素通ししてブラウザ本来のHTTPキャッシュに任せる。オフラインでBGMは鳴らなくなるが、
+     **オンラインで確実に鳴るほうが大事**（曲が無くても遊べる作りにしてある）。 */
+  if (/\.(mp3|ogg|m4a|wav)$/i.test(url.pathname)) return;
 
   e.respondWith(
     caches.match(req).then((hit) => hit || fetch(req).then((res) => {

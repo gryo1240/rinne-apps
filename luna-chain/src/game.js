@@ -14,17 +14,47 @@ import { N } from './core/board.js';
 import { newGame, applyMove, legalMoves, countCells, canPlace } from './core/rules.js';
 import { chooseMove, tierOf } from './ai/ai.js';
 
+/**
+ * 1戦を作る。
+ *
+ * ★席（1・2）と「誰が操作するか」を必ず分けて持つ★（2026-09-08 二人対戦の追加で作った）
+ *   もとは `mySeat` 1つが **操作権・自分の色・勝敗の記録** の3つを兼ねていた。
+ *   二人対戦（1台を交代して2人で遊ぶ）では「自分」が手番ごとに入れ替わるので、
+ *   この兼ね役のままだと必ずどこかがズレる（過去にも「後手だと自分が青になる」事故が起きている）。
+ *
+ *   → `control` に **席 → 誰が押すか** を持たせる。
+ *      画面側は「いま手番の席を人間が操作してよいか」だけを見ればよくなる。
+ *
+ *   vs=true … 両方の席を人間が押す（二人対戦）
+ *   vs=false… mySeat を人間、もう一方をCPUが押す
+ */
 export function createMatch(opts = {}) {
-  const { terrain, wrapX, tier = 3, oppName = '', mySeat = 1 } = opts;
+  const { terrain, wrapX, tier = 3, oppName = '', mySeat = 1, vs = false } = opts;
+  const me = mySeat === 2 ? 2 : 1;
   return {
     state: newGame({ terrain, wrapX }),
     tier,
-    mySeat,
+    mySeat: me,
+    vs: !!vs,
+    control: vs
+      ? { 1: 'human', 2: 'human' }
+      : { [me]: 'human', [3 - me]: 'cpu' },
     oppName,
     stats: { placed: { 1: 0, 2: 0 }, captured: { 1: 0, 2: 0 }, maxChain: { 1: 0, 2: 0 } },
     lastMove: -1,
-    history: [],            // 手の記録（デイリーの手数）
+    history: [],            // 手の記録
   };
+}
+
+/** いま手番の席を、人間が押してよいか（★画面はこれだけを見る★） */
+export function humanTurn(m) {
+  return !!m && !m.state.winner && m.control[m.state.player] === 'human';
+}
+
+/** CPUが押す席（いなければ0） */
+export function cpuSeat(m) {
+  if (!m) return 0;
+  return m.control[1] === 'cpu' ? 1 : (m.control[2] === 'cpu' ? 2 : 0);
 }
 
 /** 1手置く。返り値の events を画面が順に演出する */

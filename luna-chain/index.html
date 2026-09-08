@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ルナチェイン｜光をためて はじけさせる 陣取りゲーム【無料・登録不要】</title>
-<meta name="description" content="タップで光をためて、あふれたらはじけて相手の陣地をうばう。1回90秒の陣取り対戦。無料・登録不要・インストール不要。">
+<meta name="description" content="タップで光をためて、あふれたらはじけて相手の陣地をうばう。1回90秒の陣取り対戦。ひとりでも、1台で二人でも遊べる。無料・登録不要・インストール不要。">
 <meta name="theme-color" content="#070b1c">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style/base.css?v=d2aadcce">
+<link rel="stylesheet" href="style/base.css?v=b6158d01">
 <!-- BEGIN importmap (tools/gen_importmap.py が生成。手で書き換えない) -->
 <script type="importmap">
 {"imports":{
@@ -19,13 +19,12 @@
   "./src/core/board.js":"./src/core/board.js?v=1c452115",
   "./src/core/rng.js":"./src/core/rng.js?v=84ad8f5e",
   "./src/core/rules.js":"./src/core/rules.js?v=b1bd8382",
-  "./src/game.js":"./src/game.js?v=3e0893bf",
-  "./src/meta/daily.js":"./src/meta/daily.js?v=b222b847",
-  "./src/meta/progress.js":"./src/meta/progress.js?v=a2ab4529",
-  "./src/ui/app.js":"./src/ui/app.js?v=53620331",
-  "./src/ui/audio.js":"./src/ui/audio.js?v=e18f5c07",
+  "./src/game.js":"./src/game.js?v=9c63072b",
+  "./src/meta/progress.js":"./src/meta/progress.js?v=47d31a6d",
+  "./src/ui/app.js":"./src/ui/app.js?v=3493e9e1",
+  "./src/ui/audio.js":"./src/ui/audio.js?v=1e9b2bf3",
   "./src/ui/coach.js":"./src/ui/coach.js?v=101ec48c",
-  "./src/ui/render.js":"./src/ui/render.js?v=f2964461",
+  "./src/ui/render.js":"./src/ui/render.js?v=aecca5ce",
   "./data/tutorial.js":"./data/tutorial.js?v=9b51c858"
 }}
 </script>
@@ -34,15 +33,15 @@
 <body>
 
 <div id="app">
-  <!-- 対戦画面 -->
+  <!-- 対戦画面のヘッダ
+       ★2026-09-08 中身を入れ替えた★
+         もとはマス数・じんちのわりあい・相手の段位を出していたが、
+         「戦況が動きまくるので、有利不利が意味ない」（オーナー）ため撤去。
+         いまは **どちらの手番か** と **設定ボタン** だけ。
+       ★#hud という要素そのものは消さないこと★（通し検証が「盤に入ったか」の判定に使っている） -->
   <header id="hud" hidden>
-    <button id="btnBack" class="icon" aria-label="やめる">◀</button>
-    <div class="who">
-      <span id="myCells" class="cells p1">0</span>
-      <div class="gauge" aria-label="じんちのわりあい"><i id="gaugeFill"></i></div>
-      <span id="oppCells" class="cells p2">0</span>
-    </div>
-    <div id="oppInfo" class="opp"><span id="oppName">ルナ</span><span id="oppStars">★</span></div>
+    <div class="turn"><i id="turnDot"></i><span id="turnText">きみの ばん</span></div>
+    <button id="btnPause" class="icon" aria-label="せってい">⚙</button>
   </header>
 
   <main id="stage">
@@ -59,10 +58,10 @@
       <h1>ルナチェイン</h1>
       <p class="tag">ひかりをためて、はじけさせる。</p>
     </div>
-    <button id="btnPlay" class="big">あそぶ</button>
+    <button id="btnPlay" class="big">ひとりで あそぶ</button>
+    <button id="btnVs" class="big alt">ふたりで あそぶ</button>
     <nav class="menu">
       <button data-go="howto" class="lead">あそびかた</button>
-      <button data-go="daily">きょうの月</button>
       <button data-go="records">きろく</button>
       <button data-go="settings">せってい</button>
     </nav>
@@ -98,6 +97,9 @@
         <li>十字のマスは ひかりの 通り道。おけないが、ひかりは 通りぬける</li>
         <li>もやの かかったマスは しばらく おけない</li>
         <li>さきに おく人は 1戦ごとに ランダムで きまる（どちらも おなじ回数だけ おける）</li>
+        <li><b>ふたりで あそぶ</b>と、1台を こうたいで おして たたかえる。
+            <b>きんいろが さきばん</b>・あおが あとばん。盤は まわらないので よこに ならんで どうぞ</li>
+        <li>対戦中は 右上の <b>⚙</b> から 音・よこく・さいしょから・タイトルへ が えらべる</li>
       </ul>
     </details>
 
@@ -106,38 +108,45 @@
     <button class="ghost close" data-go="title">とじる</button>
   </section>
 
-  <!-- デイリー -->
-  <section id="scDaily" class="screen">
-    <h2>きょうの月</h2>
-    <p id="dailyDate" class="sub"></p>
-    <div class="row col">
-      <button id="btnDailyBattle" class="big">きょうの盤で たたかう</button>
-      <button id="btnTsume" class="big alt">きょうの詰めルナ</button>
-    </div>
-    <div id="dailyList" class="daylist"></div>
-    <button class="ghost close" data-go="title">とじる</button>
-  </section>
-
   <!-- 記録 -->
   <section id="scRecords" class="screen">
     <h2>きろく</h2>
     <div id="statBox" class="stats"></div>
-    <p class="sub">記録は この きたい（ブラウザ）だけに のこります</p>
+    <p class="sub">記録は この きたい（ブラウザ）だけに のこります<br>ふたりで あそんだ分は 記録に 入りません</p>
     <button class="ghost close" data-go="title">とじる</button>
   </section>
 
-  <!-- 設定 -->
+  <!-- 設定
+       ★この1つの画面を、タイトルからと対戦中の両方で使う★
+         対戦中は #pauseBtns が出て、#btnSettingsClose が隠れる（src/ui/app.js の renderSettings）。
+         対戦中は show() を通さずに .show を付け外しする——通すと対戦が捨てられるため。 -->
   <section id="scSettings" class="screen">
     <h2>せってい</h2>
-    <label class="opt"><input type="checkbox" id="optSound"> おと</label>
+
+    <h3>BGM（きょく）</h3>
+    <div id="bgmList" class="segs"></div>
+
+    <h3>BGMの おおきさ</h3>
+    <div id="volBgm" class="segs"></div>
+
+    <h3>こうかおんの おおきさ</h3>
+    <div id="volSe" class="segs"></div>
+
+    <h3>そのほか</h3>
     <label class="opt"><input type="checkbox" id="optPreview"> れんさの よこく（マスの数字）</label>
     <label class="opt"><input type="checkbox" id="optCoach"> 対戦中の あんない</label>
     <label class="opt"><input type="checkbox" id="optLight"> えんしゅつを ひかえめに</label>
-    <button class="ghost close" data-go="title">とじる</button>
+
+    <div id="pauseBtns" class="row col" hidden>
+      <button id="btnResume" class="big">つづける</button>
+      <button id="btnRestart" class="ghost">さいしょから</button>
+      <button id="btnQuit" class="ghost">タイトルへ</button>
+    </div>
+    <button id="btnSettingsClose" class="ghost close" data-go="title">とじる</button>
   </section>
 </div>
 
-<script type="module" src="src/ui/app.js?v=53620331"></script>
+<script type="module" src="src/ui/app.js?v=3493e9e1"></script>
 <noscript><p style="color:#fff;padding:2em">このゲームはJavaScriptが必要です。</p></noscript>
 
 <script>
