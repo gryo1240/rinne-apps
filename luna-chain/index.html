@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ルナチェイン｜光をためて はじけさせる 陣取りゲーム【無料・登録不要】</title>
+<meta name="description" content="タップで光をためて、あふれたらはじけて相手の陣地をうばう。1回90秒の陣取り対戦。無料・登録不要・インストール不要。">
+<meta name="theme-color" content="#070b1c">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="style/base.css?v=dbfa6d6b">
+<!-- BEGIN importmap (tools/gen_importmap.py が生成。手で書き換えない) -->
+<script type="importmap">
+{"imports":{
+  "./src/ai/ai.js":"./src/ai/ai.js?v=ab3c9361",
+  "./src/core/board.js":"./src/core/board.js?v=1c452115",
+  "./src/core/rng.js":"./src/core/rng.js?v=84ad8f5e",
+  "./src/core/rules.js":"./src/core/rules.js?v=1b18a39c",
+  "./src/game.js":"./src/game.js?v=2636bd29",
+  "./src/meta/code.js":"./src/meta/code.js?v=870c2029",
+  "./src/meta/daily.js":"./src/meta/daily.js?v=c18d183c",
+  "./src/meta/progress.js":"./src/meta/progress.js?v=922d800d",
+  "./src/ui/app.js":"./src/ui/app.js?v=4e5e24cb",
+  "./src/ui/audio.js":"./src/ui/audio.js?v=9c4d5a7a",
+  "./src/ui/render.js":"./src/ui/render.js?v=8564ac58",
+  "./data/cards.js":"./data/cards.js?v=7629e67d",
+  "./data/unlock.js":"./data/unlock.js?v=5c390da4"
+}}
+</script>
+<!-- END importmap -->
+</head>
+<body>
+
+<div id="app">
+  <!-- 対戦画面 -->
+  <header id="hud" hidden>
+    <button id="btnBack" class="icon" aria-label="やめる">◀</button>
+    <div class="who">
+      <span id="myCells" class="cells p1">0</span>
+      <div class="gauge" aria-label="つきのゲージ"><i id="gaugeFill"></i><span id="gaugeMoon">🌑</span></div>
+      <span id="oppCells" class="cells p2">0</span>
+    </div>
+    <div id="oppInfo" class="opp"><span id="oppName">ルナ</span><span id="oppStars">★</span></div>
+  </header>
+
+  <main id="stage">
+    <div id="boardBox"><canvas id="board"></canvas></div>
+    <div id="handSign" hidden>👆</div>
+  </main>
+
+  <footer id="cardbar" hidden></footer>
+
+  <!-- タイトル -->
+  <section id="scTitle" class="screen show">
+    <div class="logo">
+      <div class="logoMoon"></div>
+      <h1>ルナチェイン</h1>
+      <p class="tag">ひかりをためて、はじけさせる。</p>
+    </div>
+    <button id="btnPlay" class="big">あそぶ</button>
+    <nav class="menu">
+      <button data-go="daily">きょうの月</button>
+      <button data-go="deck">カード</button>
+      <button data-go="records">きろく</button>
+      <button data-go="settings">せってい</button>
+    </nav>
+    <p class="credit" id="credits"></p>
+  </section>
+
+  <!-- 結果 -->
+  <section id="scResult" class="screen">
+    <h2 id="resultTitle"></h2>
+    <p id="resultSub" class="sub"></p>
+    <div id="shardBox" class="shard"></div>
+    <div id="unlockBox" class="unlock" hidden></div>
+    <div class="row">
+      <button id="btnAgain" class="big">もういちど</button>
+      <button id="btnToTitle" class="ghost">やめる</button>
+    </div>
+  </section>
+
+  <!-- デッキ -->
+  <section id="scDeck" class="screen">
+    <h2>カード</h2>
+    <p id="deckHint" class="sub"></p>
+    <div id="deckList" class="cards"></div>
+    <button class="ghost close" data-go="title">とじる</button>
+  </section>
+
+  <!-- デイリー -->
+  <section id="scDaily" class="screen">
+    <h2>きょうの月</h2>
+    <p id="dailyDate" class="sub"></p>
+    <div class="row col">
+      <button id="btnDailyBattle" class="big">きょうの盤で たたかう</button>
+      <button id="btnTsume" class="big alt">きょうの詰めルナ</button>
+    </div>
+    <div id="dailyList" class="daylist"></div>
+    <button class="ghost close" data-go="title">とじる</button>
+  </section>
+
+  <!-- 記録・合言葉 -->
+  <section id="scRecords" class="screen">
+    <h2>きろく</h2>
+    <div id="statBox" class="stats"></div>
+    <h3>あいことば</h3>
+    <p class="sub">じぶんの編成コード（友だちにわたすと、きみの「かげ」と戦えます）</p>
+    <div class="codeRow"><code id="myCode">—</code><button id="btnCopy" class="ghost">コピー</button></div>
+    <p class="sub">友だちのコードを入れる</p>
+    <div class="codeRow"><input id="codeInput" placeholder="LC1-…" autocomplete="off" spellcheck="false"><button id="btnCodeGo" class="ghost">よみこむ</button></div>
+    <p id="codeMsg" class="msg"></p>
+    <div id="ghostList" class="ghosts"></div>
+    <button class="ghost close" data-go="title">とじる</button>
+  </section>
+
+  <!-- 設定 -->
+  <section id="scSettings" class="screen">
+    <h2>せってい</h2>
+    <label class="opt"><input type="checkbox" id="optSound"> おと</label>
+    <label class="opt"><input type="checkbox" id="optLight"> えんしゅつを ひかえめに</label>
+    <h3>データの ひきつぎ</h3>
+    <p class="sub">きしゅ変更やデータが消えたときのために、このコードを控えておいてください</p>
+    <div class="codeRow"><code id="saveCode">—</code><button id="btnCopySave" class="ghost">コピー</button></div>
+    <div class="codeRow"><input id="saveInput" placeholder="LC1-S…" autocomplete="off" spellcheck="false"><button id="btnSaveGo" class="ghost">もどす</button></div>
+    <p id="saveMsg" class="msg"></p>
+    <button class="ghost close" data-go="title">とじる</button>
+  </section>
+
+  <!-- カードの対象えらび -->
+  <div id="pickBar" hidden><span id="pickText"></span><button id="btnPickCancel" class="ghost">やめる</button></div>
+</div>
+
+<script type="module" src="src/ui/app.js?v=4e5e24cb"></script>
+<noscript><p style="color:#fff;padding:2em">このゲームはJavaScriptが必要です。</p></noscript>
+
+<script>
+/* ★起動に失敗しても「真っ黒のまま」にしない★
+   モジュールの読み込みが1つでもこけると画面が何も出ないまま止まる。
+   そのときは何が起きたかを画面に出す（原因が分からないと直せないため）。 */
+(function () {
+  var shown = false;
+  function rescue(what) {
+    if (shown) return; shown = true;
+    var d = document.createElement('div');
+    d.style.cssText = 'position:fixed;inset:0;z-index:999;background:#070b1c;color:#e8ecff;'
+      + 'font:14px/1.7 system-ui,sans-serif;padding:24px;overflow:auto';
+    d.innerHTML = '<h2 style="margin:0 0 8px">うまく はじめられませんでした</h2>'
+      + '<p style="color:#9aa3c9">ページを もういちど よみこんでみてください。</p>'
+      + '<pre style="white-space:pre-wrap;color:#f7d774;font-size:12px">' + String(what) + '</pre>';
+    document.body.appendChild(d);
+  }
+  window.addEventListener('error', function (e) {
+    if (e && e.target && e.target.tagName === 'SCRIPT') rescue('読み込めなかった: ' + (e.target.src || ''));
+    else rescue((e && e.message) || 'エラー');
+  }, true);
+  window.addEventListener('unhandledrejection', function (e) { rescue((e && e.reason) || '失敗'); });
+  /* 3秒たっても起動しきっていなければ、何かが止まっている。
+     ★「タイトルが見えているか」で判定してはいけない★——遊び始めるとタイトルは消えるので、
+     すぐに遊び始めた人に救済画面が誤爆して、盤の上に不透明な板が乗り操作不能になる。 */
+  setTimeout(function () {
+    if (!window.__lunaReady) rescue('画面が出ませんでした（モジュールの読み込みで止まっている可能性）');
+  }, 3000);
+
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+  }
+})();
+</script>
+</body>
+</html>

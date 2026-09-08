@@ -1,0 +1,225 @@
+/**
+ * ルナチェイン｜ルールの本体（純粋ロジック・DOMを一切触らない）
+ *
+ * ここはブラウザとNode（テスト・シミュレーター）で同じものを読む。
+ * ★画面側でルールを再計算しないこと★——同じ判定を2か所に書くと必ずズレる。
+ *
+ * 停止性についての考え方は board.js の冒頭を読むこと（「光が増えない」だけでは止まらない）。
+ */
+
+import { N, T_CLOUD, T_NORMAL, T_STARDUST, buildGeometry, orthOf } from './board.js';
+
+/** 1手の連鎖で許すはじけの最大回数（安全弁）。テストで発火0を確認している */
+export const MAX_EXPLOSIONS = 3000;
+
+export function newGame(opts = {}) {
+  const terrain = opts.terrain ? Int8Array.from(opts.terrain) : new Int8Array(N);
+  const cloud = new Int8Array(N);
+  for (let i = 0; i < N; i++) if (terrain[i] === T_CLOUD) cloud[i] = 3;
+  const s = {
+    owner: new Int8Array(N),
+    count: new Int8Array(N),
+    terrain, cloud,
+    wrapX: !!opts.wrapX,   // 盤の左右がつながっているか（旧「鏡」・盤単位の属性）
+    geo: null,
+    player: 1,
+    turn: 0,               // 完了した手番の数
+    moves: [0, 0],         // 各プレイヤーの完了手番数
+    left: 1,               // いまの手番であと何回置けるか
+    komi: opts.komi ?? 1,  // 後手の初手だけ追加で置ける数（先手有利の是正・§2-5）
+    maxTurns: opts.maxTurns ?? 120,   // 手番（片方の1手）の上限。実測で決着は平均75〜90手番=37〜45ラウンド
+    winner: 0,
+    endReason: '',
+    overflow: false,       // 安全弁が発火したら true（発火してはいけない）
+  };
+  rebuildGeometry(s);
+  return s;
+}
+
+/** 地形が変わったら必ず呼ぶ（カードで星屑や雲を足せるため） */
+export function rebuildGeometry(s) {
+  s.geo = buildGeometry(s.terrain, s.wrapX);
+}
+
+export function cloneState(s) {
+  return {
+    ...s,
+    owner: Int8Array.from(s.owner),
+    count: Int8Array.from(s.count),
+    terrain: Int8Array.from(s.terrain),
+    cloud: Int8Array.from(s.cloud),
+    moves: [s.moves[0], s.moves[1]],
+    geo: s.geo,   // 地形が変わらない限り共有してよい（変えるときは rebuildGeometry を呼ぶ）
+  };
+}
+
+export const isCloudy = (s, i) => s.cloud[i] > 0;
+export const isWallAt = (s, i) => s.terrain[i] === T_STARDUST;
+
+/** いま実際に効いている地形（雲は晴れたらふつうのマスに戻る） */
+export function effTerrain(s, i) {
+  if (s.terrain[i] === T_STARDUST) return T_STARDUST;
+  if (s.cloud[i] > 0) return T_CLOUD;
+  return s.terrain[i] === T_CLOUD ? T_NORMAL : s.terrain[i];
+}
+
+export const capAt = (s, i) => s.geo.cap[i];
+export const targetsAt = (s, i) => s.geo.targets[i];
+
+export function countCells(s, p) {
+  let n = 0;
+  for (let i = 0; i < N; i++) if (s.owner[i] === p) n++;
+  return n;
+}
+
+export function totalLight(s, p) {
+  let n = 0;
+  for (let i = 0; i < N; i++) if (s.owner[i] === p) n += s.count[i];
+  return n;
+}
+
+/** 置けるか＝星屑でも雲でもなく、空きマスか自分のマス */
+export function canPlace(s, i, player = s.player) {
+  if (i < 0 || i >= N) return false;
+  if (isWallAt(s, i) || isCloudy(s, i)) return false;
+  return s.owner[i] === 0 || s.owner[i] === player;
+}
+
+export function legalMoves(s, player = s.player) {
+  const a = [];
+  for (let i = 0; i < N; i++) if (canPlace(s, i, player)) a.push(i);
+  return a;
+}
+
+/**
+ * 1手打つ。連鎖の解決までまとめて行い、演出用のイベント列を返す。
+ * events: [{t:'place', i}, {t:'boom', i, to:[...], chain:n}, ...]
+ *   to の要素が -1 なら「雲に吸われた／盤の外へ抜けた」光
+ */
+export function applyMove(s, i) {
+  if (s.winner) return { ok: false, reason: 'finished', events: [], chain: 0 };
+  if (!canPlace(s, i)) return { ok: false, reason: 'illegal', events: [], chain: 0 };
+
+  const player = s.player;
+  const events = [{ t: 'place', i, player }];
+
+  s.count[i]++;
+  s.owner[i] = player;
+
+  const chain = resolveChain(s, player, i, events);
+
+  s.left--;
+  if (s.left <= 0) endTurn(s);
+
+  checkEnd(s, player);
+  return { ok: true, events, chain, winner: s.winner };
+}
+
+function endTurn(s) {
+  s.moves[s.player - 1]++;
+  s.turn++;
+  for (let k = 0; k < N; k++) if (s.cloud[k] > 0) s.cloud[k]--;
+  s.player = 3 - s.player;
+  s.left = (s.player === 2 && s.moves[1] === 0) ? 1 + s.komi : 1;
+}
+
+/** 両者が1手以上打ったか（開幕は相手のマスが0なので、これを見ないと初手で勝ちになる） */
+const bothMoved = (s) => s.moves[0] > 0 && s.moves[1] > 0;
+
+function resolveChain(s, player, start, events) {
+  const queue = [];
+  if (s.count[start] >= capAt(s, start)) queue.push(start);
+
+  let chain = 0, guard = 0, head = 0;
+  while (head < queue.length) {
+    const i = queue[head++];
+    const cap = capAt(s, i);
+    if (s.count[i] < cap) continue;
+
+    const tg = targetsAt(s, i);
+    s.count[i] -= tg.length;            // ★飛び先の数ちょうどを失う
+    if (s.count[i] === 0) s.owner[i] = 0;
+    chain++;
+
+    const landed = [];
+    for (const j of tg) {
+      if (j < 0 || isCloudy(s, j)) { landed.push(-1); continue; }  // 外へ抜けた／雲に吸われた
+      s.count[j]++;
+      s.owner[j] = player;
+      landed.push(j);
+      if (s.count[j] >= capAt(s, j)) queue.push(j);
+    }
+    events.push({ t: 'boom', i, to: landed, chain, player });
+
+    // 相手のマスが0になった瞬間に打ち切る（片方が盤を埋めた状態での無限連鎖を防ぐ）
+    if (bothMoved(s) && countCells(s, 3 - player) === 0) break;
+
+    if (++guard > MAX_EXPLOSIONS) { s.overflow = true; break; }
+  }
+  return chain;
+}
+
+function checkEnd(s, lastPlayer) {
+  if (s.winner) return;
+  if (bothMoved(s)) {
+    const oppCells = countCells(s, 3 - lastPlayer);
+    const ownCells = countCells(s, lastPlayer);
+    // 相手を全部奪ったら勝ち
+    if (oppCells === 0) { s.winner = lastPlayer; s.endReason = 'wipe'; return; }
+    // ★打った側が自滅するケースも定義しておく（雲や盤の外へ光が抜けて自分が0になる形がある）
+    if (ownCells === 0) { s.winner = 3 - lastPlayer; s.endReason = 'self'; return; }
+  }
+  if (s.turn >= s.maxTurns) {
+    const a = totalLight(s, 1), b = totalLight(s, 2);
+    s.winner = a > b ? 1 : 2;   // 同数なら後手（先手有利の是正を兼ねる・§2-4）
+    s.endReason = 'limit';
+  }
+}
+
+/**
+ * 「あと1手で逆転できたか」を調べる（§3-5）。煽りの演出ではなく実際に計算する。
+ * 見つからなければ -1 を返し、何も出さない。
+ */
+export function findWinningMove(s, player) {
+  for (const i of legalMoves(s, player)) {
+    const t = cloneState(s);
+    t.player = player;
+    t.left = 1;
+    const r = applyMove(t, i);
+    if (r.ok && t.winner === player) return i;
+  }
+  return -1;
+}
+
+/**
+ * 記録したイベントを1つだけ盤に反映する（★演出のための再生専用★）。
+ *
+ * 画面は「1手ぶんの結果」をいきなり描くのではなく、はじけを1つずつ見せたい。
+ * そのための途中経過を作る関数をここに置く——**画面側で連鎖のルールを書き直さないため**。
+ * 判断（どこがはじけるか）はしない。記録済みの出来事をなぞるだけ。
+ */
+export function applyEvent(disp, ev) {
+  if (ev.t === 'place') {
+    disp.count[ev.i]++;
+    disp.owner[ev.i] = ev.player;
+  } else if (ev.t === 'boom') {
+    disp.count[ev.i] -= ev.to.length;
+    if (disp.count[ev.i] < 0) disp.count[ev.i] = 0;
+    if (disp.count[ev.i] === 0) disp.owner[ev.i] = 0;
+    for (const j of ev.to) {
+      if (j < 0) continue;                    // 雲に吸われた／盤の外へ抜けた
+      disp.count[j]++;
+      disp.owner[j] = ev.player;
+    }
+  }
+  return disp;
+}
+
+/** 盤の状態を1つの文字列に（golden test で棋譜のハッシュを取るため） */
+export function boardSignature(s) {
+  let out = '';
+  for (let i = 0; i < N; i++) out += `${s.owner[i]}${s.count[i]}${effTerrain(s, i)}|`;
+  return out + `#p${s.player}t${s.turn}w${s.winner}x${s.wrapX ? 1 : 0}`;
+}
+
+export { orthOf };

@@ -1,0 +1,6 @@
+{
+  "name": "luna-chain",
+  "private": true,
+  "type": "module",
+  "description": "ルナチェイン｜Nodeでテストを走らせるためだけの設定。ブラウザは<script type=\"module\">で直接読むのでビルド工程は無い（輪廻の塔と同じ）"
+}

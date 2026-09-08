@@ -1,0 +1,16 @@
+{
+  "name": "ルナチェイン",
+  "short_name": "ルナチェイン",
+  "description": "ひかりをためて、はじけさせる。1回90秒の陣取り対戦。無料・登録不要。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#070b1c",
+  "theme_color": "#070b1c",
+  "lang": "ja",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
