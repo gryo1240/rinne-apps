@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style/base.css?v=4e70363b">
+<link rel="stylesheet" href="style/base.css?v=7a5dd94b">
 <!-- BEGIN importmap (tools/gen_importmap.py が生成。手で書き換えない) -->
 <script type="importmap">
 {"imports":{
@@ -21,11 +21,11 @@
   "./src/core/rules.js":"./src/core/rules.js?v=b1bd8382",
   "./src/game.js":"./src/game.js?v=9c63072b",
   "./src/meta/progress.js":"./src/meta/progress.js?v=6dc4b3a1",
-  "./src/ui/app.js":"./src/ui/app.js?v=9169f540",
+  "./src/ui/app.js":"./src/ui/app.js?v=e20fa546",
   "./src/ui/audio.js":"./src/ui/audio.js?v=cc0a10fe",
   "./src/ui/coach.js":"./src/ui/coach.js?v=08412dd1",
-  "./src/ui/render.js":"./src/ui/render.js?v=3b7a89c0",
-  "./src/version.js":"./src/version.js?v=f73173e2",
+  "./src/ui/render.js":"./src/ui/render.js?v=ec507d90",
+  "./src/version.js":"./src/version.js?v=3f43175f",
   "./data/tutorial.js":"./data/tutorial.js?v=78b74887"
 }}
 </script>
@@ -47,6 +47,13 @@
 
   <main id="stage">
     <div id="boardBox"><canvas id="board"></canvas></div>
+    <!-- 音符と星だけを描く、画面いっぱいのキャンバス（2026-09-09 追加）
+         ★盤の canvas は画面の60.6%しかなく、外に出た粒がその瞬間に消えていた★
+           「画面いっぱいにド派手に」（オーナー）は、盤の中に描いている限り物理的に出せない。
+           カットイン文字を #chainPop に移したのと同じ判断。
+         ★pointer-events:none を絶対に外さない★ 盤の上に重なる板なので、外すと盤が押せなくなる。
+         ★aria-hidden★ 読み上げには意味がない（情報は #chainPop の文字が持つ）。 -->
+    <canvas id="fx" aria-hidden="true"></canvas>
     <div id="handSign" hidden>👆</div>
     <!-- 対戦中の案内。★同時に1行だけ・24字以内★（src/ui/coach.js が正本） -->
     <div id="coach" hidden></div>
@@ -203,6 +210,12 @@
     <!-- 版番号（対戦中のせっていからも見える。押しても画面は移らない——
          対戦中に show() を通すと対戦が捨てられるため、ここは文字だけにする） -->
     <p class="verline sub" id="verSettings"></p>
+    <!-- この端末の状態（2026-09-09 追加）
+         ★「演出が出ない」の原因が、アプリ側か端末側かを 見ただけで切り分けるための1行★
+           端末の「アニメーションを減らす」が入っていると 画面は揺れない。
+           それを画面に出していなかったので、オーナーとのやり取りが2往復むだになった。
+           版番号を出したのと同じ理由（見えないものは確認できない）。 -->
+    <p class="verline sub" id="devSettings"></p>
 
     <div id="pauseBtns" class="row col" hidden>
       <button id="btnResume" class="big">つづける</button>
@@ -213,7 +226,7 @@
   </section>
 </div>
 
-<script type="module" src="src/ui/app.js?v=9169f540"></script>
+<script type="module" src="src/ui/app.js?v=e20fa546"></script>
 <noscript><p style="color:#fff;padding:2em">このゲームはJavaScriptが必要です。</p></noscript>
 
 <script>

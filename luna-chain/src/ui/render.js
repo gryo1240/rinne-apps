@@ -57,12 +57,19 @@ export const POP_TEXT_CHAIN = 2;
  *   どのマスを押したのか分からなくなる。盤の縮尺に紐づけて、どの大きさでも同じ強さに見せる。
  */
 export const SHAKE = {
-  min: 6,            // 1連鎖の振幅(px)。★これ未満は知覚できない★
+  /* ★max(24px) に届くのは 9連鎖以上＝実際には起きない★（2026-09-09 実測）
+       §0-8 の実測では 41〜50手でも3連鎖は7%。**遊んでいる人が生涯見る揺れは min〜13px の帯だけ**なので、
+       「上限を上げるか」は的外れで、効くのは min と perChain しかない。
+       上限を触る前に、必ずこの帯の実測から考えること。 */
+  min: 9,            // 1連鎖の振幅(px)。★これ未満は知覚できない★（6pxでは「揺れていない」と2回言われた）
   perChain: 2.2,     // 連鎖が1増えるごとに足す(px)
   max: 24,           // 振幅の上限(px)。★§5-4（酔い）側の安全上限。上げないこと★
   cellRatio: 0.55,   // 1マスの何倍まで。小さい盤ではこちらが効く
   msSmall: 200,      // 1連鎖の長さ(ms)。短いほど疲れない
   msBig: 340,        // 2連鎖以上の長さ(ms)。★0.45秒を超えないこと★
+  /* ★「ひかえめ」のときの倍率★ 0 にしない（＝消さない）。§5-4が求めているのは「弱める」。
+       reduced-motion は別扱い（揺れは0にする。下の SOFT の説明を読むこと）。 */
+  lightScale: 0.4,
 };
 
 /** その連鎖数のときに実際に動かす px（cell を知っている側で計算する） */
@@ -95,19 +102,34 @@ export const GLYPH = {
        → size ≦ cell×0.57。1.25 は **にじみ（glow）のぶん**。
        にじみを数えないと、測った面積より実際に光る面積のほうが広くなる。 */
   maxAlive: 30,        // 同時に生きていられる数（★面積予算18%から逆算★。増やすなら再計測）
-  base: 1.5,           // 1はじけあたりの発生数＝base + perChain×連鎖数
-  perChain: 0.9,
-  maxPerBoom: 10,
+  /* ★1はじけの枚数を増やしても、同時に光る面積の最悪値は変わらない★
+       面積を縛っているのは maxAlive×最大サイズであって、1はじけの枚数ではない。
+       枚数を増やすと「低い連鎖でも早く上限まで濃くなる」だけ。
+       低い連鎖（1〜3）しか実際には起きないので、効くのはここ。 */
+  base: 4,             // 1はじけあたりの発生数＝base + perChain×連鎖数
+  perChain: 1.6,
+  /* ★天井は連鎖10で当たるようにする★ 14 だと連鎖4.5で頭打ちになり、
+       「連鎖が増えるごとにド派手に」というお題が 1〜4 の範囲でしか効かなくなる。 */
+  maxPerBoom: 20,
   sizeBase: 0.36,      // 大きさ＝cell×(sizeBase + min(sizeGain, 連鎖×sizeStep))
   sizeStep: 0.03,
   sizeGain: 0.20,      // ★これで上限 cell×0.56★
   glow: 1.25,          // にじみを入れた実際の光る幅（面積の計算に使う）
-  speed: 2.0,          // 初速（cell=48 のときの px/frame）。散らばりの広さ
-  speedRand: 3.4,
+  /* ★初速は「画面の高さぶん飛べるか」で決める★（2026-09-09 実測で判明）
+       音符と星は #fx（画面いっぱい）に描くようになったので、盤の外まで飛べる。
+       初速が足りないと、キャンバスだけ広げても盤の周りに固まったままになる。 */
+  speed: 3.2,          // 初速（cell=48 のときの px/frame）。散らばりの広さ
+  speedRand: 5.0,
   gravity: 0.10,       // 落ちる（放物線を描くと「爆発」でなく「祝祭」に見える）
   spin: 0.18,          // 回転の上限(rad/frame)。これ以上はバグに見える
   fade: 0.024,         // 1フレームで減る寿命（≒0.7秒）
-  areaLimit: 0.18,     // 盤の面積に対する、同時に光ってよい割合
+  /* ★分母は「盤」ではなく「描いている画面」★（2026-09-09 修正）
+       §5-4 が気にしているのは**画面のうちどれだけが光るか**。
+       v1.6 までは盤の面積で割っていたが、音符と星は #fx（画面いっぱい）に描くので分母が違っていた。
+       ★同時に光る絶対面積（px²）は v1.6 から増やしていない★——maxAlive も最大サイズも据え置き。
+       変えたのは「同じ光を、より広い範囲に散らす」ことと、割り算の分母だけ。
+       正しい割合は glyphAreaRatio() が返す。 */
+  areaLimit: 0.18,     // 描画面（#fx）の面積に対する、同時に光ってよい割合
 };
 
 /** 演出の総時間の上限（ミリ秒）。20連鎖でも300連鎖でもここに収める */
@@ -140,6 +162,16 @@ export class BoardView {
   constructor(canvas, opts = {}) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
+    /* ★音符と星だけは「画面いっぱいのキャンバス」に描く★（2026-09-09 追加）
+         盤の canvas は 426×495＝画面の 60.6% しかなく、**盤の外に出た粒はその瞬間に消えていた**。
+         「画面いっぱいにド派手に」は、この作りのままでは物理的に出せない（実測で判明）。
+         カットイン文字を 2026-09-08 に DOM へ移したのと同じ判断を、粒にも適用する。
+         ★渡されなければ盤の canvas に描く（今までどおり）★——
+           テストと、万一 #fx が無い版の index.html でも壊れないため。 */
+    this.fxCanvas = opts.fxCanvas || null;
+    this.fxCtx = this.fxCanvas ? this.fxCanvas.getContext('2d') : null;
+    this.fxW = 0; this.fxH = 0;      // 描画面の大きさ(CSS px)
+    this.fxOff = { x: 0, y: 0 };     // 描画面の中での「盤の左上」
     this.cell = 48;
     this.pad = 6;
     this.disp = null;          // 表示用の盤（本物とは別）
@@ -182,6 +214,23 @@ export class BoardView {
   }
 
   setEffects(level) { this.fx = level; }
+
+  /* ★配慮設定は2種類あり、意味が違う★（2026-09-09 分離）
+       v1.6 までは `fx==='light' || reduced` と1つに潰していたため、
+       **どちらでも 揺れも粒も音符も全部ゼロ**になっていた。
+       仕様§5-4 が求めているのは「弱める」であって「消す」ではない。
+
+       motionOff … 端末の prefers-reduced-motion。前庭障害（乗り物酔い）への配慮。
+                   ★動かすこと自体が問題★なので **揺れは止める**。
+                   ただし音符と星は「その場に出してフェード」で見せる（動かなければ問題ない）。
+                   ゆっくり動かす、は逆効果なので絶対にやらない。
+       weakened  … アプリの「えんしゅつを ひかえめに」。まぶしい・うるさいを弱める設定。
+                   ★止めるのではなく薄くする★ 揺れも粒も倍率をかけて出す。
+       両方入っていることもある（そのときは「動かさず、かつ少なく」）。 */
+  get motionOff() { return !!this.reduced; }
+  get weakened() { return this.fx === 'light'; }
+  /** 演出の量にかける倍率（0にはしない＝消さない） */
+  get fxScale() { return this.weakened ? SHAKE.lightScale : 1; }
 
   /**
    * 盤ぜんぶの連鎖予告を出す（自分の手番のあいだ、ずっと見えている）。
@@ -259,7 +308,35 @@ export class BoardView {
     this.canvas.style.width = w + 'px';
     this.canvas.style.height = h + 'px';
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.resizeFx(dpr, w, h);
     this.draw();
+  }
+
+  /**
+   * 画面いっぱいのキャンバス(#fx)を、盤と同じ倍率で用意する。
+   * ★盤の左上が #fx のどこに来るかを必ず測り直す★
+   *   #boardBox は中央寄せなので、盤の大きさが変わるとオフセットも変わる。
+   *   ここを更新し忘れると、音符と星が盤とずれた場所から飛び出す（見た目だけの不具合なので気づきにくい）。
+   */
+  resizeFx(dpr, boardW, boardH) {
+    if (!this.fxCanvas || !this.fxCtx) {
+      // #fx が無いときは「盤の中だけ」が描画面。分母もそれに合わせる（今までどおりの動き）
+      this.fxW = boardW; this.fxH = boardH;
+      this.fxOff = { x: 0, y: 0 };
+      return;
+    }
+    const box = this.fxCanvas.parentElement;
+    const w = Math.max(1, box.clientWidth);
+    const h = Math.max(1, box.clientHeight);
+    this.fxCanvas.width = Math.round(w * dpr);
+    this.fxCanvas.height = Math.round(h * dpr);
+    this.fxCanvas.style.width = w + 'px';
+    this.fxCanvas.style.height = h + 'px';
+    this.fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.fxW = w; this.fxH = h;
+    const br = this.canvas.getBoundingClientRect();
+    const fr = this.fxCanvas.getBoundingClientRect();
+    this.fxOff = { x: br.left - fr.left, y: br.top - fr.top };
   }
 
   /** タップされた座標をマス番号に変換（外れたら -1） */
@@ -375,7 +452,10 @@ export class BoardView {
            で、**1局の大半で演出が一度も出ない**（オーナー「〇連鎖とか揺れは全然ないよ」）。
            1連鎖以上なら 11〜20手で17%、31〜40手で29〜39%あるので、ここを入口にする。
            出し分けは画面側（app.js）の仕事: 1連鎖＝小さく揺らすだけ、2連鎖以上＝カットイン。 */
-      const soft = this.fx === 'light' || this.reduced;   // 動きを抑える設定・端末
+      /* ★soft = 「画面を揺らさない」だけの意味★（2026-09-09 に意味を狭めた）
+           揺らさないのは prefers-reduced-motion のときだけ。
+           「ひかえめ」は**弱めて揺らす**（app.js が SHAKE.lightScale を掛ける）。 */
+      const soft = this.motionOff;
       // ★同じ手のあいだは「より大きくなったとき」だけ知らせる★
       //   1手のあいだに3→4→5…と伸びるので、毎回出すと点滅になる（光過敏の配慮）
       if (ev.chain >= POP_MIN_CHAIN && (!this.chainPop || ev.chain > this.chainPop.n)) {
@@ -433,8 +513,11 @@ export class BoardView {
   }
 
   burst(i, color, n) {
-    if (this.reduced) return;
-    const count = Math.round(n * this.budget * (this.fx === 'light' ? 0.3 : 1));
+    /* ★光の粒は「速く飛ぶ」ことが本体★なので、prefers-reduced-motion では出さない。
+         消しても情報は失われない——同じ場所に、動かない音符と星が出るため。
+         （何も無いと伝わらない、という §5-4 の要求は spawnGlyphs 側で満たしている） */
+    if (this.motionOff) return;
+    const count = Math.round(n * this.budget * (this.weakened ? 0.3 : 1));
     const cx = this.pad + (xOf(i) + 0.5) * this.cell;
     const cy = this.pad + (yOf(i) + 0.5) * this.cell;
     for (let k = 0; k < count; k++) {
@@ -452,21 +535,30 @@ export class BoardView {
    *   派手さは「段階で色が上がる」（5連鎖でクリーム・8連鎖で白）で出す。
    */
   spawnGlyphs(i, color, chain) {
-    if (this.reduced || this.fx === 'light') return;
+    /* ★どの設定でも 1枚は必ず出す★（2026-09-09）
+         v1.6 は「ひかえめ」と reduced-motion で **0枚** にしていた。
+         それでは その設定の子には「はじけたこと」自体が伝わらない（§5-4は「弱める」）。 */
     const n = Math.min(GLYPH.maxPerBoom,
-                       Math.max(1, Math.round((GLYPH.base + GLYPH.perChain * chain) * this.budget)));
-    const cx = this.pad + (xOf(i) + 0.5) * this.cell;
-    const cy = this.pad + (yOf(i) + 0.5) * this.cell;
+                       Math.max(1, Math.round((GLYPH.base + GLYPH.perChain * chain)
+                                              * this.budget * this.fxScale)));
+    // ★描画面(#fx)のなかの座標にする★ 盤の canvas 基準のままだと、盤の左上ぶんずれる
+    const cx = this.fxOff.x + this.pad + (xOf(i) + 0.5) * this.cell;
+    const cy = this.fxOff.y + this.pad + (yOf(i) + 0.5) * this.cell;
     const size = this.cell * (GLYPH.sizeBase + Math.min(GLYPH.sizeGain, chain * GLYPH.sizeStep));
     const hot = chain >= 8 ? '#ffffff' : (chain >= 5 ? '#fff6d8' : color);
     for (let k = 0; k < n; k++) {
       const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.2;      // 上向きに散らす
-      const sp = (GLYPH.speed + Math.random() * GLYPH.speedRand) * (this.cell / 48);
+      /* ★prefers-reduced-motion では初速ゼロ＝その場でふわっと出て消える★
+           「ゆっくり動かす」にしないこと。ゆっくりの移動は前庭系にはむしろ悪い。
+           位置と色と枚数だけで「どこで何連鎖したか」は伝わる。 */
+      const sp = this.motionOff ? 0
+        : (GLYPH.speed + Math.random() * GLYPH.speedRand) * (this.cell / 48);
       const g = {
         x: cx, y: cy,
         vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
         rot: Math.random() * Math.PI * 2,
-        spin: (Math.random() - 0.5) * Math.min(GLYPH.spin, 0.06 + chain * 0.010) * 2,
+        spin: this.motionOff ? 0
+          : (Math.random() - 0.5) * Math.min(GLYPH.spin, 0.06 + chain * 0.010) * 2,
         size, life: 1, age: 0,
         star: Math.random() < 0.5,
         color: Math.random() < 0.35 ? hot : color,
@@ -479,7 +571,8 @@ export class BoardView {
 
   updateGlyphs() {
     const gs = this.glyphs;
-    const grav = GLYPH.gravity * (this.cell / 48);
+    // ★動きを止める設定では重力もかけない★（落下も「動き」）。寿命だけが進む
+    const grav = this.motionOff ? 0 : GLYPH.gravity * (this.cell / 48);
     for (let k = gs.length - 1; k >= 0; k--) {
       const g = gs[k];
       g.x += g.vx; g.y += g.vy;
@@ -493,6 +586,16 @@ export class BoardView {
   }
 
   /** いま光っている音符・星の面積（★§5-4の面積予算を測るのはここ★） */
+  /**
+   * いま光っている音符・星が、**描画面のうち何割を占めるか**（0〜1）。
+   * ★§5-4の面積予算はこの値で見る★ テスト側で割り算をしない——
+   *   分母（盤か画面か）を2か所に書くと、v1.6 でやったように片方だけ古くなる。
+   */
+  glyphAreaRatio() {
+    const area = this.fxW * this.fxH;
+    return area > 0 ? this.glyphArea() / area : 0;
+  }
+
   glyphArea() {
     let a = 0;
     // ★にじみのぶんまで数える★ 見えている光は文字の枠より広い
@@ -508,8 +611,9 @@ export class BoardView {
   }
 
   /** 星（5芒星）と音符を線で描く。★フォントに頼らない★ */
-  drawGlyph(g) {
-    const { ctx } = this;
+  drawGlyph(g, target = null) {
+    const ctx = target || this.fxCtx || this.ctx;
+    if (!ctx) return;
     ctx.save();
     ctx.globalAlpha = this.glyphAlpha(g);
     ctx.translate(g.x, g.y);
@@ -643,9 +747,9 @@ export class BoardView {
     }
     ctx.globalAlpha = 1;
 
-    // 音符と星（★いちばん上に重ねる★ 粒の下に敷くと埋もれて「出ていない」ように見える）
-    for (const g of this.glyphs) this.drawGlyph(g);
-    ctx.globalAlpha = 1;
+    /* ★音符と星はここでは描かない★（2026-09-09 #fx へ移設）
+         盤の canvas は画面の 60.6% しかなく、外に出た粒が消えていた。
+         描くのは下の drawFx()。ここに描き戻すと「盤の周りに固まる」に逆戻りする。 */
 
     /* ★連鎖数のカットインは、ここでは描かない★
        盤のキャンバスは盤の大きさしか無いので「画面全面」にできない。
@@ -658,6 +762,30 @@ export class BoardView {
       ctx.fillRect(-10, -10, w + 20, h + 20);
     }
     ctx.restore();
+
+    this.drawFx();
+  }
+
+  /**
+   * 画面いっぱいのキャンバス(#fx)に、音符と星だけを描く。
+   *
+   * ★毎フレーム必ず全面を消す★
+   *   粒が0枚でも呼ぶこと。消さないと、最後の1枚が画面に焼き付いたまま残る。
+   *
+   * ★背景は塗らない★
+   *   §5-4「画面いっぱいの背景の塗りつぶしをしない」。ここは透明のまま重ねる板であって、
+   *   一枚の絵ではない。塗った瞬間に盤が見えなくなる。
+   */
+  drawFx() {
+    const ctx = this.fxCtx;
+    if (!ctx) {
+      // #fx が無い版では、今までどおり盤の canvas に描く（描かないと「出ていない」になる）
+      if (this.ctx) { for (const g of this.glyphs) this.drawGlyph(g, this.ctx); this.ctx.globalAlpha = 1; }
+      return;
+    }
+    ctx.clearRect(0, 0, this.fxW, this.fxH);
+    for (const g of this.glyphs) this.drawGlyph(g, ctx);
+    ctx.globalAlpha = 1;
   }
 
   drawCell(i, t) {

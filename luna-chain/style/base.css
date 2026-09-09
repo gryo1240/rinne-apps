@@ -54,6 +54,39 @@ button.icon{
 #boardBox{width:100%; height:100%; display:flex; align-items:center; justify-content:center}
 /* ★touch-action:none★ 指を置いたまま動かして予告を見る操作を、スクロールに奪われないため */
 canvas{display:block; border-radius:16px; touch-action:none}
+
+/* ── 音符と星のキャンバス（画面いっぱい）─────────────
+   ★pointer-events:none を外さないこと★
+     盤の上に全面で重なる板。外すと盤が1マスも押せなくなる。
+     過去に、救済画面（position:fixed の板）が誤爆して操作不能になった事故がある。
+   ★背景を持たせないこと★ §5-4「画面いっぱいの背景の塗りつぶしをしない」。
+     透明のまま重ね、JS も clearRect しかしない（塗るのは音符と星だけ）。 */
+#fx{
+  position:absolute; inset:0; width:100%; height:100%;
+  pointer-events:none;
+  border-radius:0;          /* 全面なので角丸は要らない（canvas の共通指定を打ち消す） */
+  /* ★z-index を付けないこと★
+       付けない（auto）と、同じ #stage の中では **HTMLに書いた順** で重なる。
+       #fx → #handSign → #coach の順に書いてあるので、
+         ・盤（#boardBox は position 指定なし＝positioned要素より必ず下）より上に描かれ、
+         ・れんしゅうの指マークと 対戦中の案内は 音符と星に隠されない。
+       z-index:2 を付けると案内より上に来てしまい、案内が粒に埋もれる。
+       カットイン文字(#chainPop, z-index:5)より下なのは、どちらの書き方でも変わらない。 */
+}
+
+/* ── 盤のふち ──────────────────────────
+   ★揺れが見えない原因は「振幅」ではなく「基準線が無いこと」だった★（2026-09-09 実測）
+     盤の canvas は 426px、画面は 430px。盤の背景(#070b1c→#111a3a)と
+     body の背景(#16204a→#070b1c)がほぼ同じ暗さなので、
+     **同じ色の闇の上を、同じ色の闇が動いている**状態だった。
+     読める線を1本置くと、同じ振幅でも「揺れた」と分かる。 */
+#board{box-shadow:0 0 0 2px rgba(247,215,116,.30), 0 10px 34px rgba(0,0,0,.55)}
+/* はじけた瞬間だけ、ふちを光らせる。★局所の発光★なので §5-4 の全画面フラッシュには当たらない。
+   ★揺れとは別のクラスにしてある★——動きを止めている端末でも、これは出す（「弱める」であって「消す」ではない）。 */
+#stage.rim #board{
+  box-shadow:0 0 0 3px rgba(247,215,116,.95), 0 0 30px rgba(247,215,116,.45), 0 10px 34px rgba(0,0,0,.55);
+  transition:box-shadow .09s linear;
+}
 #handSign{
   position:absolute; font-size:34px; pointer-events:none;
   animation:tap 1.1s ease-in-out infinite; filter:drop-shadow(0 2px 6px #000);
@@ -309,28 +342,33 @@ button.ghost{
 #stage.shake{animation:screenShake var(--skms) linear both}
 /* ★1連鎖用（短い）★ 同じ型を200msでかけると約22Hzになりブレて見えるので、往復を減らす */
 #stage.shake.small{animation-name:screenShakeSmall}
+/* ★たて方向を よこと同じ強さまで上げてある★（2026-09-09）
+     よこは 盤426px・画面430px で余白が4pxしかなく、動かしても「隠れている端」が見えない。
+     たては #stage 約810px に対し盤 495px で余白が十分あるので、たてのほうがよく見える。
+     ★係数の絶対値は 1.0 を超えないこと（よこ・たてとも）★
+       超えると JS の SHAKE.max(24px) が嘘になる。test-render.mjs が よこ・たて両方を検査する。 */
 @keyframes screenShakeSmall{
   0%  {transform:translate(0,0)}
-  14% {transform:translate(calc(var(--sk) * -1),   calc(var(--sk) * .5))}
-  30% {transform:translate(calc(var(--sk) * .92),  calc(var(--sk) * -.5))}
-  46% {transform:translate(calc(var(--sk) * -.72), calc(var(--sk) * -.3))}
-  62% {transform:translate(calc(var(--sk) * .54),  calc(var(--sk) * .36))}
-  78% {transform:translate(calc(var(--sk) * -.34), calc(var(--sk) * .2))}
-  90% {transform:translate(calc(var(--sk) * .18),  calc(var(--sk) * -.12))}
+  14% {transform:translate(calc(var(--sk) * -1),   calc(var(--sk) * .86))}
+  30% {transform:translate(calc(var(--sk) * .92),  calc(var(--sk) * -.84))}
+  46% {transform:translate(calc(var(--sk) * -.72), calc(var(--sk) * -.62))}
+  62% {transform:translate(calc(var(--sk) * .54),  calc(var(--sk) * .58))}
+  78% {transform:translate(calc(var(--sk) * -.34), calc(var(--sk) * .36))}
+  90% {transform:translate(calc(var(--sk) * .18),  calc(var(--sk) * -.2))}
   100%{transform:translate(0,0)}
 }
 @keyframes screenShake{
   0%  {transform:translate(0,0)}
-  9%  {transform:translate(calc(var(--sk) * -1),   calc(var(--sk) * .55))}
-  18% {transform:translate(calc(var(--sk) * .92),  calc(var(--sk) * -.6))}
-  27% {transform:translate(calc(var(--sk) * -.84), calc(var(--sk) * -.4))}
-  36% {transform:translate(calc(var(--sk) * .76),  calc(var(--sk) * .5))}
-  45% {transform:translate(calc(var(--sk) * -.66), calc(var(--sk) * .3))}
-  54% {transform:translate(calc(var(--sk) * .56),  calc(var(--sk) * -.42))}
-  63% {transform:translate(calc(var(--sk) * -.44), calc(var(--sk) * -.24))}
-  72% {transform:translate(calc(var(--sk) * .34),  calc(var(--sk) * .28))}
-  81% {transform:translate(calc(var(--sk) * -.22), calc(var(--sk) * .14))}
-  90% {transform:translate(calc(var(--sk) * .12),  calc(var(--sk) * -.1))}
+  9%  {transform:translate(calc(var(--sk) * -1),   calc(var(--sk) * .9))}
+  18% {transform:translate(calc(var(--sk) * .92),  calc(var(--sk) * -.94))}
+  27% {transform:translate(calc(var(--sk) * -.84), calc(var(--sk) * -.72))}
+  36% {transform:translate(calc(var(--sk) * .76),  calc(var(--sk) * .8))}
+  45% {transform:translate(calc(var(--sk) * -.66), calc(var(--sk) * .58))}
+  54% {transform:translate(calc(var(--sk) * .56),  calc(var(--sk) * -.66))}
+  63% {transform:translate(calc(var(--sk) * -.44), calc(var(--sk) * -.44))}
+  72% {transform:translate(calc(var(--sk) * .34),  calc(var(--sk) * .46))}
+  81% {transform:translate(calc(var(--sk) * -.22), calc(var(--sk) * .26))}
+  90% {transform:translate(calc(var(--sk) * .12),  calc(var(--sk) * -.18))}
   100%{transform:translate(0,0)}
 }
 /* ★「ひかえめ」のとき★ 拡大も回転もせず、ふわっと出て消えるだけにする。
@@ -345,7 +383,10 @@ button.ghost{
 }
 @media (prefers-reduced-motion: reduce){
   /* 動きは止めるが、文字は出る（animation:none なので拡大も回転もしないまま表示される）。
-     消える責任は app.js の POP_MS のタイマーが持つ。 */
+     消える責任は app.js の POP_MS のタイマーが持つ。
+     ★#stage.rim（ふちの光）はここで消さないこと★
+       これは「移動」ではなく「明るさの変化」なので、前庭障害の配慮の対象外。
+       ここまで消すと、この設定の端末には**はじけたことが何も伝わらなくなる**（v1.6 の失敗）。 */
   #chainPop.play{animation:none}
   #stage.shake{animation:none}
 }
@@ -356,6 +397,8 @@ button.ghost{
   margin:6px 0 0; padding:4px 10px; background:none; border:0;
   color:var(--dim); font-size:12px; letter-spacing:.04em; font-family:inherit;
 }
+/* 端末の設定で演出が止まっていることを知らせる行（ふつうのときは目立たせない） */
+.verline.warn{color:#f7d774}
 button.verline{cursor:pointer; text-decoration:underline; text-underline-offset:3px}
 button.verline:hover{color:var(--fg)}
 .news{width:100%; max-width:440px; text-align:left}

@@ -29,12 +29,13 @@ import { loadSave, writeSave, loadDevice, writeDevice, recordMatch } from '../me
 import { makeRng } from '../core/rng.js';
 import { TUTORIALS, handIdx } from '../../data/tutorial.js';
 import { Coach } from './coach.js';
-import { BoardView, DOTS, stepFor, POP_TEXT_CHAIN, shakeAmp, shakeMs } from './render.js';
+import { BoardView, DOTS, stepFor, POP_TEXT_CHAIN, shakeAmp, shakeMs, SHAKE } from './render.js';
 import * as Audio from './audio.js';
 
 const $ = (id) => document.getElementById(id);
 const el = {
   hud: $('hud'), board: $('board'), stage: $('stage'),
+  fx: $('fx'),                 // 音符と星を描く、画面いっぱいのキャンバス
   turnDot: $('turnDot'), turnText: $('turnText'),
   handSign: $('handSign'), coach: $('coach'),
   chainPop: $('chainPop'), chainPopNum: $('chainPopNum'),
@@ -91,7 +92,10 @@ function show(name) {
 
 // ── 起動 ────────────────────────────────────
 function boot() {
-  view = new BoardView(el.board, { fx: device.effects });
+  /* ★#fx（画面いっぱいのキャンバス）を渡す★
+       音符と星だけはここに描く。渡さないと盤の中にしか描けず、
+       「画面いっぱいにド派手に」（オーナー）が盤の周りの小さな散らばりに戻る。 */
+  view = new BoardView(el.board, { fx: device.effects, fxCanvas: el.fx || null });
   Audio.setSeVol(device.seVol);
   Audio.setBgmVol(device.bgmVol);
   Audio.setBgmSong(device.bgm || Audio.DEFAULT_BGM);
@@ -586,6 +590,11 @@ function updateHud() {
 const POP_MS = 640;            // 出しておく時間。★POP_MIN_MS より長くすること★
 let popTimer = null;
 let shakeTimer = null;
+/* ★ふちの光は、揺れとは別のタイマーで持つ★
+   動きを止めている端末では揺れのタイマーが動かないので、
+   同じタイマーに相乗りさせると、その端末でふちが消えなくなる（光りっぱなし＝§5-4 違反）。 */
+let rimTimer = null;
+const RIM_MS = 340;            // ふちが光っている時間。揺れの長さ(msBig)と揃える
 
 /**
  * はじけたことを画面で知らせる。★出し分けはここ1か所★
@@ -594,6 +603,23 @@ let shakeTimer = null;
  * soft（ひかえめ設定・reduced-motion）のときは **文字だけ出して揺らさない**。
  *   ★消さない★ 仕様書§5-4が求めているのは「弱める」であって「消す」ではない。
  */
+/**
+ * 「この端末の状態」を1行で出す。★見えないものは確認できない★
+ *   端末の「アニメーションを減らす」が入っていると画面は揺れない仕様なので、
+ *   それを表に出しておかないと「アプリが壊れている」と「端末の設定」を区別できない。
+ *   ★やさしい日本語で・24字以内★（画面のほかの案内と同じ制約）
+ */
+function paintDeviceLine() {
+  const p = $('devSettings');
+  if (!p) return;
+  const reduced = !!(globalThis.matchMedia
+    && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  p.textContent = reduced
+    ? 'この たんまつは うごきを へらす せってい です（ゆれません）'
+    : 'この たんまつは ゆれます';
+  p.classList.toggle('warn', reduced);
+}
+
 function showChainPop(n, restart, soft) {
   if (!view) return;
   const withText = n >= POP_TEXT_CHAIN;
@@ -606,7 +632,26 @@ function showChainPop(n, restart, soft) {
        出し直すときにしか --sk を入れ直さないと、**20連鎖でも2連鎖ぶんの揺れ**にしかならない
        （実測: 3連鎖の場面で --sk が 10px＝2連鎖ぶんのまま止まっていた）。
        走っているアニメは --sk を読み続けるので、ここで入れ直せば揺れが育つ。 */
-  if (!soft) el.stage.style.setProperty('--sk', `${shakeAmp(n, view.cell)}px`);
+  /* ★「ひかえめ」は 0 にしない（＝消さない）★ 倍率をかけて弱く揺らす。
+       消してよいのは prefers-reduced-motion（soft）のときだけ——あれは
+       「動くこと自体がつらい」という申告なので、揺れは止めるのが正しい。 */
+  const scale = view.weakened ? SHAKE.lightScale : 1;
+  if (!soft) {
+    el.stage.style.setProperty('--sk', `${Math.max(1, Math.round(shakeAmp(n, view.cell) * scale))}px`);
+  }
+
+  /* ★盤のふちを光らせるのは、どの設定でも出す★（2026-09-09 追加）
+       これは「移動」ではなく「明るさの変化」なので prefers-reduced-motion の対象外。
+       v1.6 は動きを止める端末に**何も**出していなかった（§5-4 は「弱める」）。
+       同時に、揺れが見えない本当の原因（盤と背景が同じ暗さで基準線が無い）への対策でもある。 */
+  if (restart) {
+    el.stage.classList.remove('rim');
+    void el.stage.offsetWidth;
+    el.stage.classList.add('rim');
+    if (rimTimer) clearTimeout(rimTimer);
+    rimTimer = setTimeout(() => { el.stage.classList.remove('rim'); rimTimer = null; }, RIM_MS);
+  }
+
   if (!restart) return;                       // 伸びている最中は数字だけ差し替える
 
   if (withText) {
@@ -654,6 +699,8 @@ const shaking = () => shakeTimer !== null;
 function hideChainPop() {
   if (popTimer) { clearTimeout(popTimer); popTimer = null; }
   if (shakeTimer) { clearTimeout(shakeTimer); shakeTimer = null; }
+  if (rimTimer) { clearTimeout(rimTimer); rimTimer = null; }
+  el.stage.classList.remove('rim');
   el.chainPop.hidden = true;
   el.chainPop.classList.remove('play', 'hot', 'soft');
   el.chainPopNum.textContent = '';   // 古い数字を残さない（残ると調べたときに誤診する）
@@ -982,6 +1029,7 @@ function renderSettings(inMatch = false) {
   $('btnSettingsClose').hidden = inMatch;
   $('btnQuit').textContent = mode === 'tutorial' ? 'あそびかたへ' : 'タイトルへ';
   $('verSettings').textContent = VERSION_LABEL;
+  paintDeviceLine();
 }
 
 /**
