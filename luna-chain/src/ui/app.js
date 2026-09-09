@@ -29,7 +29,8 @@ import { loadSave, writeSave, loadDevice, writeDevice, recordMatch } from '../me
 import { makeRng } from '../core/rng.js';
 import { TUTORIALS, handIdx } from '../../data/tutorial.js';
 import { Coach } from './coach.js';
-import { BoardView, DOTS, stepFor, POP_TEXT_CHAIN, shakeAmp, shakeMs, SHAKE } from './render.js';
+import { BoardView, DOTS, stepFor, POP_TEXT_CHAIN, shakeAmp, shakeMs, SHAKE,
+         resolveMotion, deviceWantsStill } from './render.js';
 import * as Audio from './audio.js';
 
 const $ = (id) => document.getElementById(id);
@@ -95,7 +96,9 @@ function boot() {
   /* ★#fx（画面いっぱいのキャンバス）を渡す★
        音符と星だけはここに描く。渡さないと盤の中にしか描けず、
        「画面いっぱいにド派手に」（オーナー）が盤の周りの小さな散らばりに戻る。 */
-  view = new BoardView(el.board, { fx: device.effects, fxCanvas: el.fx || null });
+  applyMotionClass();
+  view = new BoardView(el.board,
+                       { fx: device.effects, fxCanvas: el.fx || null, motion: device.motion });
   Audio.setSeVol(device.seVol);
   Audio.setBgmVol(device.bgmVol);
   Audio.setBgmSong(device.bgm || Audio.DEFAULT_BGM);
@@ -178,6 +181,8 @@ function boot() {
     device.effects = e.target.checked ? 'light' : 'normal';
     writeDevice(device); view.setEffects(device.effects);
   });
+  // ★がめんを ゆらす★（端末の「うごきを へらす」をアプリ側から上書きする）
+  $('optShake').addEventListener('change', (e) => setShake(e.target.checked));
   // 前回までに出した案内は覚えておく（毎回おなじ説明が出るとうるさい）
   if (Array.isArray(device.coachSeen)) for (const id of device.coachSeen) coach.seen.add(id);
   show('title');
@@ -610,14 +615,54 @@ const RIM_MS = 340;            // ふちが光っている時間。揺れの長�
  *   ★やさしい日本語で・24字以内★（画面のほかの案内と同じ制約）
  */
 function paintDeviceLine() {
+  /* ★matchMedia を自分で読まない★ 判定の正本は render.js の resolveMotion 1か所。
+       ここで読むと「ゆれません と出ているのに揺れる」食い違いが起きうる。 */
+  const still = resolveMotion(device.motion);
+  const osStill = deviceWantsStill();
+
+  const box = $('optShake');
+  if (box) box.checked = !still;
+
+  // スイッチのすぐ下に「なぜ今こうなっているか」を出す（操作と説明を同じ箱に置く）
+  const note = $('shakeNote');
+  if (note) {
+    note.textContent = osStill
+      ? (still
+        ? 'この たんまつは 「うごきを へらす」せってい です。チェックを 入れると ゆれます'
+        : 'この たんまつは 「うごきを へらす」せってい ですが、ゆらす ことに しています')
+      : (still ? 'いまは ゆれません' : 'はじけると 画面が ゆれます');
+    note.classList.toggle('warn', osStill && still);
+  }
+
+  // 版番号の下の行は「端末が何と言っているか」だけを出す（切り分け用に残す）
   const p = $('devSettings');
   if (!p) return;
-  const reduced = !!(globalThis.matchMedia
-    && matchMedia('(prefers-reduced-motion: reduce)').matches);
-  p.textContent = reduced
-    ? 'この たんまつは うごきを へらす せってい です（ゆれません）'
-    : 'この たんまつは ゆれます';
-  p.classList.toggle('warn', reduced);
+  p.textContent = osStill
+    ? 'たんまつの せってい: うごきを へらす'
+    : 'たんまつの せってい: ふつう';
+  p.classList.toggle('warn', osStill && still);
+}
+
+/**
+ * 「がめんを ゆらす」を切り替える。
+ * ★保存は3値★ 触った瞬間に 'full' / 'still' へ確定させる（'auto' には戻さない）。
+ *   一度も触っていない人だけが 'auto' のままで、あとから端末側の設定を変えても追従する。
+ */
+function setShake(on) {
+  device.motion = on ? 'full' : 'still';
+  writeDevice(device);
+  if (view) view.setMotion(device.motion);
+  applyMotionClass();
+  paintDeviceLine();
+}
+
+/**
+ * <html> に force-motion を付け外しする。
+ * ★CSS の @media (prefers-reduced-motion) の例外は、このクラスだけで作ってある★
+ *   付け忘れると「JSは揺らそうとしているのにCSSが止める」という、いちばん分かりにくい形で壊れる。
+ */
+function applyMotionClass() {
+  document.documentElement.classList.toggle('force-motion', !resolveMotion(device.motion));
 }
 
 function showChainPop(n, restart, soft) {
@@ -1020,6 +1065,7 @@ function renderSettings(inMatch = false) {
   $('optPreview').checked = device.preview;
   $('optCoach').checked = device.coach;
   $('optLight').checked = device.effects === 'light';
+  // ★optShake は paintDeviceLine が塗る★（スイッチと説明文の正本を1か所にまとめてある）
   paintVol($('volSe'), $('volSeVal'), device.seVol);
   paintVol($('volBgm'), $('volBgmVal'), device.bgmVol);
   paintBoardSize();

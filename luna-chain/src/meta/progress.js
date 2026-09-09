@@ -148,6 +148,15 @@ export function loadDevice(storage = globalThis.localStorage) {
       bgm: typeof got.bgm === 'string' ? got.bgm.slice(0, 40) : '',
       sound: seVol > 0 || bgmVol > 0,
       effects: got.effects === 'light' ? 'light' : 'normal',
+      /* ★動きの扱いは3値で持つ★（2026-09-09 オーナー指示「OSの設定によらず揺れるようにできないの？」）
+           'auto'  … 端末の prefers-reduced-motion に従う（既定）
+           'full'  … 端末が「動きを減らす」でも揺らす（オーナーが自分で選んだとき）
+           'still' … 端末が何と言っていても揺らさない
+         ★真偽値1個にしないこと★
+           true/false の2値だと「まだ一度も触っていない」が表せない。
+           触っていない人が **あとから** OS側で「動きを減らす」を入れたとき、
+           アプリがそれに従わなくなる（配慮設定を壊す）。 */
+      motion: ['auto', 'full', 'still'].includes(got.motion) ? got.motion : 'auto',
       preview: got.preview !== false,   // れんさの よこく（既定オン）
       coach: got.coach !== false,       // 対戦中の あんない（既定オン）
       // ★書いたものを読み返すこと★

@@ -207,13 +207,27 @@ export class BoardView {
     this.rings = [];           // はじけた場所から広がる輪（演出）
     this.lastMove = -1;
     this.fx = opts.fx || 'normal';         // 'normal' | 'light'（演出ひかえめ）
-    this.reduced = matchMediaReduced();
+    /* ★動きを止めるかどうかの正本は、この2行だけ★
+         matchMedia を読むのは resolveMotion() 1か所（app.js も同じ関数を使う）。
+         2か所で読むと、片方だけ古くなって「設定画面の表示と実際の動きが食い違う」ことになる。 */
+    this.motion = opts.motion || 'auto';
+    this.reduced = resolveMotion(this.motion);
     this.frameTimes = [];
     this.budget = 1;           // 1=全部出す。重いと自動で下がる
     this._raf = null;
   }
 
   setEffects(level) { this.fx = level; }
+
+  /**
+   * 動きの扱いを変える（'auto' | 'full' | 'still'）。
+   * ★対戦中に呼ばれても壊れないこと★ せってい画面はいつでも開けるので、
+   *   ここで盤の状態は一切触らない（this.reduced を差し替えるだけ）。
+   */
+  setMotion(mode) {
+    this.motion = ['auto', 'full', 'still'].includes(mode) ? mode : 'auto';
+    this.reduced = resolveMotion(this.motion);
+  }
 
   /* ★配慮設定は2種類あり、意味が違う★（2026-09-09 分離）
        v1.6 までは `fx==='light' || reduced` と1つに潰していたため、
@@ -922,9 +936,26 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function matchMediaReduced() {
+function osWantsStill() {
   // ★必ず真偽値で返す★ matchMedia が無い環境（Nodeのテスト）で undefined を返すと、
   //   それを他へ渡したときに undefined が漏れて検査をすり抜ける
   try { return !!(globalThis.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
   catch { return false; }
 }
+
+/**
+ * 「動きを止めるか」を決める唯一の関数。★matchMedia を読むのはここだけ★
+ *   mode … 'auto'（端末に従う）| 'full'（必ず動かす）| 'still'（必ず止める）
+ * ★app.js も この関数を使うこと★
+ *   設定画面の表示と、実際の挙動が食い違わないようにするため。
+ *   2026-09-09 に、matchMedia を render.js と app.js の2か所で読んでいて
+ *   「ゆれません と出ているのに揺れる」が起こりうる状態になっていた。
+ */
+export function resolveMotion(mode) {
+  if (mode === 'full') return false;
+  if (mode === 'still') return true;
+  return osWantsStill();
+}
+
+/** 端末が「動きを減らす」と言っているか（表示用。判定には resolveMotion を使う） */
+export const deviceWantsStill = () => osWantsStill();
