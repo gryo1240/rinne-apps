@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style/base.css?v=0418ece4">
+<link rel="stylesheet" href="style/base.css?v=57c93029">
 <!-- BEGIN importmap (tools/gen_importmap.py が生成。手で書き換えない) -->
 <script type="importmap">
 {"imports":{
@@ -21,11 +21,11 @@
   "./src/core/rules.js":"./src/core/rules.js?v=b1bd8382",
   "./src/game.js":"./src/game.js?v=9c63072b",
   "./src/meta/progress.js":"./src/meta/progress.js?v=c6b0bcd6",
-  "./src/ui/app.js":"./src/ui/app.js?v=af6aa88f",
+  "./src/ui/app.js":"./src/ui/app.js?v=eb81cd63",
   "./src/ui/audio.js":"./src/ui/audio.js?v=71ec94e2",
   "./src/ui/coach.js":"./src/ui/coach.js?v=08412dd1",
-  "./src/ui/render.js":"./src/ui/render.js?v=d1096ae8",
-  "./src/version.js":"./src/version.js?v=a1875fe2",
+  "./src/ui/render.js":"./src/ui/render.js?v=1ead5e9c",
+  "./src/version.js":"./src/version.js?v=c46d1a74",
   "./data/tutorial.js":"./data/tutorial.js?v=78b74887"
 }}
 </script>
@@ -44,6 +44,15 @@
     <div class="turn"><i id="turnDot"></i><span id="turnText">きみの ばん</span></div>
     <button id="btnPause" class="icon" aria-label="せってい">⚙</button>
   </header>
+
+  <!-- 画面の枠の発光（2026-09-09 オーナー依頼「大連鎖中は画面の枠を派手に光らせて」）
+       ★pointer-events:none を絶対に外さない★
+         これは画面いっぱいを覆う板。仕様書§0-10 に「新しい重ね板を position:fixed で作らない」
+         と書いてあるのは、透明な板が盤の上に残って**ゲームが操作不能になった**事故があるため。
+         外しても例外は出ず、ただ何も押せなくなる——いちばん見つけにくく、いちばん重い壊れ方。
+         通し検証に「枠が光っている最中に盤の中央を押せる」検査を置いてある。
+       ★aria-hidden★ 読み上げに意味は無い（何連鎖かは #chainPop の文字が持つ）。 -->
+  <div id="rim" aria-hidden="true"></div>
 
   <main id="stage">
     <div id="boardBox"><canvas id="board"></canvas></div>
@@ -237,7 +246,7 @@
   </section>
 </div>
 
-<script type="module" src="src/ui/app.js?v=af6aa88f"></script>
+<script type="module" src="src/ui/app.js?v=eb81cd63"></script>
 <noscript><p style="color:#fff;padding:2em">このゲームはJavaScriptが必要です。</p></noscript>
 
 <script>

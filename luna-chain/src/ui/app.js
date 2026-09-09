@@ -29,7 +29,7 @@ import { loadSave, writeSave, loadDevice, writeDevice, recordMatch } from '../me
 import { makeRng } from '../core/rng.js';
 import { TUTORIALS, handIdx } from '../../data/tutorial.js';
 import { Coach } from './coach.js';
-import { BoardView, DOTS, stepFor, POP_TEXT_CHAIN, shakeAmp, shakeMs, SHAKE,
+import { BoardView, DOTS, stepFor, POP_TEXT_CHAIN, shakeAmp, shakeMs, SHAKE, RIM, BOARD_RIM,
          resolveMotion, deviceWantsStill } from './render.js';
 import * as Audio from './audio.js';
 
@@ -179,6 +179,19 @@ function boot() {
   initSizeSliders();
   // ★大きな連鎖を画面いっぱいに出す★（見せ方は画面側の仕事。render.js は数を知らせるだけ）
   view.onChainPop = (n, restart, soft) => showChainPop(n, restart, soft);
+  /* ★画面の枠の発光★（2026-09-09 オーナー依頼）
+       明るさの決定は render.js（面積の合算に入れる必要があるため）。
+       ここは受け取った数を CSS 変数に流すだけ。太さとにじみも JS を正本にする。 */
+  /* ★毎フレーム書くものは :root に置かない★（2026-09-09 レビュー指摘）
+       カスタムプロパティは継承するので、:root を毎フレーム書き換えると
+       **文書全体のスタイル無効化**が走る。読むのは #rim 1つだけなので、そこに直接書く。 */
+  const rimEl = $('rim');
+  const rimRoot = document.documentElement;
+  rimRoot.style.setProperty('--rim-w', `${RIM.wPx}px`);
+  rimRoot.style.setProperty('--rim-blur', `${RIM.blurPx}px`);
+  rimRoot.style.setProperty('--brim-w', `${BOARD_RIM.wPx}px`);
+  rimRoot.style.setProperty('--brim-blur', `${BOARD_RIM.blurPx}px`);
+  view.onRim = (alpha) => { if (rimEl) rimEl.style.setProperty('--rim-a', alpha.toFixed(3)); };
   $('optPreview').addEventListener('change', (e) => {
     device.preview = e.target.checked; writeDevice(device); refreshHints();
   });
@@ -778,8 +791,14 @@ function showChainPop(n, restart, soft) {
     el.stage.classList.remove('rim');
     void el.stage.offsetWidth;
     el.stage.classList.add('rim');
+    // ★光っていることを render にも伝える★ 光る面積の合算に入れるため
+    if (view) view.boardRim = true;
     if (rimTimer) clearTimeout(rimTimer);
-    rimTimer = setTimeout(() => { el.stage.classList.remove('rim'); rimTimer = null; }, RIM_MS);
+    rimTimer = setTimeout(() => {
+      el.stage.classList.remove('rim');
+      if (view) view.boardRim = false;
+      rimTimer = null;
+    }, RIM_MS);
   }
 
   if (!restart) return;                       // 伸びている最中は数字だけ差し替える

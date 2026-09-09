@@ -96,12 +96,147 @@ export const shakeMs = (chain) => (chain >= POP_TEXT_CHAIN ? SHAKE.msBig : SHAKE
  * ★上限に達したら「いちばん古いものを置き換える」★
  *   break で打ち切ると、323はじけの大連鎖で**前半だけ光って後半が無反応**になる。
  */
+/**
+ * ★光の粒（火花・尾）の上限★
+ *   もとは burst() が 1200 で **break**、trail() には上限が無かった。
+ *   trail は 1はじけ最大4方向×6粒＝24粒、1フレームで最大400はじけ消化するので
+ *   **1フレーム9,600粒**まで積める。先に trail が枠を食い切ると、
+ *   以降 burst が丸ごと出なくなる＝**大連鎖の後半だけ火花が消える**。
+ *   ★break ではなく「いちばん古いものを捨てる」★
+ *   （音符と星で同じ判断をした理由と同じ。打ち切ると後半が無反応になる）
+ */
+export const PARTICLE_MAX = 900;
+
+/* ★粒の見た目の正本★ 描くところと 面積を数えるところで、式を2か所に書かない
+     （分母を2か所に書いていて偽の合格になった、v1.6 の失敗と同じ形を作らない）。 */
+export const PARTICLE_R = 0.040;      // マスの何倍の半径か
+export const PARTICLE_ALPHA = 0.85;   // 一番濃いときの不透明度
+
+/**
+ * ★火花の飛び方★（2026-09-09 オーナー依頼「画面いっぱいに散らす『パーティクル大爆発』」）
+ *
+ * ★着手前の実測（本番 430x860・マス69px）★
+ *   到達距離は **44〜46px ＝ 1マス(69px)の3分の2**。連鎖が1でも100でも同じだった。
+ *   つまり「マスの中だけ」というオーナーの言葉は感想ではなく**物理の正確な記述**。
+ *   描く板を画面いっぱいに広げても、粒がマスの外へ出ないなら広げた場所は永久に空のまま。
+ *
+ * ★到達距離の式★ v0 × (1 − decay^フレーム数) ÷ (1 − decay)
+ *   寿命 = 1 ÷ fade フレーム。いまの値は下の DEV コメントの表を参照。
+ *
+ * ★大きさは小さくする（PARTICLE_R 0.055→0.040）★
+ *   面積は半径の2乗で効くので、小さくすると同じ予算で数を増やせる。
+ *   「画面いっぱいに散った」の正体は**小さい粒がたくさん**であって、大きい粒ではない。
+ *
+ * ★寿命は延ばさない★
+ *   同時に光る面積 ≒ 出る数 × 寿命。寿命を延ばすと予算を食うだけで、
+ *   体感の派手さは「新しい光が現れる勢い」がほとんどを決める。
+ *   長生きする粒は「火花」ではなく「浮遊物」に見える。
+ */
+export const SPARK = {
+  speed: 2.4,        // 基本の初速（マス48px 換算の px/フレーム）
+  speedRand: 3.4,    // ばらつき
+  perChain: 0.16,    // 連鎖1つあたり どれだけ速くなるか
+  maxChain: 24,      // 速さが伸びきる連鎖数（ここで頭打ち）
+  decay: 0.972,      // 1フレームあたりの減速（1に近いほど遠くまで伸びる）
+  fade: 0.030,       // 1フレームあたり薄くなる量（1/0.030 ≒ 33フレーム ≒ 0.55秒）
+  lightScale: 0.3,   // 「ひかえめ」のときの枚数の倍率。★0にしない（消さない）★
+};
+
+/** その連鎖数のときの初速の倍率。★頭打ちを必ず置く★ 300連鎖で画面外へ飛び去らないように */
+/**
+ * ★衝撃波の輪★
+ *   合算(lightAreaRatio)を作って初めて分かったが、306連鎖で**画面の6.6%**を占めていた。
+ *   輪は脇役（はじけた場所を「点」でなく「広がり」に見せるだけ）なので、ここを絞る。
+ *   ★主役の音符と星を削らない★ オーナーが求めているのは「もっと派手に」であって、
+ *   予算が足りないときに主役から削るのは、依頼と逆を向く。
+ *   内訳の実測は tools/README と仕様書§5-4 に記録してある。
+ */
+export const RING = {
+  maxAlive: 6,      // 同時に出す本数（40本だと306連鎖で予算の3分の1を食う）
+  width: 0.055,     // マスの何倍の太さか
+  alpha: 0.55,
+};
+
+/**
+ * ★画面の枠の発光★（2026-09-09 オーナー依頼）
+ *   > 全画面エフェクトとして、大連鎖中は画面の枠（レイヤー）を
+ *   > 黄金やネオン色などに派手に光らせてほしい
+ *
+ * ★明滅にしない★
+ *   画面いっぱいの面積が点滅すると §5-4（光過敏性発作）に直撃する。
+ *   立ち上がりは1回、あとはゆっくり減衰。出し直しは minMs 以上あける。
+ *   （カットインの POP_MIN_MS と同じ考え方。あちらは文字、こちらは枠）
+ *
+ * ★色はここでは決めない★ 実際の色は style/base.css の #rim。
+ *   ただし **シアンとマゼンタは使わない**——マゼンタは飽和した赤に近く（§5-4）、
+ *   シアンは相手の色 --p2:#7f8cff とぶつかって「どっちの陣地か」が読めなくなる。
+ *   黄金（--p1 系）から白へ、という既存の段階に合わせる。
+ *
+ * ★太さとにじみを JS に置く理由★
+ *   面積（rimArea）をここから計算するため。CSS 側に数字を書くと、
+ *   **CSSだけ変えたときに面積の検査が反応しない**（2.91px 事件と同じ形）。
+ *   通し検証が getComputedStyle の px と突き合わせて、ズレを捕まえる。
+ */
+/**
+ * ★全画面フラッシュの決まり★（仕様書§5-4「1回0.6秒以内で、連続させない」）
+ *   面積の予算（18%）とは**別の規則**。ここを数字で持ち、検査はこの値を見る
+ *   （検査側に 0.6 や 600 を書き写すと、実装を変えても検査が反応しない）。
+ */
+export const FLASH = {
+  peak: 0.55,       // 白飛びさせない上限
+  lightPeak: 0.20,  // 「ひかえめ」のとき
+  decay: 0.88,      // 1フレームあたり
+  offAt: 0.02,      // これ以下は消えたとみなす
+  maxMs: 600,       // 消えるまでに かけてよい時間
+  minGapMs: 600,    // 次に出すまでの最短間隔（連続させない）
+};
+
+/**
+ * ★盤のふちの発光★（style/base.css の `#stage.rim #board`）
+ *   1連鎖から600msおきに光るので、画面の枠(#rim)よりずっと高頻度。
+ *   ★数字が CSS にしか無いと、合算に入れられない★（2026-09-09 レビュー指摘）
+ *   ここを正本にして、CSS は --brim-w / --brim-blur を読むだけにする。
+ */
+export const BOARD_RIM = {
+  wPx: 3,             // ふちの線の太さ（★揺れを見えるようにしている線。細くしない★）
+  ringAlpha: 0.95,    // その線の濃さ
+  /* ★にじみは 30px → 14px に縮めた★（2026-09-09）
+       合算に入れて初めて分かったが、30px のにじみだけで**画面の6%以上**を占めていた。
+       盤のふちの役目は「揺れが見えるように基準線を1本置く」ことなので、
+       役目を担っているのは線のほうで、にじみは飾り。予算はそちらに回す。 */
+  blurPx: 14,
+  blurWeight: 0.4,    // にじみは端ほど薄いので、面積はこの割合で数える
+  blurAlpha: 0.45,    // にじみの濃さ（CSS の rgba と合わせる）
+};
+
+export const RIM = {
+  minChain: 10,     // これ以上の連鎖で光る（毎手光ると ごほうびにならない）
+  /* ★数字は「合算してから」決めた★（2026-09-09）
+       最初に書いた 太さ10px＋にじみ26px は、周長×帯幅で **画面の29%** を占めていた。
+       スマホの幅430pxに対して片側36pxの帯は、感覚では細く見えても実際は画面の4分の1。
+       ここは目分量では絶対に決められない。合算(lightAreaRatio)の数字で決めること。 */
+  peak: 0.45,
+  lightScale: 0.35, // 「ひかえめ」のときの倍率。★0にしない（消さない）★
+  fade: 0.016,      // 1フレームあたり（0.55/0.016 ≒ 34フレーム ≒ 0.57秒）
+  minMs: 600,       // 立ち上げ直しの最短間隔
+  wPx: 4,           // 枠の太さ
+  blurPx: 10,       // にじみ
+  blurWeight: 0.6,  // にじみは端ほど薄いので、面積は全幅ではなくこの割合で数える
+};
+
+export const sparkGain = (chain) =>
+  1 + Math.min(SPARK.maxChain, Math.max(0, chain - 1)) * SPARK.perChain;
+
 export const GLYPH = {
   /* ★大きさと枚数は面積予算から逆算してある★
        同時30枚 ×(1.25×size)^2 ×平均の不透明度0.5 ≦ 盤の面積の18%
        → size ≦ cell×0.57。1.25 は **にじみ（glow）のぶん**。
        にじみを数えないと、測った面積より実際に光る面積のほうが広くなる。 */
-  maxAlive: 30,        // 同時に生きていられる数（★面積予算18%から逆算★。増やすなら再計測）
+  /* ★「小さく・多く」へ振る★（2026-09-09）
+       面積は大きさの2乗で効くので、1枚を小さくすると同じ予算で枚数を増やせる。
+       「画面いっぱいに散った」の正体は**小さいものがたくさん**であって、大きいものではない。
+       ★主役を削らない★ 予算が足りないときに音符と星の枚数を減らすのは、依頼と逆を向く。 */
+  maxAlive: 24,        // 同時に生きていられる数（★面積予算18%から逆算★。増やすなら再計測）
   /* ★1はじけの枚数を増やしても、同時に光る面積の最悪値は変わらない★
        面積を縛っているのは maxAlive×最大サイズであって、1はじけの枚数ではない。
        枚数を増やすと「低い連鎖でも早く上限まで濃くなる」だけ。
@@ -110,8 +245,11 @@ export const GLYPH = {
   perChain: 1.6,
   /* ★天井は連鎖10で当たるようにする★ 14 だと連鎖4.5で頭打ちになり、
        「連鎖が増えるごとにド派手に」というお題が 1〜4 の範囲でしか効かなくなる。 */
-  maxPerBoom: 20,
-  sizeBase: 0.36,      // 大きさ＝cell×(sizeBase + min(sizeGain, 連鎖×sizeStep))
+  maxPerBoom: 24,
+  /* ★1マスの0.30倍を下回らない★ ここは「小さすぎて見えない」を防ぐための下限で、
+       通し検証が実測している。予算が足りないときに**ここを削ってはいけない**——
+       枚数で調整する（小さくして見えなくなったら、何枚出しても意味が無い）。 */
+  sizeBase: 0.30,      // 大きさ＝cell×(sizeBase + min(sizeGain, 連鎖×sizeStep))
   sizeStep: 0.03,
   sizeGain: 0.20,      // ★これで上限 cell×0.56★
   glow: 1.25,          // にじみを入れた実際の光る幅（面積の計算に使う）
@@ -210,6 +348,10 @@ export class BoardView {
     /* ★動きを止めるかどうかの正本は、この2行だけ★
          matchMedia を読むのは resolveMotion() 1か所（app.js も同じ関数を使う）。
          2か所で読むと、片方だけ古くなって「設定画面の表示と実際の動きが食い違う」ことになる。 */
+    this.rim = 0;              // 画面の枠の明るさ 0〜1
+    this.boardRim = false;     // 盤のふちが光っているか（点灯は app.js、面積はここで数える）
+    this.rimAt = -99999;       // 最後に立ち上げた時刻（明滅にしないための歯止め）
+    this.onRim = null;         // 画面側へ知らせる（見せ方は app.js の仕事）
     this.motion = opts.motion === 'still' ? 'still' : 'full';
     this.reduced = resolveMotion(this.motion);
     this.frameTimes = [];
@@ -281,6 +423,10 @@ export class BoardView {
     this.rings.length = 0;
     this.glyphs.length = 0;
     this.flash = 0;
+    // ★枠も必ず消す★ 消さないと、画面を移っても光ったまま居座る
+    if (this.rim !== 0) { this.rim = 0; if (this.onRim) this.onRim(0); }
+    this.rimAt = -99999;
+    this.boardRim = false;
     this.chainPop = null;
     this.preview = null;
     this.stop();
@@ -427,10 +573,11 @@ export class BoardView {
     }
 
     this.pulse = (Math.sin(t / 420) + 1) / 2;
-    this.flash *= 0.88;
+    this.flash *= FLASH.decay;
     this.updateParticles();
     this.updateRings();
     this.updateGlyphs();
+    this.stepRim();
     if (this.chainPop && t - this.chainPop.t > 700) this.chainPop = null;
     this.draw(t);
 
@@ -438,7 +585,7 @@ export class BoardView {
     //   ★予告を出している間は止めない★（脈動が固まって「壊れている」ように見える）
     if (!this.playing && !this.preview && this.particles.length === 0
         && this.rings.length === 0 && this.glyphs.length === 0
-        && this.flash < 0.02 && !this.chainPop) {
+        && this.flash < 0.02 && this.rim <= 0 && !this.chainPop) {
       this.stop();
       this.draw(t);
     }
@@ -453,11 +600,11 @@ export class BoardView {
       const col = this.colorOf(ev.player);
       // ★連鎖が伸びるほど粒を増やす★（オーナー指示「もっと派手な演出を出したいね」）
       //   ただし this.budget（重いときに下がる）を必ず掛ける。派手さでコマ落ちさせない
-      this.burst(ev.i, col, 14 + Math.min(16, ev.chain * 2));
+      this.burst(ev.i, col, 14 + Math.min(16, ev.chain * 2), ev.chain);
       this.ring(ev.i, col, ev.chain);
       this.spawnGlyphs(ev.i, col, ev.chain);   // ★音符と星（連鎖が伸びるほど増える）★
       // 大連鎖では白い火花も混ぜて「色が変わった」ように見せる
-      if (ev.chain >= 5) this.burst(ev.i, '#fff6d8', 8);
+      if (ev.chain >= 5) this.burst(ev.i, '#fff6d8', 8, ev.chain);
       for (const j of ev.to) if (j >= 0) this.trail(ev.i, j, col);
       /* ★知らせるのは「1回でも はじけた」ところから★（2026-09-09 オーナー指摘で変更）
            もとは3連鎖以上でだけ出していた。しかし実測すると、
@@ -469,6 +616,8 @@ export class BoardView {
       /* ★soft = 「画面を揺らさない」だけの意味★（2026-09-09 に意味を狭めた）
            揺らさないのは prefers-reduced-motion のときだけ。
            「ひかえめ」は**弱めて揺らす**（app.js が SHAKE.lightScale を掛ける）。 */
+      // ★大連鎖では画面の枠も光らせる★（明滅にしない歯止めは lightRim が持つ）
+      if (ev.chain >= RIM.minChain) this.lightRim(t);
       const soft = this.motionOff;
       // ★同じ手のあいだは「より大きくなったとき」だけ知らせる★
       //   1手のあいだに3→4→5…と伸びるので、毎回出すと点滅になる（光過敏の配慮）
@@ -492,10 +641,13 @@ export class BoardView {
 
   /** 全画面のひかり。★連続させない★（0.6秒以内・1秒に3回を超えない） */
   bigFlash(t = performance.now()) {
-    if (this.reduced || this.fx === 'light') return;
-    if (t - this.flashAt < 600) return;         // 直前のフラッシュから0.6秒は出さない
+    /* ★「ひかえめ」では弱めて出す（消さない）★（§5-4 追記(2)）
+         全画面の光は「勝負がついた」の合図なので、消すとその設定の人に決着が伝わらない。
+       ★動きを止める設定では出さない★ 画面全体の急な変化は前庭にも響く。 */
+    if (this.motionOff) return;
+    if (t - this.flashAt < FLASH.minGapMs) return;   // 直前のフラッシュから0.6秒は出さない
     this.flashAt = t;
-    this.flash = 0.55;                           // 白飛びさせない（0.55まで）
+    this.flash = this.weakened ? FLASH.lightPeak : FLASH.peak;   // 白飛びさせない
     this.start();
   }
 
@@ -505,14 +657,15 @@ export class BoardView {
    *   （広い面積の明滅は1秒3回以下という制約は bigFlash 側で守っている）。
    */
   ring(i, color, chain = 1) {
-    if (this.reduced || this.fx === 'light') return;
-    if (this.rings.length > 40) return;
+    // ★「ひかえめ」では消さずに弱める★（§5-4 追記(2)）。広がる動きなので、止める設定では出さない
+    if (this.motionOff) return;
+    if (this.rings.length >= RING.maxAlive) this.rings.shift();   // 打ち切らず、古いものを捨てる
     this.rings.push({
-      x: this.pad + (xOf(i) + 0.5) * this.cell,
-      y: this.pad + (yOf(i) + 0.5) * this.cell,
+      x: this.fxOff.x + this.pad + (xOf(i) + 0.5) * this.cell,
+      y: this.fxOff.y + this.pad + (yOf(i) + 0.5) * this.cell,
       r: this.cell * 0.22,
       max: this.cell * (1.0 + Math.min(1.4, chain * 0.12)),
-      life: 1,
+      life: this.weakened ? 0.4 : 1,     // ★弱める（消さない）★
       color,
     });
   }
@@ -526,20 +679,43 @@ export class BoardView {
     }
   }
 
-  burst(i, color, n) {
+  burst(i, color, n, chain = 1) {
     /* ★光の粒は「速く飛ぶ」ことが本体★なので、prefers-reduced-motion では出さない。
          消しても情報は失われない——同じ場所に、動かない音符と星が出るため。
          （何も無いと伝わらない、という §5-4 の要求は spawnGlyphs 側で満たしている） */
     if (this.motionOff) return;
-    const count = Math.round(n * this.budget * (this.weakened ? 0.3 : 1));
-    const cx = this.pad + (xOf(i) + 0.5) * this.cell;
-    const cy = this.pad + (yOf(i) + 0.5) * this.cell;
+    /* ★倍率の正本は SPARK.lightScale★（2026-09-09 レビュー指摘）
+         もとは burst が 0.3 の直書き、trail が fxScale（＝揺れ用の SHAKE.lightScale 0.4）で、
+         同じ「光の粒」に2つの数字があった。
+       ★最低1粒★ 0枚になると「はじけたこと」自体が伝わらない（音符と星と同じ考え方）。 */
+    const count = Math.max(1, Math.round(n * this.budget
+                                         * (this.weakened ? SPARK.lightScale : 1)));
+    // ★描画面(#fx)のなかの座標にする★（2026-09-09 移設。音符と星と同じ基準にそろえる）
+    const cx = this.fxOff.x + this.pad + (xOf(i) + 0.5) * this.cell;
+    const cy = this.fxOff.y + this.pad + (yOf(i) + 0.5) * this.cell;
+    /* ★連鎖が伸びるほど 遠くまで飛ばす★
+         v1.10 までは連鎖数を見ていなかったので、1連鎖も100連鎖も同じ 45px しか飛ばなかった。
+       ★速さで派手さを稼ぐ★ 速度を上げても「同時に光る面積」は1ピクセルも増えない。
+         面積の予算（§5-4 の18%）を使わずに「画面いっぱい」にできる、いちばん安い手。 */
+    const gain = sparkGain(chain);
     for (let k = 0; k < count; k++) {
-      if (this.particles.length > 1200) break;   // 上限（毎フレーム作り続けると一瞬止まる）
       const a = Math.random() * Math.PI * 2;
-      const sp = (0.6 + Math.random() * 2.2) * (this.cell / 48);
-      this.particles.push({ x: cx, y: cy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1, color });
+      const sp = (SPARK.speed + Math.random() * SPARK.speedRand) * gain * (this.cell / 48);
+      this.addParticle({
+        x: cx, y: cy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1, color,
+      });
     }
+  }
+
+  /**
+   * 粒を1つ足す。★上限に達したら いちばん古いものを捨てる★
+   *   break にすると、上限のあとに来た はじけが**まるごと無反応**になる。
+   *   （音符と星で同じ結論に達している。大連鎖の後半こそ見せ場なので、そこを消さない）
+   */
+  addParticle(p) {
+    if (this.particles.length >= PARTICLE_MAX) this.particles.shift();
+    this.particles.push(p);
+    return p;
   }
 
   /**
@@ -605,9 +781,105 @@ export class BoardView {
    * ★§5-4の面積予算はこの値で見る★ テスト側で割り算をしない——
    *   分母（盤か画面か）を2か所に書くと、v1.6 でやったように片方だけ古くなる。
    */
+  /**
+   * ★同時に光っている面積の割合★（仕様書§5-4 の上限 18% を判定する正本）
+   *
+   * ★音符と星だけを数えてはいけない★（2026-09-09）
+   *   v1.6 の検査は音符と星しか数えず、実際は上限を超えていたのに合格していた。
+   *   火花・尾・全画面のひかりも「同時に光っている面積」なので、ここで合算する。
+   * ★決着の全画面フラッシュ（bigFlash）はここに入れない★（2026-09-09 いったん入れて外した）
+   *   仕様書§5-4 は2つの別々の規則を持っている。
+   *     (a) 繰り返し出る演出の「同時に光る面積 ≦ 18%」——連鎖のたびに何度も出るもの
+   *     (b) 全画面フラッシュは「1回0.6秒以内で、連続させない」——1局に1回の合図
+   *   bigFlash は定義上ほぼ全画面（実測ピーク 48.4%）なので、(a) に混ぜると
+   *   **どう作っても上限を超える＝18%という数字が意味を失う**。
+   *   混ぜたまま数字だけ緩めるのは、規則を骨抜きにするのと同じ。
+   *   → (b) は FLASH 定数を正本にして、test-render.mjs の
+   *     「全画面フラッシュの決まり」が別に検査する（消えるまでの時間・出し直しの間隔・上限）。
+   *     ここは (a) だけを見る。
+   *
+   * ★光るものを足したら、次の6か所を必ず全部直す★（1つ抜けると静かに壊れる）
+   *   1. この合算（lightAreaRatio）に足す —— 抜けると上限が嘘になる
+   *   2. tick() の「1コマ進める」に足す —— 抜けると消えずに積み上がる
+   *   3. tick() の「止める条件」に足す —— 抜けると光ったまま画面が止まる
+   *   4. cancelAnimation() に足す —— 抜けると画面を移っても残る
+   *   5. **描く場所を #fx だけにする** —— 盤の canvas にも描くと
+   *      座標が #fx 基準なので**盤の左上ぶんずれた位置に二重**に出る。
+   *      しかも合算は1回ぶんしか数えないので、**検査は通るのに実際は2倍光る**
+   *      （2026-09-09 の出荷前レビューで実際に見つかった）
+   *   6. test-render.mjs の runBooms の「1コマ進める」に足す
+   *      —— 抜けると **寿命が減らない状態を測って、実際より多いと誤判定する**
+   *   （2026-09-09 に 5 を2回、続けて踏んだ。足す順ではなく、この一覧で確認すること）
+   *   分母は描画面（#fx）＝実際に光が乗る面。盤ではない。
+   */
+  lightAreaRatio() {
+    const area = this.fxW * this.fxH;
+    if (!(area > 0)) return 0;
+    return (this.glyphArea() + this.particleArea() + this.ringArea()
+            + this.rimArea() + this.boardRimArea()) / area;
+  }
+
+  /** ★もとの名前も残す★ 音符と星だけを見たいとき（内訳の確認）に使う */
   glyphAreaRatio() {
     const area = this.fxW * this.fxH;
     return area > 0 ? this.glyphArea() / area : 0;
+  }
+
+  /** 火花と尾。draw() が描く円と同じ式で数える（2か所に式を書かない） */
+  particleArea() {
+    let a = 0;
+    for (const p of this.particles) {
+      const r = Math.max(1, this.cell * PARTICLE_R * p.life);
+      /* ★画面の外へ出た粒は数えない★
+           連鎖が伸びると火花は画面の外まで飛び抜ける（30連鎖で847px）。
+           見えていないものを数えると、実際より多く光っていることになり、
+           **本当は余裕があるのに上限に当たる**＝派手にできる余地を自分で削ってしまう。 */
+      if (p.x < -r || p.y < -r || p.x > this.fxW + r || p.y > this.fxH + r) continue;
+      a += Math.PI * r * r * Math.max(0, p.life) * PARTICLE_ALPHA;
+    }
+    return a;
+  }
+
+  /** 輪（線なので、周長×太さで数える） */
+  ringArea() {
+    let a = 0;
+    for (const r of this.rings) {
+      a += 2 * Math.PI * r.r * Math.max(1, this.cell * RING.width)
+           * Math.max(0, r.life) * RING.alpha;
+    }
+    return a;
+  }
+
+  /**
+   * 画面の枠。★にじみの幅まで数える★
+   *   見えている光は枠の線より広い（音符と星で glow を数えているのと同じ理由）。
+   *   角の重なりは引かない＝少し多めに数える（安全側）。
+   */
+  rimArea() {
+    if (!(this.rim > 0)) return 0;
+    const band = RIM.wPx + RIM.blurPx * RIM.blurWeight;
+    return 2 * (this.fxW + this.fxH) * band * this.rim;
+  }
+
+  /**
+   * 盤のふちの発光。★周長×帯幅で数える★
+   *   点いているあいだだけ数えたいので、画面側（app.js）が boardRim を上げ下げする。
+   */
+  boardRimArea() {
+    if (!this.boardRim) return 0;
+    const band = BOARD_RIM.wPx * BOARD_RIM.ringAlpha
+               + BOARD_RIM.blurPx * BOARD_RIM.blurWeight * BOARD_RIM.blurAlpha;
+    const w = this.cell * W + this.pad * 2;
+    const h = this.cell * H + this.pad * 2;
+    return 2 * (w + h) * band;
+  }
+
+  /**
+   * 全画面のひかりの面積。★18%の予算には入れない★（上の説明を読むこと）
+   * ★アプリ本体からは呼ばない★ 内訳を調べるときだけ使う窓口。
+   */
+  flashArea(area) {
+    return area * Math.max(0, this.flash);
   }
 
   glyphArea() {
@@ -664,20 +936,47 @@ export class BoardView {
     ctx.restore();
   }
 
+  /**
+   * はじけた先へ伸びる尾。
+   * ★「ひかえめ」では消さずに弱める★（§5-4 追記(2)。消すのは前庭障害の設定のときだけ）
+   * ★上限は addParticle が持つ★ ここに歯止めが無く、1フレーム9,600粒まで積めていた。
+   */
   trail(from, to, color) {
-    if (this.reduced || this.fx === 'light') return;
-    const fx = this.pad + (xOf(from) + 0.5) * this.cell;
-    const fy = this.pad + (yOf(from) + 0.5) * this.cell;
-    const tx = this.pad + (xOf(to) + 0.5) * this.cell;
-    const ty = this.pad + (yOf(to) + 0.5) * this.cell;
-    const n = Math.round(6 * this.budget);
+    if (this.motionOff) return;                       // 動きそのものなので、止める設定では出さない
+    const fx = this.fxOff.x + this.pad + (xOf(from) + 0.5) * this.cell;
+    const fy = this.fxOff.y + this.pad + (yOf(from) + 0.5) * this.cell;
+    const tx = this.fxOff.x + this.pad + (xOf(to) + 0.5) * this.cell;
+    const ty = this.fxOff.y + this.pad + (yOf(to) + 0.5) * this.cell;
+    const n = Math.max(1, Math.round(6 * this.budget
+                                     * (this.weakened ? SPARK.lightScale : 1)));
     for (let k = 0; k < n; k++) {
       const p = k / Math.max(1, n);
-      this.particles.push({
+      this.addParticle({
         x: fx + (tx - fx) * p, y: fy + (ty - fy) * p,
         vx: (tx - fx) / 26, vy: (ty - fy) / 26, life: 0.8, color,
       });
     }
+  }
+
+  /**
+   * 画面の枠を光らせる。★立ち上げ直しは minMs 以上あける★
+   *   大連鎖は1手のなかで何度も伸びるので、毎回立ち上げ直すと明滅になる。
+   */
+  lightRim(t = performance.now()) {
+    if (t - this.rimAt < RIM.minMs) return false;
+    this.rimAt = t;
+    // ★「ひかえめ」でも消さずに弱める★（§5-4）。動きではないので、止める設定でも出す
+    this.rim = RIM.peak * (this.weakened ? RIM.lightScale : 1);
+    this.start();
+    if (this.onRim) this.onRim(this.rim);
+    return true;
+  }
+
+  /** 枠をゆっくり暗くする。★必ず0まで落とす★ 落とし切らないと光ったままになる */
+  stepRim() {
+    if (this.rim <= 0) return;
+    this.rim = Math.max(0, this.rim - RIM.fade);
+    if (this.onRim) this.onRim(this.rim);
   }
 
   updateParticles() {
@@ -685,8 +984,8 @@ export class BoardView {
     for (let k = ps.length - 1; k >= 0; k--) {
       const p = ps[k];
       p.x += p.vx; p.y += p.vy;
-      p.vx *= 0.93; p.vy *= 0.93;
-      p.life -= 0.045;
+      p.vx *= SPARK.decay; p.vy *= SPARK.decay;
+      p.life -= SPARK.fade;
       if (p.life <= 0) ps.splice(k, 1);
     }
   }
@@ -740,28 +1039,7 @@ export class BoardView {
       ctx.restore();
     }
 
-    // 衝撃波の輪（はじけた場所から広がる）
-    for (const r of this.rings) {
-      ctx.globalAlpha = Math.max(0, r.life) * 0.55;
-      ctx.strokeStyle = r.color;
-      ctx.lineWidth = Math.max(1.5, cell * 0.07 * r.life);
-      ctx.beginPath();
-      ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-
-    // 光の粒
-    for (const p of this.particles) {
-      ctx.globalAlpha = Math.max(0, p.life) * 0.85;
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, Math.max(1, this.cell * 0.055 * p.life), 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-
-    /* ★音符と星はここでは描かない★（2026-09-09 #fx へ移設）
+    /* ★輪・光の粒・音符と星は、ここでは描かない★（2026-09-09 #fx へ移設）
          盤の canvas は画面の 60.6% しかなく、外に出た粒が消えていた。
          描くのは下の drawFx()。ここに描き戻すと「盤の周りに固まる」に逆戻りする。 */
 
@@ -781,7 +1059,8 @@ export class BoardView {
   }
 
   /**
-   * 画面いっぱいのキャンバス(#fx)に、音符と星だけを描く。
+   * 画面いっぱいのキャンバス(#fx)に、光るものを全部描く。
+   *   輪 → 火花と尾 → 音符と星 の順（薄いものを下、読ませたいものを上）。
    *
    * ★毎フレーム必ず全面を消す★
    *   粒が0枚でも呼ぶこと。消さないと、最後の1枚が画面に焼き付いたまま残る。
@@ -789,17 +1068,47 @@ export class BoardView {
    * ★背景は塗らない★
    *   §5-4「画面いっぱいの背景の塗りつぶしをしない」。ここは透明のまま重ねる板であって、
    *   一枚の絵ではない。塗った瞬間に盤が見えなくなる。
+   *
+   * ★2026-09-09 火花・尾・輪もここへ移した★
+   *   盤の canvas は画面の 60.6% しかなく、外へ出た粒はその瞬間に消えていた。
+   *   座標を #fx 基準にしたら描く板もここにする——片方だけ直すと盤の左上ぶんずれる。
    */
   drawFx() {
     const ctx = this.fxCtx;
     if (!ctx) {
       // #fx が無い版では、今までどおり盤の canvas に描く（描かないと「出ていない」になる）
-      if (this.ctx) { for (const g of this.glyphs) this.drawGlyph(g, this.ctx); this.ctx.globalAlpha = 1; }
+      if (this.ctx) {
+        this.drawSparks(this.ctx);
+        for (const g of this.glyphs) this.drawGlyph(g, this.ctx);
+        this.ctx.globalAlpha = 1;
+      }
       return;
     }
     ctx.clearRect(0, 0, this.fxW, this.fxH);
+    this.drawSparks(ctx);
     for (const g of this.glyphs) this.drawGlyph(g, ctx);
     ctx.globalAlpha = 1;
+  }
+
+  /** 輪と、火花・尾。★面積を数える式（particleArea / ringArea）と同じ定数を使う★ */
+  drawSparks(c) {
+    for (const r of this.rings) {
+      c.globalAlpha = Math.max(0, r.life) * RING.alpha;
+      c.strokeStyle = r.color;
+      c.lineWidth = Math.max(1.5, this.cell * RING.width * r.life);
+      c.beginPath();
+      c.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+      c.stroke();
+    }
+    c.globalAlpha = 1;
+    for (const p of this.particles) {
+      c.globalAlpha = Math.max(0, p.life) * PARTICLE_ALPHA;
+      c.fillStyle = p.color;
+      c.beginPath();
+      c.arc(p.x, p.y, Math.max(1, this.cell * PARTICLE_R * p.life), 0, Math.PI * 2);
+      c.fill();
+    }
+    c.globalAlpha = 1;
   }
 
   drawCell(i, t) {
