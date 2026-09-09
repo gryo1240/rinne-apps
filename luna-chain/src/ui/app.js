@@ -652,6 +652,9 @@ function paintDeviceLine() {
     note.classList.toggle('warn', osStill && !still);
   }
 
+  // ★音の行は先に塗る★ 下の「端末の行が無ければ抜ける」に巻き込まれないようにする
+  //   （2026-09-09 レビュー指摘。片方が欠けたときに、もう片方まで静かに止まる形だった）
+  paintSeLine();
   // 版番号の下の行は「端末が何と言っているか」だけを出す（切り分け用に残す）
   const p = $('devSettings');
   if (!p) return;
@@ -659,6 +662,24 @@ function paintDeviceLine() {
     ? 'たんまつの せってい: うごきを へらす'
     : 'たんまつの せってい: ふつう';
   p.classList.toggle('warn', osStill && still);
+}
+
+/**
+ * 録音した効果音（歓声・拍手・ボタン）が届いているかを1行で出す。
+ * ★2026-09-09 オーナー報告「決着後の拍手がぜんぜん聞こえなかった」★
+ *   このとき、原因が「音量が小さい」なのか「音そのものが届いていない」なのかを
+ *   **画面から確かめる方法が無かった**ので、切り分けに何往復もかかった。
+ *   端末の設定を1行出したのと同じ理由（見えないものは確認できない）。
+ */
+function paintSeLine() {
+  const el = $('seSettings');
+  if (!el) return;
+  const r = Audio.clipsReady();
+  const ok = r.got >= r.want;
+  el.textContent = ok
+    ? `かんせい・はくしゅ: よういできた（${r.got}／${r.want}）`
+    : `かんせい・はくしゅ: まだ とどいていません（${r.got}／${r.want}）`;
+  el.classList.toggle('warn', !ok);
 }
 
 /**
@@ -696,7 +717,7 @@ function sePreview() {
   if (t - sePreviewAt < SE_PREVIEW_MS) return false;
   sePreviewAt = t;
   sePreviewCount += 1;
-  Audio.SE.place();                            // ★短い音を使う★ boom は長すぎて次の刻みに重なる
+  Audio.SE.volTick();                          // ★試聴専用の音★ 短く、かつ判断できる大きさ
   return true;
 }
 
@@ -1274,4 +1295,11 @@ globalThis.__luna = {
   get popSeat() { return popSeat; },
   // ★連鎖数から倍率を出す正本★ 検査が同じ式を書き写すと、実装を変えても落ちなくなる
   popScale: (n) => popScale(n),
+  /* ★音を数字で測るための窓口★（2026-09-09 オーナー報告「拍手が聞こえない／音量バーが効かない」）
+       耳でしか確かめられないものは、いつまでも切り分けができない。
+     ★ここだけは読み取り専用ではない★（上の宣言の例外）
+       音のモジュールをそのまま渡しているので、コンソールからは setSeVol なども呼べる。
+       同一オリジンのコンソールからしか触れず、外部スクリプトも読み込んでいないので実害は無いが、
+       「読み取り専用」と書いてある約束の例外であることは、ここに明記しておく。 */
+  audio: Audio,
 };

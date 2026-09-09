@@ -21,11 +21,11 @@
   "./src/core/rules.js":"./src/core/rules.js?v=b1bd8382",
   "./src/game.js":"./src/game.js?v=9c63072b",
   "./src/meta/progress.js":"./src/meta/progress.js?v=c6b0bcd6",
-  "./src/ui/app.js":"./src/ui/app.js?v=62ce0909",
-  "./src/ui/audio.js":"./src/ui/audio.js?v=a499e00f",
+  "./src/ui/app.js":"./src/ui/app.js?v=af6aa88f",
+  "./src/ui/audio.js":"./src/ui/audio.js?v=71ec94e2",
   "./src/ui/coach.js":"./src/ui/coach.js?v=08412dd1",
   "./src/ui/render.js":"./src/ui/render.js?v=d1096ae8",
-  "./src/version.js":"./src/version.js?v=752a4221",
+  "./src/version.js":"./src/version.js?v=a1875fe2",
   "./data/tutorial.js":"./data/tutorial.js?v=78b74887"
 }}
 </script>
@@ -222,6 +222,11 @@
            それを画面に出していなかったので、オーナーとのやり取りが2往復むだになった。
            版番号を出したのと同じ理由（見えないものは確認できない）。 -->
     <p class="verline sub" id="devSettings"></p>
+    <!-- 録音した効果音（歓声・拍手・ボタン）が届いているか（2026-09-09 追加）
+         ★「拍手がぜんぜん聞こえなかった」の原因が、音量なのか未着なのかを分けるための1行★
+           mp3 は sw.js が素通しするので毎回ネットワークに出る＝電波しだいで届かないことがある。
+           届いていないときだけ目立たせる（ふだんは静かな1行のまま）。 -->
+    <p class="verline sub" id="seSettings"></p>
 
     <div id="pauseBtns" class="row col" hidden>
       <button id="btnResume" class="big">つづける</button>
@@ -232,7 +237,7 @@
   </section>
 </div>
 
-<script type="module" src="src/ui/app.js?v=62ce0909"></script>
+<script type="module" src="src/ui/app.js?v=af6aa88f"></script>
 <noscript><p style="color:#fff;padding:2em">このゲームはJavaScriptが必要です。</p></noscript>
 
 <script>

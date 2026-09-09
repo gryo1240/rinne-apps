@@ -97,12 +97,15 @@ let voices = [];               // 予約済みの音の終了時刻（昇順）
  *   正しくは **その音が鳴り始める時刻(startAt)に、まだ鳴っている音** だけを数える。
  *   予約は時刻の早い順に来るので、先頭から「startAt までに終わる音」を捨てれば足りる。
  */
-function budgetOk(startAt, endAt) {
+function budgetOk(startAt, endAt, force = false) {
   while (voices.length && voices[0] <= startAt) voices.shift();
-  if (voices.length >= MAX_VOICES) return false;
+  const over = voices.length >= MAX_VOICES;
+  if (over && !force) return false;
+  /* ★強行したぶんも数に入れる★（2026-09-09 レビュー指摘）
+       入れないと、その音が鳴っているあいだ「1枠空いている」と誤認し続ける。 */
   voices.push(endAt);
   voices.sort((a, b) => a - b);
-  return true;
+  return !over;
 }
 
 export function setSeVol(level) {
@@ -179,17 +182,76 @@ export function cheerIdFor(chain, mine = true) {
 }
 let clipsAsked = false;
 
-/** 効果音の実体を読み込む。★何度呼んでも1回しか取らない★ */
+/**
+ * 効果音の実体を読み込む。
+ * ★失敗したら取り直す★（2026-09-09 オーナー報告を受けて変更）
+ *   もとは1回でも走ったら二度と取りにいかなかったので、
+ *   **最初のタップの瞬間に電波が悪かっただけで、その回は歓声も拍手も一生鳴らない**。
+ *   しかも失敗は握りつぶしているので、遊んでいる側からは「音が無いゲーム」に見えるだけ。
+ *   sw.js は mp3 を素通しするため、この取得は毎回ネットワークに出る（＝失敗しうる）。
+ */
+const CLIP_TRIES = 3;
+/* ★回数だけで守らない★（2026-09-09 レビュー指摘）
+     電波が無いと fetch は数msで失敗するので、**1手の演出のなかで3回とも使い切る**。
+     それでは「最初のタップのときだけ電波が悪かった」という、いちばん直したい状況で効かない。
+     取り直しのあいだを空ける。 */
+const CLIP_RETRY_MS = 10000;
+/* ★返ってこない相手を待ち続けない★
+     公衆無線の入口ページなどに捕まると fetch は解決も拒否もしない。
+     そのままだと clipsAsked が立ちっぱなしで、取り直しの枠すら使われない。 */
+const CLIP_TIMEOUT_MS = 8000;
+let clipTry = 0;
+let clipTryAt = -Infinity;
 function loadClips() {
-  if (clipsAsked || !ctx) return;
+  if (!ctx || clipsAsked) return;
+  if (clipBuf.size >= Object.keys(CLIPS).length) return;   // 全部そろっている
+  if (clipTry >= CLIP_TRIES) return;
+  const t = ctx.currentTime * 1000;
+  if (clipTry > 0 && t - clipTryAt < CLIP_RETRY_MS) return;
+  clipTryAt = t;
   clipsAsked = true;
+  clipTry += 1;
+  let left = 0;
   for (const [id, file] of Object.entries(CLIPS)) {
-    fetch(CLIP_DIR + file)
+    if (clipBuf.has(id)) continue;
+    left += 1;
+    let ac = null;
+    let tid = 0;
+    try {
+      if (typeof AbortController !== 'undefined') {
+        ac = new AbortController();
+        tid = setTimeout(() => { try { ac.abort(); } catch { /* 中断できなくても進む */ } },
+                         CLIP_TIMEOUT_MS);
+      }
+    } catch { ac = null; }
+    fetch(CLIP_DIR + file, ac ? { signal: ac.signal } : undefined)
       .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
       .then((b) => ctx.decodeAudioData(b))
-      .then((buf) => clipBuf.set(id, buf))
-      .catch(() => { /* 取れなくても遊べる。合成音は鳴り続ける */ });
+      /* ★中身を確かめてから入れる★（2026-09-09 レビュー指摘）
+           古い形の端末では decodeAudioData がコールバック版しか無く、undefined が返る。
+           それをそのまま入れると
+             ・clip() は毎回「まだ読めていない」で捨てる
+             ・SE.cheer は clipBuf.has() が true なので**予備も出さない**（＝無音に逆戻り）
+             ・せってい画面が「よういできた（5／5）」と嘘をつく
+           の3つが同時に起きる。 */
+      .then((buf) => {
+        if (!buf || !buf.length) throw new Error('decode');
+        clipBuf.set(id, buf);
+      })
+      .catch(() => { drop(id, 'loadfail'); })
+      .finally(() => {
+        if (tid) clearTimeout(tid);
+        left -= 1;
+        // 全部の返事が返ってから、まだ足りなければ次の機会に取り直せるようにする
+        if (left <= 0) clipsAsked = false;
+      });
   }
+  if (left === 0) clipsAsked = false;
+}
+
+/** 録音音源がそろっているか（設定画面の診断行が読む） */
+export function clipsReady() {
+  return { got: clipBuf.size, want: Object.keys(CLIPS).length };
 }
 
 /* ★歓声の歯止め★ 連続で鳴ると耳障りなので、最低間隔をあける。
@@ -197,18 +259,103 @@ function loadClips() {
 const CHEER_MIN_MS = 2000;
 let lastCheerAt = -99999;
 
+/* ★歓声・拍手の大きさ★（2026-09-09 オーナー報告を受けて調整）
+     素材は -16 LUFS にそろえてあるので、合成音（はじけ音など）より**平均は小さい**。
+     とくに拍手は決着ファンファーレ(SE.win)と同時に鳴るため、同じ倍率だと埋もれる。
+   ★1.0 を超えても割れない範囲か、実測で決める★
+     master は SE_MAX=0.60 なので、倍率1.6でも 0.96。素材のピークが1.0近くでも収まる。
+     数字の根拠は tools/smoke_luna_chain.py が debugMeter() で毎回測っている。 */
+const APPLAUSE_GAIN = 1.6;
+const CHEER_GAIN = 1.3;
+
 /**
  * 録音した効果音を鳴らす。
  *   gain … 0〜1（合成音と同じく master を通るので、音量スライダーが効く）
  *   throttleMs … これ未満の間隔では鳴らさない（歓声用）
  */
-function clip(id, { gain = 0.9, throttleMs = 0 } = {}) {
-  if (!ctx || seLevel <= 0) return false;
+/* ══════════════════════════════════════════════════════════
+   ★音は耳でしか確かめられない、を無くすための窓口★（2026-09-09）
+     オーナーから「決着後の拍手がぜんぜん聞こえなかった」「音量バーが反映されていない」
+     という報告を受けたが、**鳴ったか／どれだけの大きさだったかを測る方法が無かった**ため
+     切り分けに時間がかかった。以後は数字で見る。
+     教訓: app-turn-already-flipped-in-callback（分けた結果を検査から読めるようにする）
+   ══════════════════════════════════════════════════════════ */
+const drops = Object.create(null);   // 捨てた理由ごとの回数
+let played = [];                     // 実際に鳴らした録音音源（直近40件）
+const meter = {};                    // se / bgm それぞれの計測ノード
+
+function drop(id, why) {
+  const k = id + ':' + why;
+  drops[k] = (drops[k] || 0) + 1;
+  return false;
+}
+
+/** ★倍率を変えて鳴らし比べるための入口★（調査専用。通常の再生には使わない） */
+export function debugPlayClip(id, gain) {
+  // ★上限を切る★ 子どもがイヤホンで遊ぶ前提なので、調査用でも割れる音は作らない
+  const g = Math.min(2, Math.max(0, Number(gain) || 0.9));
+  return clip(id, { gain: g, must: true });
+}
+
+/** いまの状態（検証・不具合調査から読む） */
+export function debugState() {
+  return {
+    ready: !!ctx,
+    state: ctx ? ctx.state : 'none',
+    seLevel,
+    masterGain: master ? master.gain.value : null,
+    voices: voices.length,
+    clips: [...clipBuf.keys()],
+    played: played.slice(-8),
+    drops: { ...drops },
+  };
+}
+
+/**
+ * ★実際に出ている音の大きさ★ 0〜1。呼ぶたびに、その瞬間の値を返す。
+ *   which … 'se'（既定・効果音）／'bgm'（BGM）。
+ *   ★2つを別々に測れること★ 「拍手が聞こえない」の原因が
+ *     「鳴っていない」のか「BGMに埋もれている」のかは、片方だけ見ても分からない。
+ */
+export function debugMeter(which = 'se') {
+  const node = which === 'bgm' ? bgmGain : master;
+  if (!ctx || !node) return null;
+  const key = which === 'bgm' ? 'bgm' : 'se';
+  // ★付け先が変わっていたら作り直す★ BGMの経路は作り直されることがあり、
+  //   古いノードに付いたままだと**計測だけがずっと無音**になる（道具が嘘をつく）
+  if (!meter[key] || meter[key].from !== node) {
+    const a = ctx.createAnalyser();
+    a.fftSize = 2048;
+    node.connect(a);                // ★葉として付けるだけ★ 出力には足さない
+    meter[key] = { node: a, from: node };
+  }
+  const an = meter[key].node;
+  const buf = new Float32Array(an.fftSize);
+  an.getFloatTimeDomainData(buf);
+  let peak = 0;
+  let sum = 0;
+  for (let i = 0; i < buf.length; i++) {
+    const a = Math.abs(buf[i]);
+    if (a > peak) peak = a;
+    sum += buf[i] * buf[i];
+  }
+  return { peak, rms: Math.sqrt(sum / buf.length) };
+}
+
+function clip(id, { gain = 0.9, throttleMs = 0, must = false } = {}) {
+  if (!ctx || seLevel <= 0) return drop(id, 'noctx');
   const buf = clipBuf.get(id);
-  if (!buf) return false;                       // まだ読めていない／取れなかった
+  if (!buf) return drop(id, 'notloaded');       // まだ読めていない／取れなかった
   const now = ctx.currentTime * 1000;
-  if (throttleMs && now - lastCheerAt < throttleMs) return false;
-  if (!budgetOk(ctx.currentTime, ctx.currentTime + buf.duration)) return false;
+  if (throttleMs && now - lastCheerAt < throttleMs) return drop(id, 'throttled');
+  /* ★must の音は同時発音の上限で捨てない★（2026-09-09 オーナー報告「拍手が聞こえない」）
+       決着の直前は大きな連鎖が起きやすく、そのはじけ音が予算(MAX_VOICES)を埋めている。
+       拍手や歓声は「1手に1回だけ」の音なので、ここで捨てると**まるごと聞こえない**。
+       はじけ音は1個消えても気づかないが、拍手は消えたら存在しないのと同じ。 */
+  if (!budgetOk(ctx.currentTime, ctx.currentTime + buf.duration, must)) {
+    if (!must) return drop(id, 'budget');
+    drop(id, 'budget-forced');   // ★捨てずに鳴らすが、起きたことは記録に残す★
+  }
   try {
     const src = ctx.createBufferSource();
     src.buffer = buf;
@@ -217,8 +364,10 @@ function clip(id, { gain = 0.9, throttleMs = 0 } = {}) {
     src.connect(g); g.connect(master);
     src.start();
     if (throttleMs) lastCheerAt = now;
+    played.push({ id, at: Math.round(now), gain });
+    if (played.length > 40) played.shift();
     return true;
-  } catch { return false; }
+  } catch { return drop(id, 'error'); }
 }
 
 /** ざらざらの音の素。★1回だけ作って使い回す★（毎回作ると連鎖のたびに一瞬止まる） */
@@ -277,6 +426,49 @@ const semitone = (n) => Math.pow(2, n / 12);
 const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 31, 33, 36];
 const pentaOf = (n) => PENTA[Math.min(PENTA.length - 1, Math.max(0, n))];
 
+/* ══════════════════════════════════════════════════════════
+   ★録音音源が鳴らせなかったときの予備★（2026-09-09 オーナー報告を受けて追加）
+     ボタン音(tap)にはもともと合成音の予備があったが、**拍手と歓声には無かった**。
+     そのため、読み込みに失敗した端末では **決着したのに一切音が鳴らない**。
+     「鳴らないだけ」ではなく「勝負がついたことが音で伝わらない」ので、必ず何か鳴らす。
+   ★本物の代わりにはならない★ あくまで無音を避けるためのもの。
+   ══════════════════════════════════════════════════════════ */
+
+/** 合成の拍手。短い破裂を散らして「パチパチ」を作る */
+function applauseSynth() {
+  if (!ctx || seLevel <= 0) return false;
+  /* ★大きさは実測で合わせる★ 本物の拍手が RMS 0.158 なので、そこへ寄せる。
+       小さいと「予備すら聞こえない」で、直したことにならない。 */
+  for (let k = 0; k < 20; k++) {
+    burst({
+      freq: 1800 + Math.random() * 2200,
+      dur: 0.05 + Math.random() * 0.04,
+      gain: 0.60 + Math.random() * 0.35,
+      q: 0.8,
+      slide: 0.5,
+      delay: k * 0.042 + Math.random() * 0.03,
+    });
+  }
+  return true;
+}
+
+/** 合成の歓声。ざらざらの音をゆっくり持ち上げて「わーっ」に近づける */
+function cheerSynth(big) {
+  if (!ctx || seLevel <= 0) return false;
+  const n = big ? 10 : 6;
+  for (let k = 0; k < n; k++) {
+    burst({
+      freq: 500 + k * 90,
+      dur: big ? 0.9 : 0.6,
+      gain: (big ? 0.62 : 0.46) - k * 0.028,
+      q: 0.5,
+      slide: 1.6,
+      delay: k * 0.03,
+    });
+  }
+  return true;
+}
+
 export const SE = {
   /* ボタンの音。★録音音源があればそれを使い、無ければ今までの合成音★
        読み込みは非同期なので、起動直後の1〜2タップは合成音になることがある。
@@ -297,11 +489,46 @@ export const SE = {
   cheer: (chain, mine = true) => {
     const id = cheerIdFor(chain, mine);
     if (!id) return false;
-    return clip(id, { gain: 0.85, throttleMs: CHEER_MIN_MS });
+    if (clip(id, { gain: CHEER_GAIN, throttleMs: CHEER_MIN_MS, must: true })) return true;
+    /* ★鳴らなかった理由で分ける★
+         歯止め（2秒以内の連発）で鳴らさなかったときは、予備も鳴らさない——
+         鳴らすと歯止めの意味が無くなる。読み込めていないときだけ予備を出す。 */
+    if (clipBuf.has(id)) return false;
+    /* ★予備にも同じ歯止めをかける★（2026-09-09 レビュー指摘）
+         clip() は「まだ読めていない」を歯止めより**前**で返すので、
+         録音音源が届かない端末では lastCheerAt が一度も更新されない。
+         ここで見ないと、**連鎖1段ごとに予備が鳴る**（20連鎖で54個・レビューの実測）。
+         しかも予備の音は0.6〜0.9秒と長いので、進行中のはじけ音まで押し出す。 */
+    if (!ctx) return false;
+    const now = ctx.currentTime * 1000;
+    if (now - lastCheerAt < CHEER_MIN_MS) return drop(id, 'throttled-synth');
+    lastCheerAt = now;
+    loadClips();                       // 次の機会のために取り直しておく
+    return cheerSynth(id === 'cheerbig' || id === 'cheerfoe');
   },
 
-  /** 決着したあとの拍手（スタジアムの拍手） */
-  applause: () => clip('applause', { gain: 0.8 }),
+  /* 決着したあとの拍手（スタジアムの拍手）
+     ★must を付ける★（2026-09-09 オーナー報告「拍手がぜんぜん聞こえなかった」）
+       決着の直前は大きな連鎖が起きやすく、そのはじけ音が同時発音の予算を埋めている。
+       はじけ音は1個消えても気づかないが、**拍手は消えたら存在しないのと同じ**。 */
+  applause: () => {
+    if (clip('applause', { gain: APPLAUSE_GAIN, must: true })) return true;
+    loadClips();                       // 次の対戦では本物が鳴るように
+    return applauseSynth();
+  },
+
+  /**
+   * ★音量バーを動かしている最中の試聴音★（2026-09-09 オーナー報告を受けて新設）
+   *   もとは place()（マスに置く音）を流用していたが、実測 RMS 0.015 ——
+   *   ボタン音(0.192)の**13分の1**しかなく、**動かしても大きさが分からなかった**。
+   *   ここは「いまの音量がどのくらいか」を判断するための音なので、
+   *   **実際に遊んでいるときによく鳴る音と同じくらいの大きさ**にする。
+   *   ★短いこと★ 90msに1回鳴るので、長いと次の刻みに重なって濁る。
+   */
+  volTick: () => {
+    tone({ freq: 880, dur: 0.055, type: 'triangle', gain: 0.92 });
+    burst({ freq: 3200, dur: 0.045, gain: 0.43, q: 1.6, slide: 0.4 });
+  },
 
   place: () => {
     tone({ freq: 520, dur: 0.07, type: 'triangle', gain: 0.14 });
