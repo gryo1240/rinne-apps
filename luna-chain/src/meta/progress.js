@@ -78,27 +78,61 @@ function clampInt(v, lo, hi, dflt) {
 
 // ── 端末側の設定 ─────────────────────────────
 /**
- * ★音量は 0=なし / 1=ちいさい / 2=おおきい の3段★
- *   スライダーにしない（子どもの指で input[type=range] は当てにくい）。
+ * ★音量は 0〜100★（2026-09-08 オーナー指示でスライドバーにした）
+ *   もとは 0=なし / 1=ちいさい / 2=おおきい の3段だった。
  *
- * ★古いキー sound（オン・オフのbool）との互換★
- *   2026-09-08 に BGM と効果音を別々に調整できるようにしたとき、
- *   すでに「音を切っていた人」が更新した瞬間に音が鳴り出さないよう、
- *   **sound:false の保存は seVol=0 / bgmVol=0 として読む**。
- *   返り値の sound は「どちらかが鳴っているか」の要約で、書き戻しにも使う（旧版へ戻しても静かなまま）。
+ * ★古い保存を読み替える（2世代ぶんある）★
+ *   1. いちばん古い … `sound` が true/false だけ。false なら両方0にする
+ *   2. 3段だった頃 … `seVol`/`bgmVol` が 0/1/2。**そのまま読むと「2%」＝ほぼ無音になる**ので、
+ *      版（`dv`）が無い保存は 0/1/2 を % に読み替える
+ *   `dv` を見るのは「1と2が、3段の値なのか本当に1%・2%なのか区別できない」ため。
+ *   ★音量の意味を変えるときは DEVICE_V を上げ、ここに読み替えを足すこと★
  */
-const clampVol = (v, dflt) => (v === 0 || v === 1 || v === 2 ? v : dflt);
+export const DEF_SE = 100;
+export const DEF_BGM = 70;
+const LEGACY_STEP = [0, 70, 100];    // 0=なし / 1=ちいさい / 2=おおきい を % に直した値
+
+const clampPct = (v, dflt) => {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return dflt;
+  return Math.min(100, Math.max(0, Math.round(n)));
+};
+
+/**
+ * ★細かい値は「別のキー」に入れる（版番号で見分けない）★
+ *
+ *   3段の頃の `seVol` は 0/1/2、いまの値は 0〜100。**値域が重なる**ので、
+ *   同じキーに入れると「2」が『おおきい』なのか『2%』なのか区別できない。
+ *
+ *   さらに Service Worker があるため、**同じ端末で新旧のコードが混ざりうる**。
+ *   新しいコードが `seVol: 85` と書いた端末で古いコードが動くと、
+ *   古い側は 0/1/2 しか受け付けないので既定の「2＝おおきい」に落ちる
+ *   ＝ **音を絞っていた人がいきなり最大音量になる**。
+ *
+ *   → 細かい値は `seVolPct`/`bgmVolPct` に入れ、`seVol`/`bgmVol` には
+ *     **丸めた 0/1/2 を書き続ける**。古いコードが読んでも安全な値しか目に入らない。
+ */
+function readVol(got, pctKey, stepKey, dflt) {
+  const p = Number(got[pctKey]);
+  if (Number.isFinite(p)) return clampPct(p, dflt);
+  const step = got[stepKey];
+  if (step === 0 || step === 1 || step === 2) return LEGACY_STEP[step];   // 3段だった頃
+  if (got.sound === false) return 0;                                     // もっと古い保存
+  return dflt;
+}
+
+/** 0〜100 を、古いコード向けの3段（0/1/2）に丸める */
+const stepOf = (v) => (v <= 0 ? 0 : (v < 85 ? 1 : 2));
 
 export function loadDevice(storage = globalThis.localStorage) {
   const base = {
     sound: true, effects: 'normal', preview: true, coach: true, coachSeen: [],
-    seVol: 2, bgmVol: 1, bgm: '',
+    seVol: DEF_SE, bgmVol: DEF_BGM, bgm: '',
   };
   try {
     const got = safeParse(storage && storage.getItem(DEVICE_KEY), {});
-    const legacyOff = got.sound === false;
-    const seVol = clampVol(got.seVol, legacyOff ? 0 : 2);
-    const bgmVol = clampVol(got.bgmVol, legacyOff ? 0 : 1);
+    const seVol = readVol(got, 'seVolPct', 'seVol', DEF_SE);
+    const bgmVol = readVol(got, 'bgmVolPct', 'bgmVol', DEF_BGM);
     return {
       seVol,
       bgmVol,
@@ -118,8 +152,27 @@ export function loadDevice(storage = globalThis.localStorage) {
     };
   } catch { return base; }
 }
+/**
+ * 端末の設定を書く。
+ * ★音量は「細かい値(Pct)」と「古いコード向けの3段」の両方を書く★（readVol の説明を読むこと）
+ */
 export function writeDevice(dev, storage = globalThis.localStorage) {
-  try { storage && storage.setItem(DEVICE_KEY, JSON.stringify(dev)); return true; } catch { return false; }
+  try {
+    // 音量を渡さずに sound:false だけ渡された古い呼び方も、静かなままにする
+    const off = dev.sound === false;
+    const se = clampPct(dev.seVol, off ? 0 : DEF_SE);
+    const bgm = clampPct(dev.bgmVol, off ? 0 : DEF_BGM);
+    const out = {
+      ...dev,
+      seVolPct: se,
+      bgmVolPct: bgm,
+      seVol: stepOf(se),      // ★ここは 0/1/2 のまま★（古いコードが読んでも事故らない値）
+      bgmVol: stepOf(bgm),
+      sound: se > 0 || bgm > 0,
+    };
+    storage && storage.setItem(DEVICE_KEY, JSON.stringify(out));
+    return true;
+  } catch { return false; }   // 容量超過やプライベートモード。遊べなくはしない
 }
 
 /**

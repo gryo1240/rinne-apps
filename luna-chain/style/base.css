@@ -113,9 +113,10 @@ button.ghost{
    セレクタだけ消して宣言ブロックを残すと、次のルールまで巻き添えで消える。
    実際にやったことがあるので、消すときは必ず { } ごと消すこと（通し検証が機械で見張っている）。 */
 
-/* ── えらぶボタンの帯（BGM・音量）─────────────
-   ★スライダー（input[type=range]）にしない★ 子どもの指では当てにくい。3段のボタンにする。 */
-.segs{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; width:100%; max-width:440px}
+/* ── えらぶボタンの帯（BGMの曲えらび）─────────────
+   音量は 2026-09-08 にスライドバーへ変えた（オーナー指示）。ここは曲えらびだけが使う。 */
+/* ★左そろえ★ 中央寄せだと、見出しの左端と1つ目のボタンの左端がずれる */
+.segs{display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-start; width:100%; max-width:440px}
 .seg{
   padding:9px 13px; border-radius:10px; font-size:13px; cursor:pointer;
   background:rgba(255,255,255,.06); border:1px solid var(--line); color:var(--text);
@@ -133,6 +134,53 @@ button.ghost{
 .stats b{display:block; font-size:19px; color:var(--p1)}
 .opt{display:flex; gap:9px; align-items:center; font-size:15px; padding:7px 2px}
 .opt input{width:20px; height:20px}
+
+/* ── せっていの1項目 ─────────────────────────
+   ★見出しと操作を必ず同じ箱に入れる★（2026-09-08 オーナー指摘）
+     もとは h3 が `align-self:flex-start`（画面いっぱいの左端）で、操作は max-width で中央寄せ。
+     **画面が広いほど左右に離れて**、どの見出しがどの操作の説明か分からなくなっていた。
+     箱に同じ max-width を持たせることで、広さによらず左端がそろう。 */
+.setting{width:100%; max-width:440px; display:flex; flex-direction:column; gap:3px}
+/* h3 の align-self:flex-start は箱の中では邪魔になる（幅が中身ぶんに縮んで右端の数字が寄る） */
+.setting h3{
+  align-self:stretch; margin:12px 0 2px;
+  display:flex; justify-content:space-between; align-items:baseline; gap:8px;
+}
+.setting h3 b{color:var(--p1); font-size:16px; font-weight:800}
+.setting .opt{width:100%}
+
+/* ── 音量のスライドバー ───────────────────────
+   ★つまみと帯を大きく取る★ 子どもの指でも当たるように、つまみ28px・当たり判定34px。
+   帯の「たまっている側」は --fill（%）で塗る。JSが値を変えるたびに設定する。 */
+.slider{
+  -webkit-appearance:none; appearance:none;
+  width:100%; height:34px; margin:2px 0 0; background:none; cursor:pointer;
+  /* ★縦スクロールは残し、横のドラッグはつまみに渡す★
+     せっていは縦に長くて overflow-y:auto なので、これが無いと
+     つまみを動かしたつもりが画面スクロールになる */
+  touch-action:pan-y;
+}
+.slider:focus{outline:none}
+.slider::-webkit-slider-runnable-track{
+  height:12px; border-radius:99px; border:1px solid var(--line);
+  background:linear-gradient(90deg,
+    #8a7a3a 0%, var(--p1) var(--fill,50%), rgba(255,255,255,.10) var(--fill,50%));
+}
+.slider::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none; margin-top:-9px;
+  width:28px; height:28px; border-radius:50%; border:none;
+  background:radial-gradient(circle at 34% 32%, #fff6d8, #f7d774 60%, #b8902f);
+  box-shadow:0 2px 10px rgba(0,0,0,.55);
+}
+.slider::-moz-range-track{
+  height:12px; border-radius:99px; border:1px solid var(--line); background:rgba(255,255,255,.10);
+}
+.slider::-moz-range-progress{height:12px; border-radius:99px; background:var(--p1)}
+.slider::-moz-range-thumb{
+  width:28px; height:28px; border-radius:50%; border:none;
+  background:radial-gradient(circle at 34% 32%, #fff6d8, #f7d774 60%, #b8902f);
+  box-shadow:0 2px 10px rgba(0,0,0,.55);
+}
 
 @media (prefers-reduced-motion: reduce){
   #handSign{animation:none}
@@ -204,3 +252,64 @@ button.ghost{
 #hud[hidden]{display:none}
 @keyframes coachIn{from{opacity:0; transform:translateX(-50%) translateY(-6px)}to{opacity:1}}
 @media (prefers-reduced-motion: reduce){ #coach{animation:none} }
+
+/* ── 大きな連鎖のカットイン（画面いっぱいの「〇れんさ！」）──────────
+   > 見た目でも派手にしてほしいな。画面全面に『〇連鎖！』みたいな大きな文字をドーン！（オーナー）
+
+   ★盤の操作を絶対に邪魔しない★
+     pointer-events:none（この1行が命綱）＋ 出していないときは hidden。
+     過去に、起動失敗の救済画面が誤爆して盤が操作不能になる事故を起こしている。
+
+   ★光過敏性発作への配慮（仕様書§5-4）★
+     - **背景を塗らない**。文字と影だけなので、明滅する面積が画面全体にならない
+     - 連続で出さない（発火の間隔は src/ui/app.js が最低 CHAIN_POP_MS ミリ秒あける）
+     - 赤の強い明滅は使わない（金→白のみ）
+     - 「えんしゅつを ひかえめに」と prefers-reduced-motion では出さない */
+#chainPop{
+  position:absolute; inset:0; z-index:5;
+  pointer-events:none;                     /* ★消さないこと★ */
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center;
+}
+#chainPop b{
+  font-size:clamp(110px, 42vw, 320px); line-height:.84; font-weight:900;
+  color:var(--p1);
+  text-shadow:0 0 20px rgba(247,215,116,.9), 0 0 52px rgba(247,215,116,.5), 0 7px 0 rgba(0,0,0,.5);
+}
+#chainPop .unit{
+  font-size:clamp(34px, 13vw, 92px); font-weight:900; letter-spacing:.1em;
+  color:#fff6d8; text-shadow:0 0 16px rgba(247,215,116,.85), 0 4px 0 rgba(0,0,0,.45);
+}
+/* 8連鎖以上は白へ（もう一段あがった感じを出す） */
+#chainPop.hot b{color:#fff; text-shadow:0 0 24px #fff, 0 0 60px rgba(247,215,116,.75), 0 7px 0 rgba(0,0,0,.5)}
+/* ★寿命は render.js の POP_MIN_MS(600ms) より少しだけ長くする★
+   短いと、連鎖が伸びて数字だけ差し替えたときに「消えた要素の中身を書き換える」ことになる */
+#chainPop.play{animation:chainPop .62s cubic-bezier(.2,1.35,.35,1) both}
+@keyframes chainPop{
+  0%  {opacity:0; transform:scale(.35) rotate(-7deg)}
+  20% {opacity:1; transform:scale(1.18) rotate(2deg)}
+  36% {opacity:1; transform:scale(1) rotate(0deg)}
+  72% {opacity:1; transform:scale(1)}
+  100%{opacity:0; transform:scale(1.22)}
+}
+
+/* ── 画面のゆれ ───────────────────────────
+   ★揺らすのは #stage（盤の入れ物）だけにする★
+     #app を揺らすと、中の position:fixed（起動失敗の救済画面）の基準が #app になり、
+     いざ救済画面を出したいときに位置がずれる。盤が揺れれば十分に伝わる。
+   強さは --sk（px）で渡す。連鎖が伸びるほど大きくする。 */
+#stage{--sk:6px}
+#stage.shake{animation:screenShake .42s cubic-bezier(.36,.07,.19,.97) both}
+@keyframes screenShake{
+  0%  {transform:translate(0,0)}
+  15% {transform:translate(calc(var(--sk) * -1), calc(var(--sk) * .5))}
+  30% {transform:translate(var(--sk), calc(var(--sk) * -.6))}
+  45% {transform:translate(calc(var(--sk) * -.7), calc(var(--sk) * .35))}
+  60% {transform:translate(calc(var(--sk) * .6), calc(var(--sk) * .4))}
+  78% {transform:translate(calc(var(--sk) * -.3), calc(var(--sk) * -.2))}
+  100%{transform:translate(0,0)}
+}
+@media (prefers-reduced-motion: reduce){
+  #chainPop.play{animation:none}
+  #stage.shake{animation:none}
+}

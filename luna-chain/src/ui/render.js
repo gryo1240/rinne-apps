@@ -28,6 +28,13 @@ export const COLORS = {
  */
 const seatColor = (o, goldSeat) => (o === 0 ? COLORS.dim : (o === goldSeat ? COLORS.p1 : COLORS.p2));
 
+/**
+ * 連鎖のカットインを「出し直して」よい最短の間隔（ミリ秒）。
+ * ★1秒に3回を超える明滅を作らないための歯止め★（仕様書§5-4）。
+ *   600ms なら最大でも毎秒1.67回。test/test-render.mjs が実際に数えて検査している。
+ */
+export const POP_MIN_MS = 600;
+
 /** 演出の総時間の上限（ミリ秒）。20連鎖でも300連鎖でもここに収める */
 export const MAX_ANIM_MS = 2200;
 const BASE_STEP = 130;
@@ -68,7 +75,13 @@ export class BoardView {
     this.shake = 0;
     this.flash = 0;
     this.flashAt = -9999;      // 直前の全画面フラッシュの時刻（連続させないため）
-    this.chainPop = null;      // 連鎖数のカットイン
+    this.chainPop = null;      // 連鎖数のカットイン（★描くのは画面側★ ここは重複発火を防ぐ記録）
+    // ★カットインは盤のキャンバスではなく、画面いっぱいのDOMに出す★（2026-09-08 オーナー指示）
+    //   > 画面全面に『〇連鎖！』みたいな大きな文字をドーン！と表示する感じでどうでしょう
+    //   キャンバスは盤の大きさしか無いので「画面全面」にはできない。
+    //   ここは「何連鎖が起きたか」を知らせるだけで、見せ方は app.js が持つ。
+    this.onChainPop = null;
+    this.popAt = -99999;       // 直前にカットインを「出し直した」時刻（明滅の歯止め）
     this.pulse = 0;
     this.playing = false;
     this.onDone = null;
@@ -192,6 +205,7 @@ export class BoardView {
    */
   animate(events, onDone) {
     const booms = events.filter((e) => e.t === 'boom').length;
+    this.chainPop = null;              // ★1手ごとに数え直す★（前の手の記録が残ると出なくなる）
     this.stepMs = stepFor(booms);      // 加速: はじけが多いほど1コマを短くする
     this.queue = events.slice();
     this.index = 0;
@@ -270,8 +284,18 @@ export class BoardView {
       for (const j of ev.to) if (j >= 0) this.trail(ev.i, j, col);
       if (this.fx !== 'light' && !this.reduced) {
         this.shake = Math.min(9, 2 + ev.chain * 0.5);
+        // ★同じ手のあいだは「より大きくなったとき」だけ知らせる★
+        //   1手のあいだに3→4→5…と伸びるので、毎回出すと点滅になる（光過敏の配慮）
         if (ev.chain >= 3 && (!this.chainPop || ev.chain > this.chainPop.n)) {
           this.chainPop = { n: ev.chain, t };
+          if (this.onChainPop) {
+            /* ★「出し直す」のは POP_MIN_MS おきまで★（仕様書§5-4 光過敏性発作への配慮）
+               20はじけなら1コマ110ms、300はじけなら7ms。連鎖段が上がるたびに出し直すと
+               **1秒に5〜9回**の明滅になる。数だけ差し替えて、透明度は上げ直さない。 */
+            const restart = t - this.popAt >= POP_MIN_MS;
+            if (restart) this.popAt = t;
+            this.onChainPop(ev.chain, restart);
+          }
         }
       }
     }
@@ -419,22 +443,10 @@ export class BoardView {
     }
     ctx.globalAlpha = 1;
 
-    // 連鎖数のカットイン（数が増えるほど大きく・金→白へ）
-    if (this.chainPop) {
-      const age = Math.min(1, (t - this.chainPop.t) / 700);
-      const n = this.chainPop.n;
-      const size = Math.min(cell * 2.3, cell * (0.9 + n * 0.09));
-      ctx.save();
-      ctx.globalAlpha = (1 - age) * 0.95;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = `bold ${size}px system-ui, sans-serif`;
-      ctx.fillStyle = n >= 8 ? '#ffffff' : n >= 5 ? '#fff2c4' : COLORS.p1;
-      ctx.shadowColor = COLORS.p1; ctx.shadowBlur = 24;
-      ctx.fillText(`${n}`, w / 2, h / 2 - cell * 0.2 - age * cell * 0.5);
-      ctx.font = `bold ${Math.round(size * 0.3)}px system-ui, sans-serif`;
-      ctx.fillText('れんさ', w / 2, h / 2 + size * 0.42 - age * cell * 0.5);
-      ctx.restore();
-    }
+    /* ★連鎖数のカットインは、ここでは描かない★
+       盤のキャンバスは盤の大きさしか無いので「画面全面」にできない。
+       2026-09-08 に、画面いっぱいのDOM（#chainPop）へ移した。
+       この場所に描き戻すと、オーナーの「画面全面にドーン！」が盤の中の小さい文字に戻る。 */
 
     // 全画面のひかり（白飛びさせない・連続させない）
     if (this.flash > 0.02) {

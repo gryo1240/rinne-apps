@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style/base.css?v=b6158d01">
+<link rel="stylesheet" href="style/base.css?v=2d15369b">
 <!-- BEGIN importmap (tools/gen_importmap.py が生成。手で書き換えない) -->
 <script type="importmap">
 {"imports":{
@@ -20,11 +20,11 @@
   "./src/core/rng.js":"./src/core/rng.js?v=84ad8f5e",
   "./src/core/rules.js":"./src/core/rules.js?v=b1bd8382",
   "./src/game.js":"./src/game.js?v=9c63072b",
-  "./src/meta/progress.js":"./src/meta/progress.js?v=47d31a6d",
-  "./src/ui/app.js":"./src/ui/app.js?v=3493e9e1",
-  "./src/ui/audio.js":"./src/ui/audio.js?v=1e9b2bf3",
+  "./src/meta/progress.js":"./src/meta/progress.js?v=e6e2529c",
+  "./src/ui/app.js":"./src/ui/app.js?v=7d6e8182",
+  "./src/ui/audio.js":"./src/ui/audio.js?v=cc0a10fe",
   "./src/ui/coach.js":"./src/ui/coach.js?v=101ec48c",
-  "./src/ui/render.js":"./src/ui/render.js?v=aecca5ce",
+  "./src/ui/render.js":"./src/ui/render.js?v=0b9fa93f",
   "./data/tutorial.js":"./data/tutorial.js?v=9b51c858"
 }}
 </script>
@@ -50,6 +50,15 @@
     <!-- 対戦中の案内。★同時に1行だけ・24字以内★（src/ui/coach.js が正本） -->
     <div id="coach" hidden></div>
   </main>
+
+  <!-- 大きな連鎖のカットイン（画面いっぱいに「〇れんさ！」）
+       ★盤の操作を絶対に邪魔しない★
+         pointer-events:none と hidden の両方で守る。
+         過去に、起動失敗の救済画面（position:fixed の不透明な板）が誤爆して
+         盤が操作不能になる事故を起こしている。重ねる板を足すときは必ずここを確認する。 -->
+  <div id="chainPop" hidden aria-hidden="true">
+    <b id="chainPopNum"></b><span class="unit">れんさ！</span>
+  </div>
 
   <!-- タイトル -->
   <section id="scTitle" class="screen show">
@@ -123,19 +132,33 @@
   <section id="scSettings" class="screen">
     <h2>せってい</h2>
 
-    <h3>BGM（きょく）</h3>
-    <div id="bgmList" class="segs"></div>
+    <!-- ★見出しと操作は必ず同じ .setting の箱に入れる★（2026-09-08）
+           もとは見出しが画面の左端・操作が中央寄せで、**画面が広いほど左右に離れ**、
+           どの見出しがどの操作の説明なのか分からなくなっていた（オーナー指摘）。
+           箱に max-width を持たせて、見出しと操作の左端をそろえる。 -->
+    <div class="setting">
+      <h3>BGM（きょく）</h3>
+      <div id="bgmList" class="segs"></div>
+    </div>
 
-    <h3>BGMの おおきさ</h3>
-    <div id="volBgm" class="segs"></div>
+    <div class="setting">
+      <h3><label for="volBgm">BGMの おおきさ</label><b id="volBgmVal"></b></h3>
+      <input type="range" id="volBgm" class="slider" min="0" max="100" step="5"
+             aria-label="BGMの おおきさ">
+    </div>
 
-    <h3>こうかおんの おおきさ</h3>
-    <div id="volSe" class="segs"></div>
+    <div class="setting">
+      <h3><label for="volSe">こうかおんの おおきさ</label><b id="volSeVal"></b></h3>
+      <input type="range" id="volSe" class="slider" min="0" max="100" step="5"
+             aria-label="こうかおんの おおきさ">
+    </div>
 
-    <h3>そのほか</h3>
-    <label class="opt"><input type="checkbox" id="optPreview"> れんさの よこく（マスの数字）</label>
-    <label class="opt"><input type="checkbox" id="optCoach"> 対戦中の あんない</label>
-    <label class="opt"><input type="checkbox" id="optLight"> えんしゅつを ひかえめに</label>
+    <div class="setting">
+      <h3>そのほか</h3>
+      <label class="opt"><input type="checkbox" id="optPreview"> れんさの よこく（マスの数字）</label>
+      <label class="opt"><input type="checkbox" id="optCoach"> 対戦中の あんない</label>
+      <label class="opt"><input type="checkbox" id="optLight"> えんしゅつを ひかえめに</label>
+    </div>
 
     <div id="pauseBtns" class="row col" hidden>
       <button id="btnResume" class="big">つづける</button>
@@ -146,7 +169,7 @@
   </section>
 </div>
 
-<script type="module" src="src/ui/app.js?v=3493e9e1"></script>
+<script type="module" src="src/ui/app.js?v=7d6e8182"></script>
 <noscript><p style="color:#fff;padding:2em">このゲームはJavaScriptが必要です。</p></noscript>
 
 <script>

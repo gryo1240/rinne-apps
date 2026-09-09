@@ -39,10 +39,24 @@ try {
   if (globalThis.navigator && 'audioSession' in navigator) navigator.audioSession.type = 'playback';
 } catch { /* 未対応のブラウザでは何もしない */ }
 
-/** 音量の段階。★0/1/2 の3段だけ★（子どもの指ではスライダーは扱いにくい） */
-export const VOL_STEPS = ['なし', 'ちいさい', 'おおきい'];
-const SE_GAIN  = [0, 0.30, 0.60];
-const BGM_GAIN = [0, 0.16, 0.34];
+/**
+ * 音量は **0〜100**（2026-09-08 オーナー指示でスライドバーにした）。
+ * ここは「0〜100 を実際の音の大きさに直す係数」だけを持つ。
+ * ★BGMは効果音より控えめに天井を置く★ 同じ100でも、BGMが連鎖の音を埋めてしまわないように。
+ */
+/*  ★100 のときの大きさは、3段だった頃の「おおきい」と同じにする★
+    ここを超えると、**全員が誰も試していない音量域に入る**（子どもがイヤホンで遊ぶ）。 */
+const SE_MAX  = 0.60;
+const BGM_MAX = 0.34;
+const pct = (v, dflt = 0) => {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return dflt;
+  return Math.min(100, Math.max(0, n));
+};
+/*  ★つまみの位置と、聞こえる大きさを合わせる★
+    音の大きさは耳には対数で効くので、% をそのまま倍率にすると
+    「少し動かしただけで大きくなり、後半は変わらない」つまみになる。2乗にして素直に近づける。 */
+const gainOf = (v, max) => Math.pow(pct(v) / 100, 2) * max;
 
 /**
  * 選べるBGM。★テンションが高い順に並べる★（既定は先頭）
@@ -61,7 +75,7 @@ export const bgmById = (id) => BGM_LIST.find((b) => b.id === id) || BGM_LIST[0];
 let ctx = null;
 let master = null;
 let noiseBuf = null;
-let seLevel = 2;
+let seLevel = 100;               // 0〜100
 
 /**
  * ★同時に鳴らす音の上限★
@@ -91,15 +105,13 @@ function budgetOk(startAt, endAt) {
   return true;
 }
 
-const clampLevel = (v) => (v === 0 || v === 1 || v === 2 ? v : 2);
-
 export function setSeVol(level) {
-  seLevel = clampLevel(level);
-  if (master) master.gain.value = SE_GAIN[seLevel];
+  seLevel = pct(level, 100);
+  if (master) master.gain.value = gainOf(seLevel, SE_MAX);
 }
 
 /** 音のオン・オフ1つだけだった頃との互換（新しい呼び出しでは使わない） */
-export function setEnabled(v) { setSeVol(v ? 2 : 0); }
+export function setEnabled(v) { setSeVol(v ? 100 : 0); }
 
 /** 最初の操作で呼ぶ。何度呼んでも安全 */
 export function unlock() {
@@ -113,7 +125,7 @@ export function unlock() {
     if (!AC) return;
     ctx = new AC();
     master = ctx.createGain();
-    master.gain.value = SE_GAIN[seLevel];
+    master.gain.value = gainOf(seLevel, SE_MAX);
     master.connect(ctx.destination);
     if (ctx.state === 'suspended') ctx.resume();
   } catch { ctx = null; }
@@ -131,7 +143,7 @@ function getNoise() {
 
 /** 音程のある音 */
 function tone({ freq = 440, dur = 0.12, type = 'sine', gain = 0.25, slide = 0, delay = 0, detune = 0 }) {
-  if (!ctx || seLevel === 0) return;
+  if (!ctx || seLevel <= 0) return;
   try {
     const t0 = ctx.currentTime + delay;
     if (!budgetOk(t0, t0 + dur)) return;
@@ -151,7 +163,7 @@ function tone({ freq = 440, dur = 0.12, type = 'sine', gain = 0.25, slide = 0, d
 
 /** ざらざらの破裂音（「シャッ」）。★これが無いと、はじけても音が丸くて手ごたえが出ない★ */
 function burst({ freq = 1400, dur = 0.13, gain = 0.2, delay = 0, q = 1.1, slide = 0.35 }) {
-  if (!ctx || seLevel === 0) return;
+  if (!ctx || seLevel <= 0) return;
   try {
     const t0 = ctx.currentTime + delay;
     if (!budgetOk(t0, t0 + dur)) return;
@@ -258,7 +270,7 @@ export const SE = {
     <audio> なら流しながら鳴らせるので、押した直後から鳴り始められる。 */
 let bgmEl = null;
 let bgmId = DEFAULT_BGM;
-let bgmLevel = 1;
+let bgmLevel = 70;             // 0〜100
 let bgmWant = false;           // 「いま鳴らしていたい」か（読み込み待ちの間もこれが正）
 
 function ensureBgmEl() {
@@ -274,12 +286,45 @@ function ensureBgmEl() {
   return bgmEl;
 }
 
-const bgmVolume = () => BGM_GAIN[bgmLevel] * bgmById(bgmId).trim;
+const bgmVolume = () => gainOf(bgmLevel, BGM_MAX) * bgmById(bgmId).trim;
+
+/**
+ * ★BGMの音量つまみを iPhone でも効かせる★（2026-09-08 アドバイザー指摘）
+ *   iOS Safari は `HTMLMediaElement.volume` への代入を**黙って無視する**（音量は本体側の役目）。
+ *   3段ボタンの頃は気づきにくかったが、スライドバーにすると
+ *   「動かしても何も変わらない」が露骨に見える。
+ *   → `<audio>` を WebAudio のグラフに通し、GainNode で音量を決める。ここは全機種で効く。
+ *
+ * ★AudioContext が動いていないときは通さない★
+ *   止まっている（suspended）グラフに通すと、いままで鳴っていたBGMが**まるごと無音**になる。
+ *   通せなかったときは、これまでどおり要素の volume を使う（＝いまと同じ挙動に戻るだけ）。
+ */
+let bgmSrc = null;
+let bgmGain = null;
+
+function routeBgmThroughGraph() {
+  if (bgmSrc || !ctx || !bgmEl) return;
+  if (ctx.state !== 'running') return;
+  try {
+    bgmSrc = ctx.createMediaElementSource(bgmEl);
+    bgmGain = ctx.createGain();
+    bgmGain.gain.value = bgmVolume();
+    bgmSrc.connect(bgmGain);
+    bgmGain.connect(ctx.destination);
+    bgmEl.volume = 1;            // 実際の大きさは GainNode 側で決める
+  } catch { bgmSrc = null; bgmGain = null; }
+}
+
+function applyBgmVolume() {
+  const v = bgmVolume();
+  if (bgmGain) { bgmGain.gain.value = v; return; }
+  try { if (bgmEl) bgmEl.volume = v; } catch { /* 効かない機種でも例外を出さない */ }
+}
 
 export function setBgmVol(level) {
-  bgmLevel = clampLevel(level);
-  if (bgmEl) bgmEl.volume = bgmVolume();
-  if (bgmLevel === 0) bgmStop();
+  bgmLevel = pct(level, 70);
+  applyBgmVolume();
+  if (bgmLevel <= 0) bgmStop();
 }
 
 export function setBgmSong(id) {
@@ -293,20 +338,21 @@ export function setBgmSong(id) {
     a.pause();
     a.src = bgmById(bgmId).file;
     a.currentTime = 0;
-    a.volume = bgmVolume();
+    applyBgmVolume();
   } catch { /* 差し替えに失敗しても遊べる */ }
   if (wasPlaying) bgmPlay();
 }
 
 /** ★必ず「押した」流れの中から呼ぶ★（iPhoneは操作なしでは鳴らせない） */
 export function bgmPlay() {
-  if (bgmLevel === 0) return;
+  if (bgmLevel <= 0) return;
   const a = ensureBgmEl();
   if (!a) return;
   bgmWant = true;
   try {
     if (!a.src) { a.src = bgmById(bgmId).file; a.currentTime = 0; }
-    a.volume = bgmVolume();
+    routeBgmThroughGraph();   // ★押した流れの中なので AudioContext は動いている★
+    applyBgmVolume();
     const p = a.play();
     if (p && p.catch) p.catch(() => { /* 自動再生を止められた。無音で続ける */ });
   } catch { /* 同上 */ }

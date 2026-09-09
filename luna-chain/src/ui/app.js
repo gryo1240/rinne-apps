@@ -32,6 +32,7 @@ const el = {
   hud: $('hud'), board: $('board'), stage: $('stage'),
   turnDot: $('turnDot'), turnText: $('turnText'),
   handSign: $('handSign'), coach: $('coach'),
+  chainPop: $('chainPop'), chainPopNum: $('chainPopNum'),
 };
 
 let save = loadSave();
@@ -72,6 +73,7 @@ function show(name) {
     held = -1; pressId = null; busy = false; pendingCpu = false;
     if (view) { view.cancelAnimation(); view.setHints(null); }
     if (match && !match.state.winner) match.id = ++matchId;
+    hideChainPop();
     hideHand();
     sayNothing();
   }
@@ -131,6 +133,30 @@ function boot() {
     writeDevice(device);
     $('btnCoachAgain').textContent = 'つぎの対戦から また 出ます';
   });
+  // ★音量はスライドバー★（2026-09-08 オーナー指示）
+  //   input（動かしている最中）… 音量にすぐ反映する。**保存はしない**（1目盛りごとに書くのは無駄）
+  //   change（指を離した）    … 保存して、試聴の音を鳴らす
+  //   ★input のたびに試聴音を鳴らさないこと★ 動かしているあいだ連射されて何も聞き取れなくなる
+  $('volSe').addEventListener('input', (e) => {
+    device.seVol = Number(e.target.value);
+    Audio.setSeVol(device.seVol);
+    paintVol(e.target, $('volSeVal'), device.seVol);
+  });
+  $('volSe').addEventListener('change', () => {
+    saveVolumes();
+    if (device.seVol > 0) Audio.SE.boom(3);      // いま決めた大きさで、実際のはじけ音を聞かせる
+  });
+  $('volBgm').addEventListener('input', (e) => {
+    device.bgmVol = Number(e.target.value);
+    Audio.setBgmVol(device.bgmVol);
+    paintVol(e.target, $('volBgmVal'), device.bgmVol);
+  });
+  $('volBgm').addEventListener('change', () => {
+    saveVolumes();
+    if (device.bgmVol > 0) Audio.bgmPlay();
+  });
+  // ★大きな連鎖を画面いっぱいに出す★（見せ方は画面側の仕事。render.js は数を知らせるだけ）
+  view.onChainPop = (n, restart) => showChainPop(n, restart);
   $('optPreview').addEventListener('change', (e) => {
     device.preview = e.target.checked; writeDevice(device); refreshHints();
   });
@@ -220,6 +246,7 @@ function beginMatch({ terrain, wrapX, tier, oppName, mySeat = null, vs = false }
   view.legal = null;
   view.lastMove = -1;
   view.resize();
+  hideChainPop();
   lastTurnSeat = match.state.player;   // 開始時は鳴らさない
   updateHud();
   hideHand();
@@ -357,14 +384,13 @@ function afterMove(r, next) {
   }
   // ★大きい連鎖はド派手に★（月ゲージは廃止したので、連鎖そのものを見せ場にする）
   //   ★5連鎖目が画面に出る時刻に合わせる★
-  //     ここで即時に鳴らすと、ごほうびの音と光が**数百ms先に**来てしまい、
+  //     ここで即時に鳴らすと、ごほうびの音が**数百ms先に**来てしまい、
   //     何に対するごほうびなのか分からなくなる（2026-09-08のレビューで発覚）
+  //   ★全画面フラッシュ（bigFlash）はここでは出さない★
+  //     画面いっぱいのカットインと同時に光ると、**輝度の変化が2段ぶん重なる**（仕様書§5-4）。
+  //     全画面の光は決着のときだけにする。見せ場はカットインと画面のゆれが担う。
   const bigIdx = r.events.findIndex((e) => e.t === 'boom' && e.chain >= 5);
-  if (bigIdx >= 0) {
-    const at = Math.min(2.4, bigIdx * stepSec);
-    Audio.SE.moon(at);
-    setTimeout(() => { if (match && match.id === gen) view.bigFlash(); }, at * 1000);
-  }
+  if (bigIdx >= 0) Audio.SE.moon(Math.min(2.4, bigIdx * stepSec));
 
   view.animate(r.events, () => {
     if (!match || match.id !== gen) return;   // 別の対戦が始まっていたら何もしない
@@ -481,6 +507,53 @@ function updateHud() {
       else if (humanTurn(match)) Audio.SE.turn(true);
     }
   }
+}
+
+// ── 大きな連鎖のカットイン（画面いっぱいの「〇れんさ！」）──────────
+/*  > 見た目でも派手にしてほしいな。画面全面に『〇連鎖！』みたいな大きな文字をドーン！と
+    > 表示する感じでどうでしょう。画面も揺れてもいいね。（オーナー 2026-09-08）
+
+    ★出し直してよい間隔は render.js の POP_MIN_MS が決める★（仕様書§5-4 光過敏性発作への配慮）
+      連鎖が伸びている最中は restart=false で呼ばれる。そのときは
+      **数字だけ差し替えて、透明度は上げ直さない**（上げ直すと1秒に何回も明滅する）。
+    ★背景を塗らないこと★ 文字と光だけなら、明滅する面積が画面全体にならない。
+      暗幕やグラデを敷いた瞬間に「広い面積の明滅」になる。 */
+const POP_MS = 640;            // 出しておく時間。★POP_MIN_MS より長くすること★
+let popTimer = null;
+let shakeTimer = null;
+
+function showChainPop(n, restart) {
+  if (!view || device.effects === 'light' || view.reduced) return;
+  el.chainPopNum.textContent = String(n);
+  el.chainPop.classList.toggle('hot', n >= 8);
+  if (!restart) return;                       // 伸びている最中は数字だけ差し替える
+
+  el.chainPop.hidden = false;
+  el.chainPop.classList.remove('play');
+  void el.chainPop.offsetWidth;               // アニメを最初から流し直すために1回読む
+  el.chainPop.classList.add('play');
+  if (popTimer) clearTimeout(popTimer);
+  popTimer = setTimeout(hideChainPop, POP_MS);
+
+  // ★揺らすのは盤の入れ物(#stage)だけ★
+  //   #app を揺らすと、ヘッダの⚙も、開いている設定画面も、起動失敗の救済画面も一緒に揺れる。
+  //   とくに「止めたい人が⚙を押せない」のは避けたい。
+  el.stage.style.setProperty('--sk', `${Math.min(13, 4 + n)}px`);
+  el.stage.classList.remove('shake');
+  void el.stage.offsetWidth;
+  el.stage.classList.add('shake');
+  if (shakeTimer) clearTimeout(shakeTimer);
+  shakeTimer = setTimeout(() => { el.stage.classList.remove('shake'); shakeTimer = null; }, 460);
+}
+
+/** ★消す責任者はここ1か所★（対戦を離れても「5れんさ！」が居座らないように） */
+function hideChainPop() {
+  if (popTimer) { clearTimeout(popTimer); popTimer = null; }
+  if (shakeTimer) { clearTimeout(shakeTimer); shakeTimer = null; }
+  el.chainPop.hidden = true;
+  el.chainPop.classList.remove('play', 'hot');
+  el.chainPopNum.textContent = '';   // 古い数字を残さない（残ると調べたときに誤診する）
+  el.stage.classList.remove('shake');
 }
 
 function showHand(i) {
@@ -750,38 +823,28 @@ function renderSettings(inMatch = false) {
   $('optPreview').checked = device.preview;
   $('optCoach').checked = device.coach;
   $('optLight').checked = device.effects === 'light';
-  renderVol('volSe', device.seVol);
-  renderVol('volBgm', device.bgmVol);
+  paintVol($('volSe'), $('volSeVal'), device.seVol);
+  paintVol($('volBgm'), $('volBgmVal'), device.bgmVol);
   renderBgmList();
   $('pauseBtns').hidden = !inMatch;
   $('btnSettingsClose').hidden = inMatch;
   $('btnQuit').textContent = mode === 'tutorial' ? 'あそびかたへ' : 'タイトルへ';
 }
 
-/** 音量の3段ボタン（なし・ちいさい・おおきい）。★段の名前は audio.js が持つ★ */
-function renderVol(boxId, level) {
-  const box = $(boxId);
-  box.innerHTML = '';
-  Audio.VOL_STEPS.forEach((label, v) => {
-    const b = document.createElement('button');
-    b.className = 'seg' + (v === level ? ' on' : '');
-    b.textContent = label;
-    b.addEventListener('click', () => {
-      if (boxId === 'volSe') {
-        device.seVol = v;
-        Audio.setSeVol(v);
-        if (v > 0) Audio.SE.place();      // ★選んだ音量がその場で聞こえる★
-      } else {
-        device.bgmVol = v;
-        Audio.setBgmVol(v);
-        if (v > 0) Audio.bgmPlay();
-      }
-      device.sound = device.seVol > 0 || device.bgmVol > 0;
-      writeDevice(device);
-      renderVol(boxId, v);
-    });
-    box.appendChild(b);
-  });
+/**
+ * スライドバーの見た目を、いまの値に合わせる。
+ *   `--fill` は「たまっている側」の塗り分け位置（CSSが読む）。
+ *   0 のときは数字でなく「なし」と出す（0という数字より、切れていることが伝わる）
+ */
+function paintVol(input, label, v) {
+  input.value = String(v);
+  input.style.setProperty('--fill', `${v}%`);
+  label.textContent = v <= 0 ? 'なし' : String(v);
+}
+
+function saveVolumes() {
+  device.sound = device.seVol > 0 || device.bgmVol > 0;
+  writeDevice(device);
 }
 
 /** BGMの選択。★曲の一覧は audio.js が正本★（ここに曲名を書き写さない） */
