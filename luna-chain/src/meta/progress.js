@@ -90,6 +90,9 @@ function clampInt(v, lo, hi, dflt) {
  */
 import { DEF_W, DEF_H, MIN_W, MAX_W, MIN_H, MAX_H } from '../core/board.js';
 
+/** 手動で強さを決めるときの初期値（まんなか） */
+export const DEF_TIER = 3;
+
 export const DEF_SE = 100;
 export const DEF_BGM = 70;
 const LEGACY_STEP = [0, 70, 100];    // 0=なし / 1=ちいさい / 2=おおきい を % に直した値
@@ -131,6 +134,7 @@ export function loadDevice(storage = globalThis.localStorage) {
     sound: true, effects: 'normal', preview: true, coach: true, coachSeen: [],
     seVol: DEF_SE, bgmVol: DEF_BGM, bgm: '',
     boardW: DEF_W, boardH: DEF_H,
+    cpuAuto: true, cpuTier: DEF_TIER,
   };
   try {
     const got = safeParse(storage && storage.getItem(DEVICE_KEY), {});
@@ -158,6 +162,12 @@ export function loadDevice(storage = globalThis.localStorage) {
          丸める範囲の正本は board.js（ここに数字を書き写さない）。 */
       boardW: clampInt(got.boardW, MIN_W, MAX_W, DEF_W),
       boardH: clampInt(got.boardH, MIN_H, MAX_H, DEF_H),
+      /* ★CPUの強さ★（2026-09-09）
+         cpuAuto=true のあいだは save.tier（直近10戦から自動で動く段位）を使う。
+         false にすると cpuTier で固定する。★自動と手動を同じ数字に持たせない★——
+         1つの変数に2つの意味を持たせると、自動に戻したときに段位が壊れる。 */
+      cpuAuto: got.cpuAuto !== false,
+      cpuTier: clampInt(got.cpuTier, 1, TIER_MAX, DEF_TIER),
     };
   } catch { return base; }
 }

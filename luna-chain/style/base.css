@@ -299,15 +299,38 @@ button.ghost{
      #app を揺らすと、中の position:fixed（起動失敗の救済画面）の基準が #app になり、
      いざ救済画面を出したいときに位置がずれる。盤が揺れれば十分に伝わる。
    強さは --sk（px）で渡す。連鎖が伸びるほど大きくする。 */
-#stage{--sk:6px}
-#stage.shake{animation:screenShake .42s cubic-bezier(.36,.07,.19,.97) both}
+/* ★--sk（振幅px）と --skms（長さ）は src/ui/app.js が入れる★ 正本は render.js の SHAKE。
+   ★係数の絶対値は 1.0 を超えないこと★（超えると、JSが渡したpxより大きく動く＝上限が嘘になる）
+   ★イージングは linear★
+     cubic-bezier(.36,.07,.19,.97) は「アニメ全体に1回かける」用の曲線で、
+     キーフレーム間ごとにかけると各区間が「ゆっくり始まって急に着く」動きになり、
+     振動ではなく **傾き** に見える（2026-09-09 の実測で判明）。 */
+#stage{--sk:6px; --skms:340ms; will-change:transform}
+#stage.shake{animation:screenShake var(--skms) linear both}
+/* ★1連鎖用（短い）★ 同じ型を200msでかけると約22Hzになりブレて見えるので、往復を減らす */
+#stage.shake.small{animation-name:screenShakeSmall}
+@keyframes screenShakeSmall{
+  0%  {transform:translate(0,0)}
+  14% {transform:translate(calc(var(--sk) * -1),   calc(var(--sk) * .5))}
+  30% {transform:translate(calc(var(--sk) * .92),  calc(var(--sk) * -.5))}
+  46% {transform:translate(calc(var(--sk) * -.72), calc(var(--sk) * -.3))}
+  62% {transform:translate(calc(var(--sk) * .54),  calc(var(--sk) * .36))}
+  78% {transform:translate(calc(var(--sk) * -.34), calc(var(--sk) * .2))}
+  90% {transform:translate(calc(var(--sk) * .18),  calc(var(--sk) * -.12))}
+  100%{transform:translate(0,0)}
+}
 @keyframes screenShake{
   0%  {transform:translate(0,0)}
-  15% {transform:translate(calc(var(--sk) * -1), calc(var(--sk) * .5))}
-  30% {transform:translate(var(--sk), calc(var(--sk) * -.6))}
-  45% {transform:translate(calc(var(--sk) * -.7), calc(var(--sk) * .35))}
-  60% {transform:translate(calc(var(--sk) * .6), calc(var(--sk) * .4))}
-  78% {transform:translate(calc(var(--sk) * -.3), calc(var(--sk) * -.2))}
+  9%  {transform:translate(calc(var(--sk) * -1),   calc(var(--sk) * .55))}
+  18% {transform:translate(calc(var(--sk) * .92),  calc(var(--sk) * -.6))}
+  27% {transform:translate(calc(var(--sk) * -.84), calc(var(--sk) * -.4))}
+  36% {transform:translate(calc(var(--sk) * .76),  calc(var(--sk) * .5))}
+  45% {transform:translate(calc(var(--sk) * -.66), calc(var(--sk) * .3))}
+  54% {transform:translate(calc(var(--sk) * .56),  calc(var(--sk) * -.42))}
+  63% {transform:translate(calc(var(--sk) * -.44), calc(var(--sk) * -.24))}
+  72% {transform:translate(calc(var(--sk) * .34),  calc(var(--sk) * .28))}
+  81% {transform:translate(calc(var(--sk) * -.22), calc(var(--sk) * .14))}
+  90% {transform:translate(calc(var(--sk) * .12),  calc(var(--sk) * -.1))}
   100%{transform:translate(0,0)}
 }
 /* ★「ひかえめ」のとき★ 拡大も回転もせず、ふわっと出て消えるだけにする。
@@ -370,6 +393,8 @@ button.verline:hover{color:var(--fg)}
 .szrow{display:flex; align-items:center; gap:10px; width:100%}
 .szrow span{flex:0 0 2.6em; font-size:13px; color:var(--dim)}
 .szrow .slider{flex:1 1 auto; min-width:0}
+/* 「じどう」のあいだは触れない（動かせるのに戻る、という嘘をつかない） */
+.slider:disabled{opacity:.45; cursor:not-allowed}
 .bprev{
   display:grid; gap:3px; justify-content:center; margin:8px auto 2px;
   padding:8px; border-radius:10px; background:rgba(255,255,255,.04);

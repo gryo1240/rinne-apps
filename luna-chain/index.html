@@ -11,21 +11,21 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style/base.css?v=b6a6186a">
+<link rel="stylesheet" href="style/base.css?v=4e70363b">
 <!-- BEGIN importmap (tools/gen_importmap.py が生成。手で書き換えない) -->
 <script type="importmap">
 {"imports":{
-  "./src/ai/ai.js":"./src/ai/ai.js?v=ab3c9361",
+  "./src/ai/ai.js":"./src/ai/ai.js?v=0dfccaef",
   "./src/core/board.js":"./src/core/board.js?v=9dddb538",
   "./src/core/rng.js":"./src/core/rng.js?v=84ad8f5e",
   "./src/core/rules.js":"./src/core/rules.js?v=b1bd8382",
   "./src/game.js":"./src/game.js?v=9c63072b",
-  "./src/meta/progress.js":"./src/meta/progress.js?v=fab62553",
-  "./src/ui/app.js":"./src/ui/app.js?v=35082a8d",
+  "./src/meta/progress.js":"./src/meta/progress.js?v=6dc4b3a1",
+  "./src/ui/app.js":"./src/ui/app.js?v=9169f540",
   "./src/ui/audio.js":"./src/ui/audio.js?v=cc0a10fe",
   "./src/ui/coach.js":"./src/ui/coach.js?v=08412dd1",
-  "./src/ui/render.js":"./src/ui/render.js?v=ee701dfe",
-  "./src/version.js":"./src/version.js?v=6da2d115",
+  "./src/ui/render.js":"./src/ui/render.js?v=3b7a89c0",
+  "./src/version.js":"./src/version.js?v=f73173e2",
   "./data/tutorial.js":"./data/tutorial.js?v=78b74887"
 }}
 </script>
@@ -180,6 +180,19 @@
         おおきさを かえた盤は きろくに のこりません</p>
     </div>
 
+    <!-- あいての つよさ（2026-09-09 オーナー指示「敵の強さもスライドバーで」）
+         ★「じどう」をスライドバーの0番目に置かない★
+           スライドバーは「量」を表す部品なので、最弱の左に「じどう」があると
+           **じどう＝★1より弱い** と読める。チェックボックスで分ける。
+         ★min/max は書かない★ 段の数の正本は src/ai/ai.js の TIERS。 -->
+    <div class="setting">
+      <h3><label for="cpuTier">あいての つよさ</label><b id="cpuTierVal"></b></h3>
+      <label class="opt"><input type="checkbox" id="cpuAuto"> じどうで つよさを あわせる</label>
+      <label class="szrow"><span>つよさ</span><input type="range" id="cpuTier" class="slider" step="1"></label>
+      <p class="note">つぎの たいせんから かわります。<br>
+        じぶんで きめた ときは きろくに のこりません</p>
+    </div>
+
     <div class="setting">
       <h3>そのほか</h3>
       <label class="opt"><input type="checkbox" id="optPreview"> れんさの よこく（マスの数字）</label>
@@ -200,7 +213,7 @@
   </section>
 </div>
 
-<script type="module" src="src/ui/app.js?v=35082a8d"></script>
+<script type="module" src="src/ui/app.js?v=9169f540"></script>
 <noscript><p style="color:#fff;padding:2em">このゲームはJavaScriptが必要です。</p></noscript>
 
 <script>

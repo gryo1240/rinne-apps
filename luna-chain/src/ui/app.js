@@ -24,11 +24,12 @@ import {
 import { VERSION_LABEL, NEWS } from '../version.js';
 import { findWinningMove, cloneState, capAt, previewChain, chainMap, effTerrain } from '../core/rules.js';
 import { createMatch, play, cpuMove, humanTurn, cpuSeat } from '../game.js';
+import { TIER_MAX, TIER_NAMES } from '../ai/ai.js';
 import { loadSave, writeSave, loadDevice, writeDevice, recordMatch } from '../meta/progress.js';
 import { makeRng } from '../core/rng.js';
 import { TUTORIALS, handIdx } from '../../data/tutorial.js';
 import { Coach } from './coach.js';
-import { BoardView, DOTS, stepFor, POP_TEXT_CHAIN } from './render.js';
+import { BoardView, DOTS, stepFor, POP_TEXT_CHAIN, shakeAmp, shakeMs } from './render.js';
 import * as Audio from './audio.js';
 
 const $ = (id) => document.getElementById(id);
@@ -200,8 +201,23 @@ function startNormal() {
   applyBoardSize();
   const b = randomBoard();
   mode = 'normal';
-  beginMatch({ terrain: b.terrain, wrapX: b.wrapX, tier: save.tier, oppName: 'ルナ' });
+  beginMatch({ terrain: b.terrain, wrapX: b.wrapX, tier: cpuTier(), oppName: 'ルナ' });
 }
+
+/**
+ * こんどの対戦で使うCPUの強さ。
+ * ★「じどう」と「手で決めた強さ」を同じ数字に持たせない★
+ *   save.tier（直近10戦で動く）と device.cpuTier（人が決めた）は別物。
+ *   1つにまとめると、手動で遊んだあと自動に戻したときに段位が意味を失う。
+ */
+const cpuTier = () => (device.cpuAuto ? save.tier : device.cpuTier);
+
+/**
+ * この対戦を「きろく」に残してよいか。★判定はここ1か所★
+ *   2か所に分けると、片方だけ直して静かにズレる。
+ *   ふつうの盤(6×7) かつ 強さがじどう のときだけ残す。
+ */
+const countsForRecord = () => isDefaultSize() && device.cpuAuto;
 
 /**
  * せっていで選んだ盤の大きさを実際に効かせる。
@@ -294,7 +310,8 @@ function restartMatch() {
 
 // ── 入力（指を置く → 予告 → 離して確定）────────────────
 /** ★操作してよいか★ 席ではなく control（誰が押すか）だけを見る */
-const myTurn = () => !!match && !busy && !paused && curScreen === null && humanTurn(match);
+const myTurn = () => !!match && !busy && !paused && !shaking()
+  && curScreen === null && humanTurn(match);
 
 function onDown(e) {
   if (pressId !== null) return;               // すでに別の指が乗っている（2本目は無視する）
@@ -584,6 +601,12 @@ function showChainPop(n, restart, soft) {
     el.chainPopNum.textContent = String(n);
     el.chainPop.classList.toggle('hot', n >= 8);
   }
+  /* ★揺れの強さは、伸びている最中でも上げていく★（2026-09-09 実測で判明）
+       カットインを「出し直す」のは600msに1回だが、連鎖はその間に2→3→…と伸びる。
+       出し直すときにしか --sk を入れ直さないと、**20連鎖でも2連鎖ぶんの揺れ**にしかならない
+       （実測: 3連鎖の場面で --sk が 10px＝2連鎖ぶんのまま止まっていた）。
+       走っているアニメは --sk を読み続けるので、ここで入れ直せば揺れが育つ。 */
+  if (!soft) el.stage.style.setProperty('--sk', `${shakeAmp(n, view.cell)}px`);
   if (!restart) return;                       // 伸びている最中は数字だけ差し替える
 
   if (withText) {
@@ -601,13 +624,31 @@ function showChainPop(n, restart, soft) {
   // ★揺らすのは盤の入れ物(#stage)だけ★
   //   #app を揺らすと、ヘッダの⚙も、開いている設定画面も、起動失敗の救済画面も一緒に揺れる。
   //   とくに「止めたい人が⚙を押せない」のは避けたい。
-  el.stage.style.setProperty('--sk', `${withText ? Math.min(13, 4 + n) : 3}px`);
-  el.stage.classList.remove('shake');
+  /* ★px と ms の正本は render.js の SHAKE★（ここに数字を書かない）
+       前の版は「0.42秒かけて3px」で、本番の実測でも最大2.91pxしか動いていなかった。
+       0.42秒かけて3px動くのは「ゆっくり傾いた」であって、揺れとして知覚できない。
+     ★盤の1マスの大きさに紐づける★ 8×10 の盤では1マスが24〜30pxまで小さくなるので、
+       px固定だと盤1マスぶん動くことになり、どこを押したのか分からなくなる。 */
+  const ms = shakeMs(n);
+  el.stage.classList.remove('shake', 'small');
   void el.stage.offsetWidth;
+  el.stage.style.setProperty('--skms', `${ms}ms`);
+  /* ★短い揺れは、往復の回数も減らす★
+       同じ10往復の型を200msでかけると約22Hzになり、揺れではなく「ブレ」に見える
+       （60コマ表示では1往復が3コマを切る）。1連鎖用は往復の少ない型を使う。 */
   el.stage.classList.add('shake');
+  if (!withText) el.stage.classList.add('small');
   if (shakeTimer) clearTimeout(shakeTimer);
-  shakeTimer = setTimeout(() => { el.stage.classList.remove('shake'); shakeTimer = null; }, 460);
+  /* ★揺れ終わるまでは、盤のタップを受け付けない★
+       #stage が動いているあいだ、canvas の位置は最大 amp px ずれている。
+       hit() は getBoundingClientRect から逆算するので、読み取りと表示の1コマぶんの差が
+       そのまま「押したマスと違うマスに置かれる」になる。振幅を3px→最大24pxに上げた以上、
+       ここを塞がないと実害が出る（cell 36px なら3割ずれる）。 */
+  shakeTimer = setTimeout(() => { el.stage.classList.remove('shake', 'small'); shakeTimer = null; }, ms);
 }
+
+/** 揺れている最中か（★このあいだは盤を押させない★ 上の説明を読むこと） */
+const shaking = () => shakeTimer !== null;
 
 /** ★消す責任者はここ1か所★（対戦を離れても「5れんさ！」が居座らないように） */
 function hideChainPop() {
@@ -712,7 +753,7 @@ function finish() {
          そのあと ふつうの盤では二度と更新できなくなる。
          勝率とCPUの段位も、AIの評価が6×7前提なので混ぜると意味を失う。
        ふたりで あそぶ を記録に残さないのと同じ扱い（§0-10）。 */
-    const counts = isDefaultSize();
+    const counts = countsForRecord();
     if (counts) {
       save = recordMatch(save, { won, maxChain: chain, countForTier: true });
       writeSave(save);
@@ -720,7 +761,7 @@ function finish() {
     $('chainBox').textContent = chain > 0
       ? `いちばん長い れんさ ${chain}${counts && chain > before ? '（じこベスト！）' : ''}`
       : '';
-    if (!counts) $('resultSub').textContent = 'おおきさを かえた盤なので きろくに のこりません';
+    if (!counts) $('resultSub').textContent = 'せっていを かえたので きろくに のこりません';
     if (counts && chain > before && chain > 0) Audio.SE.moon();
   }
 
@@ -935,6 +976,7 @@ function renderSettings(inMatch = false) {
   paintVol($('volSe'), $('volSeVal'), device.seVol);
   paintVol($('volBgm'), $('volBgmVal'), device.bgmVol);
   paintBoardSize();
+  paintCpuTier();
   renderBgmList();
   $('pauseBtns').hidden = !inMatch;
   $('btnSettingsClose').hidden = inMatch;
@@ -957,6 +999,19 @@ function initSizeSliders() {
   const w = $('boardW'), h = $('boardH');
   w.min = String(MIN_W); w.max = String(MAX_W);
   h.min = String(MIN_H); h.max = String(MAX_H);
+  const tv = $('cpuTier');
+  tv.min = '1'; tv.max = String(TIER_MAX);
+  $('cpuAuto').addEventListener('change', (e) => {
+    device.cpuAuto = e.target.checked;
+    if (device.cpuAuto) device.cpuTier = save.tier;   // 自動の値をそのまま引き継ぐ
+    writeDevice(device);
+    paintCpuTier();
+  });
+  tv.addEventListener('input', () => {
+    device.cpuTier = Number(tv.value);
+    writeDevice(device);
+    paintCpuTier();
+  });
   const onInput = (key, input) => {
     device[key] = Number(input.value);
     writeDevice(device);
@@ -979,6 +1034,21 @@ function paintBoardSize() {
   box.textContent = '';
   box.style.gridTemplateColumns = `repeat(${bw}, 7px)`;
   for (let k = 0; k < bw * bh; k++) box.appendChild(document.createElement('i'));
+}
+
+/**
+ * あいての つよさ。★「じどう」のあいだはスライドバーを触れなくする★
+ *   触れてしまうと「動かしたのに次の対戦で戻っている」という嘘になる。
+ */
+function paintCpuTier() {
+  const auto = device.cpuAuto;
+  const t = auto ? save.tier : device.cpuTier;
+  $('cpuAuto').checked = auto;
+  const sl = $('cpuTier');
+  sl.value = String(t);
+  sl.disabled = auto;
+  sl.style.setProperty('--fill', `${(t - 1) / (TIER_MAX - 1) * 100}%`);
+  $('cpuTierVal').textContent = `★${t} ${TIER_NAMES[t - 1] || ''}` + (auto ? '（じどう）' : '');
 }
 
 function paintVol(input, label, v) {

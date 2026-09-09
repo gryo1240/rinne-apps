@@ -39,6 +39,77 @@ export const POP_MIN_CHAIN = 1;
 /** ここから「画面いっぱいの文字」を出す。これ未満は揺れだけ。★正本はここ★ */
 export const POP_TEXT_CHAIN = 2;
 
+/**
+ * 画面のゆれ。★px と ms の正本はここ★（CSSの係数だけで表現しない）
+ *
+ * ★2026-09-09 実測で全面的に見直した★
+ *   前の版は「1連鎖 3px / 3連鎖 6px を 0.42秒かけて往復3回弱」だった。
+ *   本番で `getComputedStyle(#stage).transform` を測ったら **最大2.91px**。
+ *   0.42秒かけて3px動くのは「ゆっくり傾いた」であって、揺れとして知覚できない。
+ *   オーナーの「画面揺れが全然ない」は測定と完全に一致していた。
+ *
+ * ★下限があること自体が大事★
+ *   これまで数値化されていたのは**上限だけ**（600ms・2.2秒・明滅3回/秒）だったので、
+ *   「弱すぎて見えない」はどの検査にも引っかからなかった。min はそのための下限。
+ *
+ * ★cellRatio（マスの大きさに対する上限）★
+ *   8×10 の盤では1マスが24〜30pxまで小さくなる。px固定だと**盤1マスぶん動く**ことになり、
+ *   どのマスを押したのか分からなくなる。盤の縮尺に紐づけて、どの大きさでも同じ強さに見せる。
+ */
+export const SHAKE = {
+  min: 6,            // 1連鎖の振幅(px)。★これ未満は知覚できない★
+  perChain: 2.2,     // 連鎖が1増えるごとに足す(px)
+  max: 24,           // 振幅の上限(px)。★§5-4（酔い）側の安全上限。上げないこと★
+  cellRatio: 0.55,   // 1マスの何倍まで。小さい盤ではこちらが効く
+  msSmall: 200,      // 1連鎖の長さ(ms)。短いほど疲れない
+  msBig: 340,        // 2連鎖以上の長さ(ms)。★0.45秒を超えないこと★
+};
+
+/** その連鎖数のときに実際に動かす px（cell を知っている側で計算する） */
+export function shakeAmp(chain, cell = 48) {
+  const px = chain >= POP_TEXT_CHAIN ? SHAKE.min + SHAKE.perChain * chain : SHAKE.min;
+  return Math.round(Math.min(px, SHAKE.max, cell * SHAKE.cellRatio));
+}
+/** その連鎖数のときに揺らす長さ(ms) */
+export const shakeMs = (chain) => (chain >= POP_TEXT_CHAIN ? SHAKE.msBig : SHAKE.msSmall);
+
+/**
+ * 音符と星（連鎖のごほうび）。★数の正本はここ★
+ *   オーナー指示（2026-09-09）「連鎖が増えるごとに音符や星マークがド派手に出てほしい」
+ *
+ * ★絵文字（フォント）で描かない★
+ *   ♪(U+266A)や★(U+2605)は端末によってカラー絵文字フォントに落ち、
+ *   大きさも形も端末ごとに変わる。**説明にも演出にもならない**ので、線で描く。
+ *
+ * ★上限は「個数」ではなく「面積」で決める★
+ *   §5-4（光過敏性発作への配慮）が気にしているのは**光る面積**。
+ *   個数だけ縛っても、1枚を大きくすれば同じことになる。
+ *   test/test-render.mjs が「同時に光る面積 ≤ 盤の面積の18%」を機械で確かめる。
+ *
+ * ★上限に達したら「いちばん古いものを置き換える」★
+ *   break で打ち切ると、323はじけの大連鎖で**前半だけ光って後半が無反応**になる。
+ */
+export const GLYPH = {
+  /* ★大きさと枚数は面積予算から逆算してある★
+       同時30枚 ×(1.25×size)^2 ×平均の不透明度0.5 ≦ 盤の面積の18%
+       → size ≦ cell×0.57。1.25 は **にじみ（glow）のぶん**。
+       にじみを数えないと、測った面積より実際に光る面積のほうが広くなる。 */
+  maxAlive: 30,        // 同時に生きていられる数（★面積予算18%から逆算★。増やすなら再計測）
+  base: 1.5,           // 1はじけあたりの発生数＝base + perChain×連鎖数
+  perChain: 0.9,
+  maxPerBoom: 10,
+  sizeBase: 0.36,      // 大きさ＝cell×(sizeBase + min(sizeGain, 連鎖×sizeStep))
+  sizeStep: 0.03,
+  sizeGain: 0.20,      // ★これで上限 cell×0.56★
+  glow: 1.25,          // にじみを入れた実際の光る幅（面積の計算に使う）
+  speed: 2.0,          // 初速（cell=48 のときの px/frame）。散らばりの広さ
+  speedRand: 3.4,
+  gravity: 0.10,       // 落ちる（放物線を描くと「爆発」でなく「祝祭」に見える）
+  spin: 0.18,          // 回転の上限(rad/frame)。これ以上はバグに見える
+  fade: 0.024,         // 1フレームで減る寿命（≒0.7秒）
+  areaLimit: 0.18,     // 盤の面積に対する、同時に光ってよい割合
+};
+
 /** 演出の総時間の上限（ミリ秒）。20連鎖でも300連鎖でもここに収める */
 export const MAX_ANIM_MS = 2200;
 const BASE_STEP = 130;
@@ -76,7 +147,7 @@ export class BoardView {
     this.stepMs = BASE_STEP;
     this.nextAt = 0;
     this.particles = [];
-    this.shake = 0;
+    this.glyphs = [];          // 音符・星（連鎖のごほうび。数の正本は GLYPH）
     this.flash = 0;
     this.flashAt = -9999;      // 直前の全画面フラッシュの時刻（連続させないため）
     this.chainPop = null;      // 連鎖数のカットイン（★描くのは画面側★ ここは重複発火を防ぐ記録）
@@ -145,7 +216,7 @@ export class BoardView {
     this.onDone = null;
     this.particles.length = 0;
     this.rings.length = 0;
-    this.shake = 0;
+    this.glyphs.length = 0;
     this.flash = 0;
     this.chainPop = null;
     this.preview = null;
@@ -265,18 +336,18 @@ export class BoardView {
     }
 
     this.pulse = (Math.sin(t / 420) + 1) / 2;
-    this.shake *= 0.62;      // 0.1秒ほどで収まる強さ（0.86だと数秒間ずっと揺れ続ける）
     this.flash *= 0.88;
     this.updateParticles();
     this.updateRings();
+    this.updateGlyphs();
     if (this.chainPop && t - this.chainPop.t > 700) this.chainPop = null;
     this.draw(t);
 
     // 何も動いていなければループを止める（電池を無駄にしない）
     //   ★予告を出している間は止めない★（脈動が固まって「壊れている」ように見える）
     if (!this.playing && !this.preview && this.particles.length === 0
-        && this.rings.length === 0
-        && this.shake < 0.4 && this.flash < 0.02 && !this.chainPop) {
+        && this.rings.length === 0 && this.glyphs.length === 0
+        && this.flash < 0.02 && !this.chainPop) {
       this.stop();
       this.draw(t);
     }
@@ -293,6 +364,7 @@ export class BoardView {
       //   ただし this.budget（重いときに下がる）を必ず掛ける。派手さでコマ落ちさせない
       this.burst(ev.i, col, 14 + Math.min(16, ev.chain * 2));
       this.ring(ev.i, col, ev.chain);
+      this.spawnGlyphs(ev.i, col, ev.chain);   // ★音符と星（連鎖が伸びるほど増える）★
       // 大連鎖では白い火花も混ぜて「色が変わった」ように見せる
       if (ev.chain >= 5) this.burst(ev.i, '#fff6d8', 8);
       for (const j of ev.to) if (j >= 0) this.trail(ev.i, j, col);
@@ -304,7 +376,6 @@ export class BoardView {
            1連鎖以上なら 11〜20手で17%、31〜40手で29〜39%あるので、ここを入口にする。
            出し分けは画面側（app.js）の仕事: 1連鎖＝小さく揺らすだけ、2連鎖以上＝カットイン。 */
       const soft = this.fx === 'light' || this.reduced;   // 動きを抑える設定・端末
-      if (!soft) this.shake = Math.min(9, 2 + ev.chain * 0.5);
       // ★同じ手のあいだは「より大きくなったとき」だけ知らせる★
       //   1手のあいだに3→4→5…と伸びるので、毎回出すと点滅になる（光過敏の配慮）
       if (ev.chain >= POP_MIN_CHAIN && (!this.chainPop || ev.chain > this.chainPop.n)) {
@@ -374,6 +445,107 @@ export class BoardView {
     }
   }
 
+  /**
+   * 音符と星を撒く。連鎖が伸びるほど 数・大きさ・回転が増える。
+   * ★色は所有者の色のまま★ 虹色にしない——盤の上で自分の色を読む手がかりが壊れるうえ、
+   *   飽和した赤は§5-4（赤の強い明滅を使わない）に直撃する。
+   *   派手さは「段階で色が上がる」（5連鎖でクリーム・8連鎖で白）で出す。
+   */
+  spawnGlyphs(i, color, chain) {
+    if (this.reduced || this.fx === 'light') return;
+    const n = Math.min(GLYPH.maxPerBoom,
+                       Math.max(1, Math.round((GLYPH.base + GLYPH.perChain * chain) * this.budget)));
+    const cx = this.pad + (xOf(i) + 0.5) * this.cell;
+    const cy = this.pad + (yOf(i) + 0.5) * this.cell;
+    const size = this.cell * (GLYPH.sizeBase + Math.min(GLYPH.sizeGain, chain * GLYPH.sizeStep));
+    const hot = chain >= 8 ? '#ffffff' : (chain >= 5 ? '#fff6d8' : color);
+    for (let k = 0; k < n; k++) {
+      const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.2;      // 上向きに散らす
+      const sp = (GLYPH.speed + Math.random() * GLYPH.speedRand) * (this.cell / 48);
+      const g = {
+        x: cx, y: cy,
+        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+        rot: Math.random() * Math.PI * 2,
+        spin: (Math.random() - 0.5) * Math.min(GLYPH.spin, 0.06 + chain * 0.010) * 2,
+        size, life: 1, age: 0,
+        star: Math.random() < 0.5,
+        color: Math.random() < 0.35 ? hot : color,
+      };
+      // ★古いものを置き換える★（break すると大連鎖の後半が無反応になる）
+      if (this.glyphs.length >= GLYPH.maxAlive) this.glyphs.shift();
+      this.glyphs.push(g);
+    }
+  }
+
+  updateGlyphs() {
+    const gs = this.glyphs;
+    const grav = GLYPH.gravity * (this.cell / 48);
+    for (let k = gs.length - 1; k >= 0; k--) {
+      const g = gs[k];
+      g.x += g.vx; g.y += g.vy;
+      g.vy += grav;
+      g.vx *= 0.985; g.vy *= 0.985;
+      g.rot += g.spin;
+      g.age++;
+      g.life -= GLYPH.fade;
+      if (g.life <= 0) gs.splice(k, 1);
+    }
+  }
+
+  /** いま光っている音符・星の面積（★§5-4の面積予算を測るのはここ★） */
+  glyphArea() {
+    let a = 0;
+    // ★にじみのぶんまで数える★ 見えている光は文字の枠より広い
+    for (const g of this.glyphs) {
+      const w = g.size * GLYPH.glow;
+      a += w * w * this.glyphAlpha(g);
+    }
+    return a;
+  }
+  /** 出はじめの3フレームだけ薄い（いきなり最大輝度で現れない） */
+  glyphAlpha(g) {
+    return Math.max(0, Math.min(1, g.life)) * Math.min(1, (g.age + 1) / 4) * 0.9;
+  }
+
+  /** 星（5芒星）と音符を線で描く。★フォントに頼らない★ */
+  drawGlyph(g) {
+    const { ctx } = this;
+    ctx.save();
+    ctx.globalAlpha = this.glyphAlpha(g);
+    ctx.translate(g.x, g.y);
+    ctx.rotate(g.rot);
+    ctx.fillStyle = g.color;
+    // ★にじませる★ これが無いと、盤の模様に紛れて「出ていない」ように見える
+    ctx.shadowColor = g.color;
+    ctx.shadowBlur = g.size * 0.5;
+    const r = g.size / 2;
+    ctx.beginPath();
+    if (g.star) {
+      for (let k = 0; k < 10; k++) {
+        const rr = k % 2 === 0 ? r : r * 0.42;
+        const th = -Math.PI / 2 + k * Math.PI / 5;
+        const px = Math.cos(th) * rr, py = Math.sin(th) * rr;
+        if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      // 音符: 玉（楕円）＋棒＋旗
+      ctx.ellipse(-r * 0.28, r * 0.55, r * 0.42, r * 0.32, -0.35, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.rect(r * 0.06, -r * 0.95, r * 0.16, r * 1.6);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(r * 0.22, -r * 0.95);
+      ctx.quadraticCurveTo(r * 0.95, -r * 0.6, r * 0.32, -r * 0.05);
+      ctx.quadraticCurveTo(r * 0.62, -r * 0.55, r * 0.22, -r * 0.5);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
   trail(from, to, color) {
     if (this.reduced || this.fx === 'light') return;
     const fx = this.pad + (xOf(from) + 0.5) * this.cell;
@@ -406,10 +578,14 @@ export class BoardView {
     if (!ctx) return;
     const w = cell * W + pad * 2, h = cell * H + pad * 2;
 
+    /* ★canvas の中身は揺らさない★（2026-09-09 撤去）
+         もとは ctx.translate でランダムに揺らしていたが、
+         (a) #stage の揺れと位相が独立なので打ち消し合い、弱く見えることがある
+         (b) canvas の中身だけ動くので getBoundingClientRect は動かず、
+             **見た目と当たり判定がずれる**（押した場所と光る場所が違う）
+         (c) 揺れの強さの正本が2か所になる
+         揺らすのは #stage だけ。強さの正本は上の SHAKE。 */
     ctx.save();
-    if (this.shake > 0.4 && !this.reduced) {
-      ctx.translate((Math.random() - 0.5) * this.shake, (Math.random() - 0.5) * this.shake);
-    }
     const g = ctx.createLinearGradient(0, 0, 0, h);
     g.addColorStop(0, COLORS.bg1); g.addColorStop(1, COLORS.bg2);
     ctx.fillStyle = g; ctx.fillRect(-10, -10, w + 20, h + 20);
@@ -465,6 +641,10 @@ export class BoardView {
       ctx.arc(p.x, p.y, Math.max(1, this.cell * 0.055 * p.life), 0, Math.PI * 2);
       ctx.fill();
     }
+    ctx.globalAlpha = 1;
+
+    // 音符と星（★いちばん上に重ねる★ 粒の下に敷くと埋もれて「出ていない」ように見える）
+    for (const g of this.glyphs) this.drawGlyph(g);
     ctx.globalAlpha = 1;
 
     /* ★連鎖数のカットインは、ここでは描かない★
