@@ -18,13 +18,24 @@
  */
 import { idx } from '../src/core/board.js';
 
+/* ★盤の大きさに依存する値を、読み込み時に作らないこと★（2026-09-09）
+     もとは `hand: idx(2, 3)` と書いていた。idx は W を読むので、
+     **読み込んだ瞬間の盤幅で数値に固定される**。
+     せっていで盤を大きくできるようにした結果、
+     「指マークの位置」と「光が置いてある場所」がずれる形になっていた
+     （setup の中の idx は呼び出し時に評価されるので、こちらだけ新しい幅に追随する）。
+     例外も出ず「なぜか練習が終わらない」としか見えない、いちばん見つけにくい壊れ方。
+   → hand は **座標のまま**持ち、使う側で idx する。
+   → さらに れんしゅうは常に 6×7 で開く（app.js の startTutorial）。教える内容は
+     「かど2・へり3・まんなか4」なので、盤を変える理由がない。 */
+
 export const TUTORIALS = [
   {
     id: 'corner',
     name: 'かどで はじけさせる',
     goal: 'ひかりの わくを うめよう',
     tip: 'かどのマスは わくが 2つ。うまると はじける',
-    hand: idx(0, 0),
+    hand: { x: 0, y: 0 },
     taps: 1,
     setup(s) {
       s.owner[idx(0, 0)] = 1; s.count[idx(0, 0)] = 1;
@@ -33,10 +44,13 @@ export const TUTORIALS = [
   },
   {
     id: 'center',
-    name: 'まんなかは おもい',
+    /* ★「おもい」は比喩で通じなかった（2026-09-09 オーナー指摘）★
+       このゲームは「読む文字ゼロ」を掲げている。比喩を1つ挟むだけで説明が説明でなくなる。
+       「時間がかかる」も嘘——かかるのは時間ではなく**おす回数**。ターン制なので誤解を生む。 */
+    name: 'まんなかは はじけにくい',
     goal: 'おなじように わくを うめよう',
-    tip: 'まんなかは わくが 4つ。かどより 時間がかかる',
-    hand: idx(2, 3),
+    tip: 'まんなかは わくが 4つ。かどより おす回数が おおい',
+    hand: { x: 2, y: 3 },
     taps: 3,
     setup(s) {
       s.owner[idx(2, 3)] = 1; s.count[idx(2, 3)] = 1;
@@ -48,7 +62,7 @@ export const TUTORIALS = [
     name: 'れんさ',
     goal: 'かどを 1回 おすだけ',
     tip: 'はじけた先が また はじけると れんさ。これが このゲームの キモ',
-    hand: idx(0, 0),
+    hand: { x: 0, y: 0 },
     taps: 1,
     setup(s) {
       s.owner[idx(0, 0)] = 1; s.count[idx(0, 0)] = 1;
@@ -60,3 +74,6 @@ export const TUTORIALS = [
 ];
 
 export const TUTORIAL_COUNT = TUTORIALS.length;
+
+/** 指マークを出す場所（盤の広さは呼ばれた時点のものを使う） */
+export const handIdx = (st) => idx(st.hand.x, st.hand.y);

@@ -264,7 +264,8 @@ button.ghost{
      - **背景を塗らない**。文字と影だけなので、明滅する面積が画面全体にならない
      - 連続で出さない（発火の間隔は src/ui/app.js が最低 CHAIN_POP_MS ミリ秒あける）
      - 赤の強い明滅は使わない（金→白のみ）
-     - 「えんしゅつを ひかえめに」と prefers-reduced-motion では出さない */
+     - 「えんしゅつを ひかえめに」と prefers-reduced-motion では **動きだけ止めて、文字は出す**
+       （§5-4が求めているのは「弱める」。全部消すと、その設定の人は何が起きたか分からない） */
 #chainPop{
   position:absolute; inset:0; z-index:5;
   pointer-events:none;                     /* ★消さないこと★ */
@@ -309,7 +310,69 @@ button.ghost{
   78% {transform:translate(calc(var(--sk) * -.3), calc(var(--sk) * -.2))}
   100%{transform:translate(0,0)}
 }
+/* ★「ひかえめ」のとき★ 拡大も回転もせず、ふわっと出て消えるだけにする。
+   ★animation そのものを消してはいけない★——消すと出しっぱなしに見えるうえ、
+   「弱める」ではなく「無かったこと」になる（2026-09-09 に直した設計ミス）。 */
+#chainPop.soft.play{animation:chainPopSoft .5s linear both}
+@keyframes chainPopSoft{
+  0%  {opacity:0}
+  12% {opacity:1}
+  78% {opacity:1}
+  100%{opacity:0}
+}
 @media (prefers-reduced-motion: reduce){
+  /* 動きは止めるが、文字は出る（animation:none なので拡大も回転もしないまま表示される）。
+     消える責任は app.js の POP_MS のタイマーが持つ。 */
   #chainPop.play{animation:none}
   #stage.shake{animation:none}
 }
+
+/* ── 版番号と こうしんじょうほう ─────────────────
+   ★版番号は src/version.js から描く★（HTMLに書くと、JSが古いままでも新しく見える） */
+.verline{
+  margin:6px 0 0; padding:4px 10px; background:none; border:0;
+  color:var(--dim); font-size:12px; letter-spacing:.04em; font-family:inherit;
+}
+button.verline{cursor:pointer; text-decoration:underline; text-underline-offset:3px}
+button.verline:hover{color:var(--fg)}
+.news{width:100%; max-width:440px; text-align:left}
+.newsItem{margin:0 0 14px}
+.newsItem h3{margin:0 0 4px; font-size:14px; color:var(--p1)}
+.newsItem ul{margin:0; padding-left:1.2em}
+.newsItem li{margin:2px 0; font-size:13px; line-height:1.7; color:var(--fg)}
+
+/* ── あそびかたの図に出す地形 ─────────────────
+   ★盤（Canvas）の render.js drawCell と見た目をそろえる★
+     十字＝ひかりの通り道 / 二重の輪＝クレーター / 帯＝雲。
+     片方がCanvas・片方がDOMなので一致は機械検査できない。片方を直したら必ず両方見る。 */
+.hcell.t-star{background:none; border-color:transparent}
+.hcell.t-star::before,
+.hcell.t-star::after{
+  content:''; position:absolute; background:rgba(200,220,255,.32);
+}
+.hcell.t-star::before{left:50%; top:12%; width:2px; height:76%; transform:translateX(-50%)}
+.hcell.t-star::after{top:50%; left:12%; height:2px; width:76%; transform:translateY(-50%)}
+/* クレーターは「四角いマスの中に丸い輪」。★マス自体を丸くしないこと★（盤と形が変わる） */
+.hcell.t-crater::before{
+  content:''; position:absolute; left:14%; top:14%; right:14%; bottom:14%;
+  border:2px solid rgba(255,255,255,.22); border-radius:50%;
+}
+/* 雲は「くぐもった帯」。★セレクタ本体も置くこと★
+   ::before だけにすると、CSSの取りこぼし検査（.hcell.t-cloud）がすり抜ける */
+.hcell.t-cloud{background:rgba(255,255,255,.03)}
+.hcell.t-cloud::before{
+  content:''; position:absolute; left:14%; right:14%; top:30%; height:40%;
+  background:rgba(190,200,225,.22); border-radius:999px;
+}
+
+/* ── 盤の おおきさ ───────────────────────
+   ★数字だけだと何マスか想像できない★ ので、点の格子で実物の形を見せる。 */
+.szrow{display:flex; align-items:center; gap:10px; width:100%}
+.szrow span{flex:0 0 2.6em; font-size:13px; color:var(--dim)}
+.szrow .slider{flex:1 1 auto; min-width:0}
+.bprev{
+  display:grid; gap:3px; justify-content:center; margin:8px auto 2px;
+  padding:8px; border-radius:10px; background:rgba(255,255,255,.04);
+}
+.bprev i{width:7px; height:7px; border-radius:2px; background:rgba(255,255,255,.22)}
+.note{margin:4px 0 0; font-size:11px; line-height:1.6; color:var(--dim)}

@@ -11,21 +11,22 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style/base.css?v=2d15369b">
+<link rel="stylesheet" href="style/base.css?v=b6a6186a">
 <!-- BEGIN importmap (tools/gen_importmap.py が生成。手で書き換えない) -->
 <script type="importmap">
 {"imports":{
   "./src/ai/ai.js":"./src/ai/ai.js?v=ab3c9361",
-  "./src/core/board.js":"./src/core/board.js?v=1c452115",
+  "./src/core/board.js":"./src/core/board.js?v=9dddb538",
   "./src/core/rng.js":"./src/core/rng.js?v=84ad8f5e",
   "./src/core/rules.js":"./src/core/rules.js?v=b1bd8382",
   "./src/game.js":"./src/game.js?v=9c63072b",
-  "./src/meta/progress.js":"./src/meta/progress.js?v=e6e2529c",
-  "./src/ui/app.js":"./src/ui/app.js?v=7d6e8182",
+  "./src/meta/progress.js":"./src/meta/progress.js?v=fab62553",
+  "./src/ui/app.js":"./src/ui/app.js?v=35082a8d",
   "./src/ui/audio.js":"./src/ui/audio.js?v=cc0a10fe",
-  "./src/ui/coach.js":"./src/ui/coach.js?v=101ec48c",
-  "./src/ui/render.js":"./src/ui/render.js?v=0b9fa93f",
-  "./data/tutorial.js":"./data/tutorial.js?v=9b51c858"
+  "./src/ui/coach.js":"./src/ui/coach.js?v=08412dd1",
+  "./src/ui/render.js":"./src/ui/render.js?v=ee701dfe",
+  "./src/version.js":"./src/version.js?v=6da2d115",
+  "./data/tutorial.js":"./data/tutorial.js?v=78b74887"
 }}
 </script>
 <!-- END importmap -->
@@ -75,6 +76,11 @@
       <button data-go="settings">せってい</button>
     </nav>
     <p class="credit" id="credits"></p>
+    <!-- ★版番号はJS(src/version.js)から描く★ HTMLに直接書かないこと。
+         index.html は Service Worker が「まずネットワーク」で取るので常に最新になる。
+         ここに版番号を書くと、JSが古いキャッシュのままでも新しい番号が出てしまい、
+         「更新が届いているか」を版番号で確かめられなくなる。 -->
+    <button class="verline" id="btnVersion" data-go="news"></button>
   </section>
 
   <!-- 結果 -->
@@ -102,9 +108,8 @@
         <li>マスに出ている<b>数字＝そこを おしたら はじける回数</b>。大きいほど 大きく うばえる</li>
         <li><b>ゆびを おいたまま</b>にすると、はじける場所が ぜんぶ 光る。はなすと おける</li>
         <li>ゆびを うごかすと よこくも ついてくる。<b>盤の そとで はなせば</b> おかずに やめられる</li>
-        <li><b>大きな丸</b>が かかれたマスは わくが 1つ おおい ＝ はじけにくい</li>
-        <li>十字のマスは ひかりの 通り道。おけないが、ひかりは 通りぬける</li>
-        <li>もやの かかったマスは しばらく おけない</li>
+        <!-- ★地形の説明は上の図（開いている本文）に移した★（2026-09-09）
+             折りたたみの中にしか無く、開かなければ読まれなかった。ここに書き戻さないこと。 -->
         <li>さきに おく人は 1戦ごとに ランダムで きまる（どちらも おなじ回数だけ おける）</li>
         <li><b>ふたりで あそぶ</b>と、1台を こうたいで おして たたかえる。
             <b>きんいろが さきばん</b>・あおが あとばん。盤は まわらないので よこに ならんで どうぞ</li>
@@ -114,6 +119,15 @@
 
     <button id="btnHowtoPlay" class="big">そのまま あそぶ</button>
     <button id="btnCoachAgain" class="ghost">対戦中の あんないを もういちど 出す</button>
+    <button class="ghost close" data-go="title">とじる</button>
+  </section>
+
+  <!-- こうしんじょうほう（更新履歴）
+       ★中身は src/version.js の NEWS が正本★ ここには何も書かない。 -->
+  <section id="scNews" class="screen">
+    <h2>こうしんじょうほう</h2>
+    <p class="sub" id="newsNow"></p>
+    <div id="newsList" class="news"></div>
     <button class="ghost close" data-go="title">とじる</button>
   </section>
 
@@ -153,12 +167,29 @@
              aria-label="こうかおんの おおきさ">
     </div>
 
+    <!-- 盤の おおきさ（2026-09-09 オーナー指示「縦サイズと横サイズをスライドバーで」）
+         ★min/max は書かない★ 範囲の正本は src/core/board.js。
+           HTMLに数字を書き写すと、board.js の上限を変えたときに片方だけ古くなる。
+           src/ui/app.js の initSizeSliders() が起動時に入れる。 -->
+    <div class="setting">
+      <h3><label for="boardW">盤の おおきさ</label><b id="boardVal"></b></h3>
+      <label class="szrow"><span>よこ</span><input type="range" id="boardW" class="slider" step="1"></label>
+      <label class="szrow"><span>たて</span><input type="range" id="boardH" class="slider" step="1"></label>
+      <div id="boardPreview" class="bprev" aria-hidden="true"></div>
+      <p class="note">つぎの たいせんから かわります。<br>
+        おおきさを かえた盤は きろくに のこりません</p>
+    </div>
+
     <div class="setting">
       <h3>そのほか</h3>
       <label class="opt"><input type="checkbox" id="optPreview"> れんさの よこく（マスの数字）</label>
       <label class="opt"><input type="checkbox" id="optCoach"> 対戦中の あんない</label>
       <label class="opt"><input type="checkbox" id="optLight"> えんしゅつを ひかえめに</label>
     </div>
+
+    <!-- 版番号（対戦中のせっていからも見える。押しても画面は移らない——
+         対戦中に show() を通すと対戦が捨てられるため、ここは文字だけにする） -->
+    <p class="verline sub" id="verSettings"></p>
 
     <div id="pauseBtns" class="row col" hidden>
       <button id="btnResume" class="big">つづける</button>
@@ -169,7 +200,7 @@
   </section>
 </div>
 
-<script type="module" src="src/ui/app.js?v=7d6e8182"></script>
+<script type="module" src="src/ui/app.js?v=35082a8d"></script>
 <noscript><p style="color:#fff;padding:2em">このゲームはJavaScriptが必要です。</p></noscript>
 
 <script>

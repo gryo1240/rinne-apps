@@ -17,14 +17,18 @@
  *
  * ★画面はルールを判断しない★ game.js / core を呼ぶだけ。
  */
-import { N, xOf, yOf, generateBoard } from '../core/board.js';
-import { findWinningMove, cloneState, capAt, previewChain, chainMap } from '../core/rules.js';
+import {
+  N, xOf, yOf, generateBoard, T_CRATER, T_STARDUST, T_CLOUD,
+  setSize, isDefaultSize, DEF_W, DEF_H, MIN_W, MAX_W, MIN_H, MAX_H, W, H,
+} from '../core/board.js';
+import { VERSION_LABEL, NEWS } from '../version.js';
+import { findWinningMove, cloneState, capAt, previewChain, chainMap, effTerrain } from '../core/rules.js';
 import { createMatch, play, cpuMove, humanTurn, cpuSeat } from '../game.js';
 import { loadSave, writeSave, loadDevice, writeDevice, recordMatch } from '../meta/progress.js';
 import { makeRng } from '../core/rng.js';
-import { TUTORIALS } from '../../data/tutorial.js';
+import { TUTORIALS, handIdx } from '../../data/tutorial.js';
 import { Coach } from './coach.js';
-import { BoardView, DOTS, stepFor } from './render.js';
+import { BoardView, DOTS, stepFor, POP_TEXT_CHAIN } from './render.js';
 import * as Audio from './audio.js';
 
 const $ = (id) => document.getElementById(id);
@@ -57,7 +61,7 @@ const coach = new Coach();
 // ── 画面の切り替え ───────────────────────────────
 const SCREENS = {
   title: 'scTitle', result: 'scResult',
-  records: 'scRecords', settings: 'scSettings', howto: 'scHowto',
+  records: 'scRecords', settings: 'scSettings', howto: 'scHowto', news: 'scNews',
 };
 let curScreen = null;          // いま出ている画面（null＝盤）
 
@@ -80,6 +84,7 @@ function show(name) {
   if (name === 'records') renderRecords();
   if (name === 'settings') renderSettings(false);
   if (name === 'howto') renderHowto();
+  if (name === 'news') renderNews();
   if (name === 'title') { Audio.bgmStop(); renderTitle(); }
 }
 
@@ -155,8 +160,9 @@ function boot() {
     saveVolumes();
     if (device.bgmVol > 0) Audio.bgmPlay();
   });
+  initSizeSliders();
   // ★大きな連鎖を画面いっぱいに出す★（見せ方は画面側の仕事。render.js は数を知らせるだけ）
-  view.onChainPop = (n, restart) => showChainPop(n, restart);
+  view.onChainPop = (n, restart, soft) => showChainPop(n, restart, soft);
   $('optPreview').addEventListener('change', (e) => {
     device.preview = e.target.checked; writeDevice(device); refreshHints();
   });
@@ -191,9 +197,22 @@ const randomBoard = () => generateBoard(makeRng(((Math.random() * 0xffffffff) | 
 
 function startNormal() {
   if (!save.tutorialDone) return startTutorial(0);
+  applyBoardSize();
   const b = randomBoard();
   mode = 'normal';
   beginMatch({ terrain: b.terrain, wrapX: b.wrapX, tier: save.tier, oppName: 'ルナ' });
+}
+
+/**
+ * せっていで選んだ盤の大きさを実際に効かせる。
+ *
+ * ★呼んでよいのは「対戦を作る直前」だけ★
+ *   盤の大きさを変えると N が変わるが、進行中の対戦が持つ配列は古い長さのまま。
+ *   範囲外に触っても JS は例外を出さないので、**静かに盤が壊れる**（いちばん見つけにくい）。
+ *   だからスライドバーは device に保存するだけにして、効くのは次の対戦から。
+ */
+function applyBoardSize(w = device.boardW, h = device.boardH) {
+  setSize(w, h);
 }
 
 /**
@@ -202,6 +221,7 @@ function startNormal() {
  *   横に並んで遊ぶ前提にして、代わりに **手番をはっきり出す** ことで迷わせない。
  */
 function startVs() {
+  applyBoardSize();
   const b = randomBoard();
   mode = 'vs';
   beginMatch({ terrain: b.terrain, wrapX: b.wrapX, tier: 1, oppName: 'ふたり', vs: true });
@@ -215,13 +235,17 @@ function startTutorial(step = 0) {
   tutorialStep = Math.max(0, Math.min(TUTORIALS.length - 1, step | 0));
   const st = TUTORIALS[tutorialStep];
   mode = 'tutorial';
+  /* ★れんしゅうは いつでも ふつうの盤（6×7）★
+     教えるのは「かど2・へり3・まんなか4」なので、盤を変える理由がない。
+     大きさが変わると setup の座標と taps の回数が合わなくなり、練習が終わらなくなる。 */
+  applyBoardSize(DEF_W, DEF_H);
   beginMatch({ terrain: new Int8Array(N), wrapX: false, tier: 1, oppName: st.name, mySeat: 1 });
   const s = match.state;
   st.setup(s);
   s.moves = [1, 1];            // 開幕判定を抜ける（相手は動かないため）
   s.player = 1;
   view.sync(s);
-  aimHand(st.hand);
+  aimHand(handIdx(st));
   lastTurnSeat = 1;
   updateHud();
   refreshHints();
@@ -281,6 +305,7 @@ function onDown(e) {
   e.preventDefault();
   pressId = e.pointerId ?? 0;
   held = i;
+  sayTerrain(i);
   showPreview(i);
 }
 
@@ -292,7 +317,30 @@ function onMove(e) {
   //   held だけを -1 にして予告を消し、戻ってきたらまた出す。
   //   押している状態まで捨てると、いったん外へ出した指が戻っても二度と反応しなくなる
   held = i;
+  sayTerrain(i);
   showPreview(i);
+}
+
+/**
+ * さわったマスが ふつうでない地形なら、それが何なのかを1行で出す。
+ *
+ * ★2026-09-09 オーナー指摘★
+ *   > 添付にある置けないマスが何を意味しているかが説明もなくて分からないのだけど。
+ *   説明は「あそびかた」の折りたたみの中にしか無く、開かなければ一生読まれなかった。
+ *   **押せなかった瞬間が、説明がいちばん届く1回**なので、そこで出す。
+ *
+ * ★ふたりで あそぶ でも出す★（coachOn() を使わない理由）
+ *   §0-10 で「ふたり対戦では画面が口出ししない」と決めたが、地形だけは例外。
+ *   そばに人がいても、地形の意味は誰も教えられない。
+ */
+function sayTerrain(i) {
+  if (i < 0 || !match || !device.coach || curScreen !== null) return;
+  const t = effTerrain(match.state, i);       // ★雲は晴れる★ ので、いま効いている地形を見る
+  const id = t === T_STARDUST ? 'stardust'
+    : t === T_CLOUD ? 'cloud'
+      : t === T_CRATER ? 'crater' : '';
+  if (!id) return;
+  say(coach.take(id));                        // 一度出した行は二度と出ない（take が面倒を見る）
 }
 
 function onUp(e) {
@@ -351,7 +399,7 @@ function commitMove(i) {
       // 練習では相手が動かないので、手番を自分に戻してやらないと2回目が押せなくなる
       match.state.player = 1;
       updateHud();
-      aimHand(TUTORIALS[tutorialStep].hand);
+      aimHand(handIdx(TUTORIALS[tutorialStep]));
       refreshHints();
       return;
     }
@@ -522,23 +570,38 @@ const POP_MS = 640;            // 出しておく時間。★POP_MIN_MS より�
 let popTimer = null;
 let shakeTimer = null;
 
-function showChainPop(n, restart) {
-  if (!view || device.effects === 'light' || view.reduced) return;
-  el.chainPopNum.textContent = String(n);
-  el.chainPop.classList.toggle('hot', n >= 8);
+/**
+ * はじけたことを画面で知らせる。★出し分けはここ1か所★
+ *   1連鎖      … 盤を小さく揺らすだけ（「はじけた」の合図。文字は出さない）
+ *   2連鎖以上  … 画面いっぱいの「〇れんさ！」＋大きい揺れ
+ * soft（ひかえめ設定・reduced-motion）のときは **文字だけ出して揺らさない**。
+ *   ★消さない★ 仕様書§5-4が求めているのは「弱める」であって「消す」ではない。
+ */
+function showChainPop(n, restart, soft) {
+  if (!view) return;
+  const withText = n >= POP_TEXT_CHAIN;
+  if (withText) {
+    el.chainPopNum.textContent = String(n);
+    el.chainPop.classList.toggle('hot', n >= 8);
+  }
   if (!restart) return;                       // 伸びている最中は数字だけ差し替える
 
-  el.chainPop.hidden = false;
-  el.chainPop.classList.remove('play');
-  void el.chainPop.offsetWidth;               // アニメを最初から流し直すために1回読む
-  el.chainPop.classList.add('play');
-  if (popTimer) clearTimeout(popTimer);
-  popTimer = setTimeout(hideChainPop, POP_MS);
+  if (withText) {
+    el.chainPop.hidden = false;
+    el.chainPop.classList.toggle('soft', !!soft);   // 拡大・回転をやめ、出るだけにする
+    el.chainPop.classList.remove('play');
+    void el.chainPop.offsetWidth;             // アニメを最初から流し直すために1回読む
+    el.chainPop.classList.add('play');
+    if (popTimer) clearTimeout(popTimer);
+    popTimer = setTimeout(hideChainPop, POP_MS);
+  }
+
+  if (soft) return;                           // ここから先は「動き」なので出さない
 
   // ★揺らすのは盤の入れ物(#stage)だけ★
   //   #app を揺らすと、ヘッダの⚙も、開いている設定画面も、起動失敗の救済画面も一緒に揺れる。
   //   とくに「止めたい人が⚙を押せない」のは避けたい。
-  el.stage.style.setProperty('--sk', `${Math.min(13, 4 + n)}px`);
+  el.stage.style.setProperty('--sk', `${withText ? Math.min(13, 4 + n) : 3}px`);
   el.stage.classList.remove('shake');
   void el.stage.offsetWidth;
   el.stage.classList.add('shake');
@@ -551,7 +614,7 @@ function hideChainPop() {
   if (popTimer) { clearTimeout(popTimer); popTimer = null; }
   if (shakeTimer) { clearTimeout(shakeTimer); shakeTimer = null; }
   el.chainPop.hidden = true;
-  el.chainPop.classList.remove('play', 'hot');
+  el.chainPop.classList.remove('play', 'hot', 'soft');
   el.chainPopNum.textContent = '';   // 古い数字を残さない（残ると調べたときに誤診する）
   el.stage.classList.remove('shake');
 }
@@ -644,12 +707,21 @@ function finish() {
     $('btnToTitle').textContent = 'やめる';
     const chain = match.stats.maxChain[me];
     const before = save.bestChain;
-    save = recordMatch(save, { won, maxChain: chain, countForTier: true });
-    writeSave(save);
+    /* ★ふつうの盤(6×7)のときだけ記録する★（2026-09-09 オーナー了承）
+         盤を大きくすれば連鎖は当然のびる。混ぜると「じこベスト連鎖」の数字が1戦で壊れ、
+         そのあと ふつうの盤では二度と更新できなくなる。
+         勝率とCPUの段位も、AIの評価が6×7前提なので混ぜると意味を失う。
+       ふたりで あそぶ を記録に残さないのと同じ扱い（§0-10）。 */
+    const counts = isDefaultSize();
+    if (counts) {
+      save = recordMatch(save, { won, maxChain: chain, countForTier: true });
+      writeSave(save);
+    }
     $('chainBox').textContent = chain > 0
-      ? `いちばん長い れんさ ${chain}${chain > before ? '（じこベスト！）' : ''}`
+      ? `いちばん長い れんさ ${chain}${counts && chain > before ? '（じこベスト！）' : ''}`
       : '';
-    if (chain > before && chain > 0) Audio.SE.moon();
+    if (!counts) $('resultSub').textContent = 'おおきさを かえた盤なので きろくに のこりません';
+    if (counts && chain > before && chain > 0) Audio.SE.moon();
   }
 
   // ★決着から結果表示までの0.7秒に画面を移っていたら、結果を割り込ませない★
@@ -668,6 +740,30 @@ function renderTitle() {
   // ★使っていない素材の名前を出さない★
   //   BGMは自作曲（Suno生成）。魔王魂・Springin' は未導入なので、その表記は出さない
   $('credits').textContent = '音楽：オリジナル楽曲（Suno生成）';
+  $('btnVersion').textContent = VERSION_LABEL;
+}
+
+// ── こうしんじょうほう ───────────────────────
+/** ★innerHTML を使わない★ 文字列の連結でDOMを作らない（自己XSSの経路を残さない） */
+function renderNews() {
+  $('newsNow').textContent = `いま つかっているのは ${VERSION_LABEL}`;
+  const box = $('newsList');
+  box.textContent = '';
+  for (const n of NEWS) {
+    const sec = document.createElement('div');
+    sec.className = 'newsItem';
+    const h = document.createElement('h3');
+    h.textContent = `${n.v}（${n.d}）`;
+    sec.appendChild(h);
+    const ul = document.createElement('ul');
+    for (const line of n.items) {
+      const li = document.createElement('li');
+      li.textContent = line;
+      ul.appendChild(li);
+    }
+    sec.appendChild(ul);
+    box.appendChild(sec);
+  }
 }
 
 // ── あそびかた ─────────────────────────────
@@ -689,14 +785,27 @@ const HOWTO_FIGS = [
   // ★数字の説明★ これが分からないと、盤の数字がただの飾りに見える
   { cells: [{ c: 2, cap: 3, o: 1, hint: 4 }],
     text: 'マスの数字は「ここを おしたら はじける回数」' },
+  /* ★地形の説明★（2026-09-09 オーナー指摘「置けないマスが何を意味しているか分からない」）
+     もとは「もっと くわしく」の折りたたみの中にしか無く、開かなければ読まれなかった。
+     ★見た目は盤（Canvas）と合わせる★ ずれると説明にならない。
+       盤の描画は render.js drawCell、図のCSSは base.css の .hcell.t-* が担当。
+       片方がCanvas・片方がDOMなので、**一致しているかは機械で検査できない**（手で見る）。 */
+  { cells: [{ terr: 'star' }],
+    text: '十字の マスは ひかりの とおりみち。おけないが ひかりは 通りぬける' },
+  { cells: [{ terr: 'crater', c: 2, cap: 5 }],
+    text: '大きな丸の マスは わくが 1つ おおい ＝ はじけにくい' },
+  { cells: [{ terr: 'cloud' }],
+    text: 'もやの かかったマスは しばらく おけない（そのうち 晴れる）' },
 ];
 
-function figCell({ c = 0, cap = 3, o = 0, boom = false, label = '', hint = 0 }) {
+function figCell({ c = 0, cap = 3, o = 0, boom = false, label = '', hint = 0, terr = '' }) {
   const wrap = document.createElement('div');
   wrap.className = 'hcellWrap';
   const d = document.createElement('div');
-  d.className = 'hcell' + (o === 1 ? ' p1' : o === 2 ? ' p2' : '') + (boom ? ' boom' : '');
-  const slots = DOTS[cap] || DOTS[4];
+  d.className = 'hcell' + (o === 1 ? ' p1' : o === 2 ? ' p2' : '') + (boom ? ' boom' : '')
+    + (terr ? ` t-${terr}` : '');
+  // 星屑と雲は「光を持たないマス」なので、空きわくの点を描かない
+  const slots = (terr === 'star' || terr === 'cloud') ? [] : (DOTS[cap] || DOTS[4]);
   slots.forEach((pos, k) => {
     const dot = document.createElement('i');
     if (k < c) dot.className = 'on';
@@ -825,10 +934,12 @@ function renderSettings(inMatch = false) {
   $('optLight').checked = device.effects === 'light';
   paintVol($('volSe'), $('volSeVal'), device.seVol);
   paintVol($('volBgm'), $('volBgmVal'), device.bgmVol);
+  paintBoardSize();
   renderBgmList();
   $('pauseBtns').hidden = !inMatch;
   $('btnSettingsClose').hidden = inMatch;
   $('btnQuit').textContent = mode === 'tutorial' ? 'あそびかたへ' : 'タイトルへ';
+  $('verSettings').textContent = VERSION_LABEL;
 }
 
 /**
@@ -836,6 +947,40 @@ function renderSettings(inMatch = false) {
  *   `--fill` は「たまっている側」の塗り分け位置（CSSが読む）。
  *   0 のときは数字でなく「なし」と出す（0という数字より、切れていることが伝わる）
  */
+/**
+ * 盤の大きさのスライドバー。
+ * ★範囲(min/max)はここで入れる★ HTMLに数字を書き写すと、board.js の上限を変えたときに
+ *   片方だけ古くなり、「動かせるのに作れない大きさ」が生まれる。
+ * ★変えても、いまの対戦には効かせない★ 理由は applyBoardSize() の説明を読むこと。
+ */
+function initSizeSliders() {
+  const w = $('boardW'), h = $('boardH');
+  w.min = String(MIN_W); w.max = String(MAX_W);
+  h.min = String(MIN_H); h.max = String(MAX_H);
+  const onInput = (key, input) => {
+    device[key] = Number(input.value);
+    writeDevice(device);
+    paintBoardSize();
+  };
+  w.addEventListener('input', () => onInput('boardW', w));
+  h.addEventListener('input', () => onInput('boardH', h));
+}
+
+/** いまの大きさを、数字と「点の格子」の両方で見せる（数字だけでは形が想像できない） */
+function paintBoardSize() {
+  const bw = device.boardW, bh = device.boardH;
+  $('boardW').value = String(bw);
+  $('boardH').value = String(bh);
+  $('boardW').style.setProperty('--fill', `${(bw - MIN_W) / (MAX_W - MIN_W) * 100}%`);
+  $('boardH').style.setProperty('--fill', `${(bh - MIN_H) / (MAX_H - MIN_H) * 100}%`);
+  $('boardVal').textContent = `よこ${bw} × たて${bh}`
+    + (bw === DEF_W && bh === DEF_H ? '（ふつう）' : '');
+  const box = $('boardPreview');
+  box.textContent = '';
+  box.style.gridTemplateColumns = `repeat(${bw}, 7px)`;
+  for (let k = 0; k < bw * bh; k++) box.appendChild(document.createElement('i'));
+}
+
 function paintVol(input, label, v) {
   input.value = String(v);
   input.style.setProperty('--fill', `${v}%`);
@@ -880,4 +1025,7 @@ globalThis.__luna = {
   get busy() { return busy; },
   get paused() { return paused; },
   get coachSeen() { return [...coach.seen]; },
+  // ★盤の大きさは通し検証から読めるようにする★（canvasの見た目から逆算すると誤診する）
+  get board() { return { w: W, h: H, n: N }; },
+  get version() { return VERSION_LABEL; },
 };

@@ -34,6 +34,10 @@ const seatColor = (o, goldSeat) => (o === 0 ? COLORS.dim : (o === goldSeat ? COL
  *   600ms なら最大でも毎秒1.67回。test/test-render.mjs が実際に数えて検査している。
  */
 export const POP_MIN_MS = 600;
+/** ここから画面側に知らせる連鎖数。1＝はじけたら必ず知らせる（出し分けは app.js） */
+export const POP_MIN_CHAIN = 1;
+/** ここから「画面いっぱいの文字」を出す。これ未満は揺れだけ。★正本はここ★ */
+export const POP_TEXT_CHAIN = 2;
 
 /** 演出の総時間の上限（ミリ秒）。20連鎖でも300連鎖でもここに収める */
 export const MAX_ANIM_MS = 2200;
@@ -81,7 +85,12 @@ export class BoardView {
     //   キャンバスは盤の大きさしか無いので「画面全面」にはできない。
     //   ここは「何連鎖が起きたか」を知らせるだけで、見せ方は app.js が持つ。
     this.onChainPop = null;
-    this.popAt = -99999;       // 直前にカットインを「出し直した」時刻（明滅の歯止め）
+    /* ★歯止めは「文字」と「揺れ」で別々に持つ★（2026-09-09）
+       ひとつにすると、1連鎖の揺れが600msの枠を使い切り、
+       **その直後に伸びた連鎖のカットインが出なくなる**（通し検証で実際に落ちた）。
+       光過敏の基準が縛っているのは「広い面積の明滅」＝文字のほうなので、分けてよい。 */
+    this.popAt = -99999;       // 直前に「文字」を出し直した時刻（明滅の歯止め）
+    this.shakeAt = -99999;     // 直前に「揺れ」を出し直した時刻
     this.pulse = 0;
     this.playing = false;
     this.onDone = null;
@@ -165,7 +174,12 @@ export class BoardView {
     const availH = Math.max(240, box.clientHeight || 0);
     let cell = Math.floor((availW - this.pad * 2) / W);
     if (availH > 80) cell = Math.min(cell, Math.floor((availH - this.pad * 2) / H));
-    this.cell = Math.max(28, Math.min(72, cell));
+    /* ★下限を高くしすぎると、たての大きい盤で canvas が親からはみ出す★（2026-09-09）
+       cell は「幅と高さの両方に収まる大きさ」として計算済みなので、
+       下限が効くのは「そもそも収まらない」ときだけ。そこで無理に大きくすると、
+       盤の下がちぎれて押せなくなる。★CSSで縮めるのは禁止★——
+       hit() は this.cell から座標を逆算するので、見た目だけ縮むと押す場所がずれる。 */
+    this.cell = Math.max(24, Math.min(72, cell));
     const w = this.cell * W + this.pad * 2;
     const h = this.cell * H + this.pad * 2;
     const dpr = Math.min(3, globalThis.devicePixelRatio || 1);
@@ -282,20 +296,30 @@ export class BoardView {
       // 大連鎖では白い火花も混ぜて「色が変わった」ように見せる
       if (ev.chain >= 5) this.burst(ev.i, '#fff6d8', 8);
       for (const j of ev.to) if (j >= 0) this.trail(ev.i, j, col);
-      if (this.fx !== 'light' && !this.reduced) {
-        this.shake = Math.min(9, 2 + ev.chain * 0.5);
-        // ★同じ手のあいだは「より大きくなったとき」だけ知らせる★
-        //   1手のあいだに3→4→5…と伸びるので、毎回出すと点滅になる（光過敏の配慮）
-        if (ev.chain >= 3 && (!this.chainPop || ev.chain > this.chainPop.n)) {
-          this.chainPop = { n: ev.chain, t };
-          if (this.onChainPop) {
-            /* ★「出し直す」のは POP_MIN_MS おきまで★（仕様書§5-4 光過敏性発作への配慮）
-               20はじけなら1コマ110ms、300はじけなら7ms。連鎖段が上がるたびに出し直すと
-               **1秒に5〜9回**の明滅になる。数だけ差し替えて、透明度は上げ直さない。 */
-            const restart = t - this.popAt >= POP_MIN_MS;
-            if (restart) this.popAt = t;
-            this.onChainPop(ev.chain, restart);
-          }
+      /* ★知らせるのは「1回でも はじけた」ところから★（2026-09-09 オーナー指摘で変更）
+           もとは3連鎖以上でだけ出していた。しかし実測すると、
+             ・最初の10手で3連鎖が起きるのは **0%**
+             ・21〜30手でも 1〜2%、41〜50手でようやく 7%
+           で、**1局の大半で演出が一度も出ない**（オーナー「〇連鎖とか揺れは全然ないよ」）。
+           1連鎖以上なら 11〜20手で17%、31〜40手で29〜39%あるので、ここを入口にする。
+           出し分けは画面側（app.js）の仕事: 1連鎖＝小さく揺らすだけ、2連鎖以上＝カットイン。 */
+      const soft = this.fx === 'light' || this.reduced;   // 動きを抑える設定・端末
+      if (!soft) this.shake = Math.min(9, 2 + ev.chain * 0.5);
+      // ★同じ手のあいだは「より大きくなったとき」だけ知らせる★
+      //   1手のあいだに3→4→5…と伸びるので、毎回出すと点滅になる（光過敏の配慮）
+      if (ev.chain >= POP_MIN_CHAIN && (!this.chainPop || ev.chain > this.chainPop.n)) {
+        this.chainPop = { n: ev.chain, t };
+        if (this.onChainPop) {
+          /* ★「出し直す」のは POP_MIN_MS おきまで★（仕様書§5-4 光過敏性発作への配慮）
+             20はじけなら1コマ110ms、300はじけなら7ms。連鎖段が上がるたびに出し直すと
+             **1秒に5〜9回**の明滅になる。数だけ差し替えて、透明度は上げ直さない。 */
+          const big = ev.chain >= POP_TEXT_CHAIN;
+          const restart = t - (big ? this.popAt : this.shakeAt) >= POP_MIN_MS;
+          if (restart) { if (big) this.popAt = t; else this.shakeAt = t; }
+          /* ★第3引数 soft★ 「ひかえめ」と reduced-motion でも **文字だけは出す**。
+             仕様書§5-4が求めているのは「弱める」であって「消す」ではない。
+             全部消すと、その設定の人は何が起きたか一生分からない（2026-09-09 の設計ミス）。 */
+          this.onChainPop(ev.chain, restart, soft);
         }
       }
     }
@@ -591,6 +615,8 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 function matchMediaReduced() {
-  try { return globalThis.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches; }
+  // ★必ず真偽値で返す★ matchMedia が無い環境（Nodeのテスト）で undefined を返すと、
+  //   それを他へ渡したときに undefined が漏れて検査をすり抜ける
+  try { return !!(globalThis.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
   catch { return false; }
 }

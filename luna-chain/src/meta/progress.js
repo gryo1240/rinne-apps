@@ -88,6 +88,8 @@ function clampInt(v, lo, hi, dflt) {
  *   `dv` を見るのは「1と2が、3段の値なのか本当に1%・2%なのか区別できない」ため。
  *   ★音量の意味を変えるときは DEVICE_V を上げ、ここに読み替えを足すこと★
  */
+import { DEF_W, DEF_H, MIN_W, MAX_W, MIN_H, MAX_H } from '../core/board.js';
+
 export const DEF_SE = 100;
 export const DEF_BGM = 70;
 const LEGACY_STEP = [0, 70, 100];    // 0=なし / 1=ちいさい / 2=おおきい を % に直した値
@@ -128,6 +130,7 @@ export function loadDevice(storage = globalThis.localStorage) {
   const base = {
     sound: true, effects: 'normal', preview: true, coach: true, coachSeen: [],
     seVol: DEF_SE, bgmVol: DEF_BGM, bgm: '',
+    boardW: DEF_W, boardH: DEF_H,
   };
   try {
     const got = safeParse(storage && storage.getItem(DEVICE_KEY), {});
@@ -149,6 +152,12 @@ export function loadDevice(storage = globalThis.localStorage) {
       coachSeen: Array.isArray(got.coachSeen)
         ? got.coachSeen.filter((x) => typeof x === 'string').slice(0, 40)
         : [],
+      /* ★盤の大きさ★（2026-09-09）
+         範囲外・数字でない値は必ず丸める。壊れた保存や、上限を下げたあとの古い保存で
+         盤が作れなくなると、**遊べないまま何も表示されない**ことになる。
+         丸める範囲の正本は board.js（ここに数字を書き写さない）。 */
+      boardW: clampInt(got.boardW, MIN_W, MAX_W, DEF_W),
+      boardH: clampInt(got.boardH, MIN_H, MAX_H, DEF_H),
     };
   } catch { return base; }
 }

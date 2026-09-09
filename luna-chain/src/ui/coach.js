@@ -28,9 +28,21 @@ export const LINES = [
   { id: 'taken',   text: 'とられた。とりかえそう' },
   { id: 'preview', text: 'ゆびを おいたままだと よこくが 出る' },
   { id: 'goal',    text: 'あいての色を ぜんぶ なくせば かち' },
+
+  /* ★地形の説明★（2026-09-09 オーナー指摘「置けないマスが何を意味しているか分からない」）
+     この3行だけは **さわった瞬間に出す**（他の行のように状況で出すのではない）。
+     置けなかった理由は、その場で言われないと永久に分からない。
+     ★ふたりで あそぶ でも出す★——そばに人がいても、地形の意味は誰も教えられない。
+       （§0-10「ふたり対戦では画面の口出しをしない」の例外。消さないこと） */
+  { id: 'stardust', text: '十字は ひかりの とおりみち' },
+  { id: 'cloud',    text: 'もやの あいだは おけない' },
+  { id: 'crater',   text: '大きな丸は わくが 1つ おおい' },
 ];
 
 const BY_ID = Object.fromEntries(LINES.map((l) => [l.id, l]));
+
+/** さわった瞬間に出す行（状況では出さない）。done の数え方から外すためにも使う */
+export const TERRAIN_IDS = ['stardust', 'cloud', 'crater'];
 
 export class Coach {
   constructor() { this.seen = new Set(); this.cur = null; }
@@ -81,5 +93,7 @@ export class Coach {
   }
 
   /** 全部出しきったか（出しきったら黙る） */
-  get done() { return this.seen.size >= LINES.length; }
+  /** ★地形の3行は数に入れない★ 地形は盤によって出ないことがあり、
+      入れると「案内はもう全部出した」の判定が永久に立たなくなる */
+  get done() { return this.seen.size >= LINES.length - TERRAIN_IDS.length; }
 }

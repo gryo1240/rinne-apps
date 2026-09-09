@@ -17,9 +17,56 @@
  *   ★地形を足すときは、必ず test/stress.mjs を通すこと。★
  */
 
-export const W = 6;
-export const H = 7;
-export const N = W * H;
+/* ★盤の大きさは変えられる★（2026-09-09 オーナー指示「設定で盤面数を増やせるように」）
+ *
+ *   ★ここは「モジュール全体で1つだけ」の状態★
+ *     つまり **同時に2つの違う大きさの盤を持てない**。いまは持つ必要がない
+ *     （あそびかたの図はDOM、連鎖の予告は同じ盤のクローン）が、将来
+ *     「盤のプレビューと本番の盤を並べる」ような画面を作った瞬間に壊れる。
+ *
+ *   ★setSize は対戦が動いているあいだ呼んではいけない★
+ *     N が変わっても、進行中の state が持つ Int8Array は古い長さのまま。
+ *     範囲外に触れても JS は例外を出さないので、**静かに盤がおかしくなる**。
+ *     呼び出し口は app.js の対戦開始（beginMatch / startTutorial）だけにする。
+ *
+ *   ★N や W から「読み込み時に」値を作らないこと★
+ *     const で受けた瞬間に、そのときの大きさで固定される。
+ *     実際 data/tutorial.js の hand が `idx(2,3)` を読み込み時に評価していて、
+ *     指マークの位置だけ古い幅に取り残される形になっていた（2026-09-09 に修正）。
+ *     このファイルの中でも、大きさに依存する表は必ず setSize で作り直す（下の ORTH）。
+ */
+export const DEF_W = 6, DEF_H = 7;      // ふつうの盤（記録に残るのはこの大きさだけ）
+/* 下限の根拠: generateBoard が `rng.int(W >> 1)` と `1 + rng.int(H - 2)` を使うので
+   W<2 / H<3 で退化する。加えて地形を左右対称に2〜3組置く余地が要る。
+   上限の根拠: 画面幅320pxでも1マス36px以上を保てること（(320-12)/36 ≒ 8.5）。
+   マスが小さくなると、いちばん効いている「連鎖の予告の数字」が読めなくなる。 */
+export const MIN_W = 4, MAX_W = 8;
+export const MIN_H = 5, MAX_H = 10;
+
+export let W = DEF_W;
+export let H = DEF_H;
+export let N = W * H;
+
+const clampSize = (v, lo, hi) => {
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : lo;
+};
+
+/**
+ * 盤の大きさを変える。★対戦中に呼ばないこと★（上の注意を読むこと）
+ * 返り値は「実際に変わったか」。範囲外の値は黙って丸める。
+ */
+export function setSize(w, h) {
+  const nw = clampSize(w, MIN_W, MAX_W);
+  const nh = clampSize(h, MIN_H, MAX_H);
+  if (nw === W && nh === H) return false;
+  W = nw; H = nh; N = W * H;
+  ORTH = buildOrth();                    // ★大きさに依存する表は必ず作り直す★
+  return true;
+}
+
+/** いま「ふつうの盤」か（記録に残してよいか の判定に使う） */
+export const isDefaultSize = () => W === DEF_W && H === DEF_H;
 
 // 地形
 export const T_NORMAL   = 0;
@@ -37,8 +84,8 @@ export const inBoard = (x, y) => x >= 0 && x < W && y >= 0 && y < H;
 /** 上下左右。この順序が連鎖の処理順を決める＝決定論の一部なので変えないこと */
 const DIRS = [[0, -1], [0, 1], [-1, 0], [1, 0]];
 
-/** 上下左右の隣接（AIの評価用。地形と無関係） */
-const ORTH = (() => {
+/** 上下左右の隣接（AIの評価用。地形と無関係）。★setSize のたびに作り直す★ */
+function buildOrth() {
   const t = [];
   for (let i = 0; i < N; i++) {
     const x = xOf(i), y = yOf(i), a = [];
@@ -46,7 +93,8 @@ const ORTH = (() => {
     t.push(a);
   }
   return t;
-})();
+}
+let ORTH = buildOrth();
 export function orthOf(i) { return ORTH[i]; }
 
 /**
