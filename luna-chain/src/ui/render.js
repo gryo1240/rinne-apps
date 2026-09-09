@@ -210,7 +210,7 @@ export class BoardView {
     /* ★動きを止めるかどうかの正本は、この2行だけ★
          matchMedia を読むのは resolveMotion() 1か所（app.js も同じ関数を使う）。
          2か所で読むと、片方だけ古くなって「設定画面の表示と実際の動きが食い違う」ことになる。 */
-    this.motion = opts.motion || 'auto';
+    this.motion = opts.motion === 'still' ? 'still' : 'full';
     this.reduced = resolveMotion(this.motion);
     this.frameTimes = [];
     this.budget = 1;           // 1=全部出す。重いと自動で下がる
@@ -225,7 +225,7 @@ export class BoardView {
    *   ここで盤の状態は一切触らない（this.reduced を差し替えるだけ）。
    */
   setMotion(mode) {
-    this.motion = ['auto', 'full', 'still'].includes(mode) ? mode : 'auto';
+    this.motion = mode === 'still' ? 'still' : 'full';
     this.reduced = resolveMotion(this.motion);
   }
 
@@ -952,9 +952,12 @@ function osWantsStill() {
  *   「ゆれません と出ているのに揺れる」が起こりうる状態になっていた。
  */
 export function resolveMotion(mode) {
-  if (mode === 'full') return false;
-  if (mode === 'still') return true;
-  return osWantsStill();
+  /* ★'still' だけが「止める」★（2026-09-09 オーナー指示で既定オンにした）
+       それ以外（'full'・未設定・壊れた値・古い 'auto'）はすべて揺らす。
+       端末の prefers-reduced-motion は **もう参照しない**——
+       既定で従うかどうかはオーナーの判断で、いまは「従わない」と決まっている。
+       ただし表示用に deviceWantsStill() は残す（せってい画面に端末の状態を出すため）。 */
+  return mode === 'still';
 }
 
 /** 端末が「動きを減らす」と言っているか（表示用。判定には resolveMotion を使う） */

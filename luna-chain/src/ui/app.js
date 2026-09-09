@@ -149,11 +149,19 @@ function boot() {
   // ★音量はスライドバー★（2026-09-08 オーナー指示）
   //   input（動かしている最中）… 音量にすぐ反映する。**保存はしない**（1目盛りごとに書くのは無駄）
   //   change（指を離した）    … 保存して、試聴の音を鳴らす
-  //   ★input のたびに試聴音を鳴らさないこと★ 動かしているあいだ連射されて何も聞き取れなくなる
+  //
+  // ★2026-09-09 オーナー指示で変更★
+  //   > SEの音量バーを調整するときも逐次音を鳴らしてほしいかも
+  //   もとは「指を離したときだけ」鳴らしていた（動かしている最中に鳴らすと連射で潰れる、
+  //   というのが v1.0 の判断）。合わせながら聞けないほうが不便、というオーナーの判断を採る。
+  //   ★そのうえで間隔だけ守る★ 1目盛りごとに全部鳴らすと音が重なって、
+  //     かえって「いまどのくらいの大きさか」が分からなくなる。
+  //     短い「置く音」を SE_PREVIEW_MS に1回までにする（0のときは鳴らさない）。
   $('volSe').addEventListener('input', (e) => {
     device.seVol = Number(e.target.value);
     Audio.setSeVol(device.seVol);
     paintVol(e.target, $('volSeVal'), device.seVol);
+    sePreview();
   });
   $('volSe').addEventListener('change', () => {
     saveVolumes();
@@ -439,6 +447,12 @@ function commitMove(i) {
 function afterMove(r, next) {
   busy = true;
   const gen = match.id;
+  /* ★いま演出している手を、誰が打ったか★（2026-09-09 レビュー指摘で追加）
+       `state.player` は play() の中の endTurn() で**もう相手に移っている**（rules.js）。
+       演出のコールバックはそのあとに走るので、そこで `state.player` を見ると
+       **必ず相手の席**が返る。歓声の鳴らし分けがまるごと逆になっていた。
+     ★r.player を使う★ すぐ上の「奪えたときのキラキラ」が既にこの形（match.control[r.player]）。 */
+  popSeat = r.player;
   view.setPreview(null);
   view.setHints(null);         // 演出中に古い数字を残さない
   view.lastMove = r.events.find((e) => e.t === 'place')?.i ?? view.lastMove;
@@ -626,12 +640,16 @@ function paintDeviceLine() {
   // スイッチのすぐ下に「なぜ今こうなっているか」を出す（操作と説明を同じ箱に置く）
   const note = $('shakeNote');
   if (note) {
+    /* ★既定はオン★（2026-09-09 オーナー指示）
+         端末が「うごきを へらす」でも揺らす。つらい人が自分で切れるように、
+         そのことを **チェックを外す前から** 書いておく。 */
     note.textContent = osStill
       ? (still
-        ? 'この たんまつは 「うごきを へらす」せってい です。チェックを 入れると ゆれます'
-        : 'この たんまつは 「うごきを へらす」せってい ですが、ゆらす ことに しています')
+        ? 'この たんまつは 「うごきを へらす」せってい なので ゆれません'
+        : 'この たんまつは 「うごきを へらす」せってい ですが、ゆらして います。'
+          + 'くるしい ときは チェックを はずして ください')
       : (still ? 'いまは ゆれません' : 'はじけると 画面が ゆれます');
-    note.classList.toggle('warn', osStill && still);
+    note.classList.toggle('warn', osStill && !still);
   }
 
   // 版番号の下の行は「端末が何と言っているか」だけを出す（切り分け用に残す）
@@ -665,12 +683,44 @@ function applyMotionClass() {
   document.documentElement.classList.toggle('force-motion', !resolveMotion(device.motion));
 }
 
+/* ★音量バーの試聴音の間隔★（2026-09-09）
+     90ms＝1秒に11回まで。スライドバーは step=5 なので、
+     端から端まで一気に動かしても20回ぶんしか刻みが無く、これで十分ついてくる。 */
+const SE_PREVIEW_MS = 90;
+let sePreviewAt = -99999;
+let sePreviewCount = 0;                        // ★通し検証から読む★ 鳴らそうとした回数
+const nowMs = () => (globalThis.performance && performance.now ? performance.now() : Date.now());
+function sePreview() {
+  if (!(device.seVol > 0)) return false;       // 0のときに鳴らすと「消えていない」と誤解される
+  const t = nowMs();
+  if (t - sePreviewAt < SE_PREVIEW_MS) return false;
+  sePreviewAt = t;
+  sePreviewCount += 1;
+  Audio.SE.place();                            // ★短い音を使う★ boom は長すぎて次の刻みに重なる
+  return true;
+}
+
+/* ★数字の大きさは連鎖数で伸ばす★（2026-09-09 オーナー指示）
+     > 「〇連鎖」の文字は、今のサイズから数字だけサイズを大きくしていこうよ。
+     >  「れんさ」部分は変えなくていい
+   ★上限を必ず置く★ 画面の横幅を超えると数字が切れて、何連鎖か読めなくなる
+     （CSS側も clamp の中に vw を残してあり、二重に守っている）。
+   2連鎖=1.00 から 30連鎖=1.90 まで伸び、そこで頭打ち。 */
+const POP_SCALE = { from: POP_TEXT_CHAIN, per: 0.032, max: 1.9 };
+const popScale = (n) =>
+  Math.min(POP_SCALE.max, 1 + Math.max(0, n - POP_SCALE.from) * POP_SCALE.per);
+
+/* ★演出中の手の持ち主★ afterMove が入れる。0 は「まだ誰も打っていない」 */
+let popSeat = 0;
+
 function showChainPop(n, restart, soft) {
   if (!view) return;
   const withText = n >= POP_TEXT_CHAIN;
   if (withText) {
     el.chainPopNum.textContent = String(n);
     el.chainPop.classList.toggle('hot', n >= 8);
+    // ★伸びている最中も育てる★ 出し直しは600msに1回だが、連鎖はその間も伸びる
+    el.chainPop.style.setProperty('--pop', popScale(n).toFixed(3));
   }
   /* ★揺れの強さは、伸びている最中でも上げていく★（2026-09-09 実測で判明）
        カットインを「出し直す」のは600msに1回だが、連鎖はその間に2→3→…と伸びる。
@@ -683,6 +733,20 @@ function showChainPop(n, restart, soft) {
   const scale = view.weakened ? SHAKE.lightScale : 1;
   if (!soft) {
     el.stage.style.setProperty('--sk', `${Math.max(1, Math.round(shakeAmp(n, view.cell) * scale))}px`);
+  }
+
+  /* ★歓声★（2026-09-09 オーナー指示）
+       30連鎖以上 … 歓声と拍手1（大盛り上がり）／10〜29連鎖 … 歓声と拍手2（中盛り上がり）
+       相手が30連鎖以上 … スタジアムの歓声2
+     ★誰の連鎖かを見る★ 自分と相手で鳴らす音を変えるので、席の判定を間違えると逆になる。
+       二人対戦では「いま指している人」が常に自分側なので、mine は true。
+     鳴らしすぎの歯止め（最低2秒）は audio.js が持つ。 */
+  if (n >= 10) {
+    /* ★mySeat ではなく control を見る★（app.js 冒頭の注意書きと、既存の capture の判定に合わせる）
+         ふたりで あそぶ は両席 human なので、どちらの連鎖でも「自分側」の歓声になる。
+       ★state.player は使わない★ この時点で相手に移っている（上の popSeat の説明を参照）。 */
+    const mine = !match || !popSeat || match.control[popSeat] === 'human';
+    Audio.SE.cheer(n, mine);
   }
 
   /* ★盤のふちを光らせるのは、どの設定でも出す★（2026-09-09 追加）
@@ -782,6 +846,12 @@ function finish() {
   view.bigFlash();
   updateHud();
 
+  /* ★決着したら拍手★（2026-09-09 オーナー指示「決着後は『スタジアムの拍手』」）
+       ★勝敗にかかわらず鳴らす★ 負けたほうにも「1局おつかれさま」を返したい相手（4〜8歳）なので、
+       勝ったときだけ拍手すると、負けた側の画面だけ急に静かになる。
+       勝ち負けの区別は、このあとの win()/lose() の音と文字が担う。 */
+  Audio.SE.applause();
+
   if (!w) {
     // ★勝敗がついていないのに終わった（相手に置ける手が1つも無くなった等）★
     //   `checkEnd` は「相手のマスが0」「ターン上限」しか見ないので、この形は勝敗に翻訳されない。
@@ -872,7 +942,11 @@ function finish() {
 function renderTitle() {
   // ★使っていない素材の名前を出さない★
   //   BGMは自作曲（Suno生成）。魔王魂・Springin' は未導入なので、その表記は出さない
-  $('credits').textContent = '音楽：オリジナル楽曲（Suno生成）';
+  /* ★使っている素材だけを名乗る★（2026-09-09 歓声・拍手・ボタン音を追加）
+       効果音ラボはクレジット表記が任意（不要）だが、
+       **どこから来た音かを画面から辿れる状態にしておく**ほうが、
+       あとで規約を確認し直すときにも、素材を差し替えるときにも困らない。 */
+  $('credits').textContent = '音楽：オリジナル楽曲（Suno生成）／効果音：効果音ラボ';
   $('btnVersion').textContent = VERSION_LABEL;
 }
 
@@ -1192,4 +1266,12 @@ globalThis.__luna = {
   // ★盤の大きさは通し検証から読めるようにする★（canvasの見た目から逆算すると誤診する）
   get board() { return { w: W, h: H, n: N }; },
   get version() { return VERSION_LABEL; },
+  // ★音量バーを動かしたときに、何回鳴らそうとしたか★（2026-09-09）
+  //   「鳴らす処理を書いた」ではなく回数で検査するため。
+  //   ★AudioContext が未解錠のときは数だけ増える★ ので「鳴った」ではなく「鳴らそうとした」
+  get sePreviews() { return sePreviewCount; },
+  // ★いま演出している手の持ち主★ 歓声の鳴らし分けが逆になっていないかを検査するため
+  get popSeat() { return popSeat; },
+  // ★連鎖数から倍率を出す正本★ 検査が同じ式を書き写すと、実装を変えても落ちなくなる
+  popScale: (n) => popScale(n),
 };

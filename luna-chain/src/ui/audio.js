@@ -128,7 +128,97 @@ export function unlock() {
     master.gain.value = gainOf(seLevel, SE_MAX);
     master.connect(ctx.destination);
     if (ctx.state === 'suspended') ctx.resume();
+    loadClips();          // ★最初の操作のときに取りにいく★（対戦中だと最初の1回が鳴らない）
   } catch { ctx = null; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   録音した効果音（2026-09-09 オーナー指示で追加）
+     歓声・拍手・ボタン音。**このアプリで初めて「人の声」を鳴らす**。
+     素材: 効果音ラボ https://soundeffect-lab.info/
+       商用利用無料・クレジット表記不要（任意）・アプリへの組み込みは再配布に当たらない。
+       禁止: 素材の再配布／効果音ファイルへの直リンク／AI学習データとしての利用。
+     ★<audio> 要素は使わない★
+       HTMLAudio にすると
+         ・master(GainNode) を通らないので **こうかおんの おおきさスライダーが効かない**
+           （とくに iOS は HTMLMediaElement.volume を無視するので露骨に効かない）
+         ・MAX_VOICES の予算の外に出る
+       WebAudio なら、合成音とまったく同じ経路・同じ音量つまみに乗る。
+     ★取りにいくのは最初の操作のとき（unlock）★
+       対戦中に初めて fetch すると、最初の1回だけ鳴らない。
+       取れなくても黙って諦める（音が鳴らなくても遊べる、という既存の方針どおり）。
+   ══════════════════════════════════════════════════════════ */
+const CLIP_DIR = './audio/se/';
+/** id → ファイル名。★ここに無いidは鳴らない★ */
+const CLIPS = {
+  tap: 'tap.mp3',              // ボタンを押した音（決定ボタンを押す2）
+  cheermid: 'cheermid.mp3',    // 歓声と拍手2（中盛り上がり）… 10〜29連鎖
+  cheerbig: 'cheerbig.mp3',    // 歓声と拍手1（大盛り上がり）… 30連鎖以上
+  cheerfoe: 'cheerfoe.mp3',    // スタジアムの歓声2 … 相手が30連鎖以上
+  applause: 'applause.mp3',    // スタジアムの拍手 … 決着後
+};
+const clipBuf = new Map();     // id → AudioBuffer（1回デコードして使い回す）
+
+/* ★歓声の鳴らし分け★（2026-09-09 オーナー指示。この数字が正本）
+     > 30連鎖以上の場合は「歓声と拍手1 大盛り上がり」を使用。
+     > 10連鎖以上で30連鎖未満の場合は「歓声と拍手2 中盛り上がり」を使用
+     > 相手が30連鎖以上してきたときは、「スタジアムの歓声２」
+   ★関数に切り出してある★ 音を鳴らさずに数字だけ検査できるようにするため
+   （AudioContext が無いNodeのテストでも、しきい値の間違いを捕まえられる）。 */
+export const CHEER_MINE_BIG = 30;   // 自分が この連鎖以上で「大盛り上がり」
+export const CHEER_MINE_MID = 10;   // 自分が この連鎖以上で「中盛り上がり」
+export const CHEER_FOE_BIG = 30;    // 相手が この連鎖以上で「スタジアムの歓声2」
+export function cheerIdFor(chain, mine = true) {
+  const n = Number(chain) || 0;
+  if (mine) {
+    if (n >= CHEER_MINE_BIG) return 'cheerbig';
+    if (n >= CHEER_MINE_MID) return 'cheermid';
+    return null;
+  }
+  return n >= CHEER_FOE_BIG ? 'cheerfoe' : null;
+}
+let clipsAsked = false;
+
+/** 効果音の実体を読み込む。★何度呼んでも1回しか取らない★ */
+function loadClips() {
+  if (clipsAsked || !ctx) return;
+  clipsAsked = true;
+  for (const [id, file] of Object.entries(CLIPS)) {
+    fetch(CLIP_DIR + file)
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+      .then((b) => ctx.decodeAudioData(b))
+      .then((buf) => clipBuf.set(id, buf))
+      .catch(() => { /* 取れなくても遊べる。合成音は鳴り続ける */ });
+  }
+}
+
+/* ★歓声の歯止め★ 連続で鳴ると耳障りなので、最低間隔をあける。
+     揺れ・カットインと同じ考え方（あちらは600ms、こちらは音なので長め）。 */
+const CHEER_MIN_MS = 2000;
+let lastCheerAt = -99999;
+
+/**
+ * 録音した効果音を鳴らす。
+ *   gain … 0〜1（合成音と同じく master を通るので、音量スライダーが効く）
+ *   throttleMs … これ未満の間隔では鳴らさない（歓声用）
+ */
+function clip(id, { gain = 0.9, throttleMs = 0 } = {}) {
+  if (!ctx || seLevel <= 0) return false;
+  const buf = clipBuf.get(id);
+  if (!buf) return false;                       // まだ読めていない／取れなかった
+  const now = ctx.currentTime * 1000;
+  if (throttleMs && now - lastCheerAt < throttleMs) return false;
+  if (!budgetOk(ctx.currentTime, ctx.currentTime + buf.duration)) return false;
+  try {
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const g = ctx.createGain();
+    g.gain.value = gain;
+    src.connect(g); g.connect(master);
+    src.start();
+    if (throttleMs) lastCheerAt = now;
+    return true;
+  } catch { return false; }
 }
 
 /** ざらざらの音の素。★1回だけ作って使い回す★（毎回作ると連鎖のたびに一瞬止まる） */
@@ -188,7 +278,30 @@ const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 31, 33, 36];
 const pentaOf = (n) => PENTA[Math.min(PENTA.length - 1, Math.max(0, n))];
 
 export const SE = {
-  tap: () => tone({ freq: 700, dur: 0.05, type: 'sine', gain: 0.10 }),
+  /* ボタンの音。★録音音源があればそれを使い、無ければ今までの合成音★
+       読み込みは非同期なので、起動直後の1〜2タップは合成音になることがある。
+       そこで固まるより、鳴るものが鳴るほうがよい。 */
+  tap: () => {
+    if (clip('tap', { gain: 0.75 })) return;
+    tone({ freq: 700, dur: 0.05, type: 'sine', gain: 0.10 });
+  },
+
+  /**
+   * 歓声（★このアプリで唯一の「人の声」★）。連鎖数と、誰の連鎖かで鳴らし分ける。
+   *   2026-09-09 オーナー指示:
+   *     30連鎖以上 … 歓声と拍手1（大盛り上がり）
+   *     10〜29連鎖 … 歓声と拍手2（中盛り上がり）
+   *     相手が30連鎖以上 … スタジアムの歓声2
+   *   ★最低2秒あける★ 大連鎖は1手のなかで何度も伸びるので、歯止めが無いと重なって濁る。
+   */
+  cheer: (chain, mine = true) => {
+    const id = cheerIdFor(chain, mine);
+    if (!id) return false;
+    return clip(id, { gain: 0.85, throttleMs: CHEER_MIN_MS });
+  },
+
+  /** 決着したあとの拍手（スタジアムの拍手） */
+  applause: () => clip('applause', { gain: 0.8 }),
 
   place: () => {
     tone({ freq: 520, dur: 0.07, type: 'triangle', gain: 0.14 });

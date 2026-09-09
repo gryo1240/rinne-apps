@@ -148,15 +148,18 @@ export function loadDevice(storage = globalThis.localStorage) {
       bgm: typeof got.bgm === 'string' ? got.bgm.slice(0, 40) : '',
       sound: seVol > 0 || bgmVol > 0,
       effects: got.effects === 'light' ? 'light' : 'normal',
-      /* ★動きの扱いは3値で持つ★（2026-09-09 オーナー指示「OSの設定によらず揺れるようにできないの？」）
-           'auto'  … 端末の prefers-reduced-motion に従う（既定）
-           'full'  … 端末が「動きを減らす」でも揺らす（オーナーが自分で選んだとき）
-           'still' … 端末が何と言っていても揺らさない
-         ★真偽値1個にしないこと★
-           true/false の2値だと「まだ一度も触っていない」が表せない。
-           触っていない人が **あとから** OS側で「動きを減らす」を入れたとき、
-           アプリがそれに従わなくなる（配慮設定を壊す）。 */
-      motion: ['auto', 'full', 'still'].includes(got.motion) ? got.motion : 'auto',
+      /* ★動きの扱い★（2026-09-09 オーナー指示「画面を揺らすはデフォルトでオンにしておいて」）
+           'full'  … 揺らす（★既定★。端末が「動きを減らす」でも揺らす）
+           'still' … 揺らさない
+         ★既定オンはオーナーの判断★
+           prefers-reduced-motion は本来「乗り物酔い・めまいがつらい人」のための設定で、
+           既定で無視すると、その人に意図しない動きが出る。
+           そのため **切るスイッチは必ず残す**（せってい >そのほか >「がめんを ゆらす」）。
+           せってい画面には端末の状態も出しているので、気づいた人はすぐ切れる。
+         ★'auto'（端末に従う）は 2026-09-09 に廃止★
+           v1.8 で既定に使っていたが、オーナーの指示で既定オンにしたため、
+           保存済みの 'auto' は 'full' として読む（古い保存で揺れないままにしない）。 */
+      motion: got.motion === 'still' ? 'still' : 'full',
       preview: got.preview !== false,   // れんさの よこく（既定オン）
       coach: got.coach !== false,       // 対戦中の あんない（既定オン）
       // ★書いたものを読み返すこと★

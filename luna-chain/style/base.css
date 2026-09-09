@@ -310,11 +310,20 @@ button.ghost{
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   text-align:center;
 }
+/* ★数字だけ 連鎖が伸びるほど大きくする★（2026-09-09 オーナー指示）
+     > 「〇連鎖」の文字は、今のサイズから数字だけサイズを大きくしていこうよ。
+     >  「れんさ」部分は変えなくていい
+     倍率 --pop は app.js が入れる（1.0〜1.9）。正本は app.js の POP_SCALE。
+     ★42vw を超えないこと★ 画面の横幅からはみ出すと、数字が切れて何連鎖か読めなくなる。
+       clamp の上限に vw を掛けているのはそのため（倍率をかけても vw の上限は効き続ける）。 */
+#chainPop{--pop:1}
 #chainPop b{
-  font-size:clamp(110px, 42vw, 320px); line-height:.84; font-weight:900;
+  font-size:clamp(110px, calc(42vw * var(--pop)), calc(320px * var(--pop)));
+  line-height:.84; font-weight:900;
   color:var(--p1);
   text-shadow:0 0 20px rgba(247,215,116,.9), 0 0 52px rgba(247,215,116,.5), 0 7px 0 rgba(0,0,0,.5);
 }
+/* ★「れんさ！」は変えない★（オーナー指示）。数字とのサイズ差が「大きさ」を伝える */
 #chainPop .unit{
   font-size:clamp(34px, 13vw, 92px); font-weight:900; letter-spacing:.1em;
   color:#fff6d8; text-shadow:0 0 16px rgba(247,215,116,.85), 0 4px 0 rgba(0,0,0,.45);
