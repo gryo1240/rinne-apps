@@ -44,9 +44,21 @@ body{
    > 対戦中の上の方にある内容はいらないかも。戦況が動きまくるので、有利不利が意味ない。
    > あと、どちらの手番かを示してほしいかな。（オーナー）
    色つきの丸＋ことばの2本立てにする。★色だけに頼らない★（色の見分けがつきにくい人がいる） */
-.turn{flex:1; display:flex; align-items:center; gap:9px; font-size:16px; font-weight:700}
+/* ★文字の大きさ★（2026-09-11 オーナー指示「盤面の上の表示ももっと大きくてもいいよ」）
+     16px → 20px。★盤は1pxも小さくならない★
+       帯の高さを決めているのは文字ではなく ⚙ボタン（20px + 上下padding 4px ＝ 約32px）。
+       20pxの文字は行box約24pxなので、まだ8pxの余裕がある。24pxを超えると帯が伸び、
+       #stage の高さが減って盤のマスが縮む。
+     ★line-height を明示する★ 継承の normal のままだと端末のフォントで行boxが変わり、
+       「うちでは影響ゼロ、オーナーの端末では盤が縮む」が起こりうる。 */
+.turn{flex:1; display:flex; align-items:center; gap:10px; font-size:20px; font-weight:700;
+      line-height:1.2}
+/* ★丸の大きさ★ 14px → 18px（文字に合わせる）。
+     ★これ以上 大きくしたり ぼかしを増やさないこと★
+       #hud.mine のときは turnPulse で1.32倍に脈打つ＝実効24px。
+       DOM側なので §5-4 の「同時に光る面積」の計算には入らず、**検査が守ってくれない**。 */
 #turnDot{
-  width:14px; height:14px; border-radius:50%; flex:0 0 auto;
+  width:18px; height:18px; border-radius:50%; flex:0 0 auto;
   background:var(--p1); box-shadow:0 0 10px var(--p1);
 }
 /* 自分（人間）が押せるときだけ、丸をゆっくり脈打たせる＝「いま押していい」が一目で分かる */
@@ -498,3 +510,32 @@ button.verline:hover{color:var(--fg)}
   line-height:1.5;
 }
 #resultWhy[hidden]{display:none}
+
+/* ★もとの おおきさに もどす ボタン★（2026-09-11）
+     ★.opt / .slider / .segs / .szrow のクラスを付けないこと★
+       通し検証の「見出しと操作の左端がそろっている」検査が、それらの名前で
+       操作の要素を拾っている。ボタンを混ぜると別のものを比べ始める。 */
+#btnBoardDefault{
+  align-self:flex-start; margin:4px 0 2px;
+  padding:8px 14px; font-size:13px; border-radius:10px;
+}
+
+/* ★おおきさごとの さいちょう れんさ★（2026-09-11）
+     幅の基準は .stats(420px) ではなく .setting 等と同じ440pxに合わせない——
+     すぐ上の .stats と左端をそろえたいので 420px にする。 */
+.sizeh{
+  width:100%; max-width:420px; margin:14px 0 6px;
+  font-size:14px; color:var(--dim); font-weight:700; text-align:left;
+}
+.sizelist{width:100%; max-width:420px; display:flex; flex-direction:column; gap:4px}
+.sizelist .row1{
+  display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+  padding:7px 12px; border-radius:9px; background:rgba(255,255,255,.05);
+  font-size:14px;
+}
+/* いま選んでいる大きさ＝これから遊ぶ盤。ここが主役 */
+.sizelist .row1.now{
+  background:rgba(247,215,116,.13); border:1px solid rgba(247,215,116,.34); color:var(--p1);
+}
+.sizelist .row1 b{font-size:17px}
+.sizelist .row1 .none{color:var(--dim); font-size:13px; font-weight:400}

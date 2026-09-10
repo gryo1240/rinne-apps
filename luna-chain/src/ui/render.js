@@ -227,6 +227,11 @@ export const RIM = {
 export const sparkGain = (chain) =>
   1 + Math.min(SPARK.maxChain, Math.max(0, chain - 1)) * SPARK.perChain;
 
+/* ★マスの数字（連鎖の予告）の濃さ★（2026-09-11 オーナー指示「数字が見辛い」）
+     もとは 0.34〜0.84 で、**小さい連鎖ほど薄くて読めなかった**。
+     連鎖が大きいほど濃い、という情報は残したいので、下限だけを上げる。 */
+export const HINT_ALPHA = { min: 0.72, max: 1.0 };
+
 export const GLYPH = {
   /* ★大きさと枚数は面積予算から逆算してある★
        同時30枚 ×(1.25×size)^2 ×平均の不透明度0.5 ≦ 盤の面積の18%
@@ -1170,25 +1175,6 @@ export class BoardView {
       ctx.stroke(); ctx.setLineDash([]);
     }
 
-    // ── 押したら何連鎖するか（自分の手番のあいだ出しっぱなし）──────────
-    const hint = this.hints ? this.hints[i] : 0;
-    if (hint > 0) {
-      ctx.save();
-      // 数が大きいほど明るく・大きく。★数字そのものを出す★（強さの序列が一目で分かる）
-      const big = Math.min(1, hint / 8);
-      ctx.globalAlpha = 0.34 + big * 0.5;
-      ctx.fillStyle = hint >= 8 ? '#ffffff' : hint >= 4 ? '#fff2c4' : COLORS.p1;
-      ctx.font = `bold ${Math.round(cell * (0.44 + big * 0.16))}px system-ui, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      // 光の玉と重なっても読めるように、暗い縁を敷く
-      ctx.shadowColor = 'rgba(0,0,0,0.75)';
-      ctx.shadowBlur = Math.max(3, cell * 0.14);
-      ctx.fillText(String(hint), x + cell / 2, y + cell / 2 + 1);
-      ctx.shadowBlur = 0;
-      ctx.restore();
-    }
-
     // ★「あと何個ではじけるか」を盤の上で必ず見せる★（2026-09-08 オーナー実測で追加）
     //   容量はマスの位置で違う（かど2・へり3・まんなか4）。ここを描かないと、
     //   遊んでいる人は盤をいくら見てもルールに気づけない。実際に「ルールが分からない」と言われた。
@@ -1230,6 +1216,43 @@ export class BoardView {
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(String(count), x + cell / 2, y + cell / 2 + 1);
       }
+    }
+
+    /* ── 押したら何連鎖するか（自分の手番のあいだ出しっぱなし）──────────
+       ★かならず drawCell のいちばん最後に描くこと★（2026-09-11 オーナー指示）
+         > マス内のレイヤーは数字を一番上にして。現状は数字が見辛い
+         canvas は**後に描いたものが上**になる。もとはこのブロックが光の粒より
+         前にあり、粒（しかも shadowBlur 付き）が数字を覆っていた。
+         暗い縁と影を敷いてはいたが、光る粒の上では効かない。
+       ★test-render.mjs が「fillText が最後の arc より後か」を機械で見ている★
+         次に誰かが drawCell を触ったときに、静かに元へ戻らないようにするため。
+       ★ここに明滅する効果を足さないこと★
+         仕様書§5-4 の「同時に光る面積 ≤ 18%」は #fx に描くものだけを数えており、
+         盤の canvas に描くこれは**予算の外**＝検査が守ってくれない。
+         いまは固定の濃さなので問題ないが、脈打たせた瞬間に予算外の明滅が生まれる。
+       ★演出中は setHints(null) されるので、上の count>5 の数字とは重ならない★
+         演出中も数字を出す変更をするなら、ここの重なりを見直すこと。 */
+    const hint = this.hints ? this.hints[i] : 0;
+    if (hint > 0) {
+      ctx.save();
+      // 数が大きいほど明るく・大きく。★数字そのものを出す★（強さの序列が一目で分かる）
+      const big = Math.min(1, hint / 8);
+      ctx.globalAlpha = HINT_ALPHA.min + big * (HINT_ALPHA.max - HINT_ALPHA.min);
+      ctx.font = `bold ${Math.round(cell * (0.44 + big * 0.16))}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const tx = x + cell / 2;
+      const ty = y + cell / 2 + 1;
+      /* ★影ではなく「縁取り」で読ませる★
+           shadowBlur だけだと、下に光る粒があるとにじみが負けて字がぼやける。
+           先に暗い縁を実線で描いてから、その上に本体を置く。 */
+      ctx.lineWidth = Math.max(2, cell * 0.075);
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = 'rgba(6,10,26,0.92)';
+      ctx.strokeText(String(hint), tx, ty);
+      ctx.fillStyle = hint >= 8 ? '#ffffff' : hint >= 4 ? '#fff2c4' : COLORS.p1;
+      ctx.fillText(String(hint), tx, ty);
+      ctx.restore();
     }
     ctx.restore();
   }

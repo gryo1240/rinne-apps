@@ -27,9 +27,61 @@ export function defaultSave() {
     played: 0,          // 総対戦数
     wins: 0,
     bestChain: 0,       // いちばん長かったれんさ（★増えるだけの数字。報酬はつけない★）
+    /* ★盤の大きさごとの じこベスト連鎖★（2026-09-11 オーナー指示「各盤面で最大連鎖を記録して」）
+         { "6x7": 12, "8x10": 40, ... }
+       ★bestChain（6×7の分）は消さないこと★ 理由は3つ:
+         1. きろく画面・test-meta・通し検証がこれを見ている
+         2. Service Worker で新旧のJSが混ざったとき、古いJSが writeSave すると
+            ホワイトリストの作り直しで bestChainBySize が**丸ごと消える**。
+            bestChain を正本のまま残しておけば、最悪でも6×7の記録は生き残る
+            （音量の seVol/seVolPct で実際に起きた形） */
+    bestChainBySize: {},
     tutorialDone: false,
   };
 }
+
+/* ★大きさのキー★ "よこxたて"。設定画面の表示と1対1に対応させる */
+export const sizeKey = (w, h) => `${w | 0}x${h | 0}`;
+
+/** 保存に入っている「大きさ別の記録」を読み直す（壊れた値・多すぎる件数から守る） */
+const MAX_SIZE_ENTRIES = 40;
+function cleanBySize(got, bestChain) {
+  const out = {};
+  if (got && typeof got === 'object') {
+    let n = 0;
+    for (const [k, v] of Object.entries(got)) {
+      /* ★いま選べる大きさで絞り込まないこと★（2026-09-11 アドバイザー指摘）
+           将来 MAX_H を下げた瞬間に、オーナーの過去の記録が**黙って消える**。
+           盤サイズの clamp（範囲外を丸める）とは要件が逆で、
+           記録は「もう選べない大きさでも保持する」のが正しい。 */
+      if (!/^\d{1,2}x\d{1,2}$/.test(k)) continue;
+      const c = clampInt(v, 0, 9999, 0);
+      if (c <= 0) continue;
+      out[k] = c;
+      if (++n >= MAX_SIZE_ENTRIES) break;
+    }
+  }
+  // ★古い保存からの引き継ぎ★ これまで記録が付いたのは6×7だけなので、そこへ移す
+  const b = clampInt(bestChain, 0, 9999, 0);
+  if (b > 0) out['6x7'] = Math.max(out['6x7'] || 0, b);
+  return out;
+}
+
+/** 盤の大きさごとの じこベスト連鎖だけを更新する（勝敗・段位には触らない）
+ *  ★recordMatch と分けてある理由★ recordMatch は played/wins を必ず増やす。
+ *    フラグを足して中で分岐させると「呼んだのに数えない」形が生まれ、読めなくなる。 */
+export function recordChainForSize(save, key, chain) {
+  const c = clampInt(chain, 0, 9999, 0);
+  if (!key || !/^\d{1,2}x\d{1,2}$/.test(key) || c <= 0) return save;
+  const cur = save.bestChainBySize || {};
+  if ((cur[key] || 0) >= c) return save;
+  if (!(key in cur) && Object.keys(cur).length >= MAX_SIZE_ENTRIES) return save;
+  return { ...save, bestChainBySize: { ...cur, [key]: c } };
+}
+
+/** その大きさの記録（無ければ0） */
+export const bestChainOf = (save, key) =>
+  clampInt((save && save.bestChainBySize) ? save.bestChainBySize[key] : 0, 0, 9999, 0);
 
 const safeParse = (raw, fallback) => {
   try { const v = JSON.parse(raw); return (v && typeof v === 'object') ? v : fallback; }
@@ -52,6 +104,7 @@ export function loadSave(storage = globalThis.localStorage) {
       played,
       wins: clampInt(got.wins, 0, 9999999, 0),
       bestChain: clampInt(got.bestChain, 0, 9999, 0),
+      bestChainBySize: cleanBySize(got.bestChainBySize, got.bestChain),
       // ★すでに遊んでいる人を練習に戻さない★
       tutorialDone: got.tutorialDone === undefined ? played > 0 : !!got.tutorialDone,
     };

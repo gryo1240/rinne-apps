@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style/base.css?v=8b128edc">
+<link rel="stylesheet" href="style/base.css?v=8ad4b88c">
 <!-- BEGIN importmap (tools/gen_importmap.py が生成。手で書き換えない) -->
 <script type="importmap">
 {"imports":{
@@ -20,12 +20,12 @@
   "./src/core/rng.js":"./src/core/rng.js?v=84ad8f5e",
   "./src/core/rules.js":"./src/core/rules.js?v=221707d6",
   "./src/game.js":"./src/game.js?v=9c63072b",
-  "./src/meta/progress.js":"./src/meta/progress.js?v=c6b0bcd6",
-  "./src/ui/app.js":"./src/ui/app.js?v=b1f87ea7",
+  "./src/meta/progress.js":"./src/meta/progress.js?v=1489a5b7",
+  "./src/ui/app.js":"./src/ui/app.js?v=34a68dd8",
   "./src/ui/audio.js":"./src/ui/audio.js?v=24d8e463",
   "./src/ui/coach.js":"./src/ui/coach.js?v=08412dd1",
-  "./src/ui/render.js":"./src/ui/render.js?v=1ead5e9c",
-  "./src/version.js":"./src/version.js?v=1c9213ca",
+  "./src/ui/render.js":"./src/ui/render.js?v=3185ab54",
+  "./src/version.js":"./src/version.js?v=6656dfa0",
   "./data/tutorial.js":"./data/tutorial.js?v=78b74887"
 }}
 </script>
@@ -156,6 +156,11 @@
   <section id="scRecords" class="screen">
     <h2>きろく</h2>
     <div id="statBox" class="stats"></div>
+    <!-- 盤の大きさごとの じこベスト連鎖（2026-09-11 オーナー指示「各盤面で最大連鎖を記録して」）
+         ★記録がある大きさ＋いま選んでいる大きさ だけを出す★
+           取りうる組み合わせは30通りあるので、全部並べると子どもには読めない。 -->
+    <h3 class="sizeh">おおきさごとの さいちょう れんさ</h3>
+    <div id="sizeBox" class="sizelist"></div>
     <p class="sub">記録は この きたい（ブラウザ）だけに のこります<br>ふたりで あそんだ分は 記録に 入りません</p>
     <button class="ghost close" data-go="title">とじる</button>
   </section>
@@ -197,8 +202,13 @@
       <label class="szrow"><span>よこ</span><input type="range" id="boardW" class="slider" step="1"></label>
       <label class="szrow"><span>たて</span><input type="range" id="boardH" class="slider" step="1"></label>
       <div id="boardPreview" class="bprev" aria-hidden="true"></div>
+      <!-- ★ラベルに数字を書くこと★（2026-09-11 オーナー指示「デフォルトのサイズが分からない」）
+           見出しの「（ふつう）」の印は**既定と一致しているときしか出ない**ので、
+           離れているときに「どこへ戻ればいいか」を教えてくれなかった。
+           数字はここに直接書かず、起動時に src/core/board.js の DEF_W/DEF_H から入れる。 -->
+      <button id="btnBoardDefault" class="ghost"></button>
       <p class="note">つぎの たいせんから かわります。<br>
-        おおきさを かえた盤は きろくに のこりません</p>
+        れんさは おおきさごとに のこります。かった かずは ふつうの盤(6×7)だけ</p>
     </div>
 
     <!-- あいての つよさ（2026-09-09 オーナー指示「敵の強さもスライドバーで」）
@@ -223,24 +233,26 @@
              既定は端末に従う。オーナーが1回オンにすれば、以後ずっと揺れる。
              説明は同じ箱の中に置くこと——操作から離すと、なぜオフなのかが伝わらない。 -->
       <label class="opt"><input type="checkbox" id="optShake"> がめんを ゆらす</label>
-      <p class="note" id="shakeNote"></p>
       <label class="opt"><input type="checkbox" id="optLight"> えんしゅつを ひかえめに</label>
     </div>
 
     <!-- 版番号（対戦中のせっていからも見える。押しても画面は移らない——
          対戦中に show() を通すと対戦が捨てられるため、ここは文字だけにする） -->
     <p class="verline sub" id="verSettings"></p>
-    <!-- この端末の状態（2026-09-09 追加）
-         ★「演出が出ない」の原因が、アプリ側か端末側かを 見ただけで切り分けるための1行★
-           端末の「アニメーションを減らす」が入っていると 画面は揺れない。
-           それを画面に出していなかったので、オーナーとのやり取りが2往復むだになった。
-           版番号を出したのと同じ理由（見えないものは確認できない）。 -->
-    <p class="verline sub" id="devSettings"></p>
-    <!-- 録音した効果音（歓声・拍手・ボタン）が届いているか（2026-09-09 追加）
-         ★「拍手がぜんぜん聞こえなかった」の原因が、音量なのか未着なのかを分けるための1行★
-           mp3 は sw.js が素通しするので毎回ネットワークに出る＝電波しだいで届かないことがある。
-           届いていないときだけ目立たせる（ふだんは静かな1行のまま）。 -->
-    <p class="verline sub" id="seSettings"></p>
+    <!-- ★診断用の2行は 2026-09-11 に消した★（オーナー指示）
+         > 端末の動きの設定や、歓声や拍手については表示を消して
+         もとは #devSettings（端末が「うごきを へらす」か）と
+         #seSettings（録音した音が届いているか）を出していた。
+         ★切り分けの手段そのものは残してある★——画面から消しただけで、
+           コンソールから window.__luna.device / __luna.audio.clipsReady() が読める。
+           通し検証もこの2つを直接読んで確かめている。
+         ★「見えないと確認できない」と言ってここに行を戻さないこと★
+           オーナーが実際に画面を見て「消して」と言った。戻すなら先に聞くこと。
+         ★#shakeNote（がめんを ゆらす の下の一文）も、そのあとの指示で消した★
+           「1の方は消していいです」（オーナー）。
+           ★止める手段そのものは残っている★——上の「がめんを ゆらす」のチェックを外せば
+           揺れは止まる。消えたのは説明の文だけ。§5-4 が求める
+           「弱められる・止められる」は、その操作が担い続ける。 -->
 
     <div id="pauseBtns" class="row col" hidden>
       <button id="btnResume" class="big">つづける</button>
@@ -251,7 +263,7 @@
   </section>
 </div>
 
-<script type="module" src="src/ui/app.js?v=b1f87ea7"></script>
+<script type="module" src="src/ui/app.js?v=34a68dd8"></script>
 <noscript><p style="color:#fff;padding:2em">このゲームはJavaScriptが必要です。</p></noscript>
 
 <script>

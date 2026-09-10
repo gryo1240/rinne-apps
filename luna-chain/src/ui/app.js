@@ -25,7 +25,8 @@ import { VERSION_LABEL, NEWS } from '../version.js';
 import { findWinningMove, cloneState, capAt, previewChain, chainMap, effTerrain, canPlace, totalLight } from '../core/rules.js';
 import { createMatch, play, cpuMove, humanTurn, cpuSeat } from '../game.js';
 import { TIER_MAX, TIER_NAMES } from '../ai/ai.js';
-import { loadSave, writeSave, loadDevice, writeDevice, recordMatch } from '../meta/progress.js';
+import { loadSave, writeSave, loadDevice, writeDevice, recordMatch,
+         sizeKey, recordChainForSize, bestChainOf } from '../meta/progress.js';
 import { makeRng } from '../core/rng.js';
 import { TUTORIALS, handIdx } from '../../data/tutorial.js';
 import { Coach } from './coach.js';
@@ -243,11 +244,23 @@ function startNormal() {
 const cpuTier = () => (device.cpuAuto ? save.tier : device.cpuTier);
 
 /**
- * この対戦を「きろく」に残してよいか。★判定はここ1か所★
- *   2か所に分けると、片方だけ直して静かにズレる。
- *   ふつうの盤(6×7) かつ 強さがじどう のときだけ残す。
+ * ★記録は2種類ある★（2026-09-11 オーナー指示「各盤面で最大連鎖を記録して」）
+ *   もとは1つだけで「判定はここ1か所」と書いてあったが、盤の大きさごとに
+ *   連鎖を残すようになったので、残してよい条件が2本に分かれた。
+ *   ★片方だけ直さないこと★ 直すときは必ず両方を見ること。
+ *
+ *   countsForRecord …… あそんだ回数・かった回数・段位・6×7のじこベスト連鎖
+ *                       ふつうの盤(6×7) かつ 強さがじどう のときだけ
+ *   countsChainRecord … 盤の大きさごとの じこベスト連鎖
+ *                       大きさは問わない（大きさごとに分けて持つので混ざらない）が、
+ *                       ★強さは じどう のときだけ★——★1のCPUは妨害してこないので
+ *                       連鎖が簡単に伸びる。ここを開けると「1戦で記録が壊れて
+ *                       二度と更新できない」が、盤ではなく強さの軸でそのまま再発する
  */
 const countsForRecord = () => isDefaultSize() && device.cpuAuto;
+const countsChainRecord = () => device.cpuAuto;
+/** いま遊んでいる盤の大きさのキー（"6x7" など） */
+const curSizeKey = () => sizeKey(W, H);
 
 /**
  * せっていで選んだ盤の大きさを実際に効かせる。
@@ -684,63 +697,30 @@ const RIM_MS = 340;            // ふちが光っている時間。揺れの長�
  *   ★消さない★ 仕様書§5-4が求めているのは「弱める」であって「消す」ではない。
  */
 /**
- * 「この端末の状態」を1行で出す。★見えないものは確認できない★
- *   端末の「アニメーションを減らす」が入っていると画面は揺れない仕様なので、
- *   それを表に出しておかないと「アプリが壊れている」と「端末の設定」を区別できない。
- *   ★やさしい日本語で・24字以内★（画面のほかの案内と同じ制約）
+ * 「がめんを ゆらす」のスイッチの状態を、保存に合わせる。
+ *
+ * ★せってい画面の説明文は 2026-09-11 に全部消した★（オーナー指示）
+ *   > 端末の動きの設定や、歓声や拍手については表示を消して
+ *   > （そのあと #shakeNote についても）1の方は消していいです
+ *
+ *   消したのは3つ:
+ *     #devSettings … たんまつの せってい: うごきを へらす（切り分け用）
+ *     #seSettings  … かんせい・はくしゅ: よういできた（切り分け用）
+ *     #shakeNote   … 「くるしい ときは チェックを はずして ください」など
+ *
+ *   ★配慮そのものは消えていない★
+ *     揺れを止める手段（「がめんを ゆらす」のチェック）は**そのまま残っている**。
+ *     消えたのは説明の文だけで、つらい人はチェックを外せば止められる。
+ *     仕様書§5-4 が求める「弱める・止められる」は、この操作が担い続ける。
+ *   ★画面に文を戻さないこと★
+ *     オーナーが実際に画面を見て「消して」と言った。戻すなら先に聞くこと。
  */
 function paintDeviceLine() {
   /* ★matchMedia を自分で読まない★ 判定の正本は render.js の resolveMotion 1か所。
-       ここで読むと「ゆれません と出ているのに揺れる」食い違いが起きうる。 */
+       ここで読むと、スイッチの状態と実際の揺れが食い違いうる。 */
   const still = resolveMotion(device.motion);
-  const osStill = deviceWantsStill();
-
   const box = $('optShake');
   if (box) box.checked = !still;
-
-  // スイッチのすぐ下に「なぜ今こうなっているか」を出す（操作と説明を同じ箱に置く）
-  const note = $('shakeNote');
-  if (note) {
-    /* ★既定はオン★（2026-09-09 オーナー指示）
-         端末が「うごきを へらす」でも揺らす。つらい人が自分で切れるように、
-         そのことを **チェックを外す前から** 書いておく。 */
-    note.textContent = osStill
-      ? (still
-        ? 'この たんまつは 「うごきを へらす」せってい なので ゆれません'
-        : 'この たんまつは 「うごきを へらす」せってい ですが、ゆらして います。'
-          + 'くるしい ときは チェックを はずして ください')
-      : (still ? 'いまは ゆれません' : 'はじけると 画面が ゆれます');
-    note.classList.toggle('warn', osStill && !still);
-  }
-
-  // ★音の行は先に塗る★ 下の「端末の行が無ければ抜ける」に巻き込まれないようにする
-  //   （2026-09-09 レビュー指摘。片方が欠けたときに、もう片方まで静かに止まる形だった）
-  paintSeLine();
-  // 版番号の下の行は「端末が何と言っているか」だけを出す（切り分け用に残す）
-  const p = $('devSettings');
-  if (!p) return;
-  p.textContent = osStill
-    ? 'たんまつの せってい: うごきを へらす'
-    : 'たんまつの せってい: ふつう';
-  p.classList.toggle('warn', osStill && still);
-}
-
-/**
- * 録音した効果音（歓声・拍手・ボタン）が届いているかを1行で出す。
- * ★2026-09-09 オーナー報告「決着後の拍手がぜんぜん聞こえなかった」★
- *   このとき、原因が「音量が小さい」なのか「音そのものが届いていない」なのかを
- *   **画面から確かめる方法が無かった**ので、切り分けに何往復もかかった。
- *   端末の設定を1行出したのと同じ理由（見えないものは確認できない）。
- */
-function paintSeLine() {
-  const el = $('seSettings');
-  if (!el) return;
-  const r = Audio.clipsReady();
-  const ok = r.got >= r.want;
-  el.textContent = ok
-    ? `かんせい・はくしゅ: よういできた（${r.got}／${r.want}）`
-    : `かんせい・はくしゅ: まだ とどいていません（${r.got}／${r.want}）`;
-  el.classList.toggle('warn', !ok);
 }
 
 /**
@@ -1021,22 +1001,41 @@ function finish() {
     $('btnAgain').textContent = 'もういちど';
     $('btnToTitle').textContent = 'やめる';
     const chain = match.stats.maxChain[me];
-    const before = save.bestChain;
-    /* ★ふつうの盤(6×7)のときだけ記録する★（2026-09-09 オーナー了承）
-         盤を大きくすれば連鎖は当然のびる。混ぜると「じこベスト連鎖」の数字が1戦で壊れ、
-         そのあと ふつうの盤では二度と更新できなくなる。
-         勝率とCPUの段位も、AIの評価が6×7前提なので混ぜると意味を失う。
-       ふたりで あそぶ を記録に残さないのと同じ扱い（§0-10）。 */
+    /* ★あそんだ回数・かった回数・段位は ふつうの盤(6×7)のときだけ★（2026-09-09 オーナー了承）
+         勝率とCPUの段位は、AIの評価が6×7前提なので混ぜると意味を失う。
+       ★じこベスト連鎖は 大きさごとに分けて持つ★（2026-09-11 オーナー指示）
+         > 各盤面で最大連鎖を記録できるようにしておいて
+         もとは「既定以外は一切残さない」だった。理由は「盤を大きくすれば連鎖は
+         当然のびるので、混ぜると1戦で記録が壊れる」——**分けて持てば混ざらない**ので、
+         その前提を満たしたうえで残す。 */
+    const key = curSizeKey();
+    const beforeSize = bestChainOf(save, key);
     const counts = countsForRecord();
+    const chainCounts = countsChainRecord();
     if (counts) {
       save = recordMatch(save, { won, maxChain: chain, countForTier: true });
-      writeSave(save);
     }
+    if (chainCounts) {
+      // ★recordMatch とは別の関数にしてある★ あちらは played/wins を必ず増やすので、
+      //   フラグで分岐させると「呼んだのに数えない」形が生まれて読めなくなる
+      save = recordChainForSize(save, key, chain);
+    }
+    if (counts || chainCounts) writeSave(save);
+
+    const newBest = chainCounts && chain > beforeSize && chain > 0;
     $('chainBox').textContent = chain > 0
-      ? `いちばん長い れんさ ${chain}${counts && chain > before ? '（じこベスト！）' : ''}`
+      ? `いちばん長い れんさ ${chain}`
+        + (newBest ? (isDefaultSize() ? '（じこベスト！）' : '（この おおきさで じこベスト！）') : '')
       : '';
-    if (!counts) $('resultSub').textContent = 'せっていを かえたので きろくに のこりません';
-    if (counts && chain > before && chain > 0) Audio.SE.moon();
+    /* ★何が原因で残らないのかを言う★
+         もとは「せっていを かえたので きろくに のこりません」の1本で、
+         大きさなのか強さなのかが分からなかった。 */
+    if (!chainCounts) {
+      $('resultSub').textContent = 'つよさを じぶんで きめたので きろくに のこりません';
+    } else if (!counts) {
+      $('resultSub').textContent = 'この おおきさの れんさに のこりました';
+    }
+    if (newBest) Audio.SE.moon();
   }
 
   // ★決着から結果表示までの0.7秒に画面を移っていたら、結果を割り込ませない★
@@ -1207,6 +1206,56 @@ function renderRecords() {
     d.appendChild(document.createTextNode(k));
     box.appendChild(d);
   }
+  renderSizeRecords();
+}
+
+/**
+ * 盤の大きさごとの じこベスト連鎖（2026-09-11 オーナー指示「各盤面で最大連鎖を記録して」）
+ *
+ * ★出すのは「記録がある大きさ」＋「いま選んでいる大きさ」だけ★
+ *   取りうる組み合わせは30通り。全部並べると4〜8歳には読めない。
+ * ★いま選んでいる大きさは、記録が0でも必ず出す★
+ *   「自分のいまの挑戦が、どこに残るのか」が画面から分かるようにするため。
+ * ★並びは マス数の昇順で固定★
+ *   連鎖の大きい順にすると、記録が更新されるたびに行が入れ替わって
+ *   子どもが自分の行を見失う。
+ * ★表記は せってい画面と同じ日本語にすること★（「よこ8 × たて10」）
+ *   ここが違うと「設定のあれ」と「記録のこれ」が同じものだと分からない。
+ * ★innerHTML で組み立てないこと★（このアプリ全体の方針）
+ */
+function renderSizeRecords() {
+  const box = $('sizeBox');
+  if (!box) return;
+  box.textContent = '';
+  const nowKey = sizeKey(device.boardW, device.boardH);
+  const keys = new Set(Object.keys(save.bestChainBySize || {}));
+  keys.add(nowKey);
+  const rows = [...keys]
+    .map((k) => {
+      const m = /^(\d{1,2})x(\d{1,2})$/.exec(k);
+      return m ? { k, w: +m[1], h: +m[2], n: bestChainOf(save, k) } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => (a.w * a.h) - (b.w * b.h) || a.w - b.w);
+  for (const r of rows) {
+    const d = document.createElement('div');
+    d.className = 'row1' + (r.k === nowKey ? ' now' : '');
+    const name = document.createElement('span');
+    name.textContent = `よこ${r.w} × たて${r.h}`
+      + (r.w === DEF_W && r.h === DEF_H ? '（ふつう）' : '');
+    d.appendChild(name);
+    if (r.n > 0) {
+      const b = document.createElement('b');
+      b.textContent = String(r.n);
+      d.appendChild(b);
+    } else {
+      const e = document.createElement('span');
+      e.className = 'none';
+      e.textContent = 'まだ ありません';
+      d.appendChild(e);
+    }
+    box.appendChild(d);
+  }
 }
 
 // ── せってい ────────────────────────────────
@@ -1299,6 +1348,37 @@ function initSizeSliders() {
   };
   w.addEventListener('input', () => onInput('boardW', w));
   h.addEventListener('input', () => onInput('boardH', h));
+
+  /* ★もとの大きさに戻すボタン★（2026-09-11 オーナー指示）
+       > デフォルトのサイズが分からないので、戻せるようにしておいて
+
+     ★ラベルに数字を書くことが本体★
+       見出しの「（ふつう）」の印は既に出していたが、**既定と一致しているときしか出ない**。
+       離れているときに「どこへ戻ればいいか」を教えてくれていなかった。
+
+     ★ここ（起動時1回）で登録すること★
+       renderSettings() は せってい を開くたびに走るので、そこに書くと
+       ハンドラが開くたびに増える（押すたびに音が重なるようになる）。
+
+     ★applyBoardSize() を呼ばないこと★
+       あれは対戦中に呼ぶと盤が静かに壊れる（board.js の setSize が
+       進行中の配列の長さと食い違う）。ここは device に書いて塗り直すだけでよく、
+       「つぎの たいせんから かわります」の約束もそれで守られる。
+
+     ★押せなくしない（disabled にしない）★
+       既定のときに押せなくすると、4〜8歳には「壊れている」に見える。
+       押しても何も起きないだけなので実害は無い。 */
+  const def = $('btnBoardDefault');
+  if (def) {
+    def.textContent = `もとの おおきさ（よこ${DEF_W} × たて${DEF_H}）に もどす`;
+    def.addEventListener('click', () => {
+      Audio.SE.tap();
+      device.boardW = DEF_W;
+      device.boardH = DEF_H;
+      writeDevice(device);
+      paintBoardSize();     // ★同期はこの1本に集約されている★ 新しい同期処理を書かないこと
+    });
+  }
 }
 
 /** いまの大きさを、数字と「点の格子」の両方で見せる（数字だけでは形が想像できない） */
@@ -1386,6 +1466,10 @@ globalThis.__luna = {
   get popSeat() { return popSeat; },
   // ★連鎖数から倍率を出す正本★ 検査が同じ式を書き写すと、実装を変えても落ちなくなる
   popScale: (n) => popScale(n),
+  /* ★「押したらはじける手」の正本★（2026-09-11）
+       通し検証が「はじける手があるのに数字が出ていない」を確かめるために、
+       画面(view.hints)とは別に計算し直す。★検査に同じ式を書き写させないため★ */
+  chainMap: (state, player) => chainMap(state, player),
   /* ★音を数字で測るための窓口★（2026-09-09 オーナー報告「拍手が聞こえない／音量バーが効かない」）
        耳でしか確かめられないものは、いつまでも切り分けができない。
      ★ここだけは読み取り専用ではない★（上の宣言の例外）
