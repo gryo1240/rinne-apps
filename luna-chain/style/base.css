@@ -29,8 +29,15 @@ body{
 #app{position:relative; height:100%; display:flex; flex-direction:column}
 
 /* ── 対戦画面のヘッダ ───────────────────── */
+/* ★横に広い画面では盤の幅に寄せる★（2026-09-10 オーナー指示）
+     > 上の方にある手番と設定ボタンが中心から遠すぎる。もっと中心に寄せていいよ。
+   もとは body 幅いっぱいだったので、1900px の画面では手番が左端・ギアが右端に離れ、
+   中央にある盤（最大でも約590px）と視線がつながらなかった。
+   ★440px は .setting / .segs / .stats と同じ値★（画面全体で幅の基準をそろえる）
+   ★スマホ幅（464px未満）では1pxも変わらない★＝狭い画面への影響はゼロ。 */
 #hud{
   display:flex; align-items:center; gap:10px;
+  width:100%; max-width:440px; margin-inline:auto; box-sizing:border-box;
   padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 8px;
 }
 /* ★手番の表示★（2026-09-08 マス数・ゲージ・相手の段位と入れ替えた）
@@ -482,3 +489,12 @@ button.verline:hover{color:var(--fg)}
 }
 .bprev i{width:7px; height:7px; border-radius:2px; background:rgba(255,255,255,.22)}
 .note{margin:4px 0 0; font-size:11px; line-height:1.6; color:var(--dim)}
+
+/* ★上限で終わったときの説明★（2026-09-10）
+     ふだんは出ない行なので、出たときだけ目に留まるよう枠で囲む。 */
+#resultWhy{
+  margin:2px 0 0; padding:7px 12px; border-radius:10px;
+  background:rgba(247,215,116,.10); border:1px solid rgba(247,215,116,.28);
+  line-height:1.5;
+}
+#resultWhy[hidden]{display:none}

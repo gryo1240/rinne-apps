@@ -22,7 +22,7 @@ import {
   setSize, isDefaultSize, DEF_W, DEF_H, MIN_W, MAX_W, MIN_H, MAX_H, W, H,
 } from '../core/board.js';
 import { VERSION_LABEL, NEWS } from '../version.js';
-import { findWinningMove, cloneState, capAt, previewChain, chainMap, effTerrain } from '../core/rules.js';
+import { findWinningMove, cloneState, capAt, previewChain, chainMap, effTerrain, canPlace, totalLight } from '../core/rules.js';
 import { createMatch, play, cpuMove, humanTurn, cpuSeat } from '../game.js';
 import { TIER_MAX, TIER_NAMES } from '../ai/ai.js';
 import { loadSave, writeSave, loadDevice, writeDevice, recordMatch } from '../meta/progress.js';
@@ -343,15 +343,46 @@ function restartMatch() {
 const myTurn = () => !!match && !busy && !paused && !shaking()
   && curScreen === null && humanTurn(match);
 
+/* ★置けないマスを押したときの音★（2026-09-10 オーナー指示）
+     > 盤面を押したときにもSEを鳴らそう。置けたら決定音、置けなければ低い音。
+
+   ★ここが今まで完全な無音だった★
+     onDown は canPlace を見ておらず、置けないマスを押しても静かに何も起きなかった。
+     地形の説明(sayTerrain)は出ていたが、**音が無いと「壊れている」と読まれる**。
+
+   ★なぞって連発させない★
+     onMove はマスをまたぐたびに走る。置けないマスを横切ると連打になるので歯止めを置く。
+     ★歯止めは実時計でよい★ ここは連鎖と違って「いま押された」1件しか扱わない
+     （まとめて未来へ予約する連鎖の音とは、間引きの軸が別物）。 */
+const DENY_MIN_MS = 180;        // 同じ手のなぞりで連発しないための間隔
+const DENY_WAIT_MS = 420;       // 自分の手番でないときは長めにする（急かさない）
+let denyAt = -99999;
+let denyCell = -1;
+
+function denySound(i, minMs) {
+  if (paused || curScreen !== null) return false;   // せっていを開いている間は鳴らさない
+  const t = nowMs();
+  if (i === denyCell && t - denyAt < DENY_MIN_MS) return false;   // 同じマスの押しっぱなし
+  if (t - denyAt < minMs) return false;
+  denyAt = t; denyCell = i;
+  Audio.SE.deny();
+  return true;
+}
+
 function onDown(e) {
   if (pressId !== null) return;               // すでに別の指が乗っている（2本目は無視する）
   if (e.button !== undefined && e.button !== 0) return;   // 右クリック・中クリックでは置かない
-  if (!myTurn()) return;
-  const i = view.hit(e.clientX, e.clientY);
+  const i0 = view.hit(e.clientX, e.clientY);
+  /* ★自分の手番でなくても、盤を押したことには答える★
+       演出の途中や相手の手番に押したとき、いままでは何の反応も無かった。
+       子どもには「押しても何も起きない」がいちばん分からない。 */
+  if (!myTurn()) { if (i0 >= 0) denySound(i0, DENY_WAIT_MS); return; }
+  const i = i0;
   if (i < 0) return;
   e.preventDefault();
   pressId = e.pointerId ?? 0;
   held = i;
+  if (!canPlace(match.state, i, match.state.player)) denySound(i, DENY_MIN_MS);
   sayTerrain(i);
   showPreview(i);
 }
@@ -364,6 +395,7 @@ function onMove(e) {
   //   held だけを -1 にして予告を消し、戻ってきたらまた出す。
   //   押している状態まで捨てると、いったん外へ出した指が戻っても二度と反応しなくなる
   held = i;
+  if (i >= 0 && !canPlace(match.state, i, match.state.player)) denySound(i, DENY_MIN_MS);
   sayTerrain(i);
   showPreview(i);
 }
@@ -437,7 +469,8 @@ function showPreview(i) {
 
 function commitMove(i) {
   const r = play(match, i);
-  if (!r.ok) return;
+  // ★最後の穴を塞ぐ★ ここまで来て置けないのは想定外だが、無反応で終わらせない
+  if (!r.ok) { denySound(i, DENY_MIN_MS); return; }
   hideHand();
   view.legal = null;           // 練習の「ここを押して」の枠を消す
   Audio.SE.place();
@@ -476,6 +509,21 @@ function afterMove(r, next) {
   //   イベントの並び順は演出の再生順そのものなので、添字×1コマの長さが、そのまま鳴らす時刻になる。
   const booms = r.events.filter((e) => e.t === 'boom').length;
   const stepSec = stepFor(booms) / 1000;
+  /* ★連鎖の1段ごとの音★（2026-09-10 オーナー指示）
+       > 連鎖が増えているときのSEも欲しいね。小連鎖の段階から使えるような良い感じの音を。
+
+     ★boom より先に予約する★（アドバイザー指摘）
+       budgetOk は早い者勝ち。枠(MAX_VOICES=28)が苦しいときに残ってほしいのは
+       録音音源のほうなので、順番でそれを決める。**force は使わない**——
+       force にすると毎段の音が枠を食い、拍手が押し出された2026-09-09の事故を繰り返す。
+
+     ★間引きと音程は audio.js が決める★ ここは「各段が画面に出る時刻」を渡すだけ。
+       Math.min(2.4, ...) は演出の総時間の上限（MAX_ANIM_MS）に合わせたもの。 */
+  const stepDelays = [];
+  for (let j = 0; j < r.events.length; j++) {
+    if (r.events[j].t === 'boom') stepDelays.push(Math.min(2.4, j * stepSec));
+  }
+  Audio.SE.chainStep(stepDelays);
   r.events.forEach((ev, j) => {
     if (ev.t === 'boom') Audio.SE.boom(ev.chain, Math.min(2.4, j * stepSec));
   });
@@ -885,6 +933,30 @@ function finish() {
   const won = w === me;
   view.bigFlash();
   updateHud();
+
+  /* ★手数の上限で終わったときは、その理由を必ず出す★（2026-09-10 オーナー報告）
+       > 途中の段階で勝敗がついて負けになったときがあるんだけど、どういうこと？
+     上限決着は **盤にまだ空きがある状態で終わる** ので、理由が無いと
+     「バグで急に負けた」としか読めない。しかも勝敗は「光の総数」で決まるのに、
+     その数はHUDから撤去済みで画面のどこにも出ていない。★数も一緒に出す★
+     ★vs（二人対戦）でも起きる★ ので、分岐の外に置く。 */
+  const whyEl = $('resultWhy');
+  if (whyEl) {
+    if (match.state.endReason === 'limit') {
+      const a = totalLight(match.state, 1);
+      const b = totalLight(match.state, 2);
+      const mineLight = match.vs ? a : (me === 1 ? a : b);
+      const foeLight = match.vs ? b : (me === 1 ? b : a);
+      const names = match.vs ? ['きんいろ', 'あお'] : ['きみ', 'あいて'];
+      whyEl.textContent =
+        `てすうが いっぱいに なったよ（${match.state.maxTurns}て）。`
+        + `ひかりが おおい ほうの かち → ${names[0]} ${mineLight} ／ ${names[1]} ${foeLight}`;
+      whyEl.hidden = false;
+    } else {
+      whyEl.textContent = '';
+      whyEl.hidden = true;
+    }
+  }
 
   /* ★決着したら拍手★（2026-09-09 オーナー指示「決着後は『スタジアムの拍手』」）
        ★勝敗にかかわらず鳴らす★ 負けたほうにも「1局おつかれさま」を返したい相手（4〜8歳）なので、

@@ -155,6 +155,9 @@ const CLIP_DIR = './audio/se/';
 /** id → ファイル名。★ここに無いidは鳴らない★ */
 const CLIPS = {
   tap: 'tap.mp3',              // ボタンを押した音（決定ボタンを押す2）
+  place: 'place.mp3',          // 盤に置けた音（決定ボタンを押す1）… ★メニューのボタンとは別の音★
+  deny: 'deny.mp3',            // 置けないマスを押した音（キャンセル1）
+  chain: 'chain.mp3',          // 連鎖の1段ごとの音（カーソル移動1）… 音程を上げながら鳴らす
   cheermid: 'cheermid.mp3',    // 歓声と拍手2（中盛り上がり）… 10〜29連鎖
   cheerbig: 'cheerbig.mp3',    // 歓声と拍手1（大盛り上がり）… 30連鎖以上
   cheerfoe: 'cheerfoe.mp3',    // スタジアムの歓声2 … 相手が30連鎖以上
@@ -267,6 +270,12 @@ let lastCheerAt = -99999;
      数字の根拠は tools/smoke_luna_chain.py が debugMeter() で毎回測っている。 */
 const APPLAUSE_GAIN = 1.6;
 const CHEER_GAIN = 1.3;
+/* ★盤の音の大きさ★（2026-09-10。数字は smoke の debugMeter 実測で決める）
+     ねらい: 置いた音 < 歓声、毎段の音は「置いた音より小さく、はじけ音と同じくらい」。
+     毎段の音は1秒に最大8回鳴るので、単発の音と同じ大きさにすると必ずうるさい。 */
+const PLACE_GAIN = 0.55;
+const DENY_GAIN = 0.70;
+const CHAIN_GAIN = 0.34;
 
 /**
  * 録音した効果音を鳴らす。
@@ -342,7 +351,10 @@ export function debugMeter(which = 'se') {
   return { peak, rms: Math.sqrt(sum / buf.length) };
 }
 
-function clip(id, { gain = 0.9, throttleMs = 0, must = false } = {}) {
+/* ★delay（何秒あとに鳴らすか）と rate（再生速度＝音程）★（2026-09-10 追加）
+     連鎖の毎段音は、1手ぶんをまとめて未来へ予約する。即時再生しかできないと、
+     306連鎖ぶんの音が**全部いま鳴る**ことになる（実装当初にやりかけた事故）。 */
+function clip(id, { gain = 0.9, throttleMs = 0, must = false, delay = 0, rate = 1 } = {}) {
   if (!ctx || seLevel <= 0) return drop(id, 'noctx');
   const buf = clipBuf.get(id);
   if (!buf) return drop(id, 'notloaded');       // まだ読めていない／取れなかった
@@ -352,19 +364,25 @@ function clip(id, { gain = 0.9, throttleMs = 0, must = false } = {}) {
        決着の直前は大きな連鎖が起きやすく、そのはじけ音が予算(MAX_VOICES)を埋めている。
        拍手や歓声は「1手に1回だけ」の音なので、ここで捨てると**まるごと聞こえない**。
        はじけ音は1個消えても気づかないが、拍手は消えたら存在しないのと同じ。 */
-  if (!budgetOk(ctx.currentTime, ctx.currentTime + buf.duration, must)) {
+  /* ★長さは必ず rate で割る★（2026-09-10 アドバイザー指摘）
+       速く再生すれば、その音は**その分だけ早く終わる**。割らずに予算を取ると
+       音程を上げた段ほど予算を余計に食い、自分で自分を締め出して尻切れになる。 */
+  const t0 = ctx.currentTime + Math.max(0, delay);
+  const r = Math.max(0.25, Math.min(4, rate));
+  if (!budgetOk(t0, t0 + buf.duration / r, must)) {
     if (!must) return drop(id, 'budget');
     drop(id, 'budget-forced');   // ★捨てずに鳴らすが、起きたことは記録に残す★
   }
   try {
     const src = ctx.createBufferSource();
     src.buffer = buf;
+    if (r !== 1) src.playbackRate.value = r;
     const g = ctx.createGain();
     g.gain.value = gain;
     src.connect(g); g.connect(master);
-    src.start();
+    src.start(t0);
     if (throttleMs) lastCheerAt = now;
-    played.push({ id, at: Math.round(now), gain });
+    played.push({ id, at: Math.round(now + Math.max(0, delay) * 1000), gain });
     if (played.length > 40) played.shift();
     return true;
   } catch { return drop(id, 'error'); }
@@ -425,6 +443,50 @@ const semitone = (n) => Math.pow(2, n / 12);
 /** メジャーペンタトニック。★どの音を重ねても濁らない＝連鎖が伸びるほど気持ちよくなる★ */
 const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 31, 33, 36];
 const pentaOf = (n) => PENTA[Math.min(PENTA.length - 1, Math.max(0, n))];
+
+/* ══════════════════════════════════════════════════════════
+   ★連鎖の1段ごとの音★（2026-09-10 オーナー指示）
+     > 連鎖が増えているときのSEも欲しいね。小連鎖の段階から使えるような良い感じの音を。
+     素材は効果音ラボ「カーソル移動1」。1段ごとに**再生速度で音程を上げる**（ぷよぷよ式）。
+
+   ★音程は boom と同じペンタトニックに乗せる★
+     boom の胴体は `330 * semitone(pentaOf(n))`。ここだけ半音階にすると、
+     同じ瞬間に鳴る2つの音が短2度でぶつかって濁る。同じ表を使えば必ず協和する。
+
+   ★上限は +16半音（rate 2.52）★
+     素材の実体は0.135秒。2.5倍で0.054秒になり、これ以上速めると
+     「音程のある音」ではなく「クリック」になって、上げても盛り上がらない。
+     8段目で頭打ち。それより上の高揚は歓声（10/30連鎖）とカットインが担う。
+
+   ★間引きは「予約時刻」で決める★（★実時計で判断しないこと★）
+     1手ぶんの音は afterMove が**同期ループの中で未来へまとめて予約**する。
+     ctx.currentTime で間引くと全イベントがほぼ同時刻に見え、**先頭1個以外が全部消える**。
+     比較するのは必ず「何秒後に鳴らす予定か」のほう。
+     60msを下限にする理由: それより詰まると連続したブリップが1つのブザー音に融合し、
+     段が数えられなくなる（＝毎段鳴らす意味が消える）。
+     この規則だけで 130ms/110ms=全段・73ms=約2段に1回・44ms=3〜4段に1回・7ms=10段に1回
+     が自動的に出る。★連鎖数や盤の大きさのしきい値は要らない★
+   ══════════════════════════════════════════════════════════ */
+export const CHAIN_STEP_MIN_MS = 60;   // これ未満の間隔では鳴らさない
+export const CHAIN_STEP_MAX = 7;       // pentaOf の添字の上限（= +16半音 = rate 2.52）
+
+/** 何段目の音を、いつ鳴らすか。★純関数★（AudioContext なしで検査できる） */
+export function chainStepPlan(delaysSec, minGapMs = CHAIN_STEP_MIN_MS) {
+  const out = [];
+  let last = -Infinity;
+  for (let k = 0; k < delaysSec.length; k++) {
+    const ms = delaysSec[k] * 1000;
+    if (ms - last < minGapMs) continue;
+    last = ms;
+    out.push({ k, delay: delaysSec[k], rate: chainStepRate(k) });
+  }
+  return out;
+}
+
+/** 何段目なら再生速度はいくつか（1段目 = 1.0倍） */
+export function chainStepRate(k) {
+  return semitone(pentaOf(Math.min(CHAIN_STEP_MAX, Math.max(0, k))));
+}
 
 /* ══════════════════════════════════════════════════════════
    ★録音音源が鳴らせなかったときの予備★（2026-09-09 オーナー報告を受けて追加）
@@ -530,9 +592,48 @@ export const SE = {
     burst({ freq: 3200, dur: 0.045, gain: 0.43, q: 1.6, slide: 0.4 });
   },
 
+  /**
+   * 盤に置けた音（2026-09-10 オーナー指示で録音音源に差し替え）
+   *   > 置くときの音は決定ボタン１にしようか
+   *   ★メニューのボタン(tap=決定ボタン2)とは別の音★ 同じ音だと盤とメニューの区別がつかない。
+   *   ★must は付けない★ 1手に1回の音だが、連鎖の音を押しのけてまで鳴らす価値はない。
+   *   ★合成音は予備として残す★（2026-09-09の教訓: 録音が届かない端末で無音にしない）
+   */
   place: () => {
+    if (clip('place', { gain: PLACE_GAIN })) return true;
+    loadClips();
     tone({ freq: 520, dur: 0.07, type: 'triangle', gain: 0.14 });
     burst({ freq: 2600, dur: 0.05, gain: 0.05, q: 2.2 });
+    return false;
+  },
+
+  /**
+   * 置けないマスを押した音（2026-09-10 オーナー指示・キャンセル1）
+   *   ★ここが今まで完全な無音だった★ 押しても何も起きないのが、遊ぶ側にはいちばん分からない。
+   *   歯止めは呼び出し側（app.js）が持つ。なぞって連発するのを防ぐため。
+   */
+  deny: () => {
+    if (clip('deny', { gain: DENY_GAIN })) return true;
+    loadClips();
+    tone({ freq: 180, dur: 0.10, type: 'square', gain: 0.07, slide: 0.7 });
+    return false;
+  },
+
+  /**
+   * 連鎖の1段ごとの音。delaysSec は「各段が画面に出る時刻（秒）」の並び。
+   *   間引きと音程は chainStepPlan が決める（★純関数なので検査から読める★）。
+   *   返り値は実際に予約した回数。
+   *   ★予備の合成音は作らない★ 素材が無くても boom が鳴るので無音にはならない。
+   *     ここに予備を足すと、1段ごとに予備が鳴って**進行中の音を押し出す**
+   *     （2026-09-09 に歓声で起きた事故とまったく同じ形）。
+   */
+  chainStep: (delaysSec) => {
+    if (!ctx || seLevel <= 0 || !clipBuf.has('chain')) { loadClips(); return 0; }
+    let n = 0;
+    for (const p of chainStepPlan(delaysSec)) {
+      if (clip('chain', { gain: CHAIN_GAIN, delay: p.delay, rate: p.rate })) n += 1;
+    }
+    return n;
   },
 
   /**
