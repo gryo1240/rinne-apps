@@ -38,7 +38,11 @@ body{
 #hud{
   display:flex; align-items:center; gap:10px;
   width:100%; max-width:440px; margin-inline:auto; box-sizing:border-box;
-  padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 8px;
+  /* ★上下の余白は 6px★（2026-09-11）
+       帯の高さ＝⚙の箱(44px)＋上下12px＝56px。変更前は 35＋16＝51px。
+       5px高くなるが、盤のマスは1pxも縮まないことを実測で確かめてある
+       （8×10@1366×768=70px / 8×10@844×390=46px / 6×7@430×860=69px）。 */
+  padding:calc(env(safe-area-inset-top,0px) + 6px) 12px 6px;
 }
 /* ★手番の表示★（2026-09-08 マス数・ゲージ・相手の段位と入れ替えた）
    > 対戦中の上の方にある内容はいらないかも。戦況が動きまくるので、有利不利が意味ない。
@@ -51,12 +55,27 @@ body{
        #stage の高さが減って盤のマスが縮む。
      ★line-height を明示する★ 継承の normal のままだと端末のフォントで行boxが変わり、
        「うちでは影響ゼロ、オーナーの端末では盤が縮む」が起こりうる。 */
-.turn{flex:1; display:flex; align-items:center; gap:10px; font-size:20px; font-weight:700;
+/* ★文字は 24px★（2026-09-11 オーナー指示「手番の文字の大きさと設定はもっと大きくても良いのでは」）
+     20px → 24px。行box＝24×1.2＝28.8px で、帯の高さを決めている⚙の箱(44px)より低いので
+     **盤は1pxも縮まない**。
+   ★min-width:0 と nowrap を外さないこと★
+     これが無いと、小さい画面や大きめのシステムフォントで手番のことばが**2行に折り返し**、
+     帯の高さが一気に倍増して盤が大きく縮む。横に切れるほうがまだ安全。
+   ★切るのは #turnText だけ。.turn に overflow:hidden を付けないこと★
+     #turnDot は .turn の左端にぴったり接している（実測 余白0px）ので、
+     .turn を切ると **丸のまわりの光（box-shadow 0 0 10px）が左だけ欠ける**。
+     文字側だけを切れば、はみ出すのは文字だけになる。 */
+.turn{flex:1; min-width:0;
+      display:flex; align-items:center; gap:10px; font-size:24px; font-weight:700;
       line-height:1.2}
+#turnText{min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 /* ★丸の大きさ★ 14px → 18px（文字に合わせる）。
      ★これ以上 大きくしたり ぼかしを増やさないこと★
        #hud.mine のときは turnPulse で1.32倍に脈打つ＝実効24px。
-       DOM側なので §5-4 の「同時に光る面積」の計算には入らず、**検査が守ってくれない**。 */
+       DOM側なので §5-4 の「同時に光る面積」の計算には入らず、**検査が守ってくれない**。
+     ★2026-09-11 に文字を20→24pxにしたときも、丸は18pxのまま据え置いた★
+       オーナーの指示は「手番の文字と設定ボタン」で、丸は入っていない。
+       20pxにすると脈打ったとき実効26.4px＋ぼかし10pxになり、上の禁止に触れる。 */
 #turnDot{
   width:18px; height:18px; border-radius:50%; flex:0 0 auto;
   background:var(--p1); box-shadow:0 0 10px var(--p1);
@@ -64,8 +83,18 @@ body{
 /* 自分（人間）が押せるときだけ、丸をゆっくり脈打たせる＝「いま押していい」が一目で分かる */
 #hud.mine #turnDot{animation:turnPulse 1.5s ease-in-out infinite}
 @keyframes turnPulse{0%,100%{transform:scale(1); opacity:1}50%{transform:scale(1.32); opacity:.72}}
+/* ★⚙は「箱の大きさ」で決める。font-size に決めさせないこと★（2026-09-11）
+     もとは font-size:20px＋padding だけで、帯の高さが
+     **端末のフォントの行高（normal＝測れない量）**に左右されていた。
+     width/height/line-height:1 を与えると、字を大きくしても帯の高さは 38px のまま。
+   ★44px より小さくしないこと★ 押しやすい最小の目安。変更前は 33×35px だった。
+     ★盤のマスの下限(36px・§0-11)とは別の数字★ 盤は「並んだ的の1つ」、
+     これは「単独のボタン」なので、求められる大きさが違う。 */
 button.icon{
-  background:none; border:none; color:var(--dim); font-size:20px; padding:4px 8px; cursor:pointer;
+  flex:0 0 auto; width:44px; height:44px; padding:0;
+  display:flex; align-items:center; justify-content:center;
+  background:none; border:none; color:var(--dim);
+  font-size:26px; line-height:1; cursor:pointer;
 }
 
 /* ── 盤 ────────────────────────────── */
@@ -137,17 +166,43 @@ canvas{display:block; border-radius:16px; touch-action:none}
 @keyframes tap{0%,100%{transform:translate(-50%,-38%) scale(1)}50%{transform:translate(-50%,-52%) scale(.86)}}
 
 /* ── 画面（オーバーレイ） ───────────────── */
+/* ★上寄せ＋autoマージンで中央に見せる★（2026-09-11・v1.15 で既定を直した）
+     もとは `justify-content:center`。`overflow-y:auto` と組み合わせると、
+     中身が画面より高いとき**上にあふれた分へはスクロールしても到達できない**。
+     見出しが切れて読めなくなる（オーナー報告「一番上の記録が見えなくなっちゃった」）。
+   ★画面を1つずつ列挙して直さないこと★
+     最初は #scHowto → #scSettings → #scRecords → #scNews と足していったが、
+     **全員が最初に見る #scTitle が漏れていた**（844×390 で先頭22pxが到達不能）。
+     §0-14(3) で「既定が間違っているなら既定を直す」と決めた直後に、
+     すぐ隣で列挙方式をやって同じ穴を開けていた。
+   ★autoマージンの役割★
+     先頭と末尾の子に margin:auto を置くと、
+       ・中身が収まるとき … 余白を吸って**今までどおり中央**に見える
+       ・中身があふれるとき … autoは0に潰れて**上から並び、上までスクロールできる**
+     justify-content:center ではこの切り替わりが起きない（そこが今回の事故）。 */
 .screen{
   position:absolute; inset:0; z-index:10; display:none;
-  flex-direction:column; align-items:center; justify-content:center; gap:14px;
+  flex-direction:column; align-items:center; justify-content:flex-start; gap:14px;
   padding:calc(env(safe-area-inset-top,0px) + 18px) 18px calc(18px + var(--safe-b));
   background:radial-gradient(120% 90% at 50% 0%, #16204a 0%, var(--bg1) 62%);
   overflow-y:auto; -webkit-overflow-scrolling:touch;
 }
 .screen.show{display:flex}
+.screen > *:first-child{margin-top:auto}
+.screen > *:last-child{margin-bottom:auto}
 h1{font-size:34px; margin:0; letter-spacing:.14em; font-weight:800}
 h2{font-size:24px; margin:0}
-h3{font-size:15px; margin:14px 0 2px; color:var(--dim); font-weight:600; align-self:flex-start}
+/* ★見出しは中央440pxの列に左揃えでそろえる★（2026-09-11 オーナー指摘 2回目）
+     もとは `align-self:flex-start` で、**画面の左端**に貼り付いていた。
+     中身（.setting / .howto / #howtoBtns / .sizelist）はどれも max-width で中央寄せなので、
+     **画面が広いほど見出しだけが左へ離れる**。1600px幅で実測562pxだった。
+   ★個別のクラスで1つずつ直さないこと★
+     .setting(2026-09-08) → .sizeh(2026-09-11) → あそびかた(今回) と3回同じ事故を起こした。
+     既定が間違っているので、既定を直す。新しい見出しを足しても自動でそろう。
+   ★width:100% と max-width をセットで指定する★
+     align-self:center だけだと幅が中身ぶんに縮み、短い見出しほど右へずれる。 */
+h3{font-size:15px; margin:14px 0 2px; color:var(--dim); font-weight:600;
+   align-self:center; width:100%; max-width:440px; text-align:left}
 .sub{color:var(--dim); font-size:13px; margin:0; text-align:center}
 .logo{text-align:center; display:flex; flex-direction:column; align-items:center; gap:6px}
 .logoMoon{
@@ -272,9 +327,9 @@ button.ghost{
 /* ── あそびかた ─────────────────────────
    ★盤と同じ見た目で「わく」を見せる★ 玉の位置は render.js の DOTS から流し込む。
    キャンバスは使わない（BoardView を2つ動かすとタイマーが残る・高さが潰れる） */
-#scHowto{justify-content:flex-start}   /* 中央寄せのままだと縦に長いとき上が切れて読めない */
-/* せっていも同じ理由で上寄せ（BGM選択が増えて縦に長くなった） */
-#scSettings{justify-content:flex-start}
+/* ★ここに「#scXxx{justify-content:flex-start}」を足さないこと★
+     2026-09-11 に `.screen` の既定ごと直した（上の .screen の説明を読むこと）。
+     1画面ずつ足す方式は #scTitle を取りこぼしていた。 */
 .howto{display:flex; flex-direction:column; gap:11px; width:100%; max-width:440px}
 .hrow{
   display:flex; align-items:center; gap:12px;
@@ -523,12 +578,10 @@ button.verline:hover{color:var(--fg)}
 /* ★おおきさごとの さいちょう れんさ★（2026-09-11）
      幅の基準は .stats(420px) ではなく .setting 等と同じ440pxに合わせない——
      すぐ上の .stats と左端をそろえたいので 420px にする。 */
-/* ★align-self を必ず指定すること★（2026-09-11 オーナー指摘「離れすぎです」）
-     共通の `h3{align-self:flex-start}` が効くので、指定しないと**見出しだけが
-     画面の左端に貼り付き**、420pxで中央寄せされた一覧と遠く離れる。
-     広い画面ほど離れるので、狭い画面で見ているうちは気づけない。 */
+/* ★共通の h3 が 440px なので、ここだけ 420px に上書きする★
+     左端そろえ自体は共通の h3 が面倒を見る（2026-09-11 に既定を直した）。
+     ここで面倒を見るのは「一覧と同じ420px」という点だけ。 */
 .sizeh{
-  align-self:center;
   width:100%; max-width:420px; margin:14px 0 6px;
   font-size:14px; color:var(--dim); font-weight:700; text-align:left;
 }

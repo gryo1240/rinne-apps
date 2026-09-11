@@ -90,6 +90,14 @@ function show(name) {
   if (name === 'howto') renderHowto();
   if (name === 'news') renderNews();
   if (name === 'title') { Audio.bgmStop(); renderTitle(); }
+  /* ★開いたら必ず先頭に戻す★（2026-09-11 オーナー報告「一番上の記録が見えなくなっちゃった」）
+       .screen は overflow-y:auto なので、閉じても**そのときのスクロール位置を覚えている**。
+       さらに中身は開いたあとに描いている（renderHowto など）ので、
+       上に要素が増えたぶんブラウザがスクロール位置をずらす（スクロールアンカリング）。
+       実測: 430x860 で あそびかたを2回目に開くと 238px スクロールした状態で出て、
+       見出しと図が画面の上に消えていた。
+     ★描き終わったあとに実行すること★ 先に0にしても、そのあとの描画でまたずれる。 */
+  if (name) { const sc = $(SCREENS[name]); if (sc) sc.scrollTop = 0; }
 }
 
 // ── 起動 ────────────────────────────────────
@@ -1191,11 +1199,18 @@ function renderRecords() {
   const box = $('statBox');
   box.innerHTML = '';
   const rate = save.played ? Math.round((save.wins / save.played) * 100) : 0;
+  /* ★「さいちょう れんさ」のカードは 2026-09-11 に消した★（オーナー指示）
+       > さいちょうれんさは下の方を見たらわかるから消そう。
+       > そしたら１ブロック分の行が減るから縦サイズも減りそうよね。
+     5枚（2列×3行）→ 4枚（2列×2行）。下の「おおきさごとの さいちょう れんさ」に
+     ふつうの盤(6×7)の記録が出るので、同じ数字が2か所にあった。
+     ★save.bestChain そのものは絶対に消さないこと★
+       画面から消しただけ。あれは progress.js の cleanBySize が
+       **古い保存を 6×7 の記録へ移す種**に使っている正本で、消すと移行が壊れる。 */
   const items = [
     ['あそんだ', save.played],
     ['かった', save.wins],
     ['しょうりつ', `${rate}%`],
-    ['さいちょう れんさ', save.bestChain],
     ['あいての つよさ', '★'.repeat(save.tier)],
   ];
   for (const [k, v] of items) {
@@ -1281,6 +1296,13 @@ function openPause() {
   if (view) { view.setPreview(null); view.setHints(null); }
   renderSettings(true);
   $('scSettings').classList.add('show');
+  /* ★ここでも先頭に戻す★（2026-09-11 レビュー指摘）
+       対戦中の ⚙ は show() を通さない（通すと対戦が捨てられる）ので、
+       show() に置いた1行では**この経路だけ効かない**。
+       せっていはアプリで一番縦に長い画面なので、報告された不具合が
+       いちばん出やすい経路がここだった（実測: 先頭382pxが到達不能）。
+     ★renderSettings のあとに置くこと★ 先に0にしても描画でまたずれる。 */
+  $('scSettings').scrollTop = 0;
 }
 
 function closePause() {
