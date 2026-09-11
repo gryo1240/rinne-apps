@@ -523,19 +523,37 @@ button.verline:hover{color:var(--fg)}
 /* ★おおきさごとの さいちょう れんさ★（2026-09-11）
      幅の基準は .stats(420px) ではなく .setting 等と同じ440pxに合わせない——
      すぐ上の .stats と左端をそろえたいので 420px にする。 */
+/* ★align-self を必ず指定すること★（2026-09-11 オーナー指摘「離れすぎです」）
+     共通の `h3{align-self:flex-start}` が効くので、指定しないと**見出しだけが
+     画面の左端に貼り付き**、420pxで中央寄せされた一覧と遠く離れる。
+     広い画面ほど離れるので、狭い画面で見ているうちは気づけない。 */
 .sizeh{
+  align-self:center;
   width:100%; max-width:420px; margin:14px 0 6px;
   font-size:14px; color:var(--dim); font-weight:700; text-align:left;
 }
-.sizelist{width:100%; max-width:420px; display:flex; flex-direction:column; gap:4px}
+/* ★2列で 取りうる大きさを全部出す★（2026-09-11 オーナー指示）
+     > それぞれのサイズごとの連鎖数を２列で最初から全て表示しておいて
+     よこ4〜8 × たて5〜10 ＝ 30通り。記録が無いものは「-」。 */
+.sizelist{
+  width:100%; max-width:420px;
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px;
+}
 .sizelist .row1{
-  display:flex; justify-content:space-between; align-items:baseline; gap:10px;
-  padding:7px 12px; border-radius:9px; background:rgba(255,255,255,.05);
-  font-size:14px;
+  display:flex; justify-content:space-between; align-items:baseline; gap:8px;
+  padding:6px 10px; border-radius:8px; background:rgba(255,255,255,.05);
+  font-size:13px; white-space:nowrap;
 }
 /* いま選んでいる大きさ＝これから遊ぶ盤。ここが主役 */
 .sizelist .row1.now{
-  background:rgba(247,215,116,.13); border:1px solid rgba(247,215,116,.34); color:var(--p1);
+  background:rgba(247,215,116,.15); border:1px solid rgba(247,215,116,.45); color:var(--p1);
 }
-.sizelist .row1 b{font-size:17px}
-.sizelist .row1 .none{color:var(--dim); font-size:13px; font-weight:400}
+/* ふつうの盤(6×7)。いま選んでいなくても、どれが基準かが分かるようにする */
+.sizelist .row1.def{border:1px dashed rgba(247,215,116,.30)}
+.sizelist .row1 b{font-size:15px; color:var(--p1)}
+.sizelist .row1.now b{color:#fff}
+/* ★記録が無いところは「-」★ 行を出さないと「全部見えている」感じが出ない */
+.sizelist .row1 .none{color:var(--dim); font-weight:400}
+
+/* 見出しの下に添える小さな説明（どの枠が何を意味するか） */
+.sizehsub{display:block; font-size:11px; font-weight:400; color:var(--dim); margin-top:2px}

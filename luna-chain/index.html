@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style/base.css?v=8ad4b88c">
+<link rel="stylesheet" href="style/base.css?v=12cb178d">
 <!-- BEGIN importmap (tools/gen_importmap.py が生成。手で書き換えない) -->
 <script type="importmap">
 {"imports":{
@@ -21,11 +21,11 @@
   "./src/core/rules.js":"./src/core/rules.js?v=221707d6",
   "./src/game.js":"./src/game.js?v=9c63072b",
   "./src/meta/progress.js":"./src/meta/progress.js?v=1489a5b7",
-  "./src/ui/app.js":"./src/ui/app.js?v=34a68dd8",
+  "./src/ui/app.js":"./src/ui/app.js?v=1d6e767f",
   "./src/ui/audio.js":"./src/ui/audio.js?v=24d8e463",
   "./src/ui/coach.js":"./src/ui/coach.js?v=08412dd1",
   "./src/ui/render.js":"./src/ui/render.js?v=3185ab54",
-  "./src/version.js":"./src/version.js?v=6656dfa0",
+  "./src/version.js":"./src/version.js?v=c32d7483",
   "./data/tutorial.js":"./data/tutorial.js?v=78b74887"
 }}
 </script>
@@ -157,9 +157,13 @@
     <h2>きろく</h2>
     <div id="statBox" class="stats"></div>
     <!-- 盤の大きさごとの じこベスト連鎖（2026-09-11 オーナー指示「各盤面で最大連鎖を記録して」）
-         ★記録がある大きさ＋いま選んでいる大きさ だけを出す★
-           取りうる組み合わせは30通りあるので、全部並べると子どもには読めない。 -->
-    <h3 class="sizeh">おおきさごとの さいちょう れんさ</h3>
+         ★取りうる30通りを 最初から全部 2列で出す★（同日の追加指示）
+           > それぞれのサイズごとの連鎖数を２列で最初から全て表示しておいて
+           > 記録がまだない場合は『-』とかでいいよ
+         ★h3 には align-self が要る★ 共通の h3 は align-self:flex-start なので、
+           指定しないと見出しだけが画面の左端に離れる（2026-09-11「離れすぎです」）。 -->
+    <h3 class="sizeh">おおきさごとの さいちょう れんさ<br>
+      <span class="sizehsub">きいろい わく＝いま えらんでいる／点線＝ふつうの盤</span></h3>
     <div id="sizeBox" class="sizelist"></div>
     <p class="sub">記録は この きたい（ブラウザ）だけに のこります<br>ふたりで あそんだ分は 記録に 入りません</p>
     <button class="ghost close" data-go="title">とじる</button>
@@ -263,7 +267,7 @@
   </section>
 </div>
 
-<script type="module" src="src/ui/app.js?v=34a68dd8"></script>
+<script type="module" src="src/ui/app.js?v=1d6e767f"></script>
 <noscript><p style="color:#fff;padding:2em">このゲームはJavaScriptが必要です。</p></noscript>
 
 <script>

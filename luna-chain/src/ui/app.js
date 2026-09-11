@@ -1228,33 +1228,34 @@ function renderSizeRecords() {
   if (!box) return;
   box.textContent = '';
   const nowKey = sizeKey(device.boardW, device.boardH);
-  const keys = new Set(Object.keys(save.bestChainBySize || {}));
-  keys.add(nowKey);
-  const rows = [...keys]
-    .map((k) => {
-      const m = /^(\d{1,2})x(\d{1,2})$/.exec(k);
-      return m ? { k, w: +m[1], h: +m[2], n: bestChainOf(save, k) } : null;
-    })
-    .filter(Boolean)
-    .sort((a, b) => (a.w * a.h) - (b.w * b.h) || a.w - b.w);
-  for (const r of rows) {
-    const d = document.createElement('div');
-    d.className = 'row1' + (r.k === nowKey ? ' now' : '');
-    const name = document.createElement('span');
-    name.textContent = `よこ${r.w} × たて${r.h}`
-      + (r.w === DEF_W && r.h === DEF_H ? '（ふつう）' : '');
-    d.appendChild(name);
-    if (r.n > 0) {
-      const b = document.createElement('b');
-      b.textContent = String(r.n);
-      d.appendChild(b);
-    } else {
-      const e = document.createElement('span');
-      e.className = 'none';
-      e.textContent = 'まだ ありません';
-      d.appendChild(e);
+  /* ★取りうる大きさを 最初から全部出す★（2026-09-11 オーナー指示）
+       > それぞれのサイズごとの連鎖数を２列で最初から全て表示しておいて
+       > 記録がまだない場合は『-』とかでいいよ
+     もとは「記録がある大きさ＋いま選んでいる大きさ」だけを出していた。
+     それだと**どんな大きさが選べるのか**が記録の画面から分からず、
+     「まだ ありません」の1行だけが浮いて見えた。
+     よこ4〜8 × たて5〜10 ＝ 30通り。範囲の正本は board.js（ここに数字を書かない）。
+   ★並びは よこ→たての順で固定★
+     連鎖の大きい順にすると、記録が更新されるたびに行が入れ替わって
+     子どもが自分の行を見失う。2列に並ぶので、よこでまとまっているほうが探しやすい。 */
+  for (let w = MIN_W; w <= MAX_W; w++) {
+    for (let h = MIN_H; h <= MAX_H; h++) {
+      const k = sizeKey(w, h);
+      const n = bestChainOf(save, k);
+      const d = document.createElement('div');
+      d.className = 'row1'
+        + (k === nowKey ? ' now' : '')
+        + (w === DEF_W && h === DEF_H ? ' def' : '');
+      const name = document.createElement('span');
+      // ★2列に入れるため「×」の前後の空白は詰める★（せってい画面は「よこ6 × たて7」）
+      name.textContent = `よこ${w}×たて${h}`;
+      d.appendChild(name);
+      const v = document.createElement(n > 0 ? 'b' : 'span');
+      if (n <= 0) v.className = 'none';
+      v.textContent = n > 0 ? String(n) : '-';
+      d.appendChild(v);
+      box.appendChild(d);
     }
-    box.appendChild(d);
   }
 }
 
@@ -1457,6 +1458,10 @@ globalThis.__luna = {
   get coachSeen() { return [...coach.seen]; },
   // ★盤の大きさは通し検証から読めるようにする★（canvasの見た目から逆算すると誤診する）
   get board() { return { w: W, h: H, n: N }; },
+  /* ★選べる大きさの範囲★（2026-09-11）
+       きろく画面が「取りうる大きさを全部」出すようになったので、
+       検査がその通り数を知る必要がある。★検査に数字を書き写させないため★ */
+  get sizeRange() { return { minW: MIN_W, maxW: MAX_W, minH: MIN_H, maxH: MAX_H }; },
   get version() { return VERSION_LABEL; },
   // ★音量バーを動かしたときに、何回鳴らそうとしたか★（2026-09-09）
   //   「鳴らす処理を書いた」ではなく回数で検査するため。

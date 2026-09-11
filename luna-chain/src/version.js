@@ -21,7 +21,7 @@
  */
 
 /** ★NEWS の先頭と必ず一致させること★（test/test-version.mjs が機械で確かめる） */
-export const VERSION = 'v1.13';
+export const VERSION = 'v1.14';
 export const VERSION_DATE = '2026-09-11';
 
 /**
@@ -30,6 +30,15 @@ export const VERSION_DATE = '2026-09-11';
  * ★アプリの「こうしんじょうほう」画面がそのまま出す★ ので、開発用語を書かない。
  */
 export const NEWS = [
+  {
+    v: 'v1.14',
+    d: '2026-09-11',
+    items: [
+      'きろくに ぜんぶの おおきさを 2れつで ならべた',
+      'まだ あそんでいない おおきさは「-」で出る',
+      '見出しの いちを なおした',
+    ],
+  },
   {
     v: 'v1.13',
     d: '2026-09-11',
