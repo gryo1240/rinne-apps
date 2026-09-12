@@ -98,6 +98,12 @@ function armIdleTimer() {
   if (ATTRACT_OFF) return;
   idleTimer = setTimeout(() => {
     if (curScreen === 'title') startDemo(attractSeed());
+    /* ★デモの結果画面も放置でタイトルへ★（2026-09-12 オーナー指示）
+         これが無いと、デモが自然に決着したあと無人では結果画面で止まったまま二度と
+         次のデモへ進まない（アトラクトの「1周で止まる」問題）。
+         ★mode==='demo'のときだけ★ 人が実際に遊んだ結果画面（通常戦・二人対戦・れんしゅう）
+         まで無断でタイトルへ戻すと、読んでいる途中の相手を急かす形になる。 */
+    else if (curScreen === 'result' && mode === 'demo') show('title');
   }, ATTRACT_IDLE_MS);
 }
 function disarmIdleTimer() {
@@ -133,8 +139,9 @@ function show(name) {
   if (name === 'howto') renderHowto();
   if (name === 'news') renderNews();
   if (name === 'title') { Audio.bgmStop(); renderTitle(); }
-  // ★タイトルにいる間だけアイドルタイマーを張る★（アトラクトモード）
-  if (name === 'title') armIdleTimer(); else disarmIdleTimer();
+  // ★タイトル、またはデモの結果画面にいる間はアイドルタイマーを張る★（アトラクトモード）
+  if (name === 'title' || (name === 'result' && mode === 'demo')) armIdleTimer();
+  else disarmIdleTimer();
   /* ★開いたら必ず先頭に戻す★（2026-09-11 オーナー報告「一番上の記録が見えなくなっちゃった」）
        .screen は overflow-y:auto なので、閉じても**そのときのスクロール位置を覚えている**。
        さらに中身は開いたあとに描いている（renderHowto など）ので、
