@@ -59,8 +59,51 @@ let pressId = null;           // ★押している指の識別子★
 let finished = false;
 let lastTurnSeat = 0;         // 直前の手番の席（手番が変わった瞬間だけ音を鳴らすため）
 let pendingCpu = false;       // ★せってい中に来たCPUの手番★（閉じたときに指してもらう）
+let demoRngA = null, demoRngB = null;  // デモ専用のAI乱数（両せき分。startDemo() で種を固定して作る）
+let curDemoSeed = 1;           // 直近に使ったデモの種（「もういちど」は同じ種を続ける。既定値はDEMO_SEED定義後に上書き）
+let idleTimer = null;          // タイトル放置タイマー（2026-09-12 オーナー指示のアトラクトモード）
 const rng = makeRng((Date.now() ^ 0x9e37) >>> 0);
 const coach = new Coach();
+
+/* ── デモモード(?demo=1&seed=N&w=5&h=8&tier=1。宣伝動画の自動録画用途・通常プレイには影響しない) ──
+   ★盤面とAIの乱数だけがゲーム進行の乱数源★（src/core/rng.js のコメントどおり）なので、
+   ここで種を固定すれば毎回まったく同じ対局が再現できる。
+   ★種の作り方は test/sim.mjs の非swap側と合わせてある★（seed・seed*31・seed*97）。
+   これを変えると、オフラインで探した「大連鎖の出る seed」が本番で再現しなくなる。 */
+const DEMO_QS = new URLSearchParams(location.search);
+const DEMO = DEMO_QS.get('demo') === '1';
+const DEMO_SEED = (parseInt(DEMO_QS.get('seed') || '1', 10) || 1) >>> 0;
+const DEMO_W = Math.max(MIN_W, Math.min(MAX_W, parseInt(DEMO_QS.get('w') || String(DEF_W), 10) || DEF_W));
+const DEMO_H = Math.max(MIN_H, Math.min(MAX_H, parseInt(DEMO_QS.get('h') || String(DEF_H), 10) || DEF_H));
+const DEMO_TIER = Math.max(1, Math.min(TIER_MAX, parseInt(DEMO_QS.get('tier') || '1', 10) || 1));
+const DEMO_MOVE_MS = parseInt(DEMO_QS.get('speed') || '480', 10) || 480;
+curDemoSeed = DEMO_SEED;
+
+/* ── アトラクトモード（タイトル放置で自動再生・タップでタイトルへ。2026-09-12 オーナー指示） ──
+   ★タイマーは「いまタイトルを見ているか」(curScreen==='title')だけを頼りに腕/解除する★
+   show() に1か所だけ書けば、タイトルへの出入りがどの経路（起動・やめる・設定から戻る等）でも
+   もれなく効く。 */
+const ATTRACT_IDLE_MS = 30000;
+/* ★?attract=0 で丸ごと止められる★
+     自動テスト(smoke_luna_chain.py)はタイトル画面を出したまま何度も
+     page.wait_for_timeout() を挟むため、合計30秒を超えることがあり、
+     何もしないと試験の途中でデモに切り替わってボタンが消える（実際に発生・検証済み）。
+     録画パイプライン(promo_video.py)がタイトルの静止画を撮る場合も同様に困るので、
+     ツール側は必ずこのパラメータを付けて呼ぶこと。 */
+const ATTRACT_OFF = DEMO_QS.get('attract') === '0';
+const attractSeed = () => ((Math.random() * 0xffffffff) | 0) >>> 0;
+
+function armIdleTimer() {
+  clearTimeout(idleTimer);
+  if (ATTRACT_OFF) return;
+  idleTimer = setTimeout(() => {
+    if (curScreen === 'title') startDemo(attractSeed());
+  }, ATTRACT_IDLE_MS);
+}
+function disarmIdleTimer() {
+  clearTimeout(idleTimer);
+  idleTimer = null;
+}
 
 // ── 画面の切り替え ───────────────────────────────
 const SCREENS = {
@@ -90,6 +133,8 @@ function show(name) {
   if (name === 'howto') renderHowto();
   if (name === 'news') renderNews();
   if (name === 'title') { Audio.bgmStop(); renderTitle(); }
+  // ★タイトルにいる間だけアイドルタイマーを張る★（アトラクトモード）
+  if (name === 'title') armIdleTimer(); else disarmIdleTimer();
   /* ★開いたら必ず先頭に戻す★（2026-09-11 オーナー報告「一番上の記録が見えなくなっちゃった」）
        .screen は overflow-y:auto なので、閉じても**そのときのスクロール位置を覚えている**。
        さらに中身は開いたあとに描いている（renderHowto など）ので、
@@ -121,6 +166,17 @@ function boot() {
   window.addEventListener('pointermove', onMove);
   window.addEventListener('pointerup', onUp);
   window.addEventListener('pointercancel', onCancel);
+  /* ★デモ再生中は画面のどこを押してもタイトルへ★（2026-09-12 オーナー指示）
+       curScreen===null（盤が出ている＝デモ再生中）のときだけ効く。
+       結果画面(curScreen==='result')では「もういちど」「やめる」の専用ボタンに譲る
+       （ここで奪うと2つのボタンの意味が競合する）。
+     ★ボタンの上のタップは奪わない★（サブエージェントレビューで発覚）
+       pointerdownはclickより先に発火するので、これが無いと⚙（対戦中の設定）を押した瞬間に
+       ここが先にタイトルへ飛ばしてしまい、そのあとの openPause() の click が
+       curScreen!==null で弾かれ、「⚙を押しても設定が開かずタイトルに戻るだけ」になる。 */
+  document.addEventListener('pointerdown', (e) => {
+    if (mode === 'demo' && curScreen === null && !e.target.closest('button')) show('title');
+  });
 
   window.addEventListener('resize', () => view.resize());
   document.querySelectorAll('[data-go]').forEach((b) => {
@@ -142,6 +198,7 @@ function boot() {
   // ★「もういちど」は、いま遊んでいた種類に戻す★
   $('btnAgain').addEventListener('click', () => {
     if (mode === 'vs') return startVs();
+    if (mode === 'demo') return startDemo();  // ★通常CPU戦へすり替わらないように★
     if (mode === 'tutorial') {
       return tutorialStep + 1 < TUTORIALS.length ? startTutorial(tutorialStep + 1) : skipToReal();
     }
@@ -219,6 +276,8 @@ function boot() {
   view.resize();
   // ★起動しきったことを知らせる旗★（救済画面はこの旗だけを見る）
   globalThis.__lunaReady = true;
+  // ★デモは起動しきった直後に自分で始める★（宣伝動画の録画はタイトルを映す必要が無いため）
+  if (DEMO) startDemo();
 }
 
 // ★練習では聞かない★（失う記録が無いのに引き止めると、入口が重くなるだけ）
@@ -265,8 +324,12 @@ const cpuTier = () => (device.cpuAuto ? save.tier : device.cpuTier);
  *                       連鎖が簡単に伸びる。ここを開けると「1戦で記録が壊れて
  *                       二度と更新できない」が、盤ではなく強さの軸でそのまま再発する
  */
-const countsForRecord = () => isDefaultSize() && device.cpuAuto;
-const countsChainRecord = () => device.cpuAuto;
+/* ★デモは記録に数えない★（2026-09-12 宣伝動画用のデモモード追加時に追記）
+     デモは「大連鎖が出やすい seed」を選んで再生するもので、実力の記録ではない。
+     デモは match.vs=true で作るため finish() の記録ぶんは通常すでに通らないが、
+     ここにも明示のガードを置いて二重に守る（vs の扱いをあとで変えても壊れないように）。 */
+const countsForRecord = () => mode !== 'demo' && isDefaultSize() && device.cpuAuto;
+const countsChainRecord = () => mode !== 'demo' && device.cpuAuto;
 /** いま遊んでいる盤の大きさのキー（"6x7" など） */
 const curSizeKey = () => sizeKey(W, H);
 
@@ -295,6 +358,26 @@ function startVs() {
 }
 
 /**
+ * デモ（宣伝動画の自動録画・アトラクトモード共用）。★両せきともCPUが指す★
+ *   盤とAIの乱数を種で固定するので、同じ seed なら毎回まったく同じ対局になる。
+ *   set.py 等の通常のせっていや save には触れない（せっていの見た目は変えない）。
+ *
+ * ★seed省略時は curDemoSeed（直近に使った種）を使う★
+ *   「もういちど」で同じ対局に戻れる。?demo=1&seed=N の手動起動では N のまま、
+ *   アトラクトモード（タイトル放置）で始めたときはその場でひいた乱数の種のまま続く。
+ */
+function startDemo(seed = curDemoSeed) {
+  curDemoSeed = seed;
+  setSize(DEMO_W, DEMO_H);
+  const b = generateBoard(makeRng(seed));
+  // ★種の作り方は test/sim.mjs の非swap側と同じ★（seed・seed*31・seed*97）
+  demoRngA = makeRng(seed * 31);
+  demoRngB = makeRng(seed * 97 + 1);   // ★+1を忘れない★ sim.mjsのswap=false側は rngB=makeRng(seed*97+1)
+  mode = 'demo';
+  beginMatch({ terrain: b.terrain, wrapX: b.wrapX, tier: DEMO_TIER, oppName: 'デモ', vs: true, demo: true });
+}
+
+/**
  * れんしゅう（あそびかた）。★盤の中身は data/tutorial.js が持つ★
  *   ★盤が「必ず勝てる」ことは test/test-tutorial.mjs が実際に叩いて確かめている★
  */
@@ -318,14 +401,17 @@ function startTutorial(step = 0) {
   refreshHints();
 }
 
-function beginMatch({ terrain, wrapX, tier, oppName, mySeat = null, vs = false }) {
+function beginMatch({ terrain, wrapX, tier, oppName, mySeat = null, vs = false, demo = false }) {
   // ★先手・後手は1戦ごとにランダム★（komi は廃止したので、残る先手有利はここで均す）
-  const seat = vs ? 1 : (mySeat || (Math.random() < 0.5 ? 1 : 2));
+  //   ★デモだけは例外★ 先手を種で固定しないと、同じ seed でも毎回違う対局になってしまう
+  const seat = demo ? 1 : vs ? 1 : (mySeat || (Math.random() < 0.5 ? 1 : 2));
   // ★古い演出を必ず捨てる★
   //   捨てないと、対戦中の「さいしょから」で前の対戦のイベントが新しい盤に適用され、
   //   玉の数と持ち主が静かに壊れる（例外が出ないので気づけない）
   if (view) view.cancelAnimation();
   match = createMatch({ terrain, wrapX, tier, oppName, mySeat: seat, vs });
+  // ★デモは両せきともCPU★ createMatch の vs=true は「両せきとも人間」を作るので、ここで上書きする
+  if (demo) match.control = { 1: 'cpu', 2: 'cpu' };
   match.id = ++matchId;        // 遅れて届くコールバックを捨てるための世代番号
   finished = false;
   held = -1;
@@ -347,8 +433,12 @@ function beginMatch({ terrain, wrapX, tier, oppName, mySeat = null, vs = false }
   Audio.bgmPlay();             // ★「押した」流れの中なので iPhone でも鳴らせる★
   // ★自分の手番のときだけ「押してみて」と言う★
   if (coachOn() && humanTurn(match)) say(coach.feed({ phase: 'start' }));
-  const cs = cpuSeat(match);
-  if (cs && match.state.player === cs) setTimeout(cpuTurn, 350);
+  if (demo) {
+    setTimeout(demoTurn, 350);
+  } else {
+    const cs = cpuSeat(match);
+    if (cs && match.state.player === cs) setTimeout(cpuTurn, 350);
+  }
 }
 
 /** 対戦中の設定から「さいしょから」 */
@@ -356,6 +446,7 @@ function restartMatch() {
   closePause();
   if (mode === 'tutorial') return startTutorial(tutorialStep);
   if (mode === 'vs') return startVs();
+  if (mode === 'demo') return startDemo();  // ★手動で ?demo=1 を開いた場合に通常CPU戦へすり替わらないように★
   return startNormal();
 }
 
@@ -397,7 +488,8 @@ function onDown(e) {
   /* ★自分の手番でなくても、盤を押したことには答える★
        演出の途中や相手の手番に押したとき、いままでは何の反応も無かった。
        子どもには「押しても何も起きない」がいちばん分からない。 */
-  if (!myTurn()) { if (i0 >= 0) denySound(i0, DENY_WAIT_MS); return; }
+  // ★デモ中は「置けない音」を鳴らさない★ タップの意味は「タイトルへ戻る」なので、置けない音は誤解を招く
+  if (!myTurn()) { if (i0 >= 0 && mode !== 'demo') denySound(i0, DENY_WAIT_MS); return; }
   const i = i0;
   if (i < 0) return;
   e.preventDefault();
@@ -608,6 +700,40 @@ function cpuTurn() {
         }, 700);
       }
       if (!match.state.winner && match.state.player === seat) setTimeout(cpuTurn, 220);
+    });
+  }, 120);
+}
+
+/**
+ * デモ専用の手番進行（cpuTurn の両せき版）。
+ *   ★cpuSeat() は席を1つしか返せない★ので流用できず、別関数にしてある。
+ *   毎手、いまの手番の乱数（demoRngA/B）で指し、勝敗が付くまで自分で回り続ける。
+ */
+function demoTurn() {
+  /* ★curScreenも見る★（2026-09-12 アトラクトモード追加時に追記）
+       match.id の世代チェックだけでは足りない。afterMove()のnext()経由で
+       setTimeout(demoTurn, ...)が予約された「あと」にタップでタイトルへ戻ると、
+       この関数が新規に呼ばれた時点で match.id を読み直すため、世代チェックが
+       素通りしてしまう（自分で最新の世代を拾ってしまうため、ズレが検出できない）。
+       タイトルへ戻ったら curScreen が 'title' になるので、それを直接見て止める。
+       ここを直さないと、タイトルに戻ったあともデモが裏で進み続け、音まで鳴り続ける。 */
+  if (!match || match.state.winner || mode !== 'demo' || curScreen !== null) return;
+  const seat = match.state.player;
+  if (match.control[seat] !== 'cpu') return;
+  busy = true;
+  view.setHints(null);
+  const gen = match.id;
+  setTimeout(() => {
+    if (!match || match.id !== gen || curScreen !== null) return;
+    const mrng = seat === 1 ? demoRngA : demoRngB;
+    const i = cpuMove(match, mrng);
+    busy = false;
+    if (i < 0) return finish();
+    const r = play(match, i);
+    if (!r.ok) return finish();
+    Audio.SE.place();
+    afterMove(r, () => {
+      if (!match.state.winner) setTimeout(demoTurn, DEMO_MOVE_MS);
     });
   }, 120);
 }
@@ -947,7 +1073,7 @@ function finish() {
   }
 
   /* ★決着したら拍手★（2026-09-09 オーナー指示「決着後は『スタジアムの拍手』」）
-       ★勝敗にかかわらず鳴らす★ 負けたほうにも「1局おつかれさま」を返したい相手（4〜8歳）なので、
+       ★勝敗にかかわらず鳴らす★ 負けたほうにも「1局おつかれさま」を返したい相手（小学生）なので、
        勝ったときだけ拍手すると、負けた側の画面だけ急に静かになる。
        勝ち負けの区別は、このあとの win()/lose() の音と文字が担う。 */
   Audio.SE.applause();
@@ -1228,7 +1354,7 @@ function renderRecords() {
  * 盤の大きさごとの じこベスト連鎖（2026-09-11 オーナー指示「各盤面で最大連鎖を記録して」）
  *
  * ★出すのは「記録がある大きさ」＋「いま選んでいる大きさ」だけ★
- *   取りうる組み合わせは30通り。全部並べると4〜8歳には読めない。
+ *   取りうる組み合わせは30通り。全部並べると小学生には読みにくい。
  * ★いま選んでいる大きさは、記録が0でも必ず出す★
  *   「自分のいまの挑戦が、どこに残るのか」が画面から分かるようにするため。
  * ★並びは マス数の昇順で固定★
@@ -1389,7 +1515,7 @@ function initSizeSliders() {
        「つぎの たいせんから かわります」の約束もそれで守られる。
 
      ★押せなくしない（disabled にしない）★
-       既定のときに押せなくすると、4〜8歳には「壊れている」に見える。
+       既定のときに押せなくすると、子どもには「壊れている」に見える。
        押しても何も起きないだけなので実害は無い。 */
   const def = $('btnBoardDefault');
   if (def) {
