@@ -262,6 +262,16 @@
     <a href="https://rinne-blog.com/maboroshi-seiza" target="_top">存在しない占星術</a> ／
     <a href="https://rinne-blog.com/apps" target="_top">無料Webアプリ一覧</a>
   </footer>
+
+  <!-- rb-blog-link: りんね☆ブログ導線。iframe埋め込み時は非表示なので埋め込み高さに影響しない。
+       #app内部末尾に手動配置(bodyがdisplay:flexで通常挿入だと#appと横並びになるため。
+       .company/lessons/app-fixed-layout-swallows-tail-injection.md 参照) -->
+  <div id="rb-blog-link" style="display:none;padding:16px 12px 24px;text-align:center;font-size:13px;line-height:1.7">
+  <a href="https://rinne-blog.com/apps" target="_blank" rel="noopener" style="color:inherit;opacity:.7">りんね☆ブログの無料アプリ一覧</a>
+  </div>
+  <script>
+  (function(){try{if(window.self===window.top){var e=document.getElementById("rb-blog-link");if(e){e.style.display="block";}}}catch(err){}})();
+  </script>
 </div>
 
 <!-- チュートリアル -->
