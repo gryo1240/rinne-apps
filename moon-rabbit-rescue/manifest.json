@@ -1,0 +1,16 @@
+{
+  "name": "月うさぎ大捕物",
+  "short_name": "月うさぎ",
+  "description": "月面を逃げ回るうさぎを網でつかまえて保護する3Dアクションゲーム。",
+  "lang": "ja",
+  "start_url": ".",
+  "scope": ".",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#07080f",
+  "theme_color": "#07080f",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
