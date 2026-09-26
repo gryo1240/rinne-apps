@@ -1,7 +1,7 @@
 // 月うさぎ大捕物 Service Worker
 // ページ本体はネットワーク優先（更新をすぐ届ける）、Three.js・フォント・アイコンはキャッシュ優先。
 // 更新でファイルを差し替えたら CACHE の vN を必ず1つ上げる。
-const CACHE = "moon-rabbit-rescue-v2";
+const CACHE = "moon-rabbit-rescue-v3";
 const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png",
   "./vendor/three/build/three.module.js",
   "./vendor/three/examples/jsm/postprocessing/EffectComposer.js",
