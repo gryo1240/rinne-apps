@@ -1012,6 +1012,8 @@ addEventListener('keydown', (e) => {
 });
 addEventListener('keyup', (e) => keys.delete(e.code));
 addEventListener('blur', () => { keys.clear(); if (game.mode === 'play') setPause(true); });
+// the first Esc while the camera is locked only releases the lock (the page never sees the key): treat that as pause
+document.addEventListener('pointerlockchange', () => { if (!document.pointerLockElement && game.mode === 'play' && !game.ended) setPause(true); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && game.mode === 'play') setPause(true); });
 
 const cam = { yaw: 0, pitch: 0.32, dist: 9.5, pos: new THREE.Vector3(), target: new THREE.Vector3(), shake: 0 };
