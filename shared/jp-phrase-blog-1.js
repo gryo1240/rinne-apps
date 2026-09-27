@@ -107,11 +107,12 @@
   // ブログ用（jp-phrase-blog）: 見出しと本文は従来どおり。決めた部品（表・ボタン）の中だけ文節で折る
   // （2026-09-27 オーナー指示「見出しや本文は従来通り。表やボタンは言葉の切れ目で折って」）
   var SCOPE = "table,.pochipp-box__btns,.wp-block-button,.btn-wrap,a.card";
+  if (!Element.prototype.closest) return;   // closest の無い古いブラウザでは何もしない（CSSも入れない）
   var st = document.createElement("style");
   // テーマ(Cocoon)が td に word-break:break-word を直接かけているので、部品の中の全要素に !important で効かせる。
   // マスより長い文節だけは、横スクロールを出すよりその場で折る（anywhere。狭いスマホでの従来の見え方）
   st.textContent = SCOPE.split(",").map(function (s) { return s + "," + s + " *"; }).join(",") +
-    "{word-break:keep-all!important;overflow-wrap:anywhere}";
+    "{word-break:keep-all!important;overflow-wrap:break-word;overflow-wrap:anywhere}";   // anywhere 非対応(iOS15.3以前)は break-word で折る
   (document.head || document.documentElement).appendChild(st);
 
   // n が部品の中なら n を、部品を含むなら中の部品を処理する（部品の外の文字には触れない）
