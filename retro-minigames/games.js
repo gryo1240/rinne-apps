@@ -445,7 +445,6 @@
     REGISTRY.forEach(function (def) {
       var b = document.createElement("button");
       b.className = "gcard";
-      b.style.borderLeftColor = def.color;
       b.setAttribute("data-game", def.id);
       var best = Store.getBest(def.id);
       b.innerHTML = '<span class="gt">' + def.title + '</span><span class="gd">' + def.desc + '</span>' +
@@ -560,7 +559,10 @@
   });
 
   var btnMute = $("btnMute");
-  function renderMute() { btnMute.textContent = sfx.isMuted() ? "🔇" : "🔊"; }
+  function renderMute() {   // 絵文字をやめ、線の絵(.snd)を切り替える。状態は aria-pressed で読み上げにも伝える
+    btnMute.classList.toggle("muted", sfx.isMuted());
+    btnMute.setAttribute("aria-pressed", sfx.isMuted() ? "true" : "false");   // 名前は「消音」。押されている＝音が消えている
+  }
   btnMute.addEventListener("click", function () {
     sfx.setMuted(!sfx.isMuted());
     try { localStorage.setItem("retro:muted", sfx.isMuted() ? "1" : "0"); } catch (e) {}

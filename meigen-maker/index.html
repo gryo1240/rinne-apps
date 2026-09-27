@@ -6,54 +6,77 @@
 <title>謎の名言メーカー｜それっぽい格言を自動生成</title>
 <meta name="description" content="好きな言葉(テーマ)を入れると、実在しない賢者によるそれっぽい格言を自動生成。結果はカード画像として保存・共有できます。登録不要・完全無料。">
 <link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#f7f0e3">
+<meta name="theme-color" content="#f4ede0">
 <link rel="icon" href="./icon-192.png">
 <style>
+  /* ===== 2026-09-27 刷新:「書の色紙と落款」 =====
+     ページは和紙の地と墨・朱の2色だけ。見せ場は結果の色紙に落款を押す瞬間（app.js）。
+     丸いボタン・角丸カードの汎用フォームをやめ、四角い朱の印と短冊の欄に */
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --paper: #f4ede0; --ink: #231d16; --sub: #6f604b; --faint: #8f7f66; --shu: #b5382a; --gold: #b8974f; --line: #cdbd98; }
   body {
-    font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
-    background: #f7f0e3; color: #2b241c;
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+    background: var(--paper); color: var(--ink);
   }
   .wrap {
-    max-width: 560px; margin: 0 auto; padding: 32px 20px 48px;
-    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    max-width: 560px; margin: 0 auto; padding: 26px 20px 40px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
   }
-  h1 { font-size: 25px; font-weight: 800; color: #7a3b2e; text-align: center; letter-spacing: .04em; }
-  .subtitle { font-size: 13px; color: #8a7a63; text-align: center; max-width: 340px; margin-bottom: 6px; }
-  .input-row { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 10px; }
+  h1 { font-size: 26px; font-weight: 700; color: var(--ink); text-align: center; letter-spacing: .14em; padding-left: .14em; }
+  .subtitle { font-size: 13px; line-height: 1.8; color: var(--sub); text-align: center; max-width: 340px; margin-bottom: 4px; }
+  .input-row { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 12px; }
+  /* お題を書く短冊: 白い紙に上下の金の細線 */
   input[type=text] {
-    width: 100%; border: 2px solid #d9c9a8; border-radius: 10px;
-    padding: 12px 14px; font-size: 15px; background: #fffdf8; color: #2b241c;
-    font-family: inherit;
+    width: 100%; border: 1px solid var(--line); border-radius: 2px;
+    padding: 13px 14px; font-size: 15px; background: #fffdf8; color: var(--ink);
+    font-family: inherit; letter-spacing: .04em;
+    box-shadow: inset 0 3px 0 -1px #fffdf8, inset 0 4px 0 -1px rgba(184,151,79,.55), inset 0 -3px 0 -1px #fffdf8, inset 0 -4px 0 -1px rgba(184,151,79,.55);
   }
-  button {
-    font-family: "Hiragino Kaku Gothic ProN", sans-serif; font-size: 15px; font-weight: 700; cursor: pointer;
-    border: none; border-radius: 999px; padding: 13px 24px;
+  input[type=text]::placeholder { color: #a8987d; }
+  input[type=text]:focus { outline: 2px solid rgba(181,56,42,.45); outline-offset: 1px; }
+  button { font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; border: none; }
+  /* 朱の四角い印のボタン */
+  #genBtn {
+    background: var(--shu); color: #fbf3e6; border-radius: 3px; padding: 14px 20px;
+    letter-spacing: .24em; padding-left: calc(20px + .24em);
+    box-shadow: inset 0 0 0 2px rgba(251,243,230,.22), 0 2px 0 #8a2a1f;
   }
-  #genBtn { background: #7a3b2e; color: #fff8ee; }
-  #result { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 8px; }
+  #genBtn:active { transform: translateY(2px); box-shadow: inset 0 0 0 2px rgba(251,243,230,.22), 0 0 0 #8a2a1f; }
+  #genBtn:focus-visible, #shareBtn:focus-visible, #saveBtn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  #result { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 6px; width: 100%; }
   #result[hidden] { display: none; }
-  #cardWrap { max-width: 100%; }
-  .card-preview { max-width: 100%; border-radius: 4px; box-shadow: 0 4px 18px rgba(60, 40, 10, .14); }
-  .action-row { display: flex; gap: 12px; }
-  #saveBtn, #shareBtn { background: #2b241c; color: #fff; font-family: "Hiragino Kaku Gothic ProN", sans-serif; }
-  #saveBtn { background: #fff; color: #2b241c; border: 2px solid #2b241c; }
-  #shareStatus { font-size: 12px; color: #a3937a; min-height: 1.4em; text-align: center; }
+  /* 色紙の置き場。4:5 を先に確保して、画像が来ても高さが動かないように */
+  #cardWrap { position: relative; width: min(100%, 340px); aspect-ratio: 4 / 5; }
+  /* SNSの案内が出ている間は色紙を小さくして、案内とボタンを埋め込み枠(900px)に入れる */
+  #result:has(#shareFallback:not([hidden])) #cardWrap { width: min(55%, 220px); }
+  .card-preview { display: block; width: 100%; height: 100%; box-shadow: 0 1px 2px rgba(60,40,10,.18), 0 10px 22px -12px rgba(60,40,10,.45); }
+  /* 落款を押す（0.55秒）。上から少し大きく降りて、押し込み、戻る */
+  .stamp { position: absolute; pointer-events: none; animation: stamp .55s cubic-bezier(.3,.7,.4,1) both; transform-origin: 50% 60%; }
+  @keyframes stamp {
+    0% { opacity: 0; transform: translate(-4%, -30%) scale(1.45) rotate(-5deg); }
+    55% { opacity: 1; transform: translate(0, 0) scale(.94) rotate(0); }
+    75% { transform: scale(1.02); }
+    100% { opacity: 1; transform: none; }
+  }
+  .action-row { display: flex; gap: 10px; width: min(100%, 340px); }
+  .action-row button { flex: 1 1 0; border-radius: 3px; padding: 12px 10px; letter-spacing: .12em; }
+  #shareBtn { background: var(--ink); color: #fbf3e6; }
+  #saveBtn { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
+  #shareStatus { font-size: 12px; color: var(--sub); min-height: 1.4em; text-align: center; max-width: 340px; }
   #shareStatus[hidden] { display: none; }
   .share-fallback { width: 100%; max-width: 340px; text-align: center; margin-top: 2px; font-family: "Hiragino Kaku Gothic ProN", sans-serif; }
   .share-fallback[hidden] { display: none; }
-  .share-fallback p { font-size: 12px; color: #a3937a; margin-bottom: 8px; }
+  .share-fallback p { font-size: 12px; color: var(--sub); margin-bottom: 8px; }
   .share-btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-  .sh { border: none; border-radius: 8px; color: #fff; font-size: 12px; font-weight: bold; padding: 8px 12px; cursor: pointer; min-width: 64px; }
+  .sh { border: none; border-radius: 8px; color: #fff; font-size: 12px; font-weight: bold; padding: 8px 12px; cursor: pointer; min-width: 64px; font-family: "Hiragino Kaku Gothic ProN", sans-serif; }
   .sh-x { background: #0f1419; border: 1px solid #3a4048; }
   .sh-threads { background: #101010; border: 1px solid #3a3a3a; }
   .sh-line { background: #06c755; }
   .sh-ig { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
-  .footer-note {
-    margin-top: 20px; font-size: 11px; color: #a3937a; text-align: center; max-width: 340px;
-    font-family: "Hiragino Kaku Gothic ProN", sans-serif;
-  }
+  .footer-note { margin-top: 14px; font-size: 11px; line-height: 1.7; color: var(--faint); text-align: center; max-width: 340px; }
+  @media (prefers-reduced-motion: reduce) { .stamp { animation: none; } }
 </style>
+<script src="jp-phrase-3.js" defer></script>
 </head>
 <body>
 <div class="wrap">

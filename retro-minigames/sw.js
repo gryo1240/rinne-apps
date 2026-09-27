@@ -1,8 +1,8 @@
 // りんねの8bitミニゲーム集 Service Worker（キャッシュ優先・オフライン動作）
-const CACHE = "retro-minigames-v5";
+const CACHE = "retro-minigames-v6";
 const ASSETS = [
   "./", "./index.html", "./core.js", "./logic.js", "./games.js",
-  "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"
+  "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./jp-phrase-3.js"
 ];
 
 self.addEventListener("install", (e) => {

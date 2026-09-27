@@ -85,7 +85,7 @@ export function showBootScreen() {
   el.innerHTML = '<div class="boot__inner">'
     + '<div class="boot__title">輪廻の塔</div>'
     + '<div class="boot__bar"><div class="boot__fill" id="bootFill"></div></div>'
-    + '<div class="boot__note" id="bootNote">絵を読み込んでいます…</div>'
+    + '<div class="boot__note" id="bootNote" data-nophrase>絵を読み込んでいます…</div>'
     + '</div>';
   document.body.appendChild(el);
   const fill = el.querySelector('#bootFill');

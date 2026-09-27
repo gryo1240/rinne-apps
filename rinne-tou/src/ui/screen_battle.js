@@ -73,7 +73,8 @@ export function render(ctx) {
     status: h('div'),
     // ログは敵の上に**1行だけ**（2026-08-05 オーナー指示）。
     // 数字はキャラの上へ飛ばすので、ここは「何が起きたか」の一文に絞る
-    log: h('p', { class: 'battle-line', 'aria-live': 'polite' }, ''),
+    // data-nophrase: 高さ2行固定で頻繁に書き換わる。文節で折ると3行になって末尾が隠れうるので、改行対策(jp-phrase)の対象外（2026-09-27）
+    log: h('p', { class: 'battle-line', 'aria-live': 'polite', 'data-nophrase': true }, ''),
     enemies: h('div', 'enemies'),
     timeline: h('div', 'timeline'),
     gauge: h('div', 'gauge-crush'),
@@ -946,7 +947,7 @@ function drawControls(st) {
 
   el.appendChild(h('button', {
     class: 'btn btn--sm',
-    onclick: (e) => { st.paused = !st.paused; e.target.textContent = st.paused ? '再開' : '一時停止'; },
+    onclick: (e) => { st.paused = !st.paused; e.currentTarget.textContent = st.paused ? '再開' : '一時停止'; },
   }, st.paused ? '再開' : '一時停止'));
 
   if (st.ctx.save.progress?.cleared) {
@@ -962,7 +963,7 @@ function drawControls(st) {
        */
       onclick: (e) => {
         st.speed = st.speed === 1 ? 2 : 1;
-        e.target.textContent = `×${st.speed}`;
+        e.currentTarget.textContent = `×${st.speed}`;   // currentTarget: 文字が包み要素(jp-phrase)に入っても押したボタン自体を書き換える
         st.ctx.save.settings = st.ctx.save.settings || {};
         st.ctx.save.settings.speed = st.speed;
         // ★潜行中は自動セーブが止まっているので、ここで書いておく（silent）

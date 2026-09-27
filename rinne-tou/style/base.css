@@ -56,7 +56,9 @@ body {
   color: var(--ink);
   display: flex;
   justify-content: center;
-  overflow-wrap: anywhere;
+  /* break-word（2026-09-27 anywhere から変更）: anywhere だとボタンや一覧の欄が1文字幅まで縮んで「オー／ト」「呼／び戻す」と
+     言葉の途中で折れていた。break-word は枠より長い語だけ折り、部品を語の幅より細くしない（はみ出し防止は同じ） */
+  overflow-wrap: break-word;
   position: relative;
 }
 /**
@@ -304,7 +306,12 @@ h1, h2, h3 { font-weight: normal; letter-spacing: 0.08em; }
 .btn--sm {
   min-height: var(--tap); min-width: var(--tap);
   padding: 5px 12px; font-size: 0.85em; margin-bottom: 0; width: auto;
+  /* 横並びの中で文字の幅より縮めない（2026-09-27）。min-width を指定すると既定の「語の幅より縮めない」が消え、
+     幅300px前後で「オー／ト」「呼び戻／す」と言葉の途中で折れていた。代わりに隣の欄が縮む */
+  flex-shrink: 0;
 }
+/* 幅320px以下: 縮めなくしたぶん、余白と字間を詰めて横並び（戦闘の操作・影送りの「呼び戻す」）を枠に収める（2026-09-27） */
+@media (max-width: 320px) { .btn--sm { padding-left: 8px; padding-right: 8px; letter-spacing: 0.04em; } }
 .btn--inline { display: inline-block; width: auto; margin: 0 6px 6px 0; }
 
 /**
@@ -743,7 +750,10 @@ h1, h2, h3 { font-weight: normal; letter-spacing: 0.08em; }
 /* 見出しへフォーカスを移すときに枠線を出さない（読み上げ用の移動なので視覚上は無音にする） */
 h1:focus, h2:focus { outline: none; }
 
-.controls { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+.controls { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+/* 2026-09-27: ボタンを縮めなく（.btn--sm）したので、入りきらない幅では2段目に回す（クリア後の「×2」があると360px幅ではみ出していた）。
+   作戦の欄は9字ぶんを基準に、余った幅を使う */
+.controls > select { flex: 1 1 9em; min-width: 0; }
 .controls .btn { margin-bottom: 0; }
 
 /* 崩し成立の一瞬の光。演出OFFでは止まる（上の :root[data-fx="off"]） */
@@ -953,12 +963,14 @@ h1:focus, h2:focus { outline: none; }
  */
 .list--2col { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: stretch; }
 .list--2col .list__item { padding: 8px; gap: 6px; }
+/* 幅340px以下: 文節で折るようにしたぶん列の最小幅が広がるので、余白を詰めて枠に収める（2026-09-27。文字サイズ「大」の300pxで12pxはみ出していた） */
+@media (max-width: 340px) { .list--2col { gap: 4px; } .list--2col .list__item { padding: 6px 5px; gap: 4px; } }
 
-.list__main { flex: 1 1 auto; min-width: 0; }
+.list__main { flex: 1 1 auto; min-width: min(4.5em, 30%); }   /* 0 だと幅300pxで名前の欄が28pxまで縮み「鈴の／影」と折れた。4.5文字ぶんは残す（行の3割まで・2026-09-27） */
 /* ★0.78em は小さすぎた（2026-08-12 オーナー指摘「説明文が読みづらい」）。
    15px 基準で 11.7px → 13.4px。色も --ink-dim より一段明るいものを別に持つ */
 .list__sub  { font-size: 0.89em; color: var(--ink-sub); }
-.list__right { flex: 0 0 auto; text-align: right; font-size: 0.85em; }
+.list__right { flex: 0 1 auto; text-align: right; font-size: 0.85em; }   /* 0 1: 狭いときは言葉の切れ目で2行にして、左の欄(名前)に幅を回す（2026-09-27） */
 
 /* 稀少度。色だけでなく記号（常/珍/稀/伝/銘）も併記する */
 .rar-0 { color: var(--ink-dim); }
@@ -1249,7 +1261,7 @@ select {
   font-size: 0.95em; letter-spacing: 0.08em;
 }
 .talk__who[hidden] { display: none; }
-.talk__text { line-height: 1.85; white-space: pre-wrap; word-break: normal; overflow-wrap: anywhere; }
+.talk__text { line-height: 1.85; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; }   /* keep-all: 言葉の切れ目(jp-phrase)で折る。長すぎる語だけ anywhere で折る（2026-09-27） */
 .talk__text--narr { color: var(--ink-dim); }
 
 /* 選択肢は本文の上に出す（透明ボタンより手前） */

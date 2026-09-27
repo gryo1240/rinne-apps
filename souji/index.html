@@ -3,42 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#6C5FA7">
+<meta name="theme-color" content="#2E5E55">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="そうじ">
+<script src="jp-phrase-3.js" defer></script>
 </head>
 <body>
 <title>そうじナビ</title>
 <style>
 :root{
-  --bg:#F5F4F7; --surface:#FFFFFF; --ink:#292633; --muted:#716D80;
-  --line:#E1DFE8; --accent:#6C5FA7; --accent-ink:#FFFFFF; --accent-soft:#ECE9F5;
-  --warn:#B0563B; --warn-soft:#F6E9E3; --chip:#EDEBF2; --ok:#3E7A52; --okbg:#E5F0E9;
-  --whoA:#B4643C; --whoB:#4A7FA5; --shadow:0 1px 3px rgba(40,35,60,.08);
+  --bg:#ECEBE6; --surface:#FDFDFB; --ink:#1F2326; --muted:#5E6367;
+  --line:#C9CCCE; --accent:#2E5E55; --accent-ink:#FFFFFF; --accent-soft:#E2ECE8;
+  --warn:#B3261E; --warn-soft:#FBEDEA; --chip:#E7E7E1; --ok:#2E6B45; --okbg:#E3EFE6;
+  --whoA:#B4643C; --whoB:#3F72A0; --shadow:none; --rule:#8E9396; --shu:#C43A2A;
 }
 @media (prefers-color-scheme: dark){
   :root{
-    --bg:#17151D; --surface:#211E2A; --ink:#E7E5EC; --muted:#9B97A8;
-    --line:#363242; --accent:#A79BD6; --accent-ink:#191430; --accent-soft:#2C2741;
-    --warn:#D69073; --warn-soft:#3A2A21; --chip:#2C2937; --ok:#7FBE97; --okbg:#233A2C;
-    --whoA:#D89468; --whoB:#83AECE; --shadow:0 1px 3px rgba(0,0,0,.35);
+    --bg:#141618; --surface:#1F2225; --ink:#E4E6E7; --muted:#A0A5A9;
+    --line:#3A3F43; --accent:#8CC3B5; --accent-ink:#10201C; --accent-soft:#233430;
+    --warn:#F08A7E; --warn-soft:#3A2220; --chip:#2A2E31; --ok:#86C29B; --okbg:#1F3326;
+    --whoA:#D89468; --whoB:#83AECE; --shadow:none; --rule:#6C7276; --shu:#E0604F;
   }
 }
 :root[data-theme="light"]{
-  --bg:#F5F4F7; --surface:#FFFFFF; --ink:#292633; --muted:#716D80;
-  --line:#E1DFE8; --accent:#6C5FA7; --accent-ink:#FFFFFF; --accent-soft:#ECE9F5;
-  --warn:#B0563B; --warn-soft:#F6E9E3; --chip:#EDEBF2; --ok:#3E7A52; --okbg:#E5F0E9;
-  --whoA:#B4643C; --whoB:#4A7FA5; --shadow:0 1px 3px rgba(40,35,60,.08);
+  --bg:#ECEBE6; --surface:#FDFDFB; --ink:#1F2326; --muted:#5E6367;
+  --line:#C9CCCE; --accent:#2E5E55; --accent-ink:#FFFFFF; --accent-soft:#E2ECE8;
+  --warn:#B3261E; --warn-soft:#FBEDEA; --chip:#E7E7E1; --ok:#2E6B45; --okbg:#E3EFE6;
+  --whoA:#B4643C; --whoB:#3F72A0; --shadow:none; --rule:#8E9396; --shu:#C43A2A;
 }
 :root[data-theme="dark"]{
-  --bg:#17151D; --surface:#211E2A; --ink:#E7E5EC; --muted:#9B97A8;
-  --line:#363242; --accent:#A79BD6; --accent-ink:#191430; --accent-soft:#2C2741;
-  --warn:#D69073; --warn-soft:#3A2A21; --chip:#2C2937; --ok:#7FBE97; --okbg:#233A2C;
-  --whoA:#D89468; --whoB:#83AECE; --shadow:0 1px 3px rgba(0,0,0,.35);
+  --bg:#141618; --surface:#1F2225; --ink:#E4E6E7; --muted:#A0A5A9;
+  --line:#3A3F43; --accent:#8CC3B5; --accent-ink:#10201C; --accent-soft:#233430;
+  --warn:#F08A7E; --warn-soft:#3A2220; --chip:#2A2E31; --ok:#86C29B; --okbg:#1F3326;
+  --whoA:#D89468; --whoB:#83AECE; --shadow:none; --rule:#6C7276; --shu:#E0604F;
 }
 *{box-sizing:border-box; margin:0; padding:0;}
 html,body{background:var(--bg); color:var(--ink);
@@ -131,6 +132,74 @@ details summary{cursor:pointer; font-size:13.5px; padding:4px 0; font-weight:600
 .article h4{font-size:14px; margin:12px 0 4px;}
 .article p,.article li{font-size:13.5px;}
 .article ul,.article ol{padding-left:1.4em;}
+/* ===== 2026-09-28 刷新:「清掃点検表」 =====
+   公共トイレの扉の裏にある清掃点検表（罫線の升目と確認印）に見立てる。見せ場は1つ: チェックすると確認欄に朱の「済」の印が押される。
+   紫の汎用配色・丸いチップ・影つきカードをやめ、白い用紙・墨の罫線・深緑に。注意書きは実物の警告表示どおり赤枠で崩さない */
+header.top{border-bottom:3px double var(--rule);}
+header.top h1{letter-spacing:.14em;}
+h2{border-left:4px solid var(--ink); padding-left:8px; letter-spacing:.1em; line-height:1.35;}
+.card{border-radius:2px; box-shadow:none;}
+button{border-radius:3px;}
+select,input[type=text],input[type=date],textarea{border-radius:2px;}
+.placebar button{border-radius:2px;}
+.chip{border-radius:2px;}
+.pbar{height:8px; border-radius:0; box-shadow:inset 0 0 0 1px var(--line);}
+.pbar>div{border-radius:0;}
+.star{color:var(--ink); opacity:.75;}
+.weekcard{border-left-width:4px; border-radius:2px;}
+.weekcard.now{border-left-color:var(--accent); background:linear-gradient(90deg,var(--accent-soft),var(--surface) 40%);}
+.weekcard.now .wt{color:var(--accent);}
+/* 確認欄の升目。チェックボックスの仕組みはそのまま、見た目だけ升目と印にする */
+.stain input[type=checkbox]{-webkit-appearance:none; appearance:none; width:38px; height:38px; margin:0;
+  border:1.5px solid var(--rule); border-radius:1px; background:var(--surface) center/33px 33px no-repeat; cursor:pointer;}
+.stain input[type=checkbox]:checked{background-image:var(--stamp);}
+.stain input[type=checkbox]:disabled{background-image:linear-gradient(to top right,transparent calc(50% - 1px),var(--rule) calc(50% - 1px),var(--rule) calc(50% + 1px),transparent calc(50% + 1px)); cursor:default; opacity:.7;}
+.stain.just input[type=checkbox]:checked{animation:stampIn .32s cubic-bezier(.3,.7,.4,1) both;}
+@keyframes stampIn{0%{background-size:56px 56px;} 60%{background-size:30px 30px;} 100%{background-size:33px 33px;}}
+.stain.done .nm .t{text-decoration:none; color:var(--muted);}
+/* 印とレ点の絵。暗い表示では明るい朱・明るい緑にする（暗い用紙で見分けられるように） */
+:root{--stamp:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><g transform='rotate(-10 20 20)' fill='none' stroke='%23C43A2A'><circle cx='20' cy='20' r='16.5' stroke-width='2.4'/><circle cx='20' cy='20' r='13.6' stroke-width='.9'/></g><text x='20' y='26.2' text-anchor='middle' font-size='16' font-weight='700' fill='%23C43A2A' font-family='Hiragino Mincho ProN,Yu Mincho,serif' transform='rotate(-10 20 20)'>済</text></svg>"); --sumi:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><g transform='rotate(-10 20 20)' fill='none' stroke='%23C43A2A'><circle cx='20' cy='20' r='16.5' stroke-width='2.6'/></g><text x='20' y='26.5' text-anchor='middle' font-size='18' font-weight='700' fill='%23C43A2A' font-family='Hiragino Mincho ProN,Yu Mincho,serif' transform='rotate(-10 20 20)'>済</text></svg>"); --tick:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%232E5E55' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'><path d='M4 10.5l4 4 8-9'/></svg>");}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--stamp:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><g transform='rotate(-10 20 20)' fill='none' stroke='%23EE7563'><circle cx='20' cy='20' r='16.5' stroke-width='2.4'/><circle cx='20' cy='20' r='13.6' stroke-width='.9'/></g><text x='20' y='26.2' text-anchor='middle' font-size='16' font-weight='700' fill='%23EE7563' font-family='Hiragino Mincho ProN,Yu Mincho,serif' transform='rotate(-10 20 20)'>済</text></svg>"); --sumi:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><g transform='rotate(-10 20 20)' fill='none' stroke='%23EE7563'><circle cx='20' cy='20' r='16.5' stroke-width='2.6'/></g><text x='20' y='26.5' text-anchor='middle' font-size='18' font-weight='700' fill='%23EE7563' font-family='Hiragino Mincho ProN,Yu Mincho,serif' transform='rotate(-10 20 20)'>済</text></svg>"); --tick:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%238CC3B5' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'><path d='M4 10.5l4 4 8-9'/></svg>");} }
+:root[data-theme="dark"]{--stamp:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><g transform='rotate(-10 20 20)' fill='none' stroke='%23EE7563'><circle cx='20' cy='20' r='16.5' stroke-width='2.4'/><circle cx='20' cy='20' r='13.6' stroke-width='.9'/></g><text x='20' y='26.2' text-anchor='middle' font-size='16' font-weight='700' fill='%23EE7563' font-family='Hiragino Mincho ProN,Yu Mincho,serif' transform='rotate(-10 20 20)'>済</text></svg>"); --sumi:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><g transform='rotate(-10 20 20)' fill='none' stroke='%23EE7563'><circle cx='20' cy='20' r='16.5' stroke-width='2.6'/></g><text x='20' y='26.5' text-anchor='middle' font-size='18' font-weight='700' fill='%23EE7563' font-family='Hiragino Mincho ProN,Yu Mincho,serif' transform='rotate(-10 20 20)'>済</text></svg>"); --tick:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%238CC3B5' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'><path d='M4 10.5l4 4 8-9'/></svg>");}
+/* 調べるタブの「済」（小さい印） */
+.sumi{display:inline-block; width:1.35em; height:1.35em; vertical-align:-.3em; margin-left:4px;
+  background:var(--sumi) center/contain no-repeat;}
+/* 道具の「持っている」は小さい升目にレ点 */
+.shop-item input[type=checkbox]{-webkit-appearance:none; appearance:none; width:20px; height:20px; margin:0; border:1.5px solid var(--rule); border-radius:1px; background:var(--surface) center/16px no-repeat; flex-shrink:0; cursor:pointer;}
+.shop-item input[type=checkbox]:checked{background-image:var(--tick);}
+.shop-item.done .nm2{text-decoration:none; color:var(--muted);}
+/* 注意書き: 実物の警告表示のように赤枠・赤字（かわいく崩さない） */
+.warnbox{position:relative; background:var(--surface); border:2px solid var(--warn); border-radius:2px; padding:9px 12px 9px 36px;}
+.warnbox::before, .notice::before{content:""; position:absolute; left:10px; top:10px; width:18px; height:18px; background:var(--warn);
+  -webkit-mask:var(--m-warn) center/contain no-repeat; mask:var(--m-warn) center/contain no-repeat;}
+.notice{position:relative; border-radius:2px; padding-left:36px; border-left:4px solid var(--warn);}
+:root{--m-warn:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3.5 21.5 20h-19z'/><path d='M12 10v4.5M12 17.3v.2'/></svg>");}
+.depbox{border-radius:2px;}
+.sheet{border-radius:6px 6px 0 0;}
+.ba img, .ba button{border-radius:2px;}
+/* 絵文字の代わりの線のアイコン（色は文字色に合わせる） */
+.ic, .ic-s{display:inline-block; background:currentColor; flex:none; -webkit-mask:var(--m) center/contain no-repeat; mask:var(--m) center/contain no-repeat;}
+nav.tabs button .ic{width:20px; height:20px; font-size:0;}
+.ic-s{width:1.15em; height:1.15em; vertical-align:-.2em; margin-right:.3em;}
+@supports not ((mask-image:none) or (-webkit-mask-image:none)){ .ic, .ic-s, .warnbox::before, .notice::before{display:none;} .warnbox, .notice{padding-left:12px;} }
+.ic-search{--m:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round'><circle cx='10.5' cy='10.5' r='6.5'/><path d='M15.5 15.5 21 21'/></svg>");}
+.ic-sheet{--m:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linejoin='round'><rect x='4.5' y='4' width='15' height='17' rx='1'/><path d='M9 3v3h6V3M4.5 11h15M4.5 16h15M10 7v14'/></svg>");}
+.ic-cal{--m:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'><rect x='3.5' y='5' width='17' height='15.5' rx='1.5'/><path d='M3.5 10h17M8 3v4M16 3v4'/></svg>");}
+.ic-bulb{--m:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'><path d='M9 18h6M10 21h4M12 3a6 6 0 0 0-3.8 10.6c.7.6 1 1.3 1 2.4h5.6c0-1.1.3-1.8 1-2.4A6 6 0 0 0 12 3z'/></svg>");}
+.ic-gear{--m:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round'><circle cx='12' cy='12' r='3.2'/><path d='M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1'/></svg>");}
+.ic-camera{--m:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linejoin='round'><path d='M4 8h3l2-2.5h6L17 8h3v11H4z'/><circle cx='12' cy='13' r='3.5'/></svg>");}
+.ic-copy{--m:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linejoin='round'><rect x='8' y='8' width='12' height='12' rx='1.5'/><path d='M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8'/></svg>");}
+.ic-yen{--m:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><path d='M8.5 7l3.5 5 3.5-5M12 12v6M9 12.5h6M9 15.5h6'/></svg>");}
+@media (prefers-reduced-motion: reduce){ .stain.just input[type=checkbox]:checked{animation:none;} }
+/* 高コントラスト（強制カラー）: 背景で描いたアイコンと斜線が消えるので、文字色で描き直す */
+@media (forced-colors: active){
+  .ic, .ic-s, .warnbox::before, .notice::before{forced-color-adjust:none; background:CanvasText;}
+  .stain input[type=checkbox]{forced-color-adjust:none; border-color:CanvasText; background-color:Canvas;}
+  .stain input[type=checkbox]:disabled{background-image:linear-gradient(to top right,transparent calc(50% - 1px),GrayText calc(50% - 1px),GrayText calc(50% + 1px),transparent calc(50% + 1px));}
+}
+.nw{white-space:nowrap;}   /* 「★が」: 記号の後ろはブラウザが折ってよいとみなすのでつなぐ */
+/* 幅360px以下: 言葉の切れ目で折るようにしたぶん行が増えるので、余白を少し詰めて元の長さに収める */
+@media (max-width:360px){ .card{padding:10px 11px;} .stain{padding:8px 2px; gap:9px;} h2{margin:15px 0 7px;} main{padding-top:10px;} header.top{padding:12px 2px 8px;} }
 </style>
 
 <div id="app">
@@ -144,11 +213,11 @@ details summary{cursor:pointer; font-size:13.5px; padding:4px 0; font-weight:600
   </main>
 </div>
 <nav class="tabs"><div class="inner">
-  <button data-tab="find" class="on"><span class="ic">🔍</span>調べる</button>
-  <button data-tab="check"><span class="ic">✅</span>チェック</button>
-  <button data-tab="plan"><span class="ic">📅</span>計画</button>
-  <button data-tab="know"><span class="ic">💡</span>知識</button>
-  <button data-tab="settings"><span class="ic">⚙️</span>設定</button>
+  <button data-tab="find" class="on"><span class="ic ic-search" aria-hidden="true"></span>調べる</button>
+  <button data-tab="check"><span class="ic ic-sheet" aria-hidden="true"></span>チェック</button>
+  <button data-tab="plan"><span class="ic ic-cal" aria-hidden="true"></span>計画</button>
+  <button data-tab="know"><span class="ic ic-bulb" aria-hidden="true"></span>知識</button>
+  <button data-tab="settings"><span class="ic ic-gear" aria-hidden="true"></span>設定</button>
 </div></nav>
 <div id="modal"></div>
 <input type="file" id="photoInput" accept="image/*" hidden>
@@ -279,7 +348,7 @@ const ARTICLES=[
  <ul><li>日焼けによる壁紙・床の変色</li><li>家具を置いていた床のへこみ・設置跡</li><li>画鋲・ピンの穴(ポスター等の通常の範囲)</li><li>テレビ・冷蔵庫の後ろの壁の黒ずみ(電気ヤケ)</li><li>設備の寿命による故障</li></ul>
  <h4>掃除しておくべきもの(借主負担になりやすい)</h4>
  <ul><li>キッチンの油汚れ・すす</li><li>風呂・洗面のカビ、水垢(掃除を怠ったと判断されやすい)</li><li>トイレの黄ばみ・尿石</li><li>タバコのヤニ・におい</li><li>結露を放置してできたカビ・シミ</li></ul>
- <p>つまり<b>「油・カビ・水垢・ヤニ」に集中するのが敷金の現実ライン</b>。このアプリの★が多い箇所ほど優先です。</p>`},
+ <p>つまり<b>「油・カビ・水垢・ヤニ」に集中するのが敷金の現実ライン</b>。このアプリの<span class="nw">★が</span>多い箇所ほど優先です。</p>`},
  {t:"混ぜるな危険 — 洗剤の超基本",b:`<ul>
  <li><b>塩素系(カビキラー・ハイター類)と酸性(サンポール・クエン酸)は絶対に混ぜない</b>。有毒ガスが出ます。</li>
  <li>同じ場所で使いたいときは<b>日を分ける</b>か、間によく水で流して時間を空ける。</li>
@@ -295,7 +364,7 @@ const ARTICLES=[
  <li><b>マイクロファイバークロス数枚+古歯ブラシ</b> — 拭き上げとスキマ</li></ol>
  <p>「汚れが酸性(油・手垢)ならアルカリで、アルカリ性(水垢・尿石)なら酸で中和する」— これだけ覚えれば十分です。</p>`},
  {t:"退去立会いの心得",b:`<ul>
- <li>掃除の<b>ビフォー/アフター写真</b>を残しておく(このアプリの📷機能)。「入居時からあった傷」の主張にも写真が効く。</li>
+ <li>掃除の<b>ビフォー/アフター写真</b>を残しておく(このアプリの<i class="ic-s ic-camera" role="img" aria-label="カメラ"></i>機能)。「入居時からあった傷」の主張にも写真が効く。</li>
  <li>賃貸契約書の<b>「クリーニング特約」</b>を確認。特約でクリーニング代が決まっている場合、過度な掃除をしても金額は変わらないことが多い。</li>
  <li>立会いでは<b>その場でサインを急がない</b>。納得できない請求は「ガイドラインを確認したい」と持ち帰ってOK。</li>
  <li>私物・ゴミを完全に撤去しておくことが最優先(残置物は処分費を請求される)。</li></ul>`},
@@ -307,9 +376,10 @@ const ARTICLES=[
 
 /* ============ 状態 ============ */
 const KEY="souji-v1";
+let justStamped="";   // いま確認印を押した項目（その行だけ押す動きを出す。再描画で全部の印が動かないように）
 const $=s=>document.querySelector(s);
 function esc(s){ return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-function thumbBtn(src,cap,act){ return `<div class="slot"><div class="cap">${cap}</div>${src?`<img src="${esc(src)}" alt="${cap}の写真" data-photo="${act}">`:`<button data-photo="${act}">📷 撮る/選ぶ</button>`}</div>`; }
+function thumbBtn(src,cap,act){ return `<div class="slot"><div class="cap">${cap}</div>${src?`<img src="${esc(src)}" alt="${cap}の写真" data-photo="${act}">`:`<button data-photo="${act}"><i class="ic-s ic-camera" aria-hidden="true"></i>撮る/選ぶ</button>`}</div>`; }
 function fmtDate(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function parseDate(s){ const [y,m,dd]=s.split("-").map(Number); return new Date(y,m-1,dd); }
 
@@ -431,12 +501,12 @@ function renderFind(){
     const st=itemState(s.id);
     html+=`<div class="stain ${st.done?"done":""} ${st.skip?"skipped":""}">
       <button class="nm" data-open="${s.id}">
-        <div class="t">${esc(s.name)} ${st.done?"✅":""}</div>
+        <div class="t">${esc(s.name)} ${st.done?'<span class="sumi" role="img" aria-label="完了"></span>':""}</div>
         <div class="s"><span class="star">${stars(s.pr)}</span> ${esc(s.look)} / 約${s.time}分</div>
       </button>
     </div>`;
   });
-  html+=`</div><p class="small">★が多いほど退去立会いで見られやすい箇所。名前をタップすると落とし方が出ます。</p>`;
+  html+=`</div><p class="small"><span class="nw">★が</span>多いほど退去立会いで見られやすい箇所。名前をタップすると落とし方が出ます。</p>`;
   el.innerHTML=html;
   $("#findQ").oninput=e=>{ el.dataset.q=e.target.value; renderFind(); const i=$("#findQ"); i.focus(); i.setSelectionRange(i.value.length,i.value.length); };
   el.querySelectorAll("[data-place]").forEach(b=>b.onclick=()=>{ el.dataset.place=b.dataset.place; renderFind(); });
@@ -449,8 +519,8 @@ function openDetail(id){
   const st=itemState(id);
   const n=names();
   const m=$("#modal");
-  const dangerBox = s.danger==="cl" ? `<div class="warnbox"><b>⚠ 塩素系を使います:</b> 酸性のもの(クエン酸・サンポール等)と絶対に併用しない(有毒ガス)。必ず換気+ゴム手袋。目より上に直接スプレーしない。</div>`
-                  : s.danger==="ac" ? `<div class="warnbox"><b>⚠ 酸性を使います:</b> 塩素系(カビキラー・ハイター等)と絶対に併用しない(有毒ガス)。同じ場所で使うなら日を分ける。</div>` : "";
+  const dangerBox = s.danger==="cl" ? `<div class="warnbox"><b>塩素系を使います:</b> 酸性のもの(クエン酸・サンポール等)と絶対に併用しない(有毒ガス)。必ず換気+ゴム手袋。目より上に直接スプレーしない。</div>`
+                  : s.danger==="ac" ? `<div class="warnbox"><b>酸性を使います:</b> 塩素系(カビキラー・ハイター等)と絶対に併用しない(有毒ガス)。同じ場所で使うなら日を分ける。</div>` : "";
   m.innerHTML=`<div class="overlay" id="ov"><div class="sheet">
     <h3>${esc(s.name)}</h3>
     <p class="small"><span class="star">${stars(s.pr)}</span> ${esc(s.place)} / 目安 ${s.time}分 / ${PHASE_LABEL[s.phase]}</p>
@@ -459,7 +529,7 @@ function openDetail(id){
     <div class="f-row"><div class="lbl">手順</div>
       <ol class="steps">${s.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol></div>
     ${dangerBox}
-    ${s.dep?`<div class="depbox">💰 ${esc(s.dep)}</div>`:""}
+    ${s.dep?`<div class="depbox"><i class="ic-s ic-yen" aria-hidden="true"></i>${esc(s.dep)}</div>`:""}
     <div class="f-row"><div class="lbl">ビフォー / アフター写真(立会いの味方)</div>
       <div class="ba">${thumbBtn(st.bphoto,"そうじ前","b")}${thumbBtn(st.aphoto,"そうじ後","a")}</div></div>
     <div class="f-row"><div class="lbl">担当</div><div class="seg" id="dWho">
@@ -469,7 +539,7 @@ function openDetail(id){
       <button data-w="ab" class="${st.who==="ab"?"on":""}">2人</button>
     </div></div>
     <div class="row" style="margin-top:6px">
-      <button class="primary grow" id="dDone">${st.done?"↩ 未完了に戻す":"✅ 完了にする"}</button>
+      <button class="primary grow" id="dDone">${st.done?"未完了に戻す":"完了にする"}</button>
       <button class="ghost" id="dSkip">${st.skip?"対象に戻す":"うちには無い"}</button>
       <button id="dClose">閉じる</button>
     </div>
@@ -502,19 +572,19 @@ function renderCheck(){
     html+=`<h2>${esc(p)} <span class="small pnum">${dnP}/${actP.length}</span></h2><div class="card">`;
     items.forEach(s=>{
       const st=itemState(s.id);
-      html+=`<div class="stain ${st.done?"done":""} ${st.skip?"skipped":""}">
+      html+=`<div class="stain ${st.done?"done":""} ${st.skip?"skipped":""} ${justStamped===s.id?"just":""}">
         <input type="checkbox" data-done="${s.id}" ${st.done?"checked":""} ${st.skip?"disabled":""}>
         <button class="nm" data-open="${s.id}">
           <div class="t">${esc(s.name)}${st.skip?"(対象外)":""}</div>
-          <div class="s"><span class="star">${stars(s.pr)}</span> 約${s.time}分 ${st.bphoto||st.aphoto?"📷":""}</div>
+          <div class="s"><span class="star">${stars(s.pr)}</span> 約${s.time}分 ${st.bphoto||st.aphoto?'<i class="ic-s ic-camera" role="img" aria-label="写真あり"></i>':""}</div>
         </button>
-        ${st.who?`<span class="who ${st.who}"></span>`:""}
+        ${["a","b","ab"].includes(st.who)?`<span class="who ${st.who}"></span>`:""}
       </div>`;
     });
     html+=`</div>`;
   });
   el.innerHTML=html;
-  el.querySelectorAll("[data-done]").forEach(c=>c.onchange=()=>mutate(["items",c.dataset.done,"done"],c.checked||null));
+  el.querySelectorAll("[data-done]").forEach(c=>c.onchange=()=>{ const id=c.dataset.done; justStamped=c.checked?id:""; setTimeout(()=>{ if(justStamped===id) justStamped=""; },400); mutate(["items",c.dataset.done,"done"],c.checked||null); });
   el.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openDetail(b.dataset.open));
 }
 
@@ -565,15 +635,15 @@ function renderPlan(){
     // 遅れチェック
     const behind=[];
     wp.plan.forEach((list,i)=>{ if(i<wp.curWeek) list.forEach(s=>{ if(!itemState(s.id).done) behind.push(s); }); });
-    if(behind.length) html+=`<div class="notice">⚠ 予定より遅れています(${behind.length}件): ${behind.slice(0,5).map(s=>esc(s.name)).join("、")}${behind.length>5?" ほか":""}。今週に回しましょう。</div>`;
+    if(behind.length) html+=`<div class="notice">予定より遅れています(${behind.length}件): ${behind.slice(0,5).map(s=>esc(s.name)).join("、")}${behind.length>5?" ほか":""}。今週に回しましょう。</div>`;
     wp.plan.forEach((list,i)=>{
       const dnW=list.filter(s=>itemState(s.id).done).length;
       html+=`<div class="card weekcard ${i===wp.curWeek?"now":""}">
-        <div class="wt">${i===wp.curWeek?"📍 今週":"第"+(i+1)+"週"} <span class="small pnum">${dnW}/${list.length}</span></div>`;
+        <div class="wt">${i===wp.curWeek?"今週":"第"+(i+1)+"週"} <span class="small pnum">${dnW}/${list.length}</span></div>`;
       if(!list.length) html+=`<p class="small">予備週(遅れた分をここで)</p>`;
       list.forEach(s=>{
         const st=itemState(s.id);
-        html+=`<div class="stain ${st.done?"done":""}">
+        html+=`<div class="stain ${st.done?"done":""} ${justStamped===s.id?"just":""}">
           <input type="checkbox" data-done="${s.id}" ${st.done?"checked":""}>
           <button class="nm" data-open="${s.id}"><div class="t">${esc(s.name)}</div>
           <div class="s">${esc(s.place)} / 約${s.time}分</div></button>
@@ -597,16 +667,16 @@ function renderPlan(){
       <input type="checkbox" data-tool="${esc(havek)}" ${haveMap[havek]?"checked":""}>
       <span class="nm2 grow">${esc(t)}</span></div>`;
   });
-  html+=`<button class="ghost" id="toolCopy" style="margin-top:8px;width:100%">📋 未購入分をテキストでコピー</button></div>`;
+  html+=`<button class="ghost" id="toolCopy" style="margin-top:8px;width:100%"><i class="ic-s ic-copy" aria-hidden="true"></i><span class="t">未購入分をテキストでコピー</span></button></div>`;
 
   el.innerHTML=html;
   $("#dueSave").onclick=()=>{ mutate(["meta","due"],$("#dueInput").value||null); };
-  el.querySelectorAll("[data-done]").forEach(c=>c.onchange=()=>mutate(["items",c.dataset.done,"done"],c.checked||null));
+  el.querySelectorAll("[data-done]").forEach(c=>c.onchange=()=>{ const id=c.dataset.done; justStamped=c.checked?id:""; setTimeout(()=>{ if(justStamped===id) justStamped=""; },400); mutate(["items",c.dataset.done,"done"],c.checked||null); });
   el.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openDetail(b.dataset.open));
   el.querySelectorAll("[data-tool]").forEach(c=>c.onchange=()=>mutate(["tools",c.dataset.tool],c.checked||null));
   $("#toolCopy").onclick=()=>{
     const t="【そうじの買い物リスト】\n"+[...needTools.keys()].sort().filter(k=>!haveMap[k]).map(k=>"・"+k).join("\n");
-    copyText(t,$("#toolCopy"),"✅ コピーしました");
+    copyText(t,$("#toolCopy"),"コピーしました");
   };
 }
 
@@ -635,7 +705,7 @@ function renderSettings(){
     ${sync?`
       <p class="small">同期は有効です。もう1台では下の招待コードを「招待コードで参加」に貼り付けてください。</p>
       <div class="row" style="margin-top:8px">
-        <button id="btnInvite" class="primary">📋 招待コードをコピー</button>
+        <button id="btnInvite" class="primary"><i class="ic-s ic-copy" aria-hidden="true"></i><span class="t">招待コードをコピー</span></button>
         <button id="btnUnsync" class="ghost" style="color:var(--warn)">同期を解除</button>
       </div>
     `:`
@@ -680,7 +750,7 @@ function renderSettings(){
   </div>`;
   $("#nameSave").onclick=()=>{ mutate(["meta","names"],{a:$("#nameA").value.trim()||"夫", b:$("#nameB").value.trim()||"妻"}); if(!syncOn()) renderSettings(); };
   if(sync){
-    $("#btnInvite").onclick=()=>copyText(inviteCode(), $("#btnInvite"), "✅ コピーしました(相手に送る)");
+    $("#btnInvite").onclick=()=>copyText(inviteCode(), $("#btnInvite"), "コピーしました(相手に送る)");
     $("#btnUnsync").onclick=()=>{
       if(!confirm("同期を解除しますか?(データはFirebase側に残ります)")) return;
       if(fbRef){ fbRef.off(); fbRef=null; }
@@ -716,7 +786,7 @@ function renderSettings(){
   }
   $("#btnExport").onclick=()=>{
     const t=JSON.stringify({local:syncOn()?ROOM:S.local});
-    $("#ioArea").value=t; copyText(t,$("#btnExport"),"✅ コピーしました");
+    $("#ioArea").value=t; copyText(t,$("#btnExport"),"コピーしました");
   };
   $("#btnImport").onclick=()=>{
     try{
@@ -733,7 +803,7 @@ function renderSettings(){
 }
 
 function copyText(t,btn,doneLabel,after){
-  const ok=()=>{ if(btn) btn.textContent=doneLabel; if(after) setTimeout(after,1200); };
+  const ok=()=>{ if(btn) (btn.querySelector(".t")||btn).textContent=doneLabel; if(after) setTimeout(after,1200); };   // アイコンは残して文言だけ替える
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(ok).catch(()=>fb()); } else fb();
   function fb(){ const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select();
     try{ document.execCommand("copy"); ok(); }catch(e){ alert("コピーできませんでした"); } ta.remove(); }

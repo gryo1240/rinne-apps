@@ -18,7 +18,8 @@
 // v5 = 朔の窖・望の櫓の敵8体の紋と、背景4枚を入れ替え／追加（2026-08-14）
 // v6 = 月喰みの獣（額縁を落とした）と望鐘（紙の地色を落とした）の紋を差し替え（2026-08-14）
 // v7 = 起動時の絵の先読みとローディング画面を追加（2026-08-16）
-const CACHE = 'rinne-tou-v7';
+// v10 = 日本語を言葉の切れ目で改行する jp-phrase-3.js を追加（2026-09-27）
+const CACHE = 'rinne-tou-v10';
 
 /**
  * 音源だけ別のキャッシュに分ける（2026-08-05）。
@@ -81,6 +82,7 @@ const ASSETS = [
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
+  './jp-phrase-3.js',
 ];
 
 self.addEventListener('install', (e) => {
