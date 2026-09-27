@@ -5,122 +5,171 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>配当金シミュレーター｜配当でいくらもらえる？必要な投資額は？</title>
 <meta name="description" content="投資額と配当利回りを入れるだけで、もらえる配当金と再投資の複利効果をシミュレーション。「毎月〇円の配当がほしい」から必要な投資額を逆算もできる無料ツールです。">
-<meta name="theme-color" content="#f7f5ef">
+<meta name="theme-color" content="#1f2d40">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
+  /* 2026-09-27 刷新:「配当の入金が記帳された預金通帳」。
+     色は 紺のインク・通帳の薄緑の紙・配当の金 の3系統。数字と印字は同梱の DotGothic16（ドット印字・使う文字だけ・SIL OFL）。
+     つみたて（紙の運用報告書・朱と緑・明朝）とは紙の種類と書体で分ける */
+  @font-face { font-family: "DotGothic16"; font-display: swap; src: url("fonts/dotgothic16.woff") format("woff"); }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
   body {
     font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
     background: #f7f5ef;
-    color: #33301f;
+    color: #26303a;
     line-height: 1.6;
+    --ink: #26303a;
+    --soft: #5d6873;
+    --navy: #1f2d40;
+    --gold: #a0741a;
+    --gold-foil: #d8b560;
+    --paper: #eef3ee;
+    --rule: #c3d2c8;
+    --dot: "DotGothic16", "MS Gothic", monospace;
   }
-  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px 28px; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 12px 14px 26px; }
+  .dot { font-family: var(--dot); font-weight: 400; letter-spacing: 0.04em; }
 
-  .head { text-align: center; padding: 10px 0 14px; }
-  .head h1 { font-size: 22px; letter-spacing: 0.04em; color: #6b5010; }
-  .head h1 .coin { font-size: 20px; }
-  .head p { font-size: 12.5px; color: #7a6f4c; margin-top: 2px; }
+  /* 通帳の表紙（紺地に金の箔押し） */
+  .head {
+    text-align: center; padding: 11px 12px 10px; margin-bottom: 10px;
+    background: var(--navy); border-radius: 6px 6px 3px 3px; position: relative;
+    box-shadow: inset 0 0 0 3px var(--navy), inset 0 0 0 4px rgba(216,181,96,0.55);
+  }
+  .head .kind { font-family: var(--dot); font-size: 11px; letter-spacing: 0.3em; color: var(--gold-foil); opacity: .85; }
+  .head h1 { font-size: 21px; letter-spacing: 0.08em; color: var(--gold-foil); line-height: 1.35; text-shadow: 0 1px 0 rgba(0,0,0,.35); }
+  .head p { font-size: 12.5px; color: #c9d1dc; margin-top: 1px; }
 
-  .tabs { display: flex; gap: 8px; margin: 10px 0 14px; }
+  /* 見出しのインデックス（通帳の口座の見出し） */
+  .tabs { display: flex; gap: 6px; margin: 0 0 12px; border-bottom: 2px solid var(--navy); }
   .tab {
-    flex: 1; padding: 10px 6px; font-size: 14px; font-weight: 700;
-    color: #6b5f3c; background: #efe8d6; border: 1px solid #e0d6bd;
-    border-radius: 10px; cursor: pointer; text-align: center;
-    transition: background .15s, color .15s;
+    flex: 1; padding: 8px 6px 7px; font-size: 14px; font-weight: 700;
+    color: var(--soft); background: #e6e9e3; border: 1px solid #cfd6cf; border-bottom: none;
+    border-radius: 6px 6px 0 0; cursor: pointer; text-align: center;
   }
-  .tab.active { background: #b07d1e; border-color: #b07d1e; color: #fff; }
+  .tab.active { background: var(--navy); border-color: var(--navy); color: var(--gold-foil); }
+  .tab:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 
   .card {
-    background: #fff; border: 1px solid #ece5d3; border-radius: 14px;
-    padding: 16px 16px 14px; margin-bottom: 14px;
-    box-shadow: 0 1px 4px rgba(80, 60, 20, .05);
+    background: #fff; border: 1px solid #d9ded8; border-radius: 4px;
+    padding: 14px 14px 12px; margin-bottom: 10px;
   }
-  .card h2 { font-size: 14px; color: #6b5010; margin-bottom: 10px; }
+  .card h2 { font-size: 13.5px; color: var(--navy); margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #e3e7e2; letter-spacing: .04em; }
 
-  .field { margin-bottom: 14px; }
+  .field { margin-bottom: 11px; }
   .field:last-child { margin-bottom: 2px; }
-  .field .row { display: flex; align-items: baseline; justify-content: space-between; }
-  .field label { font-size: 13.5px; font-weight: 700; color: #453d22; }
-  .field .val { display: flex; align-items: baseline; gap: 4px; }
+  .field .row { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+  .field label { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+  .field .val { display: flex; align-items: baseline; gap: 4px; flex: none; }
   .field input[type="number"] {
-    width: 96px; padding: 5px 8px; font-size: 16px; font-weight: 700;
-    color: #9a6c14; text-align: right;
-    border: 1px solid #ddd2b6; border-radius: 8px; background: #fdfcf8;
+    width: 96px; padding: 3px 8px; font-family: var(--dot); font-size: 18px;
+    color: var(--ink); text-align: right;
+    border: 1px solid #b9c4bd; border-radius: 3px; background: var(--paper);
   }
-  .field .unit { font-size: 13px; color: #7a6f4c; }
-  .field input[type="range"] {
-    width: 100%; margin-top: 8px; accent-color: #b07d1e; height: 22px;
-  }
-  .toggles { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 4px; }
-  .toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #453d22; cursor: pointer; }
-  .toggle input { width: 18px; height: 18px; accent-color: #b07d1e; }
+  .field input[type="number"]:focus { outline: 2px solid var(--gold); outline-offset: 0; }
+  .field .unit { font-size: 13px; color: var(--soft); }
+  .field input[type="range"] { width: 100%; margin-top: 6px; accent-color: var(--navy); height: 22px; }
+  .toggles { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 2px; }
+  .toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--ink); cursor: pointer; }
+  .toggle input { width: 18px; height: 18px; accent-color: var(--navy); }
 
-  .result { text-align: center; padding-top: 4px; }
-  .result .label { font-size: 13px; color: #7a6f4c; }
-  .result .big { font-size: 34px; font-weight: 800; color: #9a6c14; letter-spacing: 0.02em; line-height: 1.3; }
-  .result .big small { font-size: 18px; }
-  .stats { display: flex; gap: 8px; margin-top: 12px; }
-  .stat { flex: 1; background: #f7f2e6; border-radius: 10px; padding: 8px 4px; text-align: center; }
-  .stat .k { font-size: 11.5px; color: #7a6f4c; }
-  .stat .v { font-size: 15px; font-weight: 700; color: #33301f; }
-  .stat .v.plus { color: #9a6c14; }
-  .nisa {
-    margin-top: 12px; font-size: 12.5px; color: #5f5636;
-    background: #f6f1e4; border-left: 4px solid #b07d1e; border-radius: 6px;
-    padding: 8px 10px; text-align: left;
+  /* ---- 結果: 通帳のページ（薄緑の地紋＋罫線、数字はドット印字） ---- */
+  .card.result {
+    text-align: left; padding: 10px 14px 12px; border-color: #b9c8bd; border-radius: 3px;
+    background:
+      repeating-radial-gradient(circle at 20% 120%, rgba(120,160,135,0.10) 0 1px, transparent 1px 7px),
+      repeating-radial-gradient(circle at 85% -30%, rgba(120,160,135,0.10) 0 1px, transparent 1px 7px),
+      var(--paper);
+    box-shadow: 0 1px 0 #d4ddd6, 0 3px 0 -1px #e2e8e3;
   }
+  .result .label { font-size: 12.5px; color: var(--soft); }
+  .result .line { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 8px; border-bottom: 1px solid var(--rule); padding: 2px 0 4px; }
+  .result .memo { font-family: var(--dot); font-size: 15px; color: var(--navy); letter-spacing: .08em; flex: none; }
+  .result .big { font-family: var(--dot); font-size: 34px; font-weight: 400; color: var(--gold); letter-spacing: 0.02em; line-height: 1.25; text-align: right; min-width: 0; margin-left: auto; }   /* 折れるのは文節の切れ目（「利回りを／入力して／ください」）だけ */
+  .result .big::before { content: "＊"; content: "＊" / ""; color: var(--navy); opacity: .7; font-size: .6em; margin-right: .15em; }
+  .result .big small { font-size: 18px; }
+  /* 3つの集計は通帳の欄（見出し＋金額、縦の罫） */
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 8px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .stat { padding: 3px 6px 5px; text-align: right; border-left: 1px solid var(--rule); }
+  .stat:first-child { border-left: none; }
+  .stat .k { font-size: 11px; color: var(--soft); text-align: left; line-height: 1.45; }
+  .stat .v { font-family: var(--dot); font-size: 16px; color: var(--ink); }
+  .stat .v.plus { color: #86600f; }   /* 小さい金文字は読みやすさのため濃く */
+  .nisa {
+    margin-top: 8px; font-size: 12.5px; color: var(--ink);
+    padding: 1px 0 0 60px; position: relative; text-align: left; min-height: 22px;
+  }
+  .nisa::before {
+    content: "備考"; position: absolute; left: 0; top: 2px; font-family: var(--dot); font-size: 11px; letter-spacing: .2em;
+    color: var(--navy); border: 1px solid var(--navy); padding: 0 5px 0 7px; border-radius: 2px;
+  }
+
+  /* 最初の表示だけ、ドット印字が左から打ち出される（入力中は待たせない） */
+  .result.print .line, .result.print .stat .v { animation: printline .5s steps(14, end) backwards; }   /* 終わったら切り抜きを残さない */
+  .result.print .stat:nth-child(1) .v { animation-delay: .45s; }
+  .result.print .stat:nth-child(2) .v { animation-delay: .6s; }
+  .result.print .stat:nth-child(3) .v { animation-delay: .75s; }
+  @keyframes printline { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+  @keyframes printfade { from { opacity: .25; } to { opacity: 1; } }
 
   .chart-box { position: relative; }
   canvas { width: 100%; height: 240px; display: block; }
-  .legend { display: flex; gap: 16px; justify-content: center; margin-top: 8px; font-size: 12px; color: #6b5f3c; }
+  .legend { display: flex; gap: 16px; justify-content: center; margin-top: 6px; font-size: 12px; color: var(--soft); flex-wrap: wrap; }
   .legend span::before {
-    content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 3px;
-    margin-right: 5px; vertical-align: -1px;
+    content: ""; display: inline-block; width: 16px; height: 0; border-top: 3px solid;
+    margin-right: 5px; vertical-align: 3px;
   }
-  .legend .lg-cum::before { background: #9a6c14; }
-  .legend .lg-asset::before { background: #d3b46b; }
+  .legend .lg-cum::before { border-color: var(--gold); }
+  .legend .lg-asset::before { border-color: #7d93a6; }
+  .chart-cap { margin: 4px 0 0; font-size: 12px; color: var(--soft); text-align: center; }
   .tooltip {
     position: absolute; pointer-events: none; display: none;
-    background: rgba(60, 45, 15, .93); color: #fff; font-size: 11.5px;
-    padding: 7px 10px; border-radius: 8px; white-space: nowrap; z-index: 5; line-height: 1.5;
+    background: var(--navy); color: #fff; font-size: 11.5px;
+    padding: 6px 10px; border-radius: 3px; white-space: nowrap; z-index: 5; line-height: 1.5;
   }
 
   details summary {
-    cursor: pointer; font-size: 13.5px; font-weight: 700; color: #6b5010;
-    padding: 4px 0; list-style-position: inside;
+    cursor: pointer; font-size: 13.5px; font-weight: 700; color: var(--navy);
+    padding: 2px 0; list-style-position: inside;
   }
-  .table-scroll { max-height: 320px; overflow-y: auto; margin-top: 8px; }
+  .table-scroll { max-height: 320px; overflow-y: auto; margin-top: 8px; background: var(--paper); border: 1px solid var(--rule); }
   table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-  th, td { padding: 6px 4px; text-align: right; border-bottom: 1px solid #f1ece0; }
-  th { color: #7a6f4c; font-weight: 700; background: #faf7ef; position: sticky; top: 0; }
+  th, td { padding: 5px 5px; text-align: right; border-bottom: 1px solid var(--rule); }
+  td { font-family: var(--dot); letter-spacing: .02em; }
+  th { color: var(--navy); font-weight: 700; font-size: 11.5px; background: #dde6df; position: sticky; top: 0; }
   th:first-child, td:first-child { text-align: center; }
-  td.gain { color: #9a6c14; }
+  td.gain { color: #86600f; }
 
   .disclaimer {
-    font-size: 11.5px; color: #8a7f5c; background: #f1ece0;
-    border-radius: 10px; padding: 10px 12px; margin-top: 2px;
+    font-size: 11.5px; color: var(--soft); border-top: 1px solid #d9ded8;
+    padding: 9px 2px 0; margin-top: 2px;
   }
-  .disclaimer strong { color: #6b5f3c; }
+  .disclaimer strong { color: var(--ink); }
 
   .hidden { display: none; }
 
   @media (max-width: 430px) {
-    .head h1 { font-size: 19px; }
-    .result .big { font-size: 28px; }
-    .stats { flex-wrap: wrap; }
-    .stat { min-width: 45%; }
+    .head h1 { font-size: 18.5px; }
+    .result .big { font-size: 27px; }
+    .result .memo { font-size: 13px; }
+  }
+  @media (max-width: 360px) { .stat .v { font-size: 13.5px; } }
+  @media (max-width: 400px) { .card { padding: 12px 12px 10px; margin-bottom: 9px; } .card.result { padding: 8px 12px 10px; } .field { margin-bottom: 9px; } }   /* 「83,333,300円」のような長い金額も欄に収める */
+  @media (prefers-reduced-motion: reduce) {
+    .result.print .line, .result.print .stat .v { animation: printfade .4s ease-out backwards; }
   }
 </style>
+<script src="jp-phrase-2.js" defer></script>
 </head>
 <body>
 <div class="wrap">
 
   <header class="head">
-    <h1><span class="coin">🪙</span> 配当金シミュレーター</h1>
+    <div class="kind" aria-hidden="true">ハイトウキン ツウチョウ</div>
+    <h1>配当金シミュレーター</h1>
     <p>配当でいくらもらえる？いくら投資すればいい？</p>
   </header>
 
@@ -169,7 +218,7 @@
 
     <div class="card result">
       <div class="label"><span id="fYearsLabel">20</span>年間で受け取る配当の合計（手取り・概算）</div>
-      <div class="big" id="fResult">—</div>
+      <div class="line"><span class="memo" aria-hidden="true">ハイトウキン</span><div class="big" id="fResult">—</div></div>
       <div class="stats">
         <div class="stat"><div class="k">初年度の年間配当（手取り）</div><div class="v" id="fFirst">—</div></div>
         <div class="stat"><div class="k"><span id="fLastYearLabel">20</span>年後の年間配当（手取り）</div><div class="v plus" id="fLast">—</div></div>
@@ -188,6 +237,7 @@
         <span class="lg-cum">受け取った配当の累計（手取り）</span>
         <span class="lg-asset">資産評価額（簿価）</span>
       </div>
+      <p class="chart-cap" id="chartCap" hidden>10億円以上は、グラフのいちばん上の高さで表示しています</p>
     </div>
 
     <div class="card">
@@ -228,7 +278,7 @@
 
     <div class="card result">
       <div class="label">年<span id="rTargetLabel">60万円</span>の配当（手取り）を受け取るのに必要な元本</div>
-      <div class="big" id="rResult">—</div>
+      <div class="line"><span class="memo" aria-hidden="true">ヒツヨウ ガンポン</span><div class="big" id="rResult">—</div></div>
       <div class="stats">
         <div class="stat"><div class="k">月あたりの配当（手取り）</div><div class="v" id="rMonthly">—</div></div>
         <div class="stat"><div class="k">税引前で必要な年間配当</div><div class="v" id="rPre">—</div></div>
@@ -249,8 +299,12 @@
 function $(id) { return document.getElementById(id); }
 var TAX = 0.20315;
 
+// 表示の上限は10億円（=100000万円）。極端な入力で「2.845e+41億」「NaN万円」と出ないように、それ以上と計算できない値はまとめて上限表示にする
+var CAP_MAN = 100000;
+var CAP_TEXT = "10億円以上";
 function fmtMan(man) {
-  var n = Math.round(man);
+  if (!(man < CAP_MAN)) return CAP_TEXT;              // 四捨五入の前に判定（9億9999万9999円までは数字で出す。NaN もここ）
+  var n = Math.min(Math.round(man), CAP_MAN - 1);
   if (n >= 10000) {
     var oku = Math.floor(n / 10000), rest = n % 10000;
     return rest === 0 ? oku + "億円" : oku + "億" + rest.toLocaleString() + "万円";
@@ -259,7 +313,8 @@ function fmtMan(man) {
 }
 // 万円 → 円（100円単位）
 function fmtYen(man) {
-  var yen = Math.round(man * 10000 / 100) * 100;
+  if (!(man < CAP_MAN)) return CAP_TEXT;
+  var yen = Math.min(Math.round(man * 10000 / 100) * 100, CAP_MAN * 10000 - 100);
   return yen.toLocaleString() + "円";
 }
 function readNum(id, fallback) {
@@ -279,7 +334,7 @@ function calcForward() {
   var principal = readNum("fPrincipal", 0);
   var yieldPct = readNum("fYield", 0);
   var growth = readNum("fGrowth", 0);
-  var years = Math.max(1, Math.round(readNum("fYears", 1)));
+  var years = Math.min(50, Math.max(1, Math.round(readNum("fYears", 1))));   // 手入力で1e9などを入れても計算が固まらないように、入力欄の上限50年で止める
   var reinvest = $("fReinvest").checked;
   var taxFree = $("fNisa").checked;
   var after = taxFree ? 1 : (1 - TAX);
@@ -288,7 +343,8 @@ function calcForward() {
   var rows = [{ year: 0, divPre: 0, divAfter: 0, cumAfter: 0, value: principal }];
   var first = 0, last = 0;
   for (var k = 1; k <= years; k++) {
-    var divPre = cost * (yieldPct / 100) * Math.pow(1 + growth / 100, k - 1);
+    var divPre = cost * (yieldPct / 100);
+    if (divPre > 0) divPre *= Math.pow(1 + growth / 100, k - 1);   // 利回り0%や元本0なら配当は0（0×無限大=NaN を避ける）
     var divAfter = divPre * after;
     cumAfter += divAfter;
     if (reinvest) cost = cost + divAfter;
@@ -308,9 +364,9 @@ function calcForward() {
 
   var msg;
   if (taxFree) {
-    msg = "🪙 NISA（非課税）で計算中。配当に約20%の税金がかからないぶん、手取りが増えます。";
+    msg = "NISA（非課税）で計算中。配当に約20%の税金がかからないぶん、手取りが増えます。";
   } else {
-    msg = "🪙 上場株式の配当には約20.315%の税金がかかります。NISA口座で受け取ると非課税にできます（上のチェックで切替）。";
+    msg = "上場株式の配当には約20.315%の税金がかかります。NISA口座で受け取ると非課税にできます（上のチェックで切替）。";
   }
   if (reinvest) msg += " 配当を再投資すると、翌年の配当が少しずつ増える複利効果がはたらきます。";
   $("fNisaNote").innerHTML = msg;
@@ -334,6 +390,8 @@ function niceStep(max, ticks) {
 }
 function drawChart() {
   if (!chartData) return;
+  var capped = chartData.some(function (r) { return !(r.value < CAP_MAN && r.cumAfter < CAP_MAN); });
+  $("chartCap").hidden = !capped;   // 表示の判定（fmtMan）と同じ条件。描画を飛ばすときも先に切り替える
   var canvas = $("chart"), dpr = window.devicePixelRatio || 1;
   var w = canvas.clientWidth, h = canvas.clientHeight;
   if (w === 0) return;
@@ -343,13 +401,15 @@ function drawChart() {
   ctx.clearRect(0, 0, w, h);
 
   var rows = chartData, years = rows[rows.length - 1].year;
-  var maxVal = Math.max(rows[rows.length - 1].value, rows[rows.length - 1].cumAfter, 1);
+  // 10億円（上限）で頭打ち。Infinity/NaN のまま目盛りを求めるとループが終わらないので、ここで先に丸める
+  var cap = function (v) { return isFinite(v) ? Math.min(v, CAP_MAN) : CAP_MAN; };
+  var maxVal = Math.max(cap(rows[rows.length - 1].value), cap(rows[rows.length - 1].cumAfter), 1);
   var step = niceStep(maxVal, 4), yMax = Math.ceil(maxVal / step) * step;
   var plotW = w - PAD.left - PAD.right, plotH = h - PAD.top - PAD.bottom;
   var X = function (yr) { return PAD.left + plotW * (yr / years); };
   var Y = function (v) { return PAD.top + plotH * (1 - v / yMax); };
 
-  ctx.font = "11px sans-serif"; ctx.fillStyle = "#9a8f68"; ctx.strokeStyle = "#efe8d6";
+  ctx.font = "12px 'DotGothic16', monospace"; ctx.fillStyle = "#6f7c86"; ctx.strokeStyle = "#dde5de";
   ctx.lineWidth = 1; ctx.textAlign = "right";
   for (var v = 0; v <= yMax; v += step) {
     ctx.beginPath(); ctx.moveTo(PAD.left, Y(v)); ctx.lineTo(w - PAD.right, Y(v)); ctx.stroke();
@@ -361,19 +421,19 @@ function drawChart() {
 
   function area(getVal, fill) {
     ctx.beginPath(); ctx.moveTo(X(0), Y(0));
-    rows.forEach(function (r) { ctx.lineTo(X(r.year), Y(getVal(r))); });
+    rows.forEach(function (r) { ctx.lineTo(X(r.year), Y(cap(getVal(r)))); });
     ctx.lineTo(X(years), Y(0)); ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
   }
-  area(function (r) { return r.value; }, "rgba(211, 180, 107, 0.20)");
-  area(function (r) { return r.cumAfter; }, "rgba(154, 108, 20, 0.16)");
+  area(function (r) { return r.value; }, "rgba(125, 147, 166, 0.16)");
+  area(function (r) { return r.cumAfter; }, "rgba(160, 116, 26, 0.18)");
 
   function line(getVal, color) {
     ctx.beginPath();
-    rows.forEach(function (r, i) { i === 0 ? ctx.moveTo(X(r.year), Y(getVal(r))) : ctx.lineTo(X(r.year), Y(getVal(r))); });
+    rows.forEach(function (r, i) { var y = Y(cap(getVal(r))); i === 0 ? ctx.moveTo(X(r.year), y) : ctx.lineTo(X(r.year), y); });
     ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.stroke();
   }
-  line(function (r) { return r.value; }, "#d3b46b");
-  line(function (r) { return r.cumAfter; }, "#9a6c14");
+  line(function (r) { return r.value; }, "#7d93a6");
+  line(function (r) { return r.cumAfter; }, "#a0741a");
 }
 
 (function setupTooltip() {
@@ -414,8 +474,8 @@ function calcReverse() {
   $("rNetYield").textContent = yieldPct > 0 ? netYield.toFixed(2) + "%" : "—";
 
   $("rNisaNote").innerHTML = taxFree
-    ? "🪙 NISA（非課税）で計算中。税金がかからないので、同じ配当額でも必要な元本が少なくてすみます。"
-    : "🪙 配当には約20.315%の税金がかかるため、手取りで受け取るには税引前で少し多めの配当（＝多めの元本）が必要です。NISAなら非課税にできます。";
+    ? "NISA（非課税）で計算中。税金がかからないので、同じ配当額でも必要な元本が少なくてすみます。"
+    : "配当には約20.315%の税金がかかるため、手取りで受け取るには税引前で少し多めの配当（＝多めの元本）が必要です。NISAなら非課税にできます。";
 }
 
 /* ---------- タブ ---------- */
@@ -443,6 +503,13 @@ $("rNisa").addEventListener("change", calcReverse);
 window.addEventListener("resize", drawChart);
 calcForward();
 calcReverse();
+// 最初の表示だけ通帳の印字が打ち出される（逆算タブは初めて開いたとき）。canvas は同梱フォントが届いたら描き直す
+document.querySelectorAll(".card.result").forEach(function (el) {
+  el.classList.add("print");
+  // 最後の欄を印字し終えたら印を外す（タブを行き来するたびに打ち直さない）
+  el.addEventListener("animationend", function (e) { if (e.target.matches(".stat:nth-child(3) .v")) el.classList.remove("print"); });
+});
+if (document.fonts && document.fonts.load) document.fonts.load("12px 'DotGothic16'").then(drawChart, function () {});
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js").catch(function () {});

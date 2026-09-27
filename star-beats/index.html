@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>STAR BEATS（仮）</title>
+<title>STAR BEATS</title>
 <link rel="stylesheet" href="style.css">
+<script src="jp-phrase-2.js" defer></script>
 </head>
 <body>
 <div id="game-wrap">
@@ -13,22 +14,22 @@
 
   <div id="title-screen" class="overlay">
     <h1>STAR BEATS</h1>
-    <p class="sub">v0.6</p>
+    <p class="sub">v1.0</p>
     <div class="howto">
       <div class="howto-card">
-        <h3>&#128421; PC</h3>
-        <p><span class="kbd">D</span><span class="kbd">F</span><span class="kbd">J</span><span class="kbd">K</span><br>（6レーンは <span class="kbd">S</span>〜<span class="kbd">L</span>）</p>
+        <h3>PC</h3>
+        <p class="keys"><span class="kbd">D</span><span class="kbd home">F</span><span class="kbd home">J</span><span class="kbd">K</span><br>（6レーンは <span class="kbd">S</span>〜<span class="kbd">L</span>）</p>
         <p><span class="kbd">Esc</span> 一時停止</p>
       </div>
       <div class="howto-card">
-        <h3>&#128241; スマホ</h3>
+        <h3>スマホ</h3>
         <p>画面下のボタンを<br>タップ / 長押し</p>
         <p>左上 <b>&#10073;&#10073;</b> 一時停止</p>
       </div>
     </div>
     <p class="desc">ノーツが白いラインに重なった瞬間に叩こう！<br>細長いノーツは<b>押しっぱなし</b>でボーナス。ミスが続くと体力が尽きて失敗！</p>
     <div class="volume-row">
-      <span class="vol-label">&#128266; 音量</span>
+      <span class="vol-label">音量</span>
       <input type="range" id="vol-slider" min="0" max="100" value="70" aria-label="音量">
       <span id="vol-val">70</span>
     </div>
@@ -72,7 +73,7 @@
     </table>
     <button id="retry-btn">もう一度</button>
     <div class="share-box">
-      <p class="share-label">&#128241; 結果をシェア</p>
+      <p class="share-label">結果をシェア</p>
       <div class="share-row">
         <button id="share-x" class="sh-x" aria-label="Xでシェア">&#120143;</button>
         <button id="share-threads" class="sh-threads" aria-label="Threadsでシェア">Threads</button>
@@ -87,5 +88,6 @@
 <script src="charts/songs.js"></script>
 <script src="audio.js"></script>
 <script src="game.js"></script>
+
 </body>
 </html>

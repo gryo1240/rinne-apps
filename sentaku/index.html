@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="せんたく">
+<script src="jp-phrase-2.js" defer></script>
 </head>
 <body>
 <title>せんたくタグ</title>
@@ -117,6 +118,61 @@ details summary{cursor:pointer; font-size:13.5px; padding:4px 0; font-weight:600
 .article h4{font-size:14px; margin:12px 0 4px;}
 .article p, .article li{font-size:13.5px;}
 .article ul{padding-left:1.3em;}
+/* ===== 2026-09-27 刷新:「服の内側に縫い付けてある洗濯表示タグ」 =====
+   見せ場は1つ: 記号を選ぶパネルを白いサテンの織りタグにする（細かい織り目・上の縫い代と縫い目・黒インクの記号）。
+   記号のSVG（JIS L 0001）の形・線の太さは変えない。タグは布なので、暗い画面表示でも明るいまま */
+.card.tag{
+  position:relative; padding:12px 14px; border:none; border-radius:2px 2px 7px 7px;
+  background:
+    repeating-linear-gradient(90deg, rgba(40,40,30,.030) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(0deg, rgba(40,40,30,.022) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg,#fdfcf8,#f5f3ec);
+  box-shadow:0 1px 2px rgba(0,0,0,.10), 0 8px 16px -10px rgba(0,0,0,.35);
+  color:#1d2322;
+}
+/* 上の縫い代（服に縫い込まれている部分）と縫い目 */
+.card.tag::before{
+  content:""; position:absolute; left:0; right:0; top:0; height:13px; border-radius:2px 2px 0 0;
+  background:
+    linear-gradient(90deg, #8d9896 0 55%, transparent 55%) 0 6px / 9px 1.5px repeat-x,
+    linear-gradient(180deg, rgba(40,40,30,.10), rgba(40,40,30,.03));
+  border-bottom:1px solid rgba(40,40,30,.08);
+}
+/* 両脇の織りの耳（ほつれ止め） */
+.card.tag::after{
+  content:""; position:absolute; top:13px; bottom:0; left:0; right:0; pointer-events:none; border-radius:0 0 7px 7px;
+  box-shadow: inset 3px 0 0 rgba(40,40,30,.05), inset -3px 0 0 rgba(40,40,30,.05);
+}
+.card.tag .grp-title{ color:#5b6664; }
+.card.tag .grp-title::after{ background:rgba(40,40,30,.14); }
+.card.tag .symbtn{ background:transparent; border-color:transparent; color:#1d2322; }
+.card.tag .symbtn .lb{ color:#56615f; }
+.card.tag .symbtn:hover{ background:rgba(40,40,30,.04); }
+.card.tag .symbtn.on{ background:rgba(46,115,129,.11); border:2px solid #2E7381; padding:7px 5px 4px; color:#1d2322; }
+.card.tag .symbtn.on .lb{ color:#1f5d69; }
+.card.tag .symbtn:focus-visible{ outline:2px solid #2E7381; outline-offset:1px; }
+@supports not ((mask-image:none) or (-webkit-mask-image:none)){ .ic, .ic-s, .warnbox::before{ display:none; } }   /* mask 非対応では四角にならないよう消す */
+/* 最狭幅は文節で折ると1行ふえる所があるので、カードの余白を少し詰めて高さを保つ */
+@media (max-width:340px){ .card{ margin-bottom:6px; padding:11px 12px; } .card.tag{ padding:11px 12px; } header.top{ padding:12px 2px 9px; } }
+
+/* 絵文字の代わりの線のアイコン（色は文字色に合わせる） */
+.ic, .ic-s{ display:inline-block; background:currentColor; flex:none;
+  -webkit-mask:var(--m) center / contain no-repeat; mask:var(--m) center / contain no-repeat; }
+nav.tabs button .ic{ width:20px; height:20px; font-size:0; }
+.ic-s{ width:1.15em; height:1.15em; vertical-align:-.2em; margin-right:.3em; }
+.ic-search{ --m:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round'><circle cx='10.5' cy='10.5' r='6.5'/><path d='M15.5 15.5 21 21'/></svg>"); }
+.ic-hanger{ --m:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'><path d='M10 6.5a2 2 0 1 1 2.8 1.8c-.5.3-.8.7-.8 1.3V11L3 17.5c-.6.5-.3 1.5.5 1.5h17c.8 0 1.1-1 .5-1.5L12 11'/></svg>"); }
+.ic-basket{ --m:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'><path d='M3 10h18l-2 10H5z'/><path d='M8 10l4-5 4 5M9 14v3M12 14v3M15 14v3'/></svg>"); }
+.ic-bulb{ --m:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'><path d='M9 18h6M10 21h4M12 3a6 6 0 0 0-3.8 10.6c.7.6 1 1.3 1 2.4h5.6c0-1.1.3-1.8 1-2.4A6 6 0 0 0 12 3z'/></svg>"); }
+.ic-gear{ --m:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round'><circle cx='12' cy='12' r='3.2'/><path d='M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1'/></svg>"); }
+.ic-camera{ --m:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linejoin='round'><path d='M4 8h3l2-2.5h6L17 8h3v11H4z'/><circle cx='12' cy='13' r='3.5'/></svg>"); }
+.ic-dryer{ --m:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9'><rect x='4' y='4' width='16' height='16' rx='1.5'/><circle cx='12' cy='12' r='5'/></svg>"); }
+.ic-warn{ --m:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3.5 21.5 20h-19z'/><path d='M12 10v4.5M12 17.3v.2'/></svg>"); }
+.ic-copy{ --m:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linejoin='round'><rect x='8' y='8' width='12' height='12' rx='1.5'/><path d='M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8'/></svg>"); }
+.warnbox{ display:flex; gap:6px; align-items:flex-start; overflow-wrap:anywhere; }   /* 長い英数字の名前でも枠からはみ出さない */
+.warnbox::before{ content:""; width:1.1em; height:1.1em; margin-top:.2em; flex:none; background:var(--warn);
+  -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3.5 21.5 20h-19z'/><path d='M12 10v4.5M12 17.3v.2'/></svg>") center / contain no-repeat;
+          mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3.5 21.5 20h-19z'/><path d='M12 10v4.5M12 17.3v.2'/></svg>") center / contain no-repeat; }
 </style>
 
 <div id="app">
@@ -130,11 +186,11 @@ details summary{cursor:pointer; font-size:13.5px; padding:4px 0; font-weight:600
   </main>
 </div>
 <nav class="tabs"><div class="inner">
-  <button data-tab="check" class="on"><span class="ic">🔍</span>調べる</button>
-  <button data-tab="closet"><span class="ic">👕</span>クローゼット</button>
-  <button data-tab="wash"><span class="ic">🧺</span>今日の洗濯</button>
-  <button data-tab="tips"><span class="ic">💡</span>コツ</button>
-  <button data-tab="settings"><span class="ic">⚙️</span>設定</button>
+  <button data-tab="check" class="on"><span class="ic ic-search" aria-hidden="true"></span>調べる</button>
+  <button data-tab="closet"><span class="ic ic-hanger" aria-hidden="true"></span>クローゼット</button>
+  <button data-tab="wash"><span class="ic ic-basket" aria-hidden="true"></span>今日の洗濯</button>
+  <button data-tab="tips"><span class="ic ic-bulb" aria-hidden="true"></span>コツ</button>
+  <button data-tab="settings"><span class="ic ic-gear" aria-hidden="true"></span>設定</button>
 </div></nav>
 <div id="modal"></div>
 <input type="file" id="photoInput" accept="image/*" hidden>
@@ -421,8 +477,8 @@ function renderCheck(){
     <button class="ghost" id="btnClear">クリア</button></div>
   </div>`;
 
-  /* 記号ピッカー */
-  html+=`<div class="card">`;
+  /* 記号ピッカー（服の内側の洗濯表示タグに見立てる） */
+  html+=`<div class="card tag">`;
   GROUPS.forEach(([g,gl])=>{
     html+=`<div class="grp-title">${gl}</div><div class="symgrid">`;
     Object.entries(SYM).filter(([,s])=>s.g===g).forEach(([code,s])=>{
@@ -437,7 +493,7 @@ function renderCheck(){
     const a=advice({sym:cur.sym, mat:cur.mat, type:cur.type, name:cur.name});
     html+=`<h2>洗い方の要点</h2><div class="card">
       <div class="chips">${a.chips.map(([cl,t])=>`<span class="chip ${cl}">${esc(t)}</span>`).join("")}</div>
-      ${a.warns.map(w=>`<div class="warnbox">⚠ ${esc(w)}</div>`).join("")}
+      ${a.warns.map(w=>`<div class="warnbox">${esc(w)}</div>`).join("")}
       <details><summary>記号の意味をくわしく見る</summary>
         ${cur.sym.map(c=>`<div class="detrow">${SYM[c].svg}<div class="m"><div class="t">${esc(SYM[c].l)}</div>${esc(SYM[c].m)}</div></div>`).join("")}
       </details>
@@ -463,7 +519,7 @@ function renderCheck(){
       </div>
       <div class="row" style="margin-bottom:8px">
         ${thumbImg(cur.photo,true)}
-        <button class="ghost" id="btnPhoto">📷 ${cur.photo?"写真を撮り直す":"写真を付ける(任意)"}</button>
+        <button class="ghost" id="btnPhoto"><i class="ic-s ic-camera" aria-hidden="true"></i>${cur.photo?"写真を撮り直す":"写真を付ける(任意)"}</button>
         ${cur.photo?`<button class="ghost icon" id="btnPhotoDel">✕</button>`:""}
       </div>
       <button class="primary" id="btnSave" style="width:100%">${cur.editId?"上書き保存":"クローゼットに保存"}</button>
@@ -566,10 +622,10 @@ function openItemSheet(id){
       ${thumbImg(it.photo,true)}
       <div class="grow"><h3 style="margin-bottom:2px">${esc(it.name)} <span class="typechip">${TYPE_LABEL[it.type]||"他"}</span></h3>
       ${it.mat?`<p class="small">素材: ${esc(it.mat)}</p>`:""}</div>
-      <button class="ghost icon" id="iPhoto">📷 ${it.photo?"写真変更":"写真追加"}</button>
+      <button class="ghost icon" id="iPhoto"><i class="ic-s ic-camera" aria-hidden="true"></i>${it.photo?"写真変更":"写真追加"}</button>
     </div>
     <div class="chips" style="margin-top:8px">${a.chips.map(([cl,t])=>`<span class="chip ${cl}">${esc(t)}</span>`).join("")}</div>
-    ${a.warns.map(w=>`<div class="warnbox">⚠ ${esc(w)}</div>`).join("")}
+    ${a.warns.map(w=>`<div class="warnbox">${esc(w)}</div>`).join("")}
     <details><summary>記号の意味をくわしく見る</summary>
       ${(it.sym||[]).map(c=>SYM[c]?`<div class="detrow">${SYM[c].svg}<div class="m"><div class="t">${esc(SYM[c].l)}</div>${esc(SYM[c].m)}</div></div>`:"").join("")}
     </details>
@@ -627,18 +683,18 @@ function renderWash(){
         <p class="small">${subt}</p>
         <p style="margin-top:6px">${its.map(([,it])=>esc(it.name)).join("、")}</p>`;
       if(g!=="nowash"){
-        if(dryOK.length) html+=`<p class="small" style="margin-top:6px">🌀 乾燥機OK: ${dryOK.map(([,it])=>esc(it.name)).join("、")}${g==="towel"?"(低温推奨)":""}</p>`;
-        if(dryNG.length) html+=`<p class="small">🚫 乾燥機NG・干す: ${dryNG.map(([,it])=>esc(it.name)).join("、")}</p>`;
+        if(dryOK.length) html+=`<p class="small" style="margin-top:6px"><i class="ic-s ic-dryer" aria-hidden="true"></i>乾燥機OK: ${dryOK.map(([,it])=>esc(it.name)).join("、")}${g==="towel"?"(低温推奨)":""}</p>`;
+        if(dryNG.length) html+=`<p class="small"><i class="ic-s ic-hanger" aria-hidden="true"></i>乾燥機NG・干す: ${dryNG.map(([,it])=>esc(it.name)).join("、")}</p>`;
       }
       /* 糸くず警告 */
       if(g==="normal"||g==="weak"){
         const outs=its.filter(([,it])=>lintTag(it).out);
-        if(outs.length) html+=`<div class="warnbox">⚠ ${outs.map(([,it])=>esc(it.name)).join("、")} は糸くずが出やすいものです。黒い服・化繊と同じ回は避けるか、ネットに入れてください。</div>`;
+        if(outs.length) html+=`<div class="warnbox">${outs.map(([,it])=>esc(it.name)).join("、")} は糸くずが出やすいものです。黒い服・化繊と同じ回は避けるか、ネットに入れてください。</div>`;
       }
       html+=`</div>`;
     });
     if(groups.towel && (groups.normal||groups.weak)){
-      html+=`<p class="small">💡 タオルの回を最後にすると、洗濯槽に残った糸くずが服につきにくくなります。</p>`;
+      html+=`<p class="small"><i class="ic-s ic-bulb" aria-hidden="true"></i>タオルの回を最後にすると、洗濯槽に残った糸くずが服につきにくくなります。</p>`;
     }
   }
   el.innerHTML=html;
@@ -707,7 +763,7 @@ function renderSettings(){
     ${SYNC_UI_ENABLED ? (sync?`
       <p class="small">同期は有効です。もう1台では下の招待コードを「招待コードで参加」に貼り付けてください。</p>
       <div class="row" style="margin-top:8px">
-        <button id="btnInvite" class="primary">📋 招待コードをコピー</button>
+        <button id="btnInvite" class="primary"><i class="ic-s ic-copy" aria-hidden="true"></i><span class="t">招待コードをコピー</span></button>
         <button id="btnUnsync" class="ghost" style="color:var(--warn)">同期を解除</button>
       </div>
     `:`
@@ -756,7 +812,7 @@ function renderSettings(){
 
   $("#nameSave").onclick=()=>{ mutate(["meta","names"],{a:$("#nameA").value.trim()||"夫", b:$("#nameB").value.trim()||"妻"}); if(!syncOn()) renderSettings(); };
   if(SYNC_UI_ENABLED && sync){
-    $("#btnInvite").onclick=()=>copyText(inviteCode(), $("#btnInvite"), "✅ コピーしました(相手に送る)");
+    $("#btnInvite").onclick=()=>copyText(inviteCode(), $("#btnInvite"), "コピーしました(相手に送る)");
     $("#btnUnsync").onclick=()=>{
       if(!confirm("同期を解除しますか?(データはFirebase側に残ります)")) return;
       if(fbRef){ fbRef.off(); fbRef=null; }
@@ -792,7 +848,7 @@ function renderSettings(){
   }
   $("#btnExport").onclick=()=>{
     const t=JSON.stringify({local:syncOn()?ROOM:S.local});
-    $("#ioArea").value=t; copyText(t,$("#btnExport"),"✅ コピーしました");
+    $("#ioArea").value=t; copyText(t,$("#btnExport"),"コピーしました");
   };
   $("#btnImport").onclick=()=>{
     try{
@@ -809,7 +865,7 @@ function renderSettings(){
 }
 
 function copyText(t,btn,doneLabel,after){
-  const ok=()=>{ if(btn) btn.textContent=doneLabel; if(after) setTimeout(after,1200); };
+  const ok=()=>{ if(btn) (btn.querySelector(".t")||btn).textContent=doneLabel; if(after) setTimeout(after,1200); };   // アイコンは残して文言だけ替える
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(ok).catch(()=>fb()); } else fb();
   function fb(){ const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select();
     try{ document.execCommand("copy"); ok(); }catch(e){ alert("コピーできませんでした"); } ta.remove(); }

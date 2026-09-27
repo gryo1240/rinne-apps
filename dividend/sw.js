@@ -1,6 +1,6 @@
 // 配当金シミュレーター Service Worker (キャッシュ優先・オフライン動作)
-const CACHE = "dividend-sim-v2";
-const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+const CACHE = "dividend-sim-v3";
+const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./fonts/dotgothic16.woff", "./jp-phrase-2.js"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
