@@ -73,9 +73,19 @@
   #scene.evening   { --sky1: #3d386a; --sky2: #d47d6c; --far: #875876; --near: #3f395e; --house: #eadac5; --roof: #8c4848; --win: #ffcf73; }
   #scene.night     { --sky1: #0f1530; --sky2: #1b254c; --far: #34427a; --near: #141a36; --house: #cfc6b4; --roof: #5a4a66; --win: #ffd27a; }
   #scene.latenight { --sky1: #070a18; --sky2: #10172f; --far: #222c54; --near: #0b1124; --house: #a8a190; --roof: #3f3650; --win: #d9a25a; }
+  /* 満月の夜（2026-09-27 オーナー指示「原っぱや山々を金色に輝かせる」）。空は夜のまま、丘の色紙だけ金色に差し替える */
+  #scene.full-moon-glow.evening   { --far: #d6a862; --near: #957040; }
+  #scene.full-moon-glow.night     { --far: #d9b262; --near: #9c7a3e; }
+  #scene.full-moon-glow.latenight { --far: #bf9a4f; --near: #856636; }
+  /* 稜線に月光が当たった明るい金のふち（紙の影はそのまま） */
+  #scene.full-moon-glow .far { filter: drop-shadow(0 -2px 0 #ffe8a8) drop-shadow(0 -3px 5px rgba(0,0,0,0.22)); }
+  #scene.full-moon-glow #hill { filter: drop-shadow(0 -2px 0 #f7d98c) drop-shadow(0 -4px 6px rgba(0,0,0,0.3)); }
+  /* 月は輪郭から金色の光がにじむ（オーナー指示） */
+  #scene.full-moon-glow #moonBox svg { filter: drop-shadow(0 0 3px #fff0c0) drop-shadow(0 0 14px rgba(255,212,120,0.75)) drop-shadow(0 0 30px rgba(255,200,100,0.35)); }
   #scene.full-moon-glow::after {
     content: ""; position: absolute; inset: 0; pointer-events: none;
-    background: radial-gradient(circle at calc(100% - 62px) 54px, rgba(245,230,184,0.18), transparent 38%);
+    background: radial-gradient(circle at calc(100% - 62px) 54px, rgba(255,214,130,0.28), transparent 62%);
+    mix-blend-mode: screen;   /* 紺に重ねても濁らず、光として明るく見える */
   }
   #stars { position: absolute; inset: 0; pointer-events: none; }
   /* 切り抜いた四つ星 */
