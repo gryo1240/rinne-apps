@@ -56,7 +56,7 @@
   var scene = $("scene"), rabbitWrap = $("rabbitWrap"), bubbleEl = $("bubble");
 
   // ===== 月SVG(8区分の固定パス。座標系72x72・半径33) =====
-  var MOON_LIT = "#f5e6b8", MOON_DARK = "rgba(70,80,120,0.55)";
+  var MOON_LIT = "#fbf0d2", MOON_DARK = "rgba(58,68,108,0.55)"; // 2026-09-27 切り絵の紙の色に
   var MOON_PATHS = {
     new: null,
     crescent: "M36,3 A33,33 0 0 1 36,69 A24,33 0 0 0 36,3 Z",
@@ -157,7 +157,7 @@
     // アポイントメント
     var aps = TSUKI.appointments(state, t, tz());
     var extra = state.sulking ? "<b>…" + esc(state.name) + "はちょっと拗ねている。なでて仲直りしよう</b><br>" : "";
-    $("appointments").innerHTML = extra + "🍡 <b>" + aps[0] + "</b><br>🌕 " + aps[1];
+    $("appointments").innerHTML = extra + '<i class="ic ic-dango"></i><b>' + aps[0] + '</b><br><i class="ic ic-moon"></i>' + aps[1];
 
     // アクションボタン
     var canF = TSUKI.canFeed(state, t, tz());
@@ -170,11 +170,11 @@
     var greetsToday = state.greets.day === TSUKI.localDayNum(t, tz()); // 日付跨ぎ直後の誤無効を防ぐ
     if (band === "morning") {
       greetBtn.style.display = "";
-      greetBtn.textContent = "🌅 おはよう";
+      greetBtn.innerHTML = '<i class="ic ic-sun"></i>おはよう';
       greetBtn.disabled = greetsToday && state.greets.morning;
     } else if (band === "night") {
       greetBtn.style.display = "";
-      greetBtn.textContent = "🌙 おやすみ";
+      greetBtn.innerHTML = '<i class="ic ic-crescent"></i>おやすみ';
       greetBtn.disabled = greetsToday && state.greets.night;
     } else {
       greetBtn.style.display = "none";
@@ -375,13 +375,28 @@
   });
 
   // ===== シェアカード =====
-  var SKY_GRADS = {
-    morning: ["#f6b98a", "#f9dcae"],
-    noon: ["#8ec8ec", "#cfe6f5"],
-    evening: ["#3b3564", "#f0a35e"],
-    night: ["#0c0f1d", "#232c4e"],
-    latenight: ["#070910", "#141b33"]
+  // 時間帯ごとの色紙の色（index.html の #scene の変数と同じ値）
+  var SHARE_PAL = {
+    morning: { sky1: "#f5c39c", sky2: "#fbe0bf", far: "#d9ab93", near: "#86a872", house: "#f6eddc", roof: "#c46e56", win: "#7d6b5d" },
+    noon: { sky1: "#9dcdec", sky2: "#cde7f4", far: "#a9ccb6", near: "#7ea56b", house: "#f8f2e4", roof: "#c2654f", win: "#6d7c8c" },
+    evening: { sky1: "#3d386a", sky2: "#d47d6c", far: "#875876", near: "#3f395e", house: "#eadac5", roof: "#8c4848", win: "#ffcf73" },
+    night: { sky1: "#0f1530", sky2: "#1b254c", far: "#34427a", near: "#141a36", house: "#cfc6b4", roof: "#5a4a66", win: "#ffd27a" },
+    latenight: { sky1: "#070a18", sky2: "#10172f", far: "#222c54", near: "#0b1124", house: "#a8a190", roof: "#3f3650", win: "#d9a25a" }
   };
+  function star4(ctx, x, y, r) {
+    ctx.beginPath();
+    ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.22, y - r * 0.22); ctx.lineTo(x + r, y); ctx.lineTo(x + r * 0.22, y + r * 0.22);
+    ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.22, y + r * 0.22); ctx.lineTo(x - r, y); ctx.lineTo(x - r * 0.22, y - r * 0.22);
+    ctx.closePath(); ctx.fill();
+  }
+  // 色紙1枚を塗る(縁の影は上向き＝奥の紙に落ちる影)
+  function paperFill(ctx, color, shadowY, build) {
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.3)"; ctx.shadowBlur = 16; ctx.shadowOffsetY = shadowY;
+    ctx.fillStyle = color;
+    ctx.beginPath(); build(ctx); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
   function drawShareCard() {
     var t = now();
     var band = TSUKI.timeBand(new Date(t).getHours());
@@ -391,44 +406,67 @@
     var ctx = cv.getContext("2d");
     var W = cv.width, H = cv.height;
 
-    // 空
-    var g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, SKY_GRADS[band][0]);
-    g.addColorStop(1, SKY_GRADS[band][1]);
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
+    var pal = SHARE_PAL[band];
+    // 空(2枚の色紙)
+    ctx.fillStyle = pal.sky1; ctx.fillRect(0, 0, W, H * 0.46);
+    ctx.fillStyle = pal.sky2; ctx.fillRect(0, H * 0.46, W, H);
+    var seam = ctx.createLinearGradient(0, H * 0.46, 0, H * 0.46 + 14);
+    seam.addColorStop(0, "rgba(0,0,0,0.16)"); seam.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = seam; ctx.fillRect(0, H * 0.46, W, 14);
 
-    // 星
+    // 星(切り抜いた四つ星)
     if (band !== "morning" && band !== "noon") {
-      ctx.fillStyle = "rgba(255,255,255,0.85)";
-      for (var i = 0; i < 60; i++) {
-        var x = (i * 173 + 31) % W;
-        var y = (i * 97 + 13) % (H * 0.55);
-        ctx.fillRect(x, y, 2.4, 2.4);
+      ctx.fillStyle = "#fff1c8";
+      for (var i = 0; i < 46; i++) {
+        // 規則的な式だと星が斜めの列に並ぶので、固定の擬似乱数で散らす(毎回同じ配置)
+        var x = (Math.sin(i * 12.9898 + 1.7) * 43758.5453 % 1 + 1) % 1 * W;
+        var y = (Math.sin(i * 78.233 + 4.1) * 24634.6345 % 1 + 1) % 1 * H * 0.44;
+        star4(ctx, x, y, i % 7 === 0 ? 10 : i % 3 === 0 ? 4 : 6);
       }
     }
 
-    // 月(SVGパスを流用)
+    // 月(紙の円盤・影つき。SVGパスを流用)
     ctx.save();
     ctx.translate(W - 260, 60);
     ctx.scale(2.4, 2.4);
-    ctx.fillStyle = "rgba(70,80,120,0.55)";
+    ctx.shadowColor = "rgba(0,0,0,0.35)"; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
+    ctx.fillStyle = MOON_DARK;
     ctx.beginPath();
     ctx.arc(36, 36, 33, 0, Math.PI * 2);
     ctx.fill();
     if (MOON_PATHS[phase]) {
       ctx.fillStyle = MOON_LIT;
-      ctx.shadowColor = "rgba(232,200,114,0.7)";
-      ctx.shadowBlur = 24;
       ctx.fill(new Path2D(MOON_PATHS[phase]));
     }
     ctx.restore();
 
-    // 丘
-    ctx.fillStyle = band === "morning" || band === "noon" ? "#86ac74" : "#223055";
-    ctx.beginPath();
-    ctx.ellipse(W * 0.5, H + 60, W * 0.75, 200, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // 遠くの丘
+    paperFill(ctx, pal.far, -6, function (c) {
+      c.moveTo(0, H - 205);
+      c.bezierCurveTo(W * 0.14, H - 290, W * 0.3, H - 282, W * 0.42, H - 232);
+      c.bezierCurveTo(W * 0.54, H - 186, W * 0.66, H - 318, W * 0.8, H - 300);
+      c.bezierCurveTo(W * 0.9, H - 288, W * 0.96, H - 262, W, H - 250);
+      c.lineTo(W, H); c.lineTo(0, H);
+    });
+    // 家(窓は夜だけ灯る色)
+    ctx.save();
+    ctx.translate(W * 0.045, H - 330);
+    ctx.scale(2.2, 2.2);
+    ctx.shadowColor = "rgba(0,0,0,0.28)"; ctx.shadowBlur = 6; ctx.shadowOffsetY = 3;
+    ctx.fillStyle = pal.roof; ctx.fillRect(40, 6, 7, 16);
+    ctx.beginPath(); ctx.moveTo(4, 28); ctx.lineTo(30, 6); ctx.lineTo(56, 28); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = pal.house; ctx.fillRect(10, 27, 40, 30);
+    ctx.shadowColor = "transparent";
+    ctx.fillStyle = pal.win; ctx.fillRect(16, 34, 11, 10);
+    ctx.fillStyle = pal.roof; ctx.fillRect(33, 38, 10, 19);
+    ctx.restore();
+    // 手前の丘
+    paperFill(ctx, pal.near, -8, function (c) {
+      c.moveTo(0, H - 128);
+      c.bezierCurveTo(W * 0.18, H - 176, W * 0.38, H - 190, W * 0.54, H - 178);
+      c.bezierCurveTo(W * 0.72, H - 166, W * 0.86, H - 142, W, H - 152);
+      c.lineTo(W, H); c.lineTo(0, H);
+    });
 
     // うさぎ(簡略シルエット)
     ctx.save();
@@ -509,8 +547,8 @@
       nameEl.value = state.name;
       nextBtn.textContent = "この名前にする";
     } else if (st.speaker === "feed") {
-      textEl.innerHTML = '<div class="speaker">はじめてのお世話</div><div>🍡 月見だんごをあげてみましょう。</div>';
-      nextBtn.textContent = "🍡 あげる";
+      textEl.innerHTML = '<div class="speaker">はじめてのお世話</div><div><i class="ic ic-dango"></i>月見だんごをあげてみましょう。</div>';
+      nextBtn.innerHTML = '<i class="ic ic-dango"></i>あげる';
     } else {
       var who = st.speaker === "koyomi" ? "宵乃こよみ" : esc(state.name);
       var cls = st.speaker === "koyomi" ? "koyomi" : "usagi";

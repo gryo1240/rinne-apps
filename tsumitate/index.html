@@ -186,6 +186,9 @@
   }
   details summary::marker { color: var(--green); }
   .table-scroll { max-height: 320px; overflow-y: auto; margin-top: 8px; border-top: 1.5px solid var(--ink); }
+  /* 狭い画面は文節で改行すると説明文が1行ずつ増えるので、その分だけ表の窓を低くして埋め込み枠(1700px)に収める（2026-09-27） */
+  @media (max-width: 490px) { .table-scroll { max-height: 256px; } }
+  #fResult small, #rResult small { white-space: nowrap; }  /* 極端な金額でも「万／円」に割れない */
   table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
   th, td { padding: 6px 4px; text-align: right; border-bottom: 1px solid var(--rule); }
   th { font-family: var(--mincho); font-weight: 800; color: var(--ink); background: var(--paper-deep); position: sticky; top: 0; }
@@ -214,6 +217,7 @@
     @keyframes stamp-still { from { opacity: 0; } to { opacity: .88; } }
   }
 </style>
+<script src="jp-phrase-1.js" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -264,7 +268,7 @@
     </div>
 
     <div class="card result">
-      <span class="seal" aria-hidden="true">試算</span>
+      <span class="seal" aria-hidden="true" data-nophrase>試算</span>
       <div class="label"><span id="fYearsLabel">20</span>年後の資産額（概算）</div>
       <div class="big" id="fResult">—</div>
       <div class="stats">
@@ -335,7 +339,7 @@
     </div>
 
     <div class="card result">
-      <span class="seal" aria-hidden="true">試算</span>
+      <span class="seal" aria-hidden="true" data-nophrase>試算</span>
       <div class="label"><span id="rGoalLabel">2,000万円</span>を<span id="rYearsLabel">20</span>年でつくるには</div>
       <div class="big" id="rResult">—</div>
       <div class="stats">

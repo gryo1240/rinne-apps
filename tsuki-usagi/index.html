@@ -10,14 +10,22 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
+  /* 2026-09-27 刷新:「色紙を重ねた切り絵の絵本」。
+     空・丘・家は平らな色紙を重ねた層で、段差の影だけで奥行きを出す（動かさない・光らせない）。
+     時間帯(scene.className)ごとに色紙の色の変数だけを差し替える。見出しとボタンは同梱の Kiwi Maru（使う文字だけ・SIL OFL） */
+  @font-face { font-family: "Kiwi Maru"; font-weight: 500; font-display: swap; src: url("fonts/kiwi-maru-500.woff") format("woff"); }
   :root {
     --gold: #e8c872;
-    --gold-dim: #b89a55;
     --ink: #f5efdc;
-    --panel: rgba(20, 26, 48, 0.82);
-    --line: rgba(232, 200, 114, 0.35);
+    --paper: #1b2244;      /* 下のパネルの色紙 */
+    --paper-edge: #0d1228; /* 色紙の段差の影 */
+    --cream: #f5ebd3;
+    --cream-edge: #b7a57a;
+    --sub: #aab2cf;
+    --maru: "Kiwi Maru", "Hiragino Maru Gothic ProN", "Yu Gothic UI", sans-serif;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html, body { background: #0c0f1d; }
   body {
     font-family: "Hiragino Maru Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
@@ -27,49 +35,75 @@
   }
   #app { width: 100%; max-width: 560px; padding: 10px 12px 24px; }
 
-  header { text-align: center; padding: 6px 0 10px; }
-  header h1 { font-size: 1.15rem; letter-spacing: 0.15em; color: var(--gold); font-weight: 600; }
-  header .sub { font-size: 0.7rem; color: #9aa3c0; margin-top: 2px; }
+  /* アイコン（絵文字の代わり。文字色で塗る） */
+  .ic { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin-right: 0.3em;
+        background: currentColor; -webkit-mask: center / contain no-repeat; mask: center / contain no-repeat; }
+  .ic-dango { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M2 23L22 1' stroke='black' stroke-width='1.8'/><circle cx='7.3' cy='17.2' r='4.6'/><circle cx='12.4' cy='11.6' r='4.6'/><circle cx='17.5' cy='6' r='4.6'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M2 23L22 1' stroke='black' stroke-width='1.8'/><circle cx='7.3' cy='17.2' r='4.6'/><circle cx='12.4' cy='11.6' r='4.6'/><circle cx='17.5' cy='6' r='4.6'/></svg>"); }
+  .ic-paw { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><ellipse cx='12' cy='16.2' rx='5.2' ry='4.4'/><circle cx='5.6' cy='10' r='2.2'/><circle cx='9.4' cy='6.2' r='2.2'/><circle cx='14.6' cy='6.2' r='2.2'/><circle cx='18.4' cy='10' r='2.2'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><ellipse cx='12' cy='16.2' rx='5.2' ry='4.4'/><circle cx='5.6' cy='10' r='2.2'/><circle cx='9.4' cy='6.2' r='2.2'/><circle cx='14.6' cy='6.2' r='2.2'/><circle cx='18.4' cy='10' r='2.2'/></svg>"); }
+  .ic-talk { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M4 4.5h16a1.8 1.8 0 0 1 1.8 1.8v8.4a1.8 1.8 0 0 1-1.8 1.8h-8.6L6 20.6v-4.1H4a1.8 1.8 0 0 1-1.8-1.8V6.3A1.8 1.8 0 0 1 4 4.5z'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M4 4.5h16a1.8 1.8 0 0 1 1.8 1.8v8.4a1.8 1.8 0 0 1-1.8 1.8h-8.6L6 20.6v-4.1H4a1.8 1.8 0 0 1-1.8-1.8V6.3A1.8 1.8 0 0 1 4 4.5z'/></svg>"); }
+  .ic-sleep { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M14.5 2.5a9.5 9.5 0 1 0 7 15.2A8 8 0 0 1 14.5 2.5z'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M14.5 2.5a9.5 9.5 0 1 0 7 15.2A8 8 0 0 1 14.5 2.5z'/></svg>"); }
+  .ic-blanket { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 7c3-2 6 2 9 0s6 2 9 0v11c-3 2-6-2-9 0s-6-2-9 0z'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 7c3-2 6 2 9 0s6 2 9 0v11c-3 2-6-2-9 0s-6-2-9 0z'/></svg>"); }
+  .ic-sun { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='4.6'/><path d='M12 1.8v3M12 19.2v3M1.8 12h3M19.2 12h3M4.8 4.8l2.1 2.1M17.1 17.1l2.1 2.1M4.8 19.2l2.1-2.1M17.1 6.9l2.1-2.1' stroke='black' stroke-width='2' stroke-linecap='round'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='4.6'/><path d='M12 1.8v3M12 19.2v3M1.8 12h3M19.2 12h3M4.8 4.8l2.1 2.1M17.1 17.1l2.1 2.1M4.8 19.2l2.1-2.1M17.1 6.9l2.1-2.1' stroke='black' stroke-width='2' stroke-linecap='round'/></svg>"); }
+  .ic-moon { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='9'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='9'/></svg>"); }
+  .ic-crescent { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M14.5 2.5a9.5 9.5 0 1 0 7 15.2A8 8 0 0 1 14.5 2.5z'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M14.5 2.5a9.5 9.5 0 1 0 7 15.2A8 8 0 0 1 14.5 2.5z'/></svg>"); }
+  .ic-camera { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill-rule='evenodd' d='M4 7h3l2-2.6h6L17 7h3a1.6 1.6 0 0 1 1.6 1.6v10A1.6 1.6 0 0 1 20 20.2H4a1.6 1.6 0 0 1-1.6-1.6v-10A1.6 1.6 0 0 1 4 7zm8 3.1a4 4 0 1 0 0 8 4 4 0 0 0 0-8z'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill-rule='evenodd' d='M4 7h3l2-2.6h6L17 7h3a1.6 1.6 0 0 1 1.6 1.6v10A1.6 1.6 0 0 1 20 20.2H4a1.6 1.6 0 0 1-1.6-1.6v-10A1.6 1.6 0 0 1 4 7zm8 3.1a4 4 0 1 0 0 8 4 4 0 0 0 0-8z'/></svg>"); }
+  .ic-box { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 7.5l9-4.5 9 4.5v9.8L12 21.8l-9-4.5z'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 7.5l9-4.5 9 4.5v9.8L12 21.8l-9-4.5z'/></svg>"); }
+  .ic-pen { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 21l1.3-5.2L16.6 3.5l3.9 3.9L8.2 19.7z'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 21l1.3-5.2L16.6 3.5l3.9 3.9L8.2 19.7z'/></svg>"); }
 
-  /* ===== シーン ===== */
+  header { text-align: center; padding: 4px 0 8px; }
+  header h1 { font-family: var(--maru); font-size: 1.25rem; letter-spacing: 0.14em; color: #f4e2b0; font-weight: 500; line-height: 1.3; }
+  header h1 .ic { color: var(--gold); width: 0.95em; height: 0.95em; vertical-align: -0.08em; }
+  header .sub { font-size: 0.7rem; color: var(--sub); margin-top: 1px; }
+
+  /* ===== シーン（色紙の層） ===== */
   #scene {
-    position: relative; border-radius: 18px; overflow: hidden;
-    border: 1px solid var(--line);
+    --sky1: #0f1530; --sky2: #1b254c; --far: #34427a; --near: #141a36;
+    --house: #cfc6b4; --roof: #5a4a66; --win: #ffd27a;
+    position: relative; border-radius: 6px; overflow: hidden;
     height: 340px;
-    background: linear-gradient(#0c0f1d, #1a2138);
-    transition: background 1.2s;
+    background: linear-gradient(var(--sky1) 0 46%, var(--sky2) 46% 100%);
     user-select: none; -webkit-user-select: none;
   }
-  /* 時間帯別の空 */
-  #scene.morning { background: linear-gradient(#f6b98a 0%, #f9dcae 45%, #cfe3d9 100%); }
-  #scene.noon    { background: linear-gradient(#8ec8ec 0%, #bfe0f2 60%, #e8f2ea 100%); }
-  #scene.evening { background: linear-gradient(#3b3564 0%, #b25b64 55%, #f0a35e 100%); }
-  #scene.night   { background: linear-gradient(#0c0f1d 0%, #17203c 60%, #232c4e 100%); }
-  #scene.latenight { background: linear-gradient(#070910 0%, #0e1326 60%, #141b33 100%); }
+  #scene::before { /* 空の紙の継ぎ目に落ちる影 */
+    content: ""; position: absolute; left: 0; right: 0; top: 46%; height: 6px; pointer-events: none;
+    background: linear-gradient(rgba(0,0,0,0.16), transparent);
+  }
+  #scene.morning   { --sky1: #f5c39c; --sky2: #fbe0bf; --far: #d9ab93; --near: #86a872; --house: #f6eddc; --roof: #c46e56; --win: #7d6b5d; }
+  #scene.noon      { --sky1: #9dcdec; --sky2: #cde7f4; --far: #a9ccb6; --near: #7ea56b; --house: #f8f2e4; --roof: #c2654f; --win: #6d7c8c; }
+  #scene.evening   { --sky1: #3d386a; --sky2: #d47d6c; --far: #875876; --near: #3f395e; --house: #eadac5; --roof: #8c4848; --win: #ffcf73; }
+  #scene.night     { --sky1: #0f1530; --sky2: #1b254c; --far: #34427a; --near: #141a36; --house: #cfc6b4; --roof: #5a4a66; --win: #ffd27a; }
+  #scene.latenight { --sky1: #070a18; --sky2: #10172f; --far: #222c54; --near: #0b1124; --house: #a8a190; --roof: #3f3650; --win: #d9a25a; }
   #scene.full-moon-glow::after {
     content: ""; position: absolute; inset: 0; pointer-events: none;
-    background: radial-gradient(circle at 78% 22%, rgba(232,200,114,0.28), transparent 55%);
+    background: radial-gradient(circle at calc(100% - 62px) 54px, rgba(245,230,184,0.18), transparent 38%);
   }
   #stars { position: absolute; inset: 0; pointer-events: none; }
-  #stars span { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff; opacity: 0.8; animation: tw 3s infinite; }
-  @keyframes tw { 0%,100% { opacity: 0.85; } 50% { opacity: 0.2; } }
+  /* 切り抜いた四つ星 */
+  #stars span {
+    position: absolute; width: 6px; height: 6px; background: #fff1c8; opacity: 0.85;
+    clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+    animation: tw 5s ease-in-out infinite;
+  }
+  #stars span:nth-child(5n) { width: 9px; height: 9px; }
+  #stars span:nth-child(3n) { width: 4px; height: 4px; opacity: 0.6; }
+  @keyframes tw { 0%,100% { opacity: 0.9; } 50% { opacity: 0.45; } }
   #moonBox { position: absolute; top: 18px; right: 26px; width: 72px; height: 72px; }
-  #moonBox svg { filter: drop-shadow(0 0 12px rgba(232,200,114,0.45)); }
+  #moonBox svg { filter: drop-shadow(0 3px 0 rgba(0,0,0,0.18)) drop-shadow(0 6px 8px rgba(0,0,0,0.28)); }
 
-  /* 丘 */
-  #hill { position: absolute; bottom: -40px; left: -10%; width: 120%; height: 130px; border-radius: 50% 50% 0 0; background: #223055; transition: background 1.2s; }
-  .morning #hill { background: #7ba06f; }
-  .noon #hill { background: #86ac74; }
-  .evening #hill { background: #4a4468; }
-  .night #hill { background: #223055; }
-  .latenight #hill { background: #161d38; }
+  /* 遠くの丘・家・手前の丘（#hill）。紙の段差の影は上向きに落とす */
+  .layer, #hill { position: absolute; left: 0; width: 100%; pointer-events: none; }
+  .layer svg, #hill svg { display: block; width: 100%; height: 100%; }
+  .far { bottom: 64px; height: 120px; color: var(--far); filter: drop-shadow(0 -3px 5px rgba(0,0,0,0.22)); }
+  .house { position: absolute; left: 9%; bottom: 118px; width: 60px; height: 58px; pointer-events: none;
+           filter: drop-shadow(0 3px 3px rgba(0,0,0,0.25)); }
+  #hill { bottom: 0; height: 112px; color: var(--near); filter: drop-shadow(0 -4px 6px rgba(0,0,0,0.3)); }
 
   /* ===== うさぎ ===== */
   #rabbitWrap {
     position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
     cursor: pointer; -webkit-tap-highlight-color: transparent;
   }
-  #rabbitWrap svg { display: block; }
+  #rabbitWrap svg { display: block; filter: drop-shadow(0 2px 0 rgba(0,0,0,0.14)) drop-shadow(0 7px 6px rgba(0,0,0,0.28)); }
   #rabbitWrap .breath { animation: breath 3.2s ease-in-out infinite; transform-origin: 60px 100px; }
   @keyframes breath { 0%,100% { transform: scale(1); } 50% { transform: scale(1.025, 0.985); } }
   #rabbitWrap.adult svg { transform: scale(1.14); transform-origin: bottom center; }
@@ -79,121 +113,144 @@
   .earL, .earR { transform-origin: 60px 46px; }
   .earL { animation: earwig 6s ease-in-out infinite; }
   @keyframes earwig { 0%, 92%, 100% { transform: rotate(0deg); } 95% { transform: rotate(-6deg); } }
-  #zzz { position: absolute; top: -6px; right: -18px; font-size: 15px; color: #cfd6ee; opacity: 0; }
+  #zzz { position: absolute; top: -6px; right: -18px; font-family: var(--maru); font-size: 15px; color: #e6e0cc; opacity: 0; }
   .sleeping #zzz { opacity: 0.9; animation: zfloat 2.6s infinite; }
   @keyframes zfloat { 0% { transform: translateY(4px); opacity: 0.2; } 50% { opacity: 0.9; } 100% { transform: translateY(-8px); opacity: 0; } }
-  #rabbitWrap.sulky svg { transform: scaleX(-1); filter: saturate(0.75); }
+  #rabbitWrap.sulky svg { transform: scaleX(-1); filter: saturate(0.75) drop-shadow(0 2px 0 rgba(0,0,0,0.14)) drop-shadow(0 7px 6px rgba(0,0,0,0.28)); }
   #rabbitWrap.adult.sulky svg { transform: scaleX(-1) scale(1.14); }
 
-  /* 吹き出し */
+  /* 吹き出し（切った紙を貼る） */
   #bubble {
     position: absolute; left: 50%; transform: translateX(-50%); bottom: 168px;
-    max-width: 84%; background: rgba(250, 247, 236, 0.96); color: #3a3428;
-    border-radius: 14px; padding: 9px 13px; font-size: 0.86rem; line-height: 1.55;
-    opacity: 0; transition: opacity 0.25s; pointer-events: none;
-    box-shadow: 0 3px 14px rgba(0,0,0,0.25);
+    max-width: 84%; background: #fffaf0; color: #3a3428;
+    border-radius: 4px; padding: 9px 13px; font-size: 0.86rem; line-height: 1.55;
+    opacity: 0; transition: opacity 0.25s; pointer-events: none; z-index: 2;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.12), 0 6px 12px rgba(0,0,0,0.25);
   }
   #bubble.show { opacity: 1; }
-  #bubble::after { content: ""; position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); border: 7px solid transparent; border-top-color: rgba(250,247,236,0.96); border-bottom: none; }
+  #bubble::after { content: ""; position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); border: 8px solid transparent; border-top-color: #fffaf0; border-bottom: none; }
 
   /* だんごアニメ */
-  #flyDango { position: absolute; font-size: 26px; pointer-events: none; opacity: 0; }
+  #flyDango { position: absolute; width: 30px; height: 30px; pointer-events: none; opacity: 0; filter: drop-shadow(0 3px 2px rgba(0,0,0,0.3)); }
+  #flyDango svg { display: block; width: 100%; height: 100%; }
   #flyDango.fly { animation: flyd 0.9s ease-in forwards; }
-  @keyframes flyd { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(0, 120px) scale(0.6); } }
+  @keyframes flyd { 0% { opacity: 1; transform: translate(0, 0) rotate(-20deg); } 100% { opacity: 0; transform: translate(0, 120px) rotate(10deg) scale(0.6); } }
 
-  /* ===== ステータス ===== */
+  /* ===== 下の色紙パネル ===== */
+  .sheet { background: var(--paper); border-radius: 4px; box-shadow: 0 3px 0 var(--paper-edge); }
   #statusRow { display: flex; gap: 8px; margin-top: 10px; }
-  .stat {
-    flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-    padding: 8px 6px; text-align: center;
-  }
-  .stat .label { font-size: 0.62rem; color: #9aa3c0; }
+  .stat { flex: 1; padding: 8px 6px 7px; text-align: center; }
+  .stat .label { font-family: var(--maru); font-size: 0.64rem; color: var(--sub); letter-spacing: 0.08em; line-height: 1.4; }
   .stat .value { font-size: 0.85rem; margin-top: 3px; color: var(--ink); }
-  .stat .value .hearts { color: #ef8fa3; letter-spacing: 1px; }
-  #nameBtn { background: none; border: none; color: var(--gold); font-size: 0.85rem; cursor: pointer; font-family: inherit; }
-  #nameBtn small { color: #9aa3c0; font-size: 0.6rem; }
+  .stat .value .hearts { color: #f19bb0; letter-spacing: 1px; }
+  #nameBtn { background: none; border: none; color: #f4e2b0; font-size: 0.85rem; cursor: pointer; font-family: inherit; }
+  #nameBtn .ic { width: 0.8em; height: 0.8em; margin: 0 0 0 0.25em; color: var(--sub); }
 
-  /* アポイントメント */
-  #appointments {
-    margin-top: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-    padding: 8px 12px; font-size: 0.78rem; line-height: 1.7; color: #d8dcef;
-  }
+  #appointments { margin-top: 10px; padding: 8px 12px; font-size: 0.78rem; line-height: 1.7; color: #dde1f0; }
   #appointments b { color: var(--gold); font-weight: 600; }
+  #appointments .ic { color: var(--gold); }
 
-  /* ===== アクション ===== */
+  /* ===== アクション（紙のボタン） ===== */
   #actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
   #actions button {
-    flex: 1 1 30%; min-height: 48px; border-radius: 12px; border: 1px solid var(--line);
-    background: linear-gradient(#2a3358, #1d2542); color: var(--ink);
-    font-size: 0.88rem; font-family: inherit; cursor: pointer; padding: 8px 4px;
+    flex: 1 1 30%; min-height: 48px; border-radius: 4px; border: none;
+    background: #262f5a; color: var(--ink); box-shadow: 0 3px 0 var(--paper-edge);
+    font-size: 0.9rem; font-family: var(--maru); cursor: pointer; padding: 8px 4px; line-height: 1.25;
   }
-  #actions button:active { transform: translateY(1px); }
+  #actions button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--paper-edge); }
   #actions button:disabled { opacity: 0.42; }
-  #actions button.primary { background: linear-gradient(#caa955, #a8842f); color: #241d0c; font-weight: 700; border-color: #e8c872; }
+  #actions button.primary { background: var(--cream); color: #2a2440; box-shadow: 0 3px 0 var(--cream-edge); }
+  #actions button.primary:active { box-shadow: 0 1px 0 var(--cream-edge); }
+  #actions button .ic { color: var(--gold); }
+  #actions button.primary .ic { color: #b0444f; }
 
   /* ===== 今夜の月 ===== */
-  #moonPanel {
-    margin-top: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-    padding: 12px 14px; font-size: 0.82rem; line-height: 1.7;
-  }
-  #moonPanel h2 { font-size: 0.8rem; color: var(--gold); letter-spacing: 0.2em; margin-bottom: 4px; }
-  #moonPanel .phaseName { font-size: 1.05rem; color: var(--ink); }
-  #moonPanel .flavor { color: #c4cbe4; font-size: 0.78rem; margin-top: 4px; }
+  #moonPanel { margin-top: 12px; padding: 11px 14px; font-size: 0.82rem; line-height: 1.7; }
+  #moonPanel h2 { font-family: var(--maru); font-weight: 500; font-size: 0.8rem; color: var(--gold); letter-spacing: 0.2em; margin-bottom: 0; line-height: 1.5; }
+  #moonPanel .phaseName { font-family: var(--maru); font-size: 1.1rem; color: var(--ink); line-height: 1.45; }
+  #moonPanel .flavor { color: #c8cee6; font-size: 0.78rem; margin-top: 4px; }
 
   /* ===== ツール行 ===== */
   #tools { display: flex; gap: 8px; margin-top: 10px; }
   #tools button {
-    flex: 1; border-radius: 10px; border: 1px solid rgba(154,163,192,0.4);
-    background: none; color: #9aa3c0; font-size: 0.74rem; font-family: inherit; padding: 9px 4px; cursor: pointer;
+    flex: 1; border-radius: 4px; border: 1px dashed rgba(170,178,207,0.45);
+    background: none; color: var(--sub); font-size: 0.76rem; font-family: var(--maru); padding: 8px 4px; cursor: pointer; line-height: 1.3;
   }
+  @media (max-width: 340px) { #tools button { font-size: 0.7rem; letter-spacing: -0.02em; } #tools button .ic { margin-right: 0.15em; } }
 
   footer { margin-top: 14px; font-size: 0.66rem; color: #7d86a5; line-height: 1.8; text-align: center; }
   footer a { color: #a8b3d6; }
 
-  /* ===== モーダル ===== */
+  button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  /* ===== モーダル（絵本の1ページ） ===== */
   .modal {
     position: fixed; inset: 0; background: rgba(5,7,15,0.72); display: none;
     align-items: center; justify-content: center; z-index: 50; padding: 18px;
   }
   .modal.show { display: flex; }
   .modal .box {
-    width: 100%; max-width: 420px; background: #171e36; border: 1px solid var(--line);
-    border-radius: 16px; padding: 18px; font-size: 0.86rem; line-height: 1.7;
+    width: 100%; max-width: 420px; background: var(--cream); color: #2e2a3a;
+    border-radius: 4px; padding: 18px; font-size: 0.86rem; line-height: 1.75;
+    box-shadow: 0 4px 0 var(--cream-edge), 0 14px 30px rgba(0,0,0,0.45);
   }
-  .modal .box h3 { color: var(--gold); font-size: 0.95rem; margin-bottom: 8px; }
+  .modal .box h3 { font-family: var(--maru); font-weight: 500; color: #3b3563; font-size: 1rem; margin-bottom: 8px; }
   .modal .box textarea, .modal .box input {
-    width: 100%; background: #0d1226; color: var(--ink); border: 1px solid var(--line);
-    border-radius: 8px; padding: 8px; font-size: 0.85rem; font-family: inherit; margin-top: 8px;
+    width: 100%; background: #fffdf6; color: #2e2a3a; border: 1px solid #cdbd95;
+    border-radius: 4px; padding: 8px; font-size: 0.85rem; font-family: inherit; margin-top: 8px;
   }
   .modal .box textarea { height: 84px; resize: none; }
   .modal .btnrow { display: flex; gap: 8px; margin-top: 12px; }
   .modal .btnrow button {
-    flex: 1; min-height: 44px; border-radius: 10px; border: 1px solid var(--line);
-    background: linear-gradient(#2a3358, #1d2542); color: var(--ink); font-family: inherit; font-size: 0.85rem; cursor: pointer;
+    flex: 1; min-height: 44px; border-radius: 4px; border: none;
+    background: #e7dbbd; color: #3b3563; box-shadow: 0 3px 0 var(--cream-edge);
+    font-family: var(--maru); font-size: 0.88rem; cursor: pointer;
   }
-  .modal .btnrow button.primary { background: linear-gradient(#caa955, #a8842f); color: #241d0c; font-weight: 700; }
-  .modal .note { color: #9aa3c0; font-size: 0.72rem; margin-top: 8px; }
+  .modal .btnrow button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--cream-edge); }
+  .modal .btnrow button.primary { background: #2c3563; color: var(--cream); box-shadow: 0 3px 0 #141a38; }
+  .modal .btnrow button .ic { color: #b0444f; }
+  .modal .btnrow button.primary .ic { color: var(--gold); }
+  .modal .note { color: #6f6a7e; font-size: 0.72rem; margin-top: 8px; }
 
   /* チュートリアル */
-  #tutorial .speaker { font-size: 0.72rem; color: var(--gold); margin-bottom: 4px; }
-  #tutorial .koyomi { border-left: 3px solid #b48ae0; padding-left: 10px; }
-  #tutorial .usagi { border-left: 3px solid var(--gold); padding-left: 10px; }
+  #tutorial .speaker { font-size: 0.74rem; color: #8a5a2e; margin-bottom: 4px; letter-spacing: 0.08em; }
+  #tutorial .koyomi { border-left: 3px solid #8e6cc0; padding-left: 10px; }
+  #tutorial .usagi { border-left: 3px solid #d59a3a; padding-left: 10px; }
+  #tutorial .ic { color: #b0444f; }
 
   /* シェアカード */
-  #shareCanvas { width: 100%; border-radius: 10px; border: 1px solid var(--line); margin-top: 8px; }
+  #shareCanvas { width: 100%; border-radius: 4px; margin-top: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
+
+  /* 動きを減らす設定: 止めずに弱める（星はゆっくり・浅く、耳は小さく）。呼吸・跳ねる・だんごは短い動きなので残す */
+  @keyframes tw-soft { 0%,100% { opacity: 0.9; } 50% { opacity: 0.75; } }
+  @keyframes earwig-soft { 0%, 92%, 100% { transform: rotate(0deg); } 95% { transform: rotate(-2deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    #stars span { animation: tw-soft 10s ease-in-out infinite; }
+    .earL { animation: earwig-soft 9s ease-in-out infinite; }
+  }
 </style>
+<script src="jp-phrase-1.js" defer></script>
 </head>
 <body>
 <div id="app">
   <header>
-    <h1>🌙 月うさぎのすみか</h1>
+    <h1><i class="ic ic-crescent"></i>月うさぎのすみか</h1>
     <div class="sub">あなたの世界の時間と、月の満ち欠けとつながっています</div>
   </header>
 
   <div id="scene" class="night">
     <div id="stars"></div>
     <div id="moonBox"></div>
-    <div id="hill"></div>
+    <div class="layer far" aria-hidden="true"><svg viewBox="0 0 400 120" preserveAspectRatio="none"><path fill="currentColor" d="M0 72 C55 34 118 38 168 60 C215 80 262 22 322 30 C360 35 382 48 400 56 V120 H0 Z"/></svg></div>
+    <svg class="house" viewBox="0 0 60 58" aria-hidden="true">
+      <rect x="40" y="6" width="7" height="16" fill="var(--roof)"/>
+      <path d="M4 28 L30 6 L56 28 Z" fill="var(--roof)"/>
+      <rect x="10" y="27" width="40" height="30" fill="var(--house)"/>
+      <rect x="16" y="34" width="11" height="10" rx="1" fill="var(--win)"/>
+      <path d="M21.5 34 v10 M16 39 h11" stroke="var(--house)" stroke-width="1.4"/>
+      <rect x="33" y="38" width="10" height="19" rx="5" fill="var(--roof)"/>
+    </svg>
+    <div id="hill" aria-hidden="true"><svg viewBox="0 0 400 112" preserveAspectRatio="none"><path fill="currentColor" d="M0 44 C70 12 150 2 215 10 C285 18 345 34 400 26 V112 H0 Z"/></svg></div>
     <div id="bubble"></div>
     <div id="rabbitWrap" aria-label="うさぎをなでる" role="button">
       <div id="zzz">Z z…</div>
@@ -224,27 +281,27 @@
         <path id="mouth" d="M57,72 q3,2.5 6,0" stroke="#c98b96" stroke-width="1.6" fill="none" stroke-linecap="round"/>
       </svg>
     </div>
-    <div id="flyDango">🍡</div>
+    <div id="flyDango"><svg viewBox="0 0 30 30" aria-hidden="true"><path d="M4 28 L26 2" stroke="#9a7a4a" stroke-width="1.6" stroke-linecap="round"/><circle cx="9.2" cy="21.8" r="4.8" fill="#fffaf0"/><circle cx="15" cy="15" r="4.8" fill="#fbe2e6"/><circle cx="20.8" cy="8.2" r="4.8" fill="#fffaf0"/></svg></div>
   </div>
 
   <div id="statusRow">
-    <div class="stat"><div class="label">なまえ</div><div class="value"><button id="nameBtn"><span id="nameText">つき</span> <small>✎</small></button></div></div>
-    <div class="stat"><div class="label">なつき度</div><div class="value"><span class="hearts" id="hearts">♥</span><br><span id="affLabel" style="font-size:0.68rem"></span></div></div>
-    <div class="stat"><div class="label">おつきまいり</div><div class="value"><span id="streak">1</span>日目</div></div>
+    <div class="stat sheet"><div class="label">なまえ</div><div class="value"><button id="nameBtn"><span id="nameText">つき</span><i class="ic ic-pen"></i></button></div></div>
+    <div class="stat sheet"><div class="label">なつき度</div><div class="value"><span class="hearts" id="hearts">♥</span><br><span id="affLabel" style="font-size:0.68rem"></span></div></div>
+    <div class="stat sheet"><div class="label">おつきまいり</div><div class="value"><span id="streak">1</span>日目</div></div>
   </div>
 
-  <div id="appointments"></div>
+  <div id="appointments" class="sheet"></div>
 
   <div id="actions">
-    <button id="btnFeed" class="primary">🍡 だんご</button>
-    <button id="btnPet">✋ なでる</button>
-    <button id="btnTalk">💬 はなす</button>
-    <button id="btnNap" style="display:none">😴 寝顔をみる</button>
-    <button id="btnBlanket" style="display:none">🛏 毛布をかけなおす</button>
+    <button id="btnFeed" class="primary"><i class="ic ic-dango"></i>だんご</button>
+    <button id="btnPet"><i class="ic ic-paw"></i>なでる</button>
+    <button id="btnTalk"><i class="ic ic-talk"></i>はなす</button>
+    <button id="btnNap" style="display:none"><i class="ic ic-sleep"></i>寝顔をみる</button>
+    <button id="btnBlanket" style="display:none"><i class="ic ic-blanket"></i>毛布をかけなおす</button>
     <button id="btnGreet" style="display:none"></button>
   </div>
 
-  <div id="moonPanel">
+  <div id="moonPanel" class="sheet">
     <h2>今夜の月</h2>
     <div class="phaseName" id="phaseName"></div>
     <div id="phaseInfo"></div>
@@ -252,8 +309,8 @@
   </div>
 
   <div id="tools">
-    <button id="btnShare">📷 きょうの1枚をつくる</button>
-    <button id="btnBackup">📦 ひっこしコード</button>
+    <button id="btnShare"><i class="ic ic-camera"></i>きょうの1枚をつくる</button>
+    <button id="btnBackup"><i class="ic ic-box"></i>ひっこしコード</button>
   </div>
 
   <footer>

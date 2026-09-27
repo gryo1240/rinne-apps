@@ -6,140 +6,226 @@
 <title>エアコン電気代シミュレーター｜つけっぱなしだと1ヶ月いくら？</title>
 <meta name="description" content="部屋の広さと使い方を選ぶだけで、エアコンの電気代を1時間・1日・1ヶ月で概算。つけっぱなしとの比較や設定温度の節約目安もわかる無料ツールです。">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2b7fbf">
+<meta name="theme-color" content="#e8e6df">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
+  /* 2026-09-27 刷新:「エアコンのリモコン」。上の液晶に結果、その下がボタン。
+     色は 樹脂の白・液晶の灰緑・運転モードの色(冷房=青/暖房=橙)の3系統だけ。
+     液晶の数字は同梱の DSEG7 Classic（数字だけの7セグ書体・SIL OFL）。カンマは収録が無いので通常書体で小さく */
+  @font-face { font-family: "DSEG7"; font-weight: 700; font-display: swap; src: url("fonts/dseg7-classic-bold.woff") format("woff"); }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
+  html { -webkit-text-size-adjust: 100%; background: #e8e6df; }
   body {
     font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
-    background: #f3f6f8;
-    color: #253239;
+    background: #e8e6df;
+    color: #2a2f2c;
     line-height: 1.6;
-    --accent: #2b7fbf;
-    --accent-dark: #1e639a;
-    --accent-bg: #e8f1f8;
+    --accent: #2574b5;
+    --accent-dark: #1b5b8f;
+    --accent-bg: #e3eef7;
+    --lcd: #c9d3bd;
+    --lcd-ink: #1d261f;
+    --plastic: #f8f7f3;
+    --plastic-edge: #d3d0c6;
   }
   body.heat {
-    --accent: #d9663c;
-    --accent-dark: #b34e2a;
-    --accent-bg: #faeee8;
+    --accent: #d2622f;
+    --accent-dark: #a94a20;
+    --accent-bg: #f9ebe3;
   }
-  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px 28px; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 14px 14px 26px; }
 
-  .head { text-align: center; padding: 10px 0 14px; }
-  .head h1 { font-size: 23px; letter-spacing: 0.03em; color: var(--accent-dark); }
-  .head p { font-size: 14px; color: #5d6d75; margin-top: 2px; }
+  .head { text-align: center; padding: 6px 0 10px; }
+  .head h1 { font-size: 21px; letter-spacing: 0.04em; color: #2a2f2c; line-height: 1.35; }
+  .head p { font-size: 13.5px; color: #6a6f68; margin-top: 2px; }
+  /* 見出しの運転モード印（絵文字の代わり） */
+  .mode-ic { display: inline-block; width: 0.95em; height: 0.95em; margin-right: 0.3em; vertical-align: -0.1em; background: var(--accent);
+             -webkit-mask: center / contain no-repeat; mask: center / contain no-repeat;
+             -webkit-mask-image: var(--ic); mask-image: var(--ic); }
+  .mode-ic, .mode-ic.cool { --ic: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><g stroke='black' stroke-width='2.2' stroke-linecap='round' fill='none'><path d='M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5'/></g></svg>"); }
+  .mode-ic.heat { --ic: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 1.5c1 4 6 6.5 6 12.2A6 6 0 0 1 6 13.7c0-2.6 1.3-4.3 2.7-5.6.2 2 1.2 3.2 2.4 3.6C10.6 8 11.2 4.5 12 1.5z'/></svg>"); }
 
-  .tabs { display: flex; gap: 8px; margin: 10px 0 14px; }
+  /* ===== リモコン本体 ===== */
+  .remote {
+    background: linear-gradient(160deg, #fdfdfb 0%, var(--plastic) 45%, #ecebe5 100%);
+    border: 1px solid var(--plastic-edge); border-radius: 34px 34px 26px 26px;
+    padding: 16px 14px 14px; margin-bottom: 14px;
+    box-shadow: inset 0 2px 0 #fff, inset 0 -3px 0 rgba(0,0,0,0.04), 0 16px 28px rgba(70,64,48,0.16), 0 2px 4px rgba(70,64,48,0.1);
+  }
+  .remote-foot { text-align: center; font-size: 10px; letter-spacing: 0.4em; text-indent: 0.4em; color: #b9b6ac; margin-top: 8px; font-weight: 700; }
+
+  /* 液晶（結果） */
+  .lcd {
+    position: relative; background: linear-gradient(180deg, #cdd7c1, var(--lcd) 60%, #c2ccb5);
+    color: var(--lcd-ink); border-radius: 8px; padding: 10px 12px 11px; margin: 2px 2px 14px;
+    box-shadow: 0 0 0 5px #2e322f, 0 0 0 6px #4a4f4b, inset 0 2px 6px rgba(0,0,0,0.22);
+  }
+  .lcd::after { /* 液晶の表面のつや */
+    content: ""; position: absolute; inset: 0; border-radius: 8px; pointer-events: none;
+    background: linear-gradient(115deg, rgba(255,255,255,0.22) 0 28%, transparent 28.5%);
+  }
+  .lcd-top { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; }
+  .lcd-mode { background: var(--lcd-ink); color: var(--lcd); padding: 0 7px; border-radius: 2px; letter-spacing: 0.1em; }
+  .lcd-t { margin-left: auto; white-space: nowrap; }
+  .lcd-t + .lcd-t { margin-left: 0; }
+  .seg { font-family: "DSEG7", "Consolas", monospace; font-weight: 700; font-style: normal; letter-spacing: 0.02em; }
+  .lcd-t .seg { font-size: 14px; margin: 0 1px 0 4px; }
+  .result { text-align: left; }
+  .result .label { font-size: 12px; font-weight: 700; color: var(--lcd-ink); margin-top: 6px; opacity: 0.85; }
+  .bigwrap { position: relative; }
+  .result .big, .result .ghost {
+    font-family: "DSEG7", "Consolas", monospace; font-weight: 700; font-size: 40px; line-height: 1.15;
+    letter-spacing: 0.02em; color: var(--lcd-ink); text-align: right; padding: 4px 2px 2px;
+  }
+  .result .ghost { position: absolute; inset: 0; color: rgba(29,38,31,0.07); pointer-events: none; }
+  .result .ghost .yk { visibility: hidden; }
+  .result .big small, .result .ghost small { font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; font-size: 18px; margin-left: 4px; }
+  .result .big .c, .result .ghost .c { font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; font-size: 0.6em; }
+  .result .big .yk, .result .ghost .yk { font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; font-size: 16px; margin-right: 6px; vertical-align: 0.5em; }
+  .stats { display: flex; gap: 0; margin-top: 6px; border-top: 1px solid rgba(29,38,31,0.25); padding-top: 6px; }
+  .stat { flex: 1; padding: 0 4px; text-align: center; }
+  .stat + .stat { border-left: 1px solid rgba(29,38,31,0.18); }
+  .stat .k { font-size: 11px; color: var(--lcd-ink); opacity: 0.8; line-height: 1.4; }
+  .stat .v { font-size: 15px; font-weight: 700; color: var(--lcd-ink); }
+
+  /* 運転モードのボタン（ランプ付き） */
+  .tabs { display: flex; gap: 10px; margin: 0 0 12px; }
   .tab {
-    flex: 1; padding: 11px 6px; font-size: 16px; font-weight: 700;
-    color: #4c5c64; background: #e3eaee; border: 1px solid #d2dce2;
-    border-radius: 10px; cursor: pointer; text-align: center;
-    transition: background .15s, color .15s;
+    flex: 1; padding: 10px 6px; font-size: 16px; font-weight: 700; font-family: inherit;
+    color: #4d524d; background: linear-gradient(#ffffff, #eeede7); border: 1px solid var(--plastic-edge);
+    border-radius: 14px; cursor: pointer; text-align: center; box-shadow: 0 3px 0 #cfccc2;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
   }
-  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tab:active { transform: translateY(2px); box-shadow: 0 1px 0 #cfccc2; }
+  .tab .led { width: 9px; height: 9px; border-radius: 50%; background: #cfccc4; box-shadow: inset 0 1px 1px rgba(0,0,0,0.2); }
+  .tab.active { color: var(--accent-dark); }
+  .tab.active .led { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg), 0 0 6px var(--accent); }
+  .tab:focus-visible, .chip:focus-within, .chips button.chip:focus-visible { outline: 2px solid var(--accent-dark); outline-offset: 2px; }
 
+  .card.inputs { background: none; border: none; box-shadow: none; padding: 0 2px; margin: 0; }
   .card {
-    background: #fff; border: 1px solid #dfe7ec; border-radius: 14px;
-    padding: 16px 16px 14px; margin-bottom: 14px;
-    box-shadow: 0 1px 4px rgba(30, 50, 60, .05);
+    background: #fbfaf7; border: 1px solid #dcd9d0; border-radius: 12px;
+    padding: 14px 16px 12px; margin-bottom: 14px;
   }
-  .card h2 { font-size: 15.5px; color: var(--accent-dark); margin-bottom: 10px; }
+  .card h2 { font-size: 15px; color: #2a2f2c; margin-bottom: 10px; }
+  .card.inputs h2 { font-size: 13px; color: #7a7d75; letter-spacing: 0.08em; text-align: center; margin-bottom: 8px; }
 
-  .field { margin-bottom: 14px; }
+  .field { margin-bottom: 12px; }
   .field:last-child { margin-bottom: 2px; }
-  .field .row { display: flex; align-items: baseline; justify-content: space-between; }
-  .field label, .field .lbl { font-size: 15px; font-weight: 700; color: #34434b; }
-  .field .val { display: flex; align-items: baseline; gap: 4px; }
+  .field .row { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+  .field label, .field .lbl { font-size: 14.5px; font-weight: 700; color: #3a3f3a; }
+  .field .val { display: flex; align-items: baseline; gap: 4px; flex: none; }
+  /* 数値欄は小さな液晶の窓 */
   .field input[type="number"] {
-    width: 96px; padding: 5px 8px; font-size: 17px; font-weight: 700;
-    color: var(--accent-dark); text-align: right;
-    border: 1px solid #c6d3da; border-radius: 8px; background: #fbfdfe;
+    width: 76px; padding: 4px 8px; font-size: 16px; font-weight: 700; font-family: "DSEG7", "Consolas", monospace;
+    color: var(--lcd-ink); text-align: right; background: var(--lcd);
+    border: none; border-radius: 5px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
   }
-  .field .unit { font-size: 14px; color: #5d6d75; }
-  .field input[type="range"] { width: 100%; margin-top: 8px; accent-color: var(--accent); height: 22px; }
+  .field input[type="number"]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .field .unit { font-size: 13px; color: #6a6f68; }
+  /* スライダー: 溝とつまみ */
+  .field input[type="range"] {
+    -webkit-appearance: none; appearance: none; width: 100%; margin-top: 6px; height: 24px; background: transparent; cursor: pointer;
+  }
+  .field input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: #dedbd2; box-shadow: inset 0 1px 2px rgba(0,0,0,0.2); }
+  .field input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: #dedbd2; }
+  .field input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8px; border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #ffffff, #e9e7e0 70%); border: 1px solid #c3c0b6;
+    box-shadow: 0 2px 3px rgba(0,0,0,0.25), inset 0 0 0 5px transparent, 0 0 0 3px var(--accent-bg);
+  }
+  .field input[type="range"]::-moz-range-thumb {
+    width: 20px; height: 20px; border-radius: 50%; background: #f4f3ee; border: 1px solid #c3c0b6; box-shadow: 0 2px 3px rgba(0,0,0,0.25);
+  }
+  .field input[type="range"]:focus-visible { outline: 2px dotted var(--accent); outline-offset: 2px; }
 
+  /* ゴムボタン */
   .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
   .chip {
-    flex: 1; min-width: 88px; text-align: center; padding: 9px 4px;
-    background: #f1f5f7; border: 1px solid #dde5ea; border-radius: 10px;
-    font-size: 15px; font-weight: 700; color: #34434b; cursor: pointer;
+    flex: 1; min-width: 88px; text-align: center; padding: 8px 4px;
+    background: linear-gradient(#f2f1ec, #e4e2da); border: 1px solid #d0cdc3; border-radius: 12px;
+    box-shadow: 0 2px 0 #c8c5ba;
+    font-size: 15px; font-weight: 700; color: #3a3f3a; cursor: pointer;
   }
+  .chip:active { transform: translateY(1px); box-shadow: 0 1px 0 #c8c5ba; }
   .chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
   .chip { position: relative; }
-  .chip:focus-within { outline: 2px solid var(--accent-dark); outline-offset: 2px; }
-  .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chip.on { background: var(--accent); border-color: var(--accent-dark); color: #fff; box-shadow: 0 2px 0 var(--accent-dark); }
   .chips.dimmed .chip { opacity: .4; }
-  .chip .sub { display: block; font-size: 11.5px; font-weight: 400; opacity: .8; }
+  .chip .sub { display: block; font-size: 11px; font-weight: 400; opacity: .85; }
 
   details.custom { margin-top: 10px; }
-  details.custom summary { cursor: pointer; font-size: 14px; font-weight: 700; color: var(--accent-dark); list-style-position: inside; }
+  details.custom summary { cursor: pointer; font-size: 13.5px; font-weight: 700; color: var(--accent-dark); list-style-position: inside; }
   details.custom .inner { display: flex; align-items: baseline; gap: 6px; margin-top: 8px; }
   details.custom input[type="number"] { width: 110px; }
-  details.custom .hint { font-size: 12.5px; color: #7b8a91; margin-top: 6px; }
-  .hint-soft { font-size: 12.5px; color: #7b8a91; margin-top: 7px; line-height: 1.6; }
+  details.custom .hint { font-size: 12.5px; color: #75796f; margin-top: 6px; }
+  .hint-soft { font-size: 12.5px; color: #75796f; margin-top: 6px; line-height: 1.6; }
   .chips button.chip { font-family: inherit; line-height: 1.5; }
+  /* 最狭幅で「ふつうの冬」が「ふつうの／冬」に割れないように（2026-09-27 オーナー指摘: 中途半端な改行をしない） */
+  @media (max-width: 340px) { .chip { font-size: 14px; padding-left: 1px; padding-right: 1px; } }
 
-  .result { text-align: center; padding-top: 4px; }
-  .result .label { font-size: 14px; color: #5d6d75; }
-  .result .big { font-size: 38px; font-weight: 800; color: var(--accent-dark); letter-spacing: 0.02em; line-height: 1.3; }
-  .result .big small { font-size: 19px; }
-  .stats { display: flex; gap: 8px; margin-top: 12px; }
-  .stat { flex: 1; background: var(--accent-bg); border-radius: 10px; padding: 9px 4px; text-align: center; }
-  .stat .k { font-size: 12.5px; color: #5d6d75; }
-  .stat .v { font-size: 16.5px; font-weight: 700; color: #253239; }
-
-  /* 比較バー */
+  /* 比較バー（液晶の区切りバー） */
   .bars { margin-top: 4px; }
   .bar-row { margin-bottom: 12px; }
-  .bar-row .bar-label { display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; color: #34434b; margin-bottom: 4px; }
+  .bar-row .bar-label { display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; color: #3a3f3a; margin-bottom: 4px; }
   .bar-row .bar-label .yen { color: var(--accent-dark); }
-  .bar-track { background: #eef2f5; border-radius: 8px; height: 26px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 8px; background: var(--accent); transition: width .25s; min-width: 2px; }
-  .bar-fill.dim { background: #a8b8c2; }
+  .bar-track { background: var(--lcd); border-radius: 4px; height: 24px; overflow: hidden; padding: 4px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.25); }
+  .bar-fill { height: 100%; background: repeating-linear-gradient(90deg, var(--lcd-ink) 0 7px, transparent 7px 10px); transition: width .25s; min-width: 7px; }
+  .bar-fill.dim { background: repeating-linear-gradient(90deg, rgba(29,38,31,0.38) 0 7px, transparent 7px 10px); }
   .note {
-    margin-top: 10px; font-size: 13.5px; color: #4c5c64;
-    background: #f6f8f9; border-left: 4px solid #a8b8c2; border-radius: 6px;
-    padding: 8px 10px;
+    margin-top: 10px; font-size: 13.5px; color: #4d524d;
+    border-top: 1px dashed #cfccc2; padding: 8px 2px 0;
   }
 
-  .tips { font-size: 14px; color: #34434b; }
+  .tips { font-size: 14px; color: #3a3f3a; }
   .tips li { margin: 0 0 8px 20px; }
+  .tips li::marker { color: var(--accent); }
   .tips b { color: var(--accent-dark); }
 
   .disclaimer {
-    font-size: 13.5px; color: #66757c; background: #edf1f3;
-    border-radius: 10px; padding: 12px 14px; margin-top: 2px; line-height: 1.7;
+    font-size: 13px; color: #6a6f68;
+    border-top: 1px solid #d3d0c6; padding: 12px 2px 0; margin-top: 2px; line-height: 1.7;
   }
-  .disclaimer strong { color: #4c5c64; }
+  .disclaimer strong { color: #4d524d; }
   .disclaimer ul { margin: 6px 0 0 18px; }
   .disclaimer li { margin-bottom: 4px; }
 
   @media (max-width: 430px) {
-    .head h1 { font-size: 19px; }
-    .result .big { font-size: 31px; }
-    .stats { flex-wrap: wrap; }
-    .stat { min-width: 45%; }
+    .head h1 { font-size: 18px; }
+    .result .big, .result .ghost { font-size: 32px; }
     .chip { min-width: 29%; }
+    .remote { padding: 14px 10px 12px; border-radius: 28px 28px 22px 22px; }
+    .lcd-t .seg { font-size: 12px; }
   }
 </style>
+<script src="jp-phrase-1.js" defer></script>
 </head>
 <body>
 <div class="wrap">
 
   <header class="head">
-    <h1><span id="headIcon">❄️</span> エアコン電気代シミュレーター</h1>
+    <h1><span id="headIcon" class="mode-ic cool"></span>エアコン電気代シミュレーター</h1>
     <p>つけっぱなしだと1ヶ月いくら？を今すぐ概算</p>
   </header>
 
-  <div class="tabs" role="tablist">
-    <button class="tab active" id="tabCool" type="button" role="tab" aria-selected="true">❄️ 冷房</button>
-    <button class="tab" id="tabHeat" type="button" role="tab" aria-selected="false">🔥 暖房</button>
-  </div>
+  <div class="remote">
+    <div class="lcd result">
+      <div class="lcd-top"><span class="lcd-mode" id="lcdMode">冷房</span><span class="lcd-t">設定<i class="seg" id="lcdSet">27.0</i>℃</span><span class="lcd-t">外<i class="seg" id="lcdOut">33.0</i>℃</span></div>
+      <div class="label">1ヶ月の電気代（概算）</div>
+      <div class="bigwrap"><div class="ghost" id="monthlyGhost" aria-hidden="true"></div><div class="big" id="monthly">—</div></div>
+      <div class="stats">
+        <div class="stat"><div class="k">1時間あたり</div><div class="v" id="perHour">—</div></div>
+        <div class="stat"><div class="k">1日あたり</div><div class="v" id="perDay">—</div></div>
+        <div class="stat"><div class="k" id="usedWLabel">平均消費電力（概算）</div><div class="v" id="usedW">—</div></div>
+      </div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab active" id="tabCool" type="button" role="tab" aria-selected="true"><span class="led"></span>冷房</button>
+      <button class="tab" id="tabHeat" type="button" role="tab" aria-selected="false"><span class="led"></span>暖房</button>
+    </div>
 
-  <div class="card">
+  <div class="card inputs">
     <h2>お部屋と使い方を選んでください</h2>
     <div class="field">
       <span class="lbl">部屋の広さ（エアコンの畳数）</span>
@@ -162,10 +248,10 @@
     </div>
     <div class="field">
       <div class="row">
-        <label for="outT">外の気温（エアコンを使う時間帯）</label>
+        <label for="outT">外気温（エアコンを使う時間帯）</label>
         <span class="val"><input type="number" id="outT" min="28" max="40" step="0.5" value="33"><span class="unit">℃</span></span>
       </div>
-      <input type="range" id="outTR" min="28" max="40" step="0.5" value="33" aria-label="外の気温">
+      <input type="range" id="outTR" min="28" max="40" step="0.5" value="33" aria-label="外気温">
       <div class="chips" id="outPresets"></div>
       <div class="hint-soft">「エアコンを使う時間帯の、だいたいの気温」でOK。1日の中の暑さの変化はならして大丈夫です（多少ズレても、月額への影響はふつう数百円程度です）。</div>
     </div>
@@ -199,15 +285,7 @@
       <input type="range" id="priceR" min="20" max="50" step="0.5" value="31" aria-label="電力単価">
     </div>
   </div>
-
-  <div class="card result">
-    <div class="label">1ヶ月の電気代（概算）</div>
-    <div class="big" id="monthly">—</div>
-    <div class="stats">
-      <div class="stat"><div class="k">1時間あたり</div><div class="v" id="perHour">—</div></div>
-      <div class="stat"><div class="k">1日あたり</div><div class="v" id="perDay">—</div></div>
-      <div class="stat"><div class="k" id="usedWLabel">平均消費電力（概算）</div><div class="v" id="usedW">—</div></div>
-    </div>
+    <div class="remote-foot">RINNE</div>
   </div>
 
   <div class="card">
@@ -319,7 +397,12 @@ function update() {
   var q = readInput();
   var r = calcCost(q);
 
-  $("monthly").innerHTML = "約 " + Math.round(r.perMonth).toLocaleString() + "<small>円</small>";
+  // 液晶: 数字は7セグ書体、「約」「円」とカンマは通常書体。消えている部分の「8」を薄く重ねる(本物の液晶の見え方)
+  var monthlyHtml = '<span class="yk">約 </span>' + Math.round(r.perMonth).toLocaleString().replace(/,/g, '<span class="c">,</span>') + "<small>円</small>";
+  $("monthly").innerHTML = monthlyHtml;
+  $("monthlyGhost").innerHTML = monthlyHtml.replace(/\d(?![^<]*>)/g, "8");
+  $("lcdSet").textContent = q.setTemp.toFixed(1);
+  $("lcdOut").textContent = q.outdoorTemp.toFixed(1);
   $("perHour").textContent = "約" + (Math.round(r.perHour * 10) / 10).toLocaleString() + "円";
   $("perDay").textContent = "約" + fmtYen(r.perDay);
   $("usedW").textContent = "約" + Math.round(r.ratedW * r.loadFactor).toLocaleString() + "W";
@@ -456,7 +539,8 @@ function setMode(m) {
   $("tabCool").setAttribute("aria-selected", m === "cool" ? "true" : "false");
   $("tabHeat").classList.toggle("active", m === "heat");
   $("tabHeat").setAttribute("aria-selected", m === "heat" ? "true" : "false");
-  $("headIcon").textContent = m === "cool" ? "❄️" : "🔥";
+  $("headIcon").className = "mode-ic " + m;
+  $("lcdMode").textContent = m === "cool" ? "冷房" : "暖房";
   // 温度スライダーの範囲と値をモードに合わせて切り替え（モードごとの直近値を復元）
   [["outT", "outTR", "out"], ["setT", "setTR", "set"]].forEach(function (a) {
     var num = $(a[0]), rng = $(a[1]), range = CONFIG.TEMP_RANGE[m][a[2]];

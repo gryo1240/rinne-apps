@@ -10,142 +10,183 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
+  /* 2026-09-27 刷新:「昔の連続帳票の給与明細」。薄緑の横縞の用紙・送り穴・ミシン目・罫線。
+     色は 用紙(白と薄緑)・インク(墨緑)・紫のインク(注意と崖) の3系統。朱色と明朝体は使わない（つみたてとの区別）。
+     見出しと数字は同梱の BIZ UDゴシック（等幅・使う文字だけ・SIL OFL） */
+  @font-face { font-family: "BIZ UDGothic"; font-weight: 700; font-display: swap; src: url("fonts/biz-udgothic-700.woff") format("woff"); }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; background: #dfe3dc; }
   body {
     font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
-    background: #f4f7f5;
-    color: #22332c;
+    color: #27352f;
     line-height: 1.6;
+    --ink: #27352f;
+    --line: #74827a;
+    --soft: #5c6a62;
+    --bar: #e3eedf;     /* 用紙の薄緑の縞 */
+    --paper: #fbfcf8;
+    --shade: #e8ece5;   /* 見出し欄の網かけ */
+    --violet: #5a4796;  /* 紫のインク */
+    --mono: "BIZ UDGothic", "Osaka-Mono", "MS Gothic", monospace;
+    background: #dfe3dc;
   }
-  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px 28px; }
+  .wrap {
+    max-width: 720px; margin: 0 auto; padding: 12px 14px 26px; position: relative;
+    background: repeating-linear-gradient(180deg, var(--bar) 0 26px, var(--paper) 26px 52px);
+  }
+  /* 送り穴とミシン目（幅に余裕があるときだけ） */
+  @media (min-width: 520px) {
+    .wrap { padding-left: 40px; padding-right: 40px; }
+    .wrap::before, .wrap::after {
+      content: ""; position: absolute; top: 0; bottom: 0; width: 26px; pointer-events: none;
+      background: radial-gradient(circle, #dfe3dc 0 5px, #b9c1b6 5.5px, transparent 6.5px) center top / 26px 22px repeat-y;
+    }
+    .wrap::before { left: 0; border-right: 1.5px dashed #b9c1b6; }
+    .wrap::after { right: 0; border-left: 1.5px dashed #b9c1b6; }
+  }
+  .num, .mono { font-family: var(--mono); font-weight: 700; font-variant-numeric: tabular-nums; }
 
-  .head { text-align: center; padding: 10px 0 14px; }
-  .head h1 { font-size: 23px; letter-spacing: 0.04em; color: #14523a; }
-  .head p { font-size: 14px; color: #5c6f66; margin-top: 2px; }
+  /* 見出しは縞を敷かない無地の用紙（2026-09-27 オーナー指摘「上は横縞だと見辛い」）。上の余白ごと塗るので高さは変わらない */
+  .head { text-align: center; padding: 14px 14px 10px; margin: -12px -14px 10px; background: var(--paper); border-bottom: 1.5px dashed var(--line); }
+  @media (min-width: 520px) { .head { margin-left: -40px; margin-right: -40px; padding-left: 40px; padding-right: 40px; } }
+  .slip-top { display: flex; justify-content: space-between; font-family: var(--mono); font-weight: 700; font-size: 11px; color: var(--soft); letter-spacing: 0.08em; }
+  .head h1 { font-family: var(--mono); font-weight: 700; font-size: 22px; letter-spacing: 0.06em; color: var(--ink); line-height: 1.35; margin-top: 2px; }
+  .head p { font-size: 13px; color: var(--soft); margin-top: 1px; }
 
-  .tabs { display: flex; gap: 8px; margin: 10px 0 14px; }
+  /* 制度区分（枠の中から1つ選ぶ） */
+  .tabs { display: flex; gap: 0; margin: 0 0 12px; border: 1.5px solid var(--ink); }
   .tab {
-    flex: 1; padding: 10px 6px; font-size: 15px; font-weight: 700;
-    color: #4b5f56; background: #e4ece8; border: 1px solid #d2ddd7;
-    border-radius: 10px; cursor: pointer; text-align: center;
-    transition: background .15s, color .15s;
+    flex: 1; padding: 7px 6px; font-family: var(--mono); font-size: 15px; font-weight: 700;
+    color: var(--soft); background: var(--paper); border: none; cursor: pointer; text-align: center;
   }
-  .tab.active { background: #0f8a5f; border-color: #0f8a5f; color: #fff; }
-  .tab small { display: block; font-size: 12px; font-weight: 400; opacity: .85; }
+  .tab + .tab { border-left: 1.5px solid var(--ink); }
+  .tab::before { content: "□ "; }
+  .tab.active { color: var(--ink); background: #fff; box-shadow: inset 0 -3px 0 var(--violet); }
+  .tab.active::before { content: "■ "; color: var(--violet); }
+  .tab small { display: block; font-size: 11.5px; font-weight: 700; opacity: .85; }
+  .tab:focus-visible { outline: 2px solid var(--violet); outline-offset: -3px; }
 
+  /* 欄（罫線で囲んだ帳票の枠） */
   .card {
-    background: #fff; border: 1px solid #e0e8e3; border-radius: 14px;
-    padding: 16px 16px 14px; margin-bottom: 14px;
-    box-shadow: 0 1px 4px rgba(20, 60, 40, .05);
+    background: rgba(255, 255, 255, 0.55); border: 1.5px solid var(--ink);
+    padding: 0 12px 10px; margin-bottom: 12px;
   }
-  .card h2 { font-size: 15.5px; color: #14523a; margin-bottom: 10px; }
+  .card h2 {
+    font-family: var(--mono); font-weight: 700; font-size: 13.5px; color: var(--ink); letter-spacing: 0.04em;
+    background: var(--shade); border-bottom: 1px solid var(--ink); margin: 0 -12px 10px; padding: 4px 12px;
+  }
 
-  .field { margin-bottom: 14px; }
+  .field { margin-bottom: 10px; }
   .field:last-child { margin-bottom: 2px; }
-  .field .row { display: flex; align-items: baseline; justify-content: space-between; }
-  .field label { font-size: 15px; font-weight: 700; color: #33463d; }
-  .field .val { display: flex; align-items: baseline; gap: 4px; }
+  .field .row { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+  .field label { font-size: 14.5px; font-weight: 700; color: var(--ink); }
+  .field .val { display: flex; align-items: baseline; gap: 4px; flex: none; }
   .field input[type="number"] {
-    width: 96px; padding: 5px 8px; font-size: 17px; font-weight: 700;
-    color: #0f8a5f; text-align: right;
-    border: 1px solid #c9d6d0; border-radius: 8px; background: #fbfdfc;
+    width: 96px; padding: 3px 8px; font-family: var(--mono); font-size: 17px; font-weight: 700;
+    color: var(--ink); text-align: right; background: #fff;
+    border: 1px solid var(--line); border-radius: 0;
   }
-  .field .unit { font-size: 14px; color: #5c6f66; }
-  .field input[type="range"] { width: 100%; margin-top: 8px; accent-color: #0f8a5f; height: 22px; }
+  .field input[type="number"]:focus { outline: 2px solid var(--violet); outline-offset: 0; }
+  .field .unit { font-size: 13px; color: var(--soft); }
+  .field input[type="range"] { width: 100%; margin-top: 4px; accent-color: var(--ink); height: 22px; }
 
-  .opts { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  .opts { display: flex; gap: 0; flex-wrap: wrap; margin-top: 2px; border: 1px solid var(--line); }
   .opt {
     flex: 1; min-width: 45%; display: flex; align-items: center; gap: 8px;
-    background: #f2f7f4; border: 1px solid #dde7e1; border-radius: 10px;
-    padding: 9px 12px; font-size: 14.5px; font-weight: 700; color: #33463d; cursor: pointer;
+    background: rgba(255,255,255,0.6); border: 0.5px solid var(--line);
+    padding: 7px 10px; font-size: 14px; font-weight: 700; color: var(--ink); cursor: pointer;
   }
-  .opt input { accent-color: #0f8a5f; width: 18px; height: 18px; }
-  .opt .sub { display: block; font-size: 12px; font-weight: 400; color: #7a8a82; }
+  .opt input { accent-color: var(--violet); width: 18px; height: 18px; }
+  .opt .sub { display: block; font-size: 11.5px; font-weight: 400; color: var(--soft); }
 
-  /* 判定バッジ */
-  .verdict { text-align: center; padding: 2px 0 6px; }
+  /* 判定（押印ではなく、印字の判定欄） */
+  .verdict { text-align: center; padding: 10px 0 6px; }
   .badge {
-    display: inline-block; font-size: 16.5px; font-weight: 800; letter-spacing: .02em;
-    padding: 7px 18px; border-radius: 999px; margin-bottom: 6px;
+    display: inline-block; font-family: var(--mono); font-size: 15.5px; font-weight: 700; letter-spacing: .02em;
+    padding: 5px 14px; margin-bottom: 6px; border: 1.5px solid currentColor; background: #fff;
   }
-  .badge.join { background: #e3f0fa; color: #1763a6; }
-  .badge.fuyou { background: #e9f6ee; color: #0d7a54; }
-  .badge.kokuho { background: #fdeeea; color: #c0392b; }
-  .verdict .why { font-size: 13.5px; color: #5c6f66; }
+  .badge.join { color: var(--ink); }
+  .badge.fuyou { color: #2c6a4c; }
+  .badge.kokuho { color: #fff; background: var(--violet); border-color: var(--violet); }
+  .verdict .why { font-size: 13px; color: var(--soft); }
 
-  .result { text-align: center; padding-top: 4px; }
-  .result .label { font-size: 14px; color: #5c6f66; }
-  .result .big { font-size: 36px; font-weight: 800; color: #0d7a54; letter-spacing: 0.02em; line-height: 1.3; }
-  .result .big small { font-size: 19px; }
-  .stats { display: flex; gap: 8px; margin-top: 12px; }
-  .stat { flex: 1; background: #f2f7f4; border-radius: 10px; padding: 8px 4px; text-align: center; }
-  .stat .k { font-size: 12.5px; color: #5c6f66; }
-  .stat .v { font-size: 16.5px; font-weight: 700; color: #22332c; }
-  .stat .v.minus { color: #b03a2e; }
+  .result { text-align: center; padding-top: 2px; }
+  .result .label { font-family: var(--mono); font-weight: 700; font-size: 13px; color: var(--soft); letter-spacing: 0.06em; }
+  .result .big { font-family: var(--mono); font-size: 38px; font-weight: 700; color: var(--ink); letter-spacing: 0.02em; line-height: 1.25; }
+  .result .big small { font-size: 18px; }
+  /* 支給・控除の4マス */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 10px; border: 1px solid var(--ink); }
+  .stat { padding: 0 0 5px; text-align: center; border-left: 1px solid var(--line); background: rgba(255,255,255,0.7); }
+  .stat:first-child { border-left: none; }
+  .stat .k { font-size: 11.5px; color: var(--ink); background: var(--shade); border-bottom: 1px solid var(--line); padding: 2px 2px; margin-bottom: 3px; }
+  .stat .v { font-family: var(--mono); font-size: 15.5px; font-weight: 700; color: var(--ink); }
+  .stat .v.minus { color: var(--violet); }
 
+  details { margin-top: 10px; }
   details summary {
-    cursor: pointer; font-size: 15px; font-weight: 700; color: #14523a;
-    padding: 4px 0; list-style-position: inside;
+    cursor: pointer; font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--ink);
+    padding: 2px 0; list-style-position: inside;
   }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
-  th, td { padding: 6px 4px; text-align: right; border-bottom: 1px solid #eef2ef; }
-  th { color: #5c6f66; font-weight: 700; background: #f7faf8; }
-  td:first-child, th:first-child { text-align: left; }
-  tr.total td { font-weight: 800; color: #0d7a54; font-size: 15px; }
+  details summary::marker { color: var(--violet); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 6px; border: 1px solid var(--ink); background: rgba(255,255,255,0.7); }
+  th, td { padding: 5px 6px; text-align: right; border-bottom: 1px dotted var(--line); }
+  td:last-child { font-family: var(--mono); font-weight: 700; }
+  td:first-child, th:first-child { text-align: left; border-right: 1px solid var(--line); }
+  tr.total td { font-weight: 700; color: var(--ink); font-size: 15px; border-top: 1.5px double var(--ink); border-bottom: none; background: var(--shade); }
 
   .chart-box { position: relative; }
   canvas { width: 100%; height: 260px; display: block; }
-  .legend { display: flex; gap: 14px; justify-content: center; margin-top: 8px; font-size: 13px; color: #4b5f56; flex-wrap: wrap; }
+  .legend { display: flex; gap: 14px; justify-content: center; margin-top: 6px; font-size: 12.5px; color: var(--soft); flex-wrap: wrap; }
   .legend span::before {
-    content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 3px;
-    margin-right: 5px; vertical-align: -1px;
+    content: ""; display: inline-block; width: 16px; height: 0; border-top: 3px solid;
+    margin-right: 5px; vertical-align: 3px;
   }
-  .legend .lg-net::before { background: #0f8a5f; }
-  .legend .lg-kokuho::before { background: #e67e22; }
-  .legend .lg-now::before { background: #22332c; border-radius: 50%; }
+  .legend .lg-net::before { border-color: var(--ink); }
+  .legend .lg-kokuho::before { border-color: var(--violet); }
+  .legend .lg-now::before { width: 10px; height: 10px; border: 2.5px solid var(--ink); border-radius: 50%; vertical-align: -1px; background: #fff; }
   .tooltip {
     position: absolute; pointer-events: none; display: none;
-    background: rgba(20, 40, 30, .92); color: #fff; font-size: 12.5px;
-    padding: 7px 10px; border-radius: 8px; white-space: nowrap; z-index: 5; line-height: 1.5;
+    background: #fff; color: var(--ink); font-size: 12.5px; border: 1.5px solid var(--ink);
+    padding: 5px 9px; white-space: nowrap; z-index: 5; line-height: 1.5; box-shadow: 3px 3px 0 rgba(39,53,47,0.18);
   }
-  .cliff-info {
-    margin-top: 12px; font-size: 14px; color: #4b5f56;
-    background: #fdf6ec; border-left: 4px solid #e67e22; border-radius: 6px;
-    padding: 8px 10px;
+  .tooltip b { font-family: var(--mono); }
+  /* 摘要欄 */
+  .cliff-info, .pension {
+    margin-top: 10px; font-size: 13.5px; color: var(--ink);
+    border: 1px solid var(--line); background: rgba(255,255,255,0.75); padding: 7px 10px;
   }
-  .cliff-info b { color: #b3611a; }
-  .cliff-info .ok { color: #0d7a54; font-weight: 700; }
-
-  .pension {
-    font-size: 14px; color: #4b5f56;
-    background: #eef6f1; border-left: 4px solid #0f8a5f; border-radius: 6px;
-    padding: 8px 10px;
-  }
-  .pension b { color: #0d7a54; }
+  .card > .pension { margin-top: 0; }
+  .cliff-info b { color: var(--violet); }
+  .cliff-info .ok { color: #2c6a4c; font-weight: 700; }
+  .pension.warn { border-left: 4px solid var(--violet); }
+  .pension b { color: var(--ink); background: linear-gradient(transparent 62%, rgba(90,71,150,0.18) 62%); }
 
   .disclaimer {
-    font-size: 13.5px; color: #6d7d75; background: #eef1ef;
-    border-radius: 10px; padding: 12px 14px; margin-top: 2px; line-height: 1.7;
+    font-size: 12.5px; color: var(--soft);
+    border-top: 1.5px dashed var(--line); padding: 10px 2px 0; margin-top: 2px; line-height: 1.7;
   }
-  .disclaimer strong { color: #4b5f56; }
+  .disclaimer strong { color: var(--ink); }
   .disclaimer ul { margin: 6px 0 0 18px; }
   .disclaimer li { margin-bottom: 4px; }
 
   @media (max-width: 430px) {
-    .head h1 { font-size: 19px; }
-    .result .big { font-size: 30px; }
-    .stats { flex-wrap: wrap; }
-    .stat { min-width: 45%; }
+    .head h1 { font-size: 18.5px; }
+    .result .big { font-size: 31px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .stat:nth-child(3) { border-left: none; }
+    .stat:nth-child(n+3) { border-top: 1px solid var(--line); }
     .opt { min-width: 100%; }
   }
 </style>
+<script src="jp-phrase-1.js" defer></script>
 </head>
 <body>
 <div class="wrap">
 
   <header class="head">
-    <h1>🧱 年収の壁シミュレーター</h1>
+    <div class="slip-top"><span>パート・アルバイト用</span><span>手取り試算明細</span></div>
+    <h1>年収の壁シミュレーター</h1>
     <p>パートの「いくらまで働くと損？」を手取りグラフで見える化</p>
   </header>
 
@@ -322,19 +363,21 @@ function renderBreakdown(r) {
 }
 
 function renderPension(p, r) {
+  // 国保ゾーンだけ紫の罫で注意を示す（旧版の⚠の代わり）
+  $("pensionInfo").classList.toggle("warn", r.status === "kokuho");
   if (r.status === "shaho") {
     $("pensionInfo").innerHTML =
-      "🌙 この働き方を<b>10年</b>続けると、65歳からの厚生年金が<b>年額 約" + r.pensionUp10y.toLocaleString() + "円</b>（終身）増える見込みです。" +
+      "この働き方を<b>10年</b>続けると、65歳からの厚生年金が<b>年額 約" + r.pensionUp10y.toLocaleString() + "円</b>（終身）増える見込みです。" +
       "さらに、病気やケガで働けないときの<b>傷病手当金</b>・出産時の<b>出産手当金</b>の対象になり、障害・遺族年金の保障も厚くなります。保険料は「取られるだけ」ではありません。";
   } else if (r.status === "kokuho") {
     // 社保に入るために必要な時間は企業規模で異なる（50人以下は週30h、51人以上は週20h）
     var needHours = (p.companySize === "50-") ? "週30時間以上（50人以下の職場では週20時間では入れません）" : "週20時間以上";
     $("pensionInfo").innerHTML =
-      "⚠ このゾーンは国民年金＋国保を全額自己負担する一方、<b>厚生年金の上乗せや傷病手当金はありません</b>。" +
+      "このゾーンは国民年金＋国保を全額自己負担する一方、<b>厚生年金の上乗せや傷病手当金はありません</b>。" +
       needHours + "に増やして勤務先の社会保険に入るか、130万円未満に抑えるかの検討をおすすめします。";
   } else {
     $("pensionInfo").innerHTML =
-      "🌙 いまは配偶者の扶養内（国民年金の第3号被保険者）で、保険料の負担はありません。" +
+      "いまは配偶者の扶養内（国民年金の第3号被保険者）で、保険料の負担はありません。" +
       "参考: 社会保険に加入して働くと、保険料はかかりますが<b>厚生年金の上乗せ（終身）</b>や<b>傷病手当金・出産手当金</b>が付きます。グラフで「崖」を越えた先の手取りも見てみてください。";
   }
 }
@@ -395,32 +438,31 @@ function drawChart() {
   var x = function (hh) { return PAD.left + plotW * (hh / maxH); };
   var y = function (v) { return PAD.top + plotH * (1 - v / yMax); };
 
-  // グリッドとY軸ラベル
-  ctx.font = "12.5px sans-serif";
-  ctx.fillStyle = "#7a8a82";
-  ctx.strokeStyle = "#e6ece8";
+  var INK = "#27352f", VIOLET = "#5a4796", RULE = "#a9b6ad";
+  var FONT = "700 12px 'BIZ UDGothic', 'MS Gothic', monospace";
+  // グリッドとY軸ラベル（点線の罫、底だけ実線）
+  ctx.font = FONT;
+  ctx.fillStyle = "#5c6a62";
   ctx.lineWidth = 1;
   ctx.textAlign = "right";
   for (var v = 0; v <= yMax; v += step) {
-    ctx.beginPath(); ctx.moveTo(PAD.left, y(v)); ctx.lineTo(w - PAD.right, y(v)); ctx.stroke();
+    ctx.strokeStyle = v === 0 ? INK : RULE;
+    ctx.setLineDash(v === 0 ? [] : [2, 3]);
+    ctx.beginPath(); ctx.moveTo(PAD.left, Math.round(y(v)) + 0.5); ctx.lineTo(w - PAD.right, Math.round(y(v)) + 0.5); ctx.stroke();
     ctx.fillText((v / 10000).toLocaleString() + "万", PAD.left - 6, y(v) + 4);
   }
-  // X軸ラベル
+  ctx.setLineDash([]);
+  // X軸ラベル（2026-09-27 修正: 狭い画面で「週0h週5h…」が重なっていたため、幅が足りないときは10時間刻みにし、単位は数字の後ろだけに付ける）
   ctx.textAlign = "center";
-  for (var hh = 0; hh <= maxH; hh += 5) {
-    ctx.fillText("週" + hh + "h", x(hh), h - 8);
+  var xStep = plotW < 330 ? 10 : 5;
+  ctx.strokeStyle = INK;
+  for (var hh = 0; hh <= maxH; hh += xStep) {
+    ctx.fillText(hh + "h", x(hh), h - 8);
+    ctx.beginPath(); ctx.moveTo(Math.round(x(hh)) + 0.5, y(0)); ctx.lineTo(Math.round(x(hh)) + 0.5, y(0) + 4); ctx.stroke();
   }
 
-  // 崖の位置に縦点線
-  ctx.strokeStyle = "#e0a86e";
-  ctx.setLineDash([4, 4]);
-  (cliffs || []).forEach(function (c) {
-    ctx.beginPath(); ctx.moveTo(x(c.atHours), PAD.top); ctx.lineTo(x(c.atHours), h - PAD.bottom); ctx.stroke();
-  });
-  ctx.setLineDash([]);
-
-  // 手取りカーブ（kokuho区間はオレンジで塗り分け）
-  function seg(fromIdx, toIdx, color) {
+  // 手取りカーブ（扶養を外れて国保の区間は紫で塗り分け）
+  function seg(fromIdx, toIdx, color, width) {
     ctx.beginPath();
     for (var i = fromIdx; i <= toIdx; i++) {
       var pt = curve[i];
@@ -428,7 +470,8 @@ function drawChart() {
       else ctx.lineTo(x(pt.h), y(pt.r.net));
     }
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = width;
+    ctx.lineJoin = "round";
     ctx.stroke();
   }
   var start = 0;
@@ -436,23 +479,51 @@ function drawChart() {
     var end = (i === curve.length);
     var statusChanged = !end && (curve[i].r.status !== curve[start].r.status);
     if (end || statusChanged) {
-      seg(start, i - 1, curve[start].r.status === "kokuho" ? "#e67e22" : "#0f8a5f");
+      seg(start, i - 1, curve[start].r.status === "kokuho" ? VIOLET : INK, curve[start].r.status === "kokuho" ? 3.5 : 2.5);
       start = i;
     }
   }
+
+  // 崖: 直前の点と直後の点（curve の実データ）を、崖の位置での縦の段差でつなぐ
+  (cliffs || []).forEach(function (c) {
+    var k = 1;
+    while (k < curve.length && curve[k].h < c.atHours) k++;
+    if (k >= curve.length) return;
+    var pre = curve[k - 1], post = curve[k];
+    var cxh = x(c.atHours), y1 = y(pre.r.net), y2 = y(post.r.net);
+    ctx.strokeStyle = VIOLET;
+    ctx.lineWidth = 3;
+    ctx.lineJoin = "miter";
+    ctx.beginPath(); ctx.moveTo(x(pre.h), y1); ctx.lineTo(cxh, y1); ctx.lineTo(cxh, y2); ctx.lineTo(x(post.h), y2); ctx.stroke();
+    // 段差の大きさ（1万円未満の小さな段差は「−0万」になるうえ、いまの設定の印と重なりやすいので文字を出さない）
+    if (c.dropYen < 10000) return;
+    var label = "−" + (Math.round(c.dropYen / 10000 * 10) / 10).toLocaleString() + "万";
+    ctx.font = FONT;
+    // 段差の上端のすぐ上に置く（右側は「いまの設定」の印と重なりやすいため）
+    ctx.textAlign = "center";
+    var lx = Math.min(Math.max(cxh, PAD.left + 24), w - PAD.right - 24), ly = Math.max(y1 - 9, PAD.top + 10);
+    // いまの設定の印と横に近いときは、ラベルを印の反対側へ逃がす
+    if (currentInput) {
+      var mx = x(currentInput.weeklyHours);
+      if (Math.abs(mx - lx) < 30) lx = mx < cxh ? Math.min(cxh + 30, w - PAD.right - 24) : Math.max(cxh - 30, PAD.left + 24);
+    }
+    ctx.lineWidth = 4; ctx.strokeStyle = "rgba(251,252,248,0.95)"; ctx.strokeText(label, lx, ly);
+    ctx.fillStyle = VIOLET; ctx.fillText(label, lx, ly);
+  });
 
   // いまの設定のマーカー
   if (currentInput) {
     var cur = CALC.calcCase(currentInput);
     var cx = x(currentInput.weeklyHours), cy = y(cur.net);
-    ctx.strokeStyle = "rgba(34,51,44,.45)";
+    ctx.strokeStyle = "rgba(39,53,47,.45)";
+    ctx.lineWidth = 1;
     ctx.setLineDash([3, 3]);
     ctx.beginPath(); ctx.moveTo(cx, PAD.top); ctx.lineTo(cx, h - PAD.bottom); ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = "#22332c";
-    ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#fff";
-    ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, 5.5, 0, Math.PI * 2); ctx.fill();
+    ctx.lineWidth = 2.5; ctx.strokeStyle = "#27352f";
+    ctx.beginPath(); ctx.arc(cx, cy, 5.5, 0, Math.PI * 2); ctx.stroke();
   }
 }
 
@@ -538,6 +609,8 @@ $("tabNew").addEventListener("click", function () {
 $("updated").textContent = CONFIG.updated;
 window.addEventListener("resize", drawChart);
 update();
+// canvas は自分からフォントを読みに行かないので、同梱フォントが届いたら描き直す
+if (document.fonts && document.fonts.load) document.fonts.load("700 12px 'BIZ UDGothic'").then(drawChart, function () {});
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   navigator.serviceWorker.register("sw.js").catch(function () {});
