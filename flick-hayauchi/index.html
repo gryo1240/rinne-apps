@@ -5,148 +5,189 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>フリック早撃ち｜60秒スコアアタック</title>
 <meta name="description" content="スマホのフリック入力の速さを競う無料ゲーム。60秒で何文字打てる？登録不要・完全無料。">
-<meta name="theme-color" content="#eef3fb">
+<meta name="theme-color" content="#e7e5df">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
+/* ===== 2026-09-28 刷新:「駅の反転フラップ式案内表示（パタパタ）」 =====
+   題名・お題のかな・点数を、上下2枚に割れた黒い板（フラップ）に1文字ずつ刷る。色は墨・琥珀・生成りの3系統。
+   板が回るのは開始のカウントダウンと結果の点数だけ（入力中は待たせない）。実在の駅・鉄道会社の意匠には似せない */
 :root{
-  --bg:#eef3fb; --panel:#ffffff; --ink:#1a2330; --sub:#6b7688;
-  --accent:#2f6df6; --accent-d:#1f52c8; --line:#dce3ef;
-  --done:#2f6df6; --cur:#1a2330; --yet:#b6c0d0; --pending:#f0a020;
-  --key:#ffffff; --keyline:#c9d3e3; --keyactive:#2f6df6; --miss:#e5384d;
-  --gold:#f0a628;
+  --bg:#e7e5df; --panel:#f6f4ee; --ink:#1c1e21; --sub:#5f6469; --line:#cfccc3;
+  --board:#17191c; --flap:#26292d; --flap2:#1f2225; --flapink:#f3f0e7; --dim:#6e747a; --boardline:#34383d;
+  --accent:#e9a91f; --accent-d:#b98212;
+  --done:#e9a91f; --cur:#17191c; --yet:#8b9197; --pending:#e9a91f;
+  --key:#26292d; --keyline:#3a3e43; --keyactive:#e9a91f; --miss:#d2443a;
+  --gold:#a8720f;
 }
 @media (prefers-color-scheme: dark){
   :root{
-    --bg:#141a24; --panel:#1e2632; --ink:#eaf0f8; --sub:#9aa7ba;
-    --accent:#4d86ff; --accent-d:#2f6df6; --line:#2c3644;
-    --done:#4d86ff; --cur:#eaf0f8; --yet:#5a6678; --pending:#f0b040;
-    --key:#273140; --keyline:#3a4656; --keyactive:#4d86ff; --miss:#ff5a6e;
-    --gold:#f0b84a;
+    --bg:#111214; --panel:#1b1d20; --ink:#ecebe6; --sub:#a3a8ad; --line:#2e3135;
+    --board:#0b0c0d; --flap:#222528; --flap2:#1b1e21; --boardline:#2c3034;
+    --gold:#e9b54a;
   }
 }
 :root[data-theme="light"]{
-  --bg:#eef3fb; --panel:#ffffff; --ink:#1a2330; --sub:#6b7688; --accent:#2f6df6; --accent-d:#1f52c8; --line:#dce3ef; --done:#2f6df6; --cur:#1a2330; --yet:#b6c0d0; --pending:#f0a020; --key:#ffffff; --keyline:#c9d3e3; --keyactive:#2f6df6; --miss:#e5384d; --gold:#f0a628;
+  --bg:#e7e5df; --panel:#f6f4ee; --ink:#1c1e21; --sub:#5f6469; --line:#cfccc3; --board:#17191c; --flap:#26292d; --flap2:#1f2225; --boardline:#34383d; --gold:#a8720f;
 }
 :root[data-theme="dark"]{
-  --bg:#141a24; --panel:#1e2632; --ink:#eaf0f8; --sub:#9aa7ba; --accent:#4d86ff; --accent-d:#2f6df6; --line:#2c3644; --done:#4d86ff; --cur:#eaf0f8; --yet:#5a6678; --pending:#f0b040; --key:#273140; --keyline:#3a4656; --keyactive:#4d86ff; --miss:#ff5a6e; --gold:#f0b84a;
+  --bg:#111214; --panel:#1b1d20; --ink:#ecebe6; --sub:#a3a8ad; --line:#2e3135; --board:#0b0c0d; --flap:#222528; --flap2:#1b1e21; --boardline:#2c3034; --gold:#e9b54a;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;overflow-x:hidden}
 body{
   background:var(--bg); color:var(--ink);
   font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
-  line-height:1.5;
+  line-height:1.5; overflow-wrap:break-word;
 }
 #app{max-width:520px;margin:0 auto;padding:12px 12px 20px;min-height:100vh}
 .hidden{display:none !important}
-h1{font-size:22px;margin:6px 0 2px;text-align:center;letter-spacing:.02em}
-.tagline{text-align:center;color:var(--sub);font-size:12.5px;margin:0 0 14px}
-.bolt{color:var(--accent)}
+button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.course-card:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
 
-/* タイトル画面 */
-.courses{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0 14px}
+/* フラップ1枚（上下に割れた板） */
+.fl{display:inline-block;position:relative;min-width:1.18em;padding:0 .08em;text-align:center;line-height:1.36;
+  color:var(--flapink);border-radius:.09em;
+  background:linear-gradient(to bottom, var(--flap) 0 50%, var(--flap2) 50% 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 0 rgba(0,0,0,.5);}
+.fl::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;margin-top:-.5px;background:rgba(0,0,0,.7);pointer-events:none}
+
+/* 表題の案内板 */
+h1{font-size:22px;margin:2px 0 3px;text-align:center;letter-spacing:0;font-weight:800;
+  background:var(--board);border-radius:6px;padding:6px 6px;display:flex;justify-content:center;gap:3px;flex-wrap:wrap}
+h1 .fl{min-width:1.3em}
+.tagline{text-align:center;color:var(--sub);font-size:12.5px;margin:0 0 10px}
+
+/* タイトル画面: 発車案内のようなコース一覧 */
+.courses{display:grid;grid-template-columns:1fr 1fr;gap:1px;margin:6px 0 12px;background:var(--boardline);border:1px solid var(--board);border-radius:6px;overflow:hidden}
 .course-card{
-  background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--accent);
-  border-radius:14px;padding:12px 12px;text-align:left;cursor:pointer;font:inherit;color:inherit;
-  transition:transform .08s, box-shadow .12s; box-shadow:0 1px 4px rgba(30,40,70,.06);
+  background:var(--board);border:none;border-radius:0;
+  padding:10px 11px 9px;text-align:left;cursor:pointer;font:inherit;color:var(--flapink);
 }
-.course-card:active{transform:scale(.97)}
-.course-card .cname{font-size:16px;font-weight:800;margin-bottom:2px}
-.course-card .cdesc{font-size:11px;color:var(--sub);line-height:1.4;min-height:2.6em}
-.course-card .cbest{font-size:11px;color:var(--accent);font-weight:700;margin-top:6px}
-.row{display:flex;align-items:center;justify-content:center;gap:14px;margin:10px 0}
+.course-card:hover{background:#202326}
+.course-card:active{background:#26292d}
+.course-card .cname{font-size:16px;font-weight:800;margin-bottom:2px;color:var(--accent);letter-spacing:.08em}
+.course-card .cdesc{font-size:11px;color:#a7adb2;line-height:1.4;min-height:2.6em}
+.course-card .cbest{font-size:11px;color:var(--flapink);font-weight:700;margin-top:5px;font-variant-numeric:tabular-nums;border-top:1px dashed #3a3e43;padding-top:4px}
+.row{display:flex;align-items:center;justify-content:center;gap:14px;margin:8px 0}
 .toggle{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--sub);cursor:pointer;user-select:none}
-.toggle input{width:18px;height:18px;accent-color:var(--accent)}
-details.how{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:2px 14px;margin-top:8px;font-size:13px}
-details.how summary{cursor:pointer;font-weight:700;padding:10px 0;color:var(--accent)}
-details.how ol{margin:0 0 12px;padding-left:1.3em;color:var(--ink)}
-details.how li{margin:4px 0}
+.toggle input{width:18px;height:18px;accent-color:var(--ink)}
+details.how{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:2px 14px;margin-top:8px;font-size:13px;line-height:1.45}
+.nw{white-space:nowrap}
+details.how summary{cursor:pointer;font-weight:700;padding:9px 0;color:var(--ink)}
+details.how ol{margin:0 0 10px;padding-left:1.3em;color:var(--ink)}
+details.how li{margin:2px 0}
 
 /* プレイ画面 */
 .hud{display:flex;align-items:center;gap:10px;margin:2px 0 8px}
-.quit-btn{flex:0 0 auto;font:inherit;font-size:12px;font-weight:700;color:var(--sub);
-  background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap}
-.quit-btn:active{transform:scale(.96)}
-.timer-wrap{flex:1;height:14px;background:var(--line);border-radius:8px;overflow:hidden}
-.timer-bar{height:100%;width:100%;background:var(--accent);border-radius:8px;transition:background .2s}
-.timer-num{font-size:15px;font-weight:800;min-width:2.4em;text-align:right}
+.quit-btn{flex:0 0 auto;font:inherit;font-size:12px;font-weight:700;color:var(--ink);
+  background:transparent;border:1px solid var(--ink);border-radius:3px;padding:5px 10px;cursor:pointer;white-space:nowrap}
+.quit-btn:active{transform:translateY(1px)}
+.timer-wrap{position:relative;flex:1;height:12px;background:var(--board);border-radius:2px;overflow:hidden}
+.timer-bar{height:100%;width:100%;background:var(--accent);transition:background .2s}
+/* 帯を細かい区切りで割る（表示器の点のように） */
+.timer-wrap::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg, transparent 0 7px, var(--board) 7px 9px);pointer-events:none}
+.timer-num{font-size:15px;font-weight:800;min-width:2.4em;text-align:right;font-variant-numeric:tabular-nums}
 .hud2{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
-.score-now{font-size:26px;font-weight:900}
+.score-now{font-size:26px;font-weight:900;font-variant-numeric:tabular-nums}
 .score-now small{font-size:12px;color:var(--sub);font-weight:600;margin-left:3px}
-.combo{font-size:14px;font-weight:800;color:var(--accent)}
-.combo.hot{color:var(--gold)}
+.combo{font-size:14px;font-weight:800;color:var(--gold)}
+.combo.hot{color:var(--miss)}
 .prompt{
-  background:var(--panel);border:1px solid var(--line);border-radius:14px;
-  padding:14px 12px;text-align:center;margin-bottom:10px;min-height:104px;
+  background:var(--board);border:none;border-radius:6px;color:var(--flapink);
+  padding:12px 10px;text-align:center;margin-bottom:10px;min-height:104px;
   display:flex;flex-direction:column;justify-content:center;
 }
 .prompt.miss-flash{animation:missflash .3s}
-@keyframes missflash{0%{background:var(--miss)}100%{background:var(--panel)}}
-.prompt .label{font-size:14px;color:var(--sub);margin-bottom:6px;min-height:1.2em}
-.prompt .kana{font-size:34px;font-weight:800;letter-spacing:.04em;word-break:break-all}
+@keyframes missflash{0%{background:var(--miss)}100%{background:var(--board)}}
+.prompt .label{font-size:14px;color:#a7adb2;margin-bottom:6px;min-height:1.2em}
+.prompt .kana{font-size:min(34px, 8.6vw);font-weight:800;letter-spacing:0;line-height:1.5}
+.kana span{display:inline-block;position:relative;min-width:1.16em;margin:2px 1.5px;text-align:center;line-height:1.34;border-radius:.09em;
+  background:linear-gradient(to bottom, var(--flap) 0 50%, var(--flap2) 50% 100%);}
+.kana span::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;margin-top:-.5px;background:rgba(0,0,0,.7)}
 .kana .k-done{color:var(--done)}
-.kana .k-cur{color:var(--cur);border-bottom:4px solid var(--accent);padding-bottom:1px}
+.kana .k-cur{color:var(--cur);background:linear-gradient(to bottom, #f3f0e7 0 50%, #e4e0d5 50% 100%)}
+.kana .k-cur::after{background:rgba(0,0,0,.35)}
 .kana .k-yet{color:var(--yet)}
-.kana .k-pending{color:var(--pending);opacity:.85;border-bottom:4px dashed var(--pending)}
+.kana .k-pending{color:var(--pending);opacity:1;outline:2px dashed var(--pending);outline-offset:1px}
 
-/* キーボード */
+/* キーボード（黒い板のキー） */
 .kbd{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:7px;
   touch-action:none;user-select:none;-webkit-user-select:none;
 }
 .key{
-  position:relative;background:var(--key);border:1px solid var(--keyline);border-radius:12px;
+  position:relative;background:var(--key);color:var(--flapink);border:1px solid var(--keyline);border-radius:5px;
   height:66px;display:flex;align-items:center;justify-content:center;
   font-size:24px;font-weight:800;cursor:pointer;
 }
-.key.pressed{background:var(--keyactive);color:#fff;border-color:var(--keyactive)}
-.key.dummy{opacity:.35;cursor:default}
+.key.pressed{background:var(--keyactive);color:#17191c;border-color:var(--keyactive)}
+.key.dummy{background:transparent;border:1px dashed var(--line);cursor:default}
 .key.mod{font-size:18px}
-.key .hint{position:absolute;font-size:9px;color:var(--sub);font-weight:600;pointer-events:none}
+.key .hint{position:absolute;font-size:9px;color:#949a9f;font-weight:600;pointer-events:none}
 .key .hint.l{left:5px;top:50%;transform:translateY(-50%)}
 .key .hint.u{top:3px;left:50%;transform:translateX(-50%)}
 .key .hint.r{right:5px;top:50%;transform:translateY(-50%)}
 .key .hint.d{bottom:3px;left:50%;transform:translateX(-50%)}
-.key.pressed .hint{color:#dbe6ff}
+.key.pressed .hint{color:#4a3a10}
 /* フリックポップ（十字ガイド） */
 .popup{position:absolute;inset:0;pointer-events:none;z-index:5}
-.pop{position:absolute;width:38px;height:38px;border-radius:10px;background:var(--accent-d);color:#fff;
+.pop{position:absolute;width:38px;height:38px;border-radius:4px;background:var(--flapink);color:#17191c;border:1px solid #17191c;
   display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;opacity:.0;transition:opacity .05s}
-.pop.show{opacity:.96}
-.pop.hit{background:var(--gold)}
+.pop.show{opacity:.97}
+.pop.hit{background:var(--accent)}
 .pop.c{left:50%;top:50%;transform:translate(-50%,-50%)}
 .pop.l{left:-42px;top:50%;transform:translateY(-50%)}
 .pop.u{left:50%;top:-42px;transform:translateX(-50%)}
 .pop.r{right:-42px;top:50%;transform:translateY(-50%)}
 .pop.d{left:50%;bottom:-42px;transform:translateX(-50%)}
 
-/* カウントダウン */
+/* カウントダウン（大きなフラップ1枚が回る） */
 .countdown{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-size:88px;font-weight:900;color:var(--accent);background:rgba(0,0,0,.04);z-index:20;border-radius:14px}
+  font-size:64px;font-weight:900;color:var(--flapink);z-index:20;border-radius:6px;
+  background:
+    linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,.7)) center / 1.05em 1px no-repeat,
+    linear-gradient(to bottom, var(--flap) 0 50%, var(--flap2) 50% 100%) center / 1.05em 1.3em no-repeat,
+    var(--board);
+  font-variant-numeric:tabular-nums}
+.countdown.flip{animation:cdflip .22s ease-out}
+@keyframes cdflip{0%{transform:perspective(300px) rotateX(70deg);opacity:.4}100%{transform:perspective(300px) rotateX(0);opacity:1}}
 
 /* リザルト */
-.result{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 16px;text-align:center}
-.result .rtitle{font-size:15px;color:var(--sub)}
-.result .rscore{font-size:52px;font-weight:900;line-height:1.1;margin:2px 0}
-.result .rmedal{font-size:20px;font-weight:900;color:var(--gold);margin-bottom:4px}
-.result .rbest{font-size:12px;color:var(--accent);font-weight:700;margin-bottom:10px;min-height:1.2em}
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 14px}
-.stat{background:var(--bg);border-radius:10px;padding:8px}
-.stat .sv{font-size:20px;font-weight:800}
-.stat .sl{font-size:11px;color:var(--sub)}
+.result{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 14px;text-align:center}
+.result .rtitle{font-size:13px;color:var(--sub);letter-spacing:.3em}
+/* 板は行内に並べる（flex にすると innerText が1字ずつ改行になり、宣伝動画の点数の読み取りが壊れる） */
+.result .rscore{font-size:44px;font-weight:900;line-height:1.1;margin:6px 0 6px;text-align:center;perspective:400px;font-variant-numeric:tabular-nums}
+.result .rscore .fl{min-width:1em;margin:0 1.5px;transform-origin:50% 0;}
+.result .rscore.go .fl{animation:flapin .34s cubic-bezier(.3,.7,.4,1.2) both;animation-delay:calc(var(--i, 0) * 70ms)}
+@keyframes flapin{0%{transform:rotateX(-100deg);filter:brightness(.6)}70%{transform:rotateX(12deg)}100%{transform:rotateX(0);filter:none}}
+.result .rmedal{font-size:20px;font-weight:900;color:var(--gold);margin-bottom:2px}
+.result .rbest{font-size:12px;color:var(--ink);font-weight:700;margin-bottom:8px;min-height:1.2em}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;margin:8px 0 12px;background:var(--boardline);border-radius:5px;overflow:hidden}
+.stat{background:var(--board);color:var(--flapink);padding:6px 8px}
+.stat .sv{font-size:20px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+.stat .sl{font-size:11px;color:#a7adb2}
 .btns{display:flex;flex-direction:column;gap:8px}
-.btn{font:inherit;font-weight:800;border:none;border-radius:12px;padding:13px;cursor:pointer}
-.btn.primary{background:var(--accent);color:#fff}
-.btn.sub{background:var(--panel);color:var(--accent);border:1px solid var(--accent)}
-.btn:active{transform:scale(.98)}
-.copied{font-size:12px;color:var(--accent);height:1.2em;margin-top:4px}
-.foot{text-align:center;color:var(--sub);font-size:11px;margin-top:14px}
+.btn{font:inherit;font-weight:800;border:none;border-radius:4px;padding:12px;cursor:pointer;text-align:center;text-decoration:none}
+.btn.primary{background:var(--ink);color:var(--panel)}
+.btn.sub{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+.btn:active{transform:translateY(1px)}
+.copied{font-size:12px;color:var(--ink);height:1.2em;margin-top:4px}
+.foot{text-align:center;color:var(--sub);font-size:11px;margin-top:12px}
+@media (prefers-reduced-motion: reduce){
+  .result .rscore.go .fl{animation:fadein .15s both;animation-delay:0s}
+  .countdown.flip{animation:fadein .12s both}
+  @keyframes fadein{from{opacity:.3}to{opacity:1}}
+}
+@media (forced-colors: active){
+  .fl, .kana span, .key, .course-card, .stat, .prompt, h1{forced-color-adjust:none}
+}
 </style>
+<script src="jp-phrase-3.js" defer></script>
 </head>
 <body>
 <div id="app">
-  <h1><span class="bolt">⚡</span>フリック早撃ち</h1>
+  <h1 aria-label="フリック早撃ち" data-nophrase><span class="fl">フ</span><span class="fl">リ</span><span class="fl">ッ</span><span class="fl">ク</span><span class="fl">早</span><span class="fl">撃</span><span class="fl">ち</span></h1>
   <p class="tagline">60秒で何文字フリックできる？</p>
 
   <!-- タイトル画面 -->
@@ -161,7 +202,7 @@ details.how li{margin:4px 0}
         <li>コースを選ぶと「3・2・1」のあとスタート。制限時間は<b>60秒</b>です。</li>
         <li>お題のかなを、下のキーボードで順番に入力します。</li>
         <li>キーを<b>タップ</b>すると中央の文字、上下左右に<b>フリック</b>すると周りの文字が入ります。</li>
-        <li>濁点・半濁点・小さい文字は、文字を入れたあと左下の<b>「゛゜小」</b>キーで切り替えます（つ→っ→づ など）。</li>
+        <li>濁点・半濁点・小さい文字は、文字を入れたあと左下の<b class="nw">「゛゜小」</b>キーで切り替えます<span class="nw">（つ→っ→づ など）</span>。</li>
         <li>正解が続くほどコンボでスコアアップ。ミスしても時間は減りません。気楽にどうぞ。</li>
       </ol>
     </details>
@@ -181,17 +222,17 @@ details.how li{margin:4px 0}
     </div>
     <div class="prompt" id="prompt" style="position:relative">
       <div class="label" id="promptLabel"></div>
-      <div class="kana" id="promptKana"></div>
+      <div class="kana" id="promptKana" data-nophrase></div>
       <div class="countdown hidden" id="countdown">3</div>
     </div>
-    <div class="kbd" id="kbd"></div>
+    <div class="kbd" id="kbd" data-nophrase></div>
   </section>
 
   <!-- リザルト画面 -->
   <section id="screen-result" class="hidden">
     <div class="result">
       <div class="rtitle">スコア</div>
-      <div class="rscore" id="rScore">0</div>
+      <div class="rscore" id="rScore" data-nophrase>0</div>
       <div class="rmedal" id="rMedal">称号</div>
       <div class="rbest" id="rBest"></div>
       <div class="stats">
@@ -409,6 +450,22 @@ details.how li{margin:4px 0}
     for (var i = 0; i < pops.length; i++) pops[i].classList.remove("show", "hit");
   }
 
+  /* ---- フラップ（案内表示の板）の演出。開始のカウントダウンと結果の点数だけで使う ---- */
+  function flipOnce(el) {
+    el.classList.remove("flip"); void el.offsetWidth; el.classList.add("flip");
+  }
+  // 点数を1字ずつ板にして、左から順に倒す（textContent は点数の文字列のまま）
+  function setFlaps(el, text) {
+    el.classList.remove("go");
+    el.textContent = "";
+    Array.from(text).forEach(function (c, i) {
+      var sp = document.createElement("span");
+      sp.className = "fl"; sp.style.setProperty("--i", i); sp.textContent = c;
+      el.appendChild(sp);
+    });
+    void el.offsetWidth; el.classList.add("go");
+  }
+
   /* ---- ゲーム進行 ---- */
   function startGame(course) {
     clearInterval(cdIv); // 前ゲームのカウントダウンが残っていれば止める（多重発火の保険）
@@ -425,14 +482,14 @@ details.how li{margin:4px 0}
     // カウントダウン
     playing = false;
     var cd = $("countdown"); cd.classList.remove("hidden");
-    var n = 3; cd.textContent = n;
+    var n = 3; cd.textContent = n; flipOnce(cd);
     initAudio();
     cdIv = setInterval(function () {
       n--;
       if (n <= 0) {
         clearInterval(cdIv); cdIv = 0; cd.classList.add("hidden");
         beginTimer();
-      } else { cd.textContent = n; beep(520, 0.08, "sine", 0.05); }
+      } else { cd.textContent = n; flipOnce(cd); beep(520, 0.08, "sine", 0.05); }
     }, 700);
   }
 
@@ -527,7 +584,7 @@ details.how li{margin:4px 0}
       saveStore(store);
     }
     // 表示
-    $("rScore").textContent = res.score;
+    setFlaps($("rScore"), String(res.score));
     $("rMedal").textContent = "「" + res.title + "」";
     $("rBest").textContent = isBest ? "★自己ベスト更新！" : ("自己ベスト " + (prev ? prev.score : res.score) + "点");
     $("rKpm").textContent = res.kpm;

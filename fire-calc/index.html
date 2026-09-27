@@ -5,143 +5,189 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FIREシミュレーター｜何歳で経済的自由に到達できる？</title>
 <meta name="description" content="毎月の積立と想定利回りから、経済的自由（FIRE）に何年・何歳で届くかを無料で試算。目標年齢から必要な積立額を逆算することもできます。登録不要・数値は端末外に送信されません。">
-<meta name="theme-color" content="#f4f7fc">
+<meta name="theme-color" content="#f2efe6">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
+  /* ===== 2026-09-28 刷新:「硬券の片道乗車券と時刻表」 =====
+     見せ場は1つ: 結果を「経済的自由」行きの硬券（厚紙の切符）に刷る。淡い地紋・日付印字の枠・改札鋏の切り欠き。
+     ほかは時刻表の紙面（墨の罫線・表組み・深緑と赤の2色）。実在の鉄道会社の意匠には似せない */
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
+  :root {
+    --paper: #f2efe6; --sheet: #fbf9f3; --ink: #1f2826; --sub: #57605b; --line: #cdc8b8;
+    --green: #25584b; --red: #ad3a2d; --ticket: #e3ead6; --ticket-edge: #b7c4a6;
+  }
   body {
     font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
-    background: #f4f7fc;
-    color: #263143;
+    background: var(--paper);
+    color: var(--ink);
     line-height: 1.6;
+    overflow-wrap: break-word;
   }
   .wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px 28px; }
+  button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
 
-  .head { text-align: center; padding: 10px 0 14px; }
-  .head h1 { font-size: 21px; letter-spacing: 0.02em; color: #1d4fc4; }
-  .head p { font-size: 12.5px; color: #5c6a7d; margin-top: 3px; }
+  /* 表題（時刻表の表紙の帯） */
+  .head { text-align: center; padding: 8px 0 9px; border-top: 3px solid var(--ink); border-bottom: 1px solid var(--ink); }
+  .head h1 { font-size: 21px; letter-spacing: 0.12em; color: var(--ink); font-weight: 800; }
+  .head p { font-size: 12.5px; color: var(--sub); margin-top: 2px; }
 
-  .tabs { display: flex; gap: 8px; margin: 10px 0 14px; }
+  /* 券種の切り替え */
+  .tabs { display: flex; gap: 0; margin: 12px 0 14px; border: 1.5px solid var(--ink); }
   .tab {
-    flex: 1; padding: 10px 6px; font-size: 14px; font-weight: 700;
-    color: #47576b; background: #e6ecf9; border: 1px solid #d3ddf2;
-    border-radius: 10px; cursor: pointer; text-align: center;
+    flex: 1; padding: 9px 6px; font-size: 14px; font-weight: 700;
+    color: var(--ink); background: var(--sheet); border: none;
+    border-radius: 0; cursor: pointer; text-align: center; font-family: inherit;
     transition: background .15s, color .15s;
   }
-  .tab.active { background: #2f6df6; border-color: #2f6df6; color: #fff; }
+  .tab + .tab { border-left: 1.5px solid var(--ink); }
+  .tab.active { background: var(--ink); color: #f6f3ea; }
 
+  /* 紙面 */
   .card {
-    background: #fff; border: 1px solid #e2e8f5; border-radius: 14px;
-    padding: 16px 16px 14px; margin-bottom: 14px;
-    box-shadow: 0 1px 4px rgba(30, 60, 130, .06);
+    background: var(--sheet); border: 1px solid var(--line); border-radius: 2px;
+    padding: 14px 16px 13px; margin-bottom: 14px;
   }
-  .card h2 { font-size: 14px; color: #1d4fc4; margin-bottom: 10px; }
+  .card h2 { font-size: 13.5px; color: var(--ink); margin-bottom: 7px; padding-bottom: 2px; line-height: 1.5; border-bottom: 1px solid var(--ink); letter-spacing: .08em; }
 
-  .field { margin-bottom: 14px; }
+  .field { margin-bottom: 13px; }
   .field:last-child { margin-bottom: 2px; }
   .field .row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-  .field label { font-size: 13.5px; font-weight: 700; color: #34404f; }
+  .field label { font-size: 13.5px; font-weight: 700; color: var(--ink); }
   .field .val { display: flex; align-items: baseline; gap: 4px; flex-shrink: 0; }
   .field input[type="number"] {
-    width: 96px; padding: 5px 8px; font-size: 16px; font-weight: 700;
-    color: #2452c9; text-align: right;
-    border: 1px solid #c8d5ee; border-radius: 8px; background: #fafcff;
+    width: 96px; padding: 4px 4px 3px; font-size: 16px; font-weight: 700; font-family: inherit; line-height: 1.3;
+    color: var(--green); text-align: right; font-variant-numeric: tabular-nums;
+    border: none; border-bottom: 1.5px solid var(--ink); border-radius: 0; background: transparent;
   }
-  .field .unit { font-size: 13px; color: #5c6a7d; }
+  .field input[type="number"]:focus { outline: none; border-bottom-color: var(--green); box-shadow: 0 1.5px 0 var(--green); }
+  .field .unit { font-size: 13px; color: var(--sub); }
   .field input[type="range"] {
-    width: 100%; margin-top: 8px; accent-color: #2f6df6; height: 22px;
+    width: 100%; margin-top: 8px; accent-color: var(--green); height: 22px;
   }
 
   .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
-  .toggle-row label { font-size: 13.5px; font-weight: 700; color: #34404f; }
-  .switch { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
-  .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; cursor: pointer; }
+  .toggle-row label { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+  .switch { position: relative; width: 42px; height: 22px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; cursor: pointer; z-index: 1; }
   .switch .track {
-    position: absolute; inset: 0; background: #d3ddf2; border-radius: 12px; transition: background .15s;
+    position: absolute; inset: 0; background: var(--sheet); border: 1.5px solid var(--ink); border-radius: 2px; transition: background .15s;
   }
   .switch .track::before {
-    content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px;
-    background: #fff; border-radius: 50%; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2);
+    content: ""; position: absolute; width: 16px; height: 16px; left: 1.5px; top: 1.5px;
+    background: var(--ink); border-radius: 1px; transition: transform .15s;
   }
-  .switch input:checked + .track { background: #2f6df6; }
-  .switch input:checked + .track::before { transform: translateX(18px); }
+  .switch input:checked + .track { background: var(--green); border-color: var(--green); }
+  .switch input:checked + .track::before { transform: translateX(19px); background: #f6f3ea; }
+  .switch input:focus-visible + .track { outline: 2px solid var(--green); outline-offset: 2px; }
 
   details.adv { margin-top: 4px; }
-  details.adv summary { cursor: pointer; font-size: 13px; font-weight: 700; color: #2a4fa8; padding: 4px 0; }
+  details.adv summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--green); padding: 4px 0; }
   details.adv .inner { padding-top: 8px; }
 
   .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
   .presets button {
-    flex: 1; min-width: 30%; padding: 8px 4px; font-size: 12px; font-weight: 700;
-    color: #2a4fa8; background: #eef2fc; border: 1px solid #d3ddf2; border-radius: 9px; cursor: pointer;
+    flex: 1; min-width: 30%; padding: 7px 4px; font-size: 12px; font-weight: 700; font-family: inherit; line-height: 1.5;
+    color: var(--ink); background: transparent; border: 1px solid var(--ink); border-radius: 2px; cursor: pointer;
   }
+  .presets button:hover { background: var(--ticket); }
 
-  .result { text-align: center; padding-top: 4px; }
-  .result .label { font-size: 13px; color: #5c6a7d; }
-  .result .big { font-size: 27px; font-weight: 800; color: #2f6df6; letter-spacing: 0.01em; line-height: 1.35; }
-  .result .sub { font-size: 13.5px; color: #34404f; margin-top: 6px; }
-  .stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-  .stat { flex: 1; min-width: 45%; background: #eef2fc; border-radius: 10px; padding: 8px 4px; text-align: center; }
-  .stat .k { font-size: 11.5px; color: #5c6a7d; }
-  .stat .v { font-size: 15px; font-weight: 700; color: #263143; }
-  .stat .v.plus { color: #206a45; }
+  /* ---- 硬券（結果） ---- */
+  .card.ticket { padding: 12px 12px 12px; }
+  .result {
+    position: relative; text-align: center; padding: 6px 8px 8px;
+    background:
+      repeating-linear-gradient(135deg, transparent 0 5px, rgba(37,88,75,.075) 5px 6px),
+      repeating-linear-gradient(45deg, transparent 0 5px, rgba(37,88,75,.05) 5px 6px),
+      var(--ticket);
+    border: 1px solid var(--ticket-edge); border-radius: 3px;
+    box-shadow: 0 1px 0 var(--ticket-edge), 0 2px 0 #d6dccb, 0 3px 0 var(--ticket-edge);
+  }
+  /* 改札鋏の切り欠き（右の縁） */
+  .result::after {
+    content: ""; position: absolute; right: -1px; top: 14px; width: 9px; height: 12px;
+    background: var(--sheet); border: 1px solid var(--ticket-edge); border-right: none;
+    clip-path: polygon(100% 0, 0 25%, 0 75%, 100% 100%);
+  }
+  .result .label { font-size: 12px; color: var(--green); font-weight: 700; letter-spacing: .3em; display: flex; align-items: center; gap: 8px; }
+  .result .label::before, .result .label::after { content: ""; flex: 1; height: 0; border-top: 1px solid var(--green); }
+  .result .big { font-size: 27px; font-weight: 800; color: var(--ink); letter-spacing: 0; line-height: 1.35; margin-top: 1px; font-variant-numeric: tabular-nums; }
+  /* 日付印字（ダッチング）の枠 */
+  .result .sub { display: inline-block; font-size: 13px; color: var(--ink); margin-top: 3px; padding: 0 8px; line-height: 1.5; border: 1px solid var(--ink); font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+  .result .sub:empty { display: none; }
+
+  /* ---- 時刻表の表組み（内訳） ---- */
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-top: 11px; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--ink); }
+  .stat { min-width: 0; padding: 4px 5px 5px; line-height: 1.5; text-align: center; border-bottom: 1px solid var(--line); }
+  .stat:nth-child(odd) { border-right: 1px solid var(--line); }
+  .stat:nth-last-child(-n+2) { border-bottom: none; }
+  .stat .k { font-size: 11.5px; color: var(--sub); }
+  .stat .v { font-size: 15px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .stat .v.plus { color: var(--green); }
 
   .warn {
-    margin-top: 12px; font-size: 12.5px; color: #6b4f10;
-    background: #fbf3de; border-left: 4px solid #c99a2f; border-radius: 6px;
-    padding: 8px 10px; text-align: left;
+    margin-top: 12px; font-size: 12.5px; color: var(--red);
+    background: transparent; border: 1.5px solid var(--red); border-radius: 0;
+    padding: 7px 10px; text-align: left; font-weight: 700;
   }
 
   .chart-box { position: relative; }
   canvas { width: 100%; height: 220px; display: block; }
-  .legend { display: flex; gap: 16px; justify-content: center; margin-top: 8px; font-size: 12px; color: #47576b; flex-wrap: wrap; }
+  .legend { display: flex; gap: 16px; justify-content: center; margin-top: 8px; font-size: 12px; color: var(--sub); flex-wrap: wrap; }
   .legend span::before {
-    content: ""; display: inline-block; width: 11px; height: 3px;
-    margin-right: 5px; vertical-align: 2px;
+    content: ""; display: inline-block; width: 14px; height: 0;
+    margin-right: 5px; vertical-align: 4px; border-top: 2.5px solid;
   }
-  .legend .lg-principal::before { background: #9db2dd; }
-  .legend .lg-value::before { background: #2f6df6; }
-  .legend .lg-target::before { background: #d9862f; }
+  .legend .lg-principal::before { border-color: #7d877f; }
+  .legend .lg-value::before { border-color: var(--green); }
+  .legend .lg-target::before { border-top: 2px dashed var(--red); }
 
   .rule-box {
-    font-size: 13px; color: #34404f; background: #eef2fc; border-radius: 10px;
-    padding: 12px 14px; margin-bottom: 14px;
+    font-size: 13px; color: var(--ink); background: transparent; border-left: 3px solid var(--green); border-radius: 0;
+    padding: 2px 0 2px 10px; margin: 0 0 14px;
   }
-  .rule-box strong { color: #1d4fc4; }
-  .rule-box a { color: #1d4fc4; font-weight: 700; }
+  .rule-box strong { color: var(--green); }
+  .rule-box a { color: var(--green); font-weight: 700; }
 
   .disclaimer {
-    font-size: 11.5px; color: #6a7789; background: #e9edf6; line-height: 1.7;
-    border-radius: 10px; padding: 10px 12px; margin-top: 2px;
+    font-size: 11.5px; color: var(--sub); background: #e8e4d8; line-height: 1.6;
+    border-radius: 0; padding: 8px 10px; margin-top: 2px; border-top: 1px solid var(--line);
   }
-  .disclaimer strong { color: #47576b; }
-  .privacy { font-size: 11.5px; color: #5c6a7d; text-align: center; margin: 10px 0 2px; }
+  .disclaimer strong { color: var(--ink); }
+  .privacy { font-size: 11.5px; color: var(--sub); text-align: center; margin: 10px 0 2px; }
 
-  details.faq summary { cursor: pointer; font-size: 13.5px; font-weight: 700; color: #1d4fc4; padding: 6px 0; }
-  details.faq .qa { padding: 6px 2px 10px; font-size: 13px; color: #34404f; }
-  details.faq .qa + .qa { border-top: 1px solid #edf1f9; }
+  details.faq summary { cursor: pointer; font-size: 13.5px; font-weight: 700; color: var(--green); padding: 6px 0; }
+  details.faq .qa { padding: 5px 2px 8px; font-size: 13px; color: var(--ink); }
+  details.faq .qa + .qa { border-top: 1px dotted var(--line); }
 
   .links ul { list-style: none; }
-  .links li { padding: 6px 0; border-bottom: 1px solid #edf1f9; font-size: 13px; }
-  .links a { color: #1d4fc4; font-weight: 700; text-decoration: none; }
-  .links .desc { color: #6a7789; font-size: 12px; }
+  .links li { padding: 6px 0; border-bottom: 1px dotted var(--line); font-size: 13px; }
+  .links a { color: var(--green); font-weight: 700; text-decoration: none; }
+  .links .desc { color: var(--sub); font-size: 12px; }
 
   .hidden { display: none; }
+  .note-s { font-size: 11.5px; color: var(--sub); }
 
   @media (max-width: 430px) {
     .head h1 { font-size: 18px; }
     .result .big { font-size: 22px; }
   }
+  @media (forced-colors: active) {
+    .result { border: 2px solid CanvasText; }
+    .result::after { display: none; }
+    .tab.active { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+  }
+  @media (prefers-reduced-motion: reduce) { .tab, .switch .track, .switch .track::before { transition: none; } }
 </style>
+<script src="jp-phrase-3.js" defer></script>
 </head>
 <body>
 <div class="wrap">
 
   <header class="head">
-    <h1>🔥 FIREシミュレーター</h1>
+    <h1>FIREシミュレーター</h1>
     <p>働かなくても暮らせる資産に、何年で届く？</p>
   </header>
 
@@ -159,7 +205,7 @@
         <button type="button" data-preset="standard">標準<br>生活費360万</button>
         <button type="button" data-preset="side">サイドFIRE<br>生活費240万・3%</button>
       </div>
-      <p style="font-size:11.5px;color:#6a7789;margin-top:-6px;">※あくまで一例です。推奨額ではありません</p>
+      <p class="note-s" style="margin-top:-6px;">※あくまで一例です。推奨額ではありません</p>
     </div>
 
     <div class="card">
@@ -219,13 +265,13 @@
               <span class="val"><input type="number" id="fwInf" value="0" min="0" max="10" step="0.5"><span class="unit">%</span></span>
             </div>
             <input type="range" id="fwInfR" value="0" min="0" max="10" step="0.5" aria-label="想定インフレ率">
-            <p style="font-size:11.5px;color:#6a7789;margin-top:6px;">計算に使う年利: <span id="fwUsedRate">4</span>%</p>
+            <p class="note-s" style="margin-top:6px;">計算に使う年利: <span id="fwUsedRate">4</span>%</p>
           </div>
         </div>
       </details>
     </div>
 
-    <div class="card">
+    <div class="card ticket">
       <div class="result" aria-live="polite">
         <div class="label">FIREまでの見込み</div>
         <div class="big" id="fwBig">—</div>
@@ -305,13 +351,13 @@
               <span class="val"><input type="number" id="rvInf" value="0" min="0" max="10" step="0.5"><span class="unit">%</span></span>
             </div>
             <input type="range" id="rvInfR" value="0" min="0" max="10" step="0.5" aria-label="想定インフレ率">
-            <p style="font-size:11.5px;color:#6a7789;margin-top:6px;">計算に使う年利: <span id="rvUsedRate">4</span>%</p>
+            <p class="note-s" style="margin-top:6px;">計算に使う年利: <span id="rvUsedRate">4</span>%</p>
           </div>
         </div>
       </details>
     </div>
 
-    <div class="card">
+    <div class="card ticket">
       <div class="result" aria-live="polite">
         <div class="label">目標達成に必要な積立額</div>
         <div class="big" id="rvBig">—</div>
@@ -353,7 +399,7 @@
   <div class="disclaimer">
     <strong>ご注意</strong>: このシミュレーションは、入力した条件をもとにした<strong>概算</strong>です。実際の運用成績・物価・税金・制度は変動し、将来の結果を保証するものではありません。特定の金融商品の購入を勧めるものでも、投資助言でもありません。投資はご自身の判断と責任で行い、必要に応じて専門家にご相談ください。「4%ルール」は米国の過去データに基づく一つの目安であり、日本・将来の環境では当てはまらない場合があります。概算です・将来を保証しません・投資助言ではありません。
   </div>
-  <p class="privacy">🔒 入力した数値は端末内で計算し、どこにも送信されません</p>
+  <p class="privacy">入力した数値は端末内で計算し、どこにも送信されません</p>
 
   <div class="card links">
     <h2>あわせてどうぞ</h2>
@@ -533,7 +579,7 @@
     maxV = maxV * 1.05;
     if (maxV <= 0) maxV = 1;
 
-    ctx.strokeStyle = "#e2e8f5"; ctx.fillStyle = "#8a96a6";
+    ctx.strokeStyle = "#dcd7c8"; ctx.fillStyle = "#57605b";
     ctx.font = "10.5px sans-serif"; ctx.lineWidth = 1;
     var steps = 4;
     for (var s = 0; s <= steps; s++) {
@@ -542,6 +588,7 @@
       ctx.textAlign = "right";
       ctx.fillText(Math.round(maxV * s / steps / MAN).toLocaleString() + "万", padL - 5, y + 3.5);
     }
+    ctx.strokeStyle = "#1f2826"; ctx.beginPath(); ctx.moveTo(padL, padT + h + 0.5); ctx.lineTo(padL + w, padT + h + 0.5); ctx.stroke();
     var yearStep = Math.max(1, Math.ceil(maxM / 12 / 6));
     ctx.textAlign = "center";
     for (var yy = 0; yy * 12 <= maxM; yy += yearStep) {
@@ -558,12 +605,12 @@
       }
       ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.stroke();
     }
-    lineFor("principal", "#9db2dd");
-    lineFor("value", "#2f6df6");
+    lineFor("principal", "#7d877f");
+    lineFor("value", "#25584b");
 
     var ty = padT + h - h * target / maxV;
     ctx.setLineDash([4, 4]);
-    ctx.strokeStyle = "#d9862f"; ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "#ad3a2d"; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(padL, ty); ctx.lineTo(padL + w, ty); ctx.stroke();
     ctx.setLineDash([]);
   }
