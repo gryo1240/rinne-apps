@@ -6,116 +6,212 @@
 <title>つみたてシミュレーター｜毎月の積立でいくら貯まる？</title>
 <meta name="description" content="毎月の積立額・利回り・年数を入れるだけで将来の資産をグラフでシミュレーション。目標金額から毎月の必要額の逆算もできる無料ツールです。">
 <style>
+  /* 2026-09-27 刷新: 「紙の運用報告書」。色は紙・墨緑インク・朱の3系統だけに絞る。
+     見出しと数字は同梱の Shippori Mincho B1（fonts/ に使う文字だけの軽量版・SIL OFL）。
+     本文の小さい文字は読みやすさ優先でシステムのゴシックのまま。 */
+  @font-face {
+    font-family: "Shippori Mincho B1"; font-weight: 500; font-display: swap;
+    src: url("fonts/shippori-b1-500.woff") format("woff");
+  }
+  @font-face {
+    font-family: "Shippori Mincho B1"; font-weight: 800; font-display: swap;
+    src: url("fonts/shippori-b1-800.woff") format("woff");
+  }
+  :root {
+    --paper: #f3eee2;
+    --paper-deep: #e9e1cf;
+    --ink: #1f2a25;
+    --ink-soft: #5d5f52;
+    --green: #1d5a42;
+    --green-tint: rgba(29, 90, 66, .13);
+    --shu: #b43d27;
+    --rule: #cdbf9f;
+    --mincho: "Shippori Mincho B1", "Yu Mincho", "Hiragino Mincho ProN", serif;
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
+  html { -webkit-text-size-adjust: 100%; background: var(--paper); }
   body {
     font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
-    background: #f4f7f5;
-    color: #22332c;
+    color: var(--ink);
     line-height: 1.6;
+    /* 紙のざらつき（インラインSVGのノイズ。外部通信なし） */
+    background:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' seed='7'/><feColorMatrix values='0 0 0 0 .32  0 0 0 0 .26  0 0 0 0 .16  .16 0 0 0 -.03'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>"),
+      radial-gradient(120% 70% at 50% 0%, #f7f3ea 0%, var(--paper) 60%);
   }
-  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px 28px; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 14px 16px 26px; }
+  .num { font-family: var(--mincho); font-weight: 800; font-variant-numeric: tabular-nums; }
 
-  /* ヘッダー */
-  .head { text-align: center; padding: 10px 0 14px; }
-  .head h1 { font-size: 22px; letter-spacing: 0.04em; color: #14523a; }
-  .head h1 .leaf { font-size: 20px; }
-  .head p { font-size: 12.5px; color: #5c6f66; margin-top: 2px; }
+  /* 表題（新聞の題字のように二重罫で挟む） */
+  .head { text-align: center; border-top: 3px double var(--ink); border-bottom: 1px solid var(--ink); padding: 6px 0 9px; }
+  .mast {
+    display: flex; justify-content: space-between; font-size: 10.5px; color: var(--ink-soft);
+    letter-spacing: .12em; border-bottom: 1px solid var(--rule); padding-bottom: 4px; margin-bottom: 8px;
+  }
+  .head h1 { font-family: var(--mincho); font-weight: 800; font-size: 25px; letter-spacing: .08em; line-height: 1.3; }
+  .head p { font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; }
 
-  /* タブ */
-  .tabs { display: flex; gap: 8px; margin: 10px 0 14px; }
+  /* タブ（見出しの索引） */
+  .tabs { display: flex; margin: 0 0 4px; border-bottom: 1px solid var(--rule); }
   .tab {
-    flex: 1; padding: 10px 6px; font-size: 14px; font-weight: 700;
-    color: #4b5f56; background: #e4ece8; border: 1px solid #d2ddd7;
-    border-radius: 10px; cursor: pointer; text-align: center;
-    transition: background .15s, color .15s;
+    flex: 1; padding: 11px 6px 9px; font-family: var(--mincho); font-weight: 800; font-size: 15px;
+    color: var(--ink-soft); background: none; border: none; border-bottom: 3px solid transparent;
+    margin-bottom: -1px; cursor: pointer; text-align: center; letter-spacing: .04em;
+    transition: color .15s, border-color .15s;
   }
-  .tab.active { background: #0f8a5f; border-color: #0f8a5f; color: #fff; }
+  .tab.active { color: var(--green); border-bottom-color: var(--green); }
+  .tab:focus-visible { outline: 2px solid var(--green); outline-offset: -2px; }
 
-  /* カード */
-  .card {
-    background: #fff; border: 1px solid #e0e8e3; border-radius: 14px;
-    padding: 16px 16px 14px; margin-bottom: 14px;
-    box-shadow: 0 1px 4px rgba(20, 60, 40, .05);
+  /* 区画（カードではなく罫線で区切る） */
+  .card { padding: 12px 0 10px; border-bottom: 1px solid var(--rule); }
+  .card h2 {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--mincho); font-weight: 800; font-size: 14px; color: var(--ink);
+    margin-bottom: 10px; letter-spacing: .04em;
   }
-  .card h2 { font-size: 14px; color: #14523a; margin-bottom: 10px; }
+  .card h2::before { content: ""; width: 7px; height: 7px; background: var(--green); flex: none; }
+  .card h2::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
 
-  /* 入力行 */
-  .field { margin-bottom: 14px; }
-  .field:last-child { margin-bottom: 2px; }
-  .field .row { display: flex; align-items: baseline; justify-content: space-between; }
-  .field label { font-size: 13.5px; font-weight: 700; color: #33463d; }
-  .field .val { display: flex; align-items: baseline; gap: 4px; }
+  /* 入力行（帳簿の記入欄） */
+  .field { margin-bottom: 9px; }
+  .field:last-child { margin-bottom: 0; }
+  .field .row { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+  .field label { font-family: var(--mincho); font-weight: 500; font-size: 14.5px; color: var(--ink); padding-bottom: 3px; }
+  .field .val { display: flex; align-items: baseline; gap: 4px; flex: none; }
   .field input[type="number"] {
-    width: 90px; padding: 5px 8px; font-size: 16px; font-weight: 700;
-    color: #0f8a5f; text-align: right;
-    border: 1px solid #c9d6d0; border-radius: 8px; background: #fbfdfc;
+    width: 96px; padding: 0 2px 1px; font-family: var(--mincho); font-weight: 800; font-size: 23px;
+    color: var(--green); text-align: right; font-variant-numeric: tabular-nums;
+    border: none; border-bottom: 1.5px solid var(--ink); border-radius: 0; background: transparent;
+    -moz-appearance: textfield;
   }
-  .field .unit { font-size: 13px; color: #5c6f66; }
+  .field input[type="number"]::-webkit-inner-spin-button,
+  .field input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .field input[type="number"]:focus { outline: none; background: var(--green-tint); }
+  .field .unit { font-family: var(--mincho); font-weight: 500; font-size: 13px; color: var(--ink-soft); min-width: 2em; }
+
+  /* スライダー（物差し）。ネイティブの range をCSSで装飾するだけ（キーボード・iOSの挙動は標準のまま） */
   .field input[type="range"] {
-    width: 100%; margin-top: 8px; accent-color: #0f8a5f; height: 22px;
+    -webkit-appearance: none; appearance: none; width: 100%; height: 26px; margin-top: 2px;
+    background:
+      linear-gradient(var(--green), var(--green)) 0 50% / var(--p, 0%) 3px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) 0 50% / 100% 1px no-repeat,
+      repeating-linear-gradient(90deg, var(--ink-soft) 0 1px, transparent 1px 10%) 0 calc(50% + 6px) / 100% 4px no-repeat;
+    cursor: pointer;
+  }
+  .field input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 24px; border-radius: 2px;
+    background: var(--paper); border: 2px solid var(--green); box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 9px var(--green);
+  }
+  .field input[type="range"]::-moz-range-thumb {
+    width: 10px; height: 22px; border-radius: 2px;
+    background: var(--green); border: 2px solid var(--paper); outline: 2px solid var(--green);
+  }
+  .field input[type="range"]::-moz-range-track { background: transparent; }
+  .field input[type="range"]:focus-visible { outline: 2px dotted var(--green); outline-offset: 2px; }
+
+  /* 結果（この紙面の主役） */
+  .result { position: relative; text-align: left; padding-top: 16px; }
+  .result .label { font-family: var(--mincho); font-weight: 500; font-size: 14px; color: var(--ink); }
+  .result .big {
+    font-family: var(--mincho); font-weight: 800; font-size: 46px; color: var(--green);
+    letter-spacing: 0; line-height: 1.15; margin: 2px 0 10px; font-variant-numeric: tabular-nums;
+    padding-right: 76px; overflow-wrap: anywhere;
+  }
+  .result .big small { font-size: .45em; color: var(--ink); margin-left: 2px; font-weight: 800; }
+  .result .big .u { font-size: .5em; color: var(--ink); }
+  #rResult small { display: block; font-size: 13px; color: var(--ink-soft); font-weight: 500; margin: 2px 0 0; }
+
+  /* 朱の角印（紙面で唯一の動き。結果欄が表示されるたびに一度押される） */
+  .seal {
+    position: absolute; right: 2px; top: 20px; width: 64px; height: 64px;
+    display: grid; place-items: center; border: 3px solid var(--shu); border-radius: 6px;
+    color: var(--shu); font-family: var(--mincho); font-weight: 800; font-size: 21px; line-height: 1.05;
+    writing-mode: vertical-rl; letter-spacing: .08em; transform: rotate(-9deg); opacity: .88;
+    mix-blend-mode: multiply; pointer-events: none;
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' seed='4'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  3.2 0 0 0 -.62'/></filter><rect width='80' height='80' filter='url(%23n)'/></svg>");
+            mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' seed='4'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  3.2 0 0 0 -.62'/></filter><rect width='80' height='80' filter='url(%23n)'/></svg>");
+    animation: stamp .42s cubic-bezier(.2, .9, .3, 1.25) .35s both;
+  }
+  .seal::after { content: ""; position: absolute; inset: 4px; border: 1px solid var(--shu); border-radius: 3px; }
+  @keyframes stamp {
+    0% { opacity: 0; transform: rotate(-16deg) scale(1.9); }
+    60% { opacity: .95; transform: rotate(-8deg) scale(.94); }
+    100% { opacity: .88; transform: rotate(-9deg) scale(1); }
   }
 
-  /* 結果 */
-  .result { text-align: center; padding-top: 4px; }
-  .result .label { font-size: 13px; color: #5c6f66; }
-  .result .big { font-size: 34px; font-weight: 800; color: #0d7a54; letter-spacing: 0.02em; line-height: 1.3; }
-  .result .big small { font-size: 18px; }
-  .stats { display: flex; gap: 8px; margin-top: 12px; }
-  .stat {
-    flex: 1; background: #f2f7f4; border-radius: 10px; padding: 8px 4px; text-align: center;
-  }
-  .stat .k { font-size: 11.5px; color: #5c6f66; }
-  .stat .v { font-size: 15px; font-weight: 700; color: #22332c; }
-  .stat .v.plus { color: #0d7a54; }
+  /* 内訳（点線リーダーの台帳） */
+  .stats { display: block; }
+  .stat { display: flex; align-items: baseline; padding: 3px 0; }
+  .stat .k { font-size: 13px; color: var(--ink-soft); flex: none; }
+  .stat::after { content: ""; order: 1; flex: 1; border-bottom: 1.5px dotted var(--rule); margin: 0 8px; }
+  .stat { flex-wrap: wrap; }
+  .stat .v { margin-left: auto; white-space: nowrap; }
+  .stat .v { order: 2; font-family: var(--mincho); font-weight: 800; font-size: 17px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .stat .v.plus { color: var(--green); }
   .nisa {
-    margin-top: 12px; font-size: 12.5px; color: #4b5f56;
-    background: #eef6f1; border-left: 4px solid #0f8a5f; border-radius: 6px;
-    padding: 8px 10px; text-align: left;
+    position: relative; margin-top: 12px; font-size: 12.5px; color: var(--ink);
+    border: 1px solid var(--rule); background: rgba(255, 252, 244, .55);
+    padding: 9px 11px 9px 58px; text-align: left; min-height: 42px;
+  }
+  .nisa::before {
+    content: "備考"; position: absolute; left: 10px; top: 9px;
+    font-family: var(--mincho); font-weight: 800; font-size: 12px; color: var(--shu);
+    border: 1px solid var(--shu); padding: 0 5px; letter-spacing: .1em;
   }
 
   /* グラフ */
   .chart-box { position: relative; }
   canvas { width: 100%; height: 240px; display: block; }
-  .legend { display: flex; gap: 16px; justify-content: center; margin-top: 8px; font-size: 12px; color: #4b5f56; }
+  .legend { display: flex; gap: 18px; justify-content: center; margin-top: 6px; font-size: 12px; color: var(--ink-soft); }
   .legend span::before {
-    content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 3px;
-    margin-right: 5px; vertical-align: -1px;
+    content: ""; display: inline-block; width: 16px; height: 10px; margin-right: 6px; vertical-align: -1px;
   }
-  .legend .lg-total::before { background: #0f8a5f; }
-  .legend .lg-principal::before { background: #b8c8bf; }
+  .legend .lg-total::before { background: var(--green-tint); border-top: 2px solid var(--green); }
+  .legend .lg-principal::before {
+    border-top: 1.5px solid var(--ink);
+    background: repeating-linear-gradient(-45deg, rgba(31, 42, 37, .45) 0 1px, transparent 1px 4px);
+  }
   .tooltip {
     position: absolute; pointer-events: none; display: none;
-    background: rgba(20, 40, 30, .92); color: #fff; font-size: 11.5px;
-    padding: 7px 10px; border-radius: 8px; white-space: nowrap; z-index: 5; line-height: 1.5;
+    background: #fbf8f0; color: var(--ink); font-size: 11.5px; border: 1px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--green-tint);
+    padding: 6px 10px; white-space: nowrap; z-index: 5; line-height: 1.55;
   }
+  .tooltip b { font-family: var(--mincho); font-weight: 800; color: var(--green); }
 
   /* 年次テーブル */
   details summary {
-    cursor: pointer; font-size: 13.5px; font-weight: 700; color: #14523a;
+    cursor: pointer; font-family: var(--mincho); font-weight: 800; font-size: 14px; color: var(--ink);
     padding: 4px 0; list-style-position: inside;
   }
-  .table-scroll { max-height: 320px; overflow-y: auto; margin-top: 8px; }
-  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-  th, td { padding: 6px 4px; text-align: right; border-bottom: 1px solid #eef2ef; }
-  th { color: #5c6f66; font-weight: 700; background: #f7faf8; position: sticky; top: 0; }
+  details summary::marker { color: var(--green); }
+  .table-scroll { max-height: 320px; overflow-y: auto; margin-top: 8px; border-top: 1.5px solid var(--ink); }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 6px 4px; text-align: right; border-bottom: 1px solid var(--rule); }
+  th { font-family: var(--mincho); font-weight: 800; color: var(--ink); background: var(--paper-deep); position: sticky; top: 0; }
   th:first-child, td:first-child { text-align: center; }
-  td.gain { color: #0d7a54; }
+  td.gain { color: var(--green); font-weight: 700; }
 
-  /* 注意書き */
-  .disclaimer {
-    font-size: 11.5px; color: #7a8a82; background: #eef1ef;
-    border-radius: 10px; padding: 10px 12px; margin-top: 2px;
-  }
-  .disclaimer strong { color: #5c6f66; }
+  /* 注意書き（紙面の脚注） */
+  .disclaimer { font-size: 11.5px; color: var(--ink-soft); padding: 12px 0 0; }
+  .disclaimer strong { color: var(--ink); font-family: var(--mincho); font-weight: 800; }
 
   .hidden { display: none; }
 
   @media (max-width: 430px) {
-    .head h1 { font-size: 19px; }
-    .result .big { font-size: 28px; }
-    .stats { flex-wrap: wrap; }
-    .stat { min-width: 45%; }
+    .head h1 { font-size: 22px; }
+    .result .big { font-size: 38px; }
+  }
+  @media (max-width: 340px) {
+    .result .big { font-size: 33px; padding-right: 64px; }
+    .tab { font-size: 13.5px; letter-spacing: 0; }
+    .head p { font-size: 11.5px; }
+    .seal { width: 56px; height: 56px; font-size: 18px; }
+  }
+  /* 動きを減らす設定: 角印は押す動きをやめ、その場で現れるだけにする（消しはしない） */
+  @media (prefers-reduced-motion: reduce) {
+    .seal { animation: stamp-still .3s ease .2s both; }
+    @keyframes stamp-still { from { opacity: 0; } to { opacity: .88; } }
   }
 </style>
 </head>
@@ -123,7 +219,8 @@
 <div class="wrap">
 
   <header class="head">
-    <h1><span class="leaf">🌱</span> つみたてシミュレーター</h1>
+    <div class="mast"><span>資産形成 試算書</span><span id="issueDate"></span></div>
+    <h1>つみたてシミュレーター</h1>
     <p>毎月コツコツ積み立てると、将来いくらになる？</p>
   </header>
 
@@ -167,6 +264,7 @@
     </div>
 
     <div class="card result">
+      <span class="seal" aria-hidden="true">試算</span>
       <div class="label"><span id="fYearsLabel">20</span>年後の資産額（概算）</div>
       <div class="big" id="fResult">—</div>
       <div class="stats">
@@ -237,6 +335,7 @@
     </div>
 
     <div class="card result">
+      <span class="seal" aria-hidden="true">試算</span>
       <div class="label"><span id="rGoalLabel">2,000万円</span>を<span id="rYearsLabel">20</span>年でつくるには</div>
       <div class="big" id="rResult">—</div>
       <div class="stats">
@@ -262,6 +361,7 @@ function $(id) { return document.getElementById(id); }
 
 // 万円 → 「1億2,345万円」形式
 function fmtMan(man) {
+  if (!isFinite(man)) return "—"; // 計算できない大きさ（極端な入力）
   const n = Math.round(man);
   if (n >= 10000) {
     const oku = Math.floor(n / 10000);
@@ -273,8 +373,14 @@ function fmtMan(man) {
 
 // 万円 → 円表記（月額用・100円単位で四捨五入）
 function fmtYen(man) {
+  if (!isFinite(man * 10000)) return "—";
   const yen = Math.round(man * 10000 / 100) * 100;
   return yen.toLocaleString() + "円";
+}
+
+// 金額の文字列を、数字は大きく・単位(億/万円など)は小さく組む。表示される文字そのものは変えない
+function setMoney(el, text) {
+  el.innerHTML = text.replace(/[^\d,.+\-—\s  ]+/g, (u) => "<small>" + u + "</small>");
 }
 
 /* ---------- 計算（月複利・毎月末積立） ---------- */
@@ -295,10 +401,18 @@ function requiredMonthly(targetMan, initialMan, ratePct, years) {
 }
 
 /* ---------- スライダーと数値入力の同期 ---------- */
+// 物差しの「ここまで」の塗り（--p）を今の値に合わせる
+function paintRange(rng) {
+  const min = parseFloat(rng.min), max = parseFloat(rng.max);
+  const p = (parseFloat(rng.value) - min) / (max - min) * 100;
+  rng.style.setProperty("--p", Math.max(0, Math.min(100, p)) + "%");
+}
+
 function bindPair(numId, rangeId, onChange) {
   const num = $(numId), rng = $(rangeId);
-  num.addEventListener("input", () => { rng.value = num.value; onChange(); });
-  rng.addEventListener("input", () => { num.value = rng.value; onChange(); });
+  num.addEventListener("input", () => { rng.value = num.value; paintRange(rng); onChange(); });
+  rng.addEventListener("input", () => { num.value = rng.value; paintRange(rng); onChange(); });
+  paintRange(rng);
 }
 
 function readNum(id, fallback) {
@@ -312,7 +426,8 @@ let chartData = null;
 function calcForward() {
   const monthly = readNum("fMonthly", 0);
   const rate = readNum("fRate", 0);
-  const years = Math.max(1, Math.round(readNum("fYears", 1)));
+  // 期間は最大100年に抑える（巨大な値で年次表を何億行も作って画面が固まるのを防ぐ）
+  const years = Math.min(100, Math.max(1, Math.round(readNum("fYears", 1))));
   const initial = readNum("fInitial", 0);
 
   const fv = futureValue(initial, monthly, rate, years);
@@ -320,14 +435,14 @@ function calcForward() {
   const gain = fv - principal;
 
   $("fYearsLabel").textContent = years;
-  $("fResult").textContent = fmtMan(fv);
+  setMoney($("fResult"), fmtMan(fv));
   $("fPrincipal").textContent = fmtMan(principal);
   $("fGain").textContent = "+" + fmtMan(gain);
   $("fRatio").textContent = principal > 0 ? (fv / principal).toFixed(2) + "倍" : "—";
 
   $("fNisa").innerHTML = monthly <= 10
-    ? "🌙 毎月" + monthly + "万円なら、新NISAの「つみたて投資枠」（月10万円・年120万円まで）の範囲内です。枠内の運用益は非課税になります。"
-    : "🌙 新NISAの「つみたて投資枠」は月10万円（年120万円）まで。超える分は成長投資枠（年240万円）や課税口座の利用になります。";
+    ? "毎月" + monthly + "万円なら、新NISAの「つみたて投資枠」（月10万円・年120万円まで）の範囲内です。枠内の運用益は非課税になります。"
+    : "新NISAの「つみたて投資枠」は月10万円（年120万円）まで。超える分は成長投資枠（年240万円）や課税口座の利用になります。";
 
   // 年次データ（グラフ・表と共用）
   const rows = [];
@@ -349,8 +464,34 @@ function calcForward() {
   drawChart();
 }
 
-/* ---------- グラフ描画 ---------- */
+/* ---------- グラフ描画（印刷物の図版の作法: 元本は斜線、評価額は淡い面＋太線） ---------- */
 const PAD = { top: 14, right: 12, bottom: 26, left: 56 };
+const C_INK = "#1f2a25", C_SOFT = "#5d5f52", C_GREEN = "#1d5a42", C_RULE = "#cdbf9f", C_PAPER = "#f3eee2";
+const AXIS_FONT = "500 11px 'Shippori Mincho B1', 'Yu Mincho', serif";
+
+let hatchTile = null, hatchDpr = 0;
+function hatchPattern(ctx, dpr) {
+  if (!hatchTile || hatchDpr !== dpr) {
+    const s = Math.round(5 * dpr);
+    hatchTile = document.createElement("canvas");
+    hatchTile.width = hatchTile.height = s;
+    const g = hatchTile.getContext("2d");
+    g.strokeStyle = "rgba(31, 42, 37, .42)";
+    g.lineWidth = Math.max(1, dpr * .8);
+    g.beginPath();
+    g.moveTo(0, s); g.lineTo(s, 0);
+    g.moveTo(-s, s); g.lineTo(s, -s);
+    g.moveTo(0, 2 * s); g.lineTo(2 * s, 0);
+    g.stroke();
+    hatchDpr = dpr;
+  }
+  const p = ctx.createPattern(hatchTile, "repeat");
+  // ctx は dpr 倍に拡大済みなので、模様だけ等倍に戻して線を細く保つ
+  if (p && p.setTransform && typeof DOMMatrix === "function") {
+    try { p.setTransform(new DOMMatrix([1 / dpr, 0, 0, 1 / dpr, 0, 0])); } catch (e) {}
+  }
+  return p;
+}
 
 function niceStep(max, ticks) {
   const raw = max / ticks;
@@ -378,31 +519,40 @@ function drawChart() {
   const maxVal = Math.max(rows[rows.length - 1].value, 1);
   const step = niceStep(maxVal, 4);
   const yMax = Math.ceil(maxVal / step) * step;
+  // 金額が大きすぎて計算できない（無限大）ときは描かない。目盛りのループが終わらなくなるため
+  if (!isFinite(yMax) || !(step > 0) || yMax / step > 100) return;
 
   const plotW = w - PAD.left - PAD.right;
   const plotH = h - PAD.top - PAD.bottom;
   const x = year => PAD.left + plotW * (year / years);
   const y = val => PAD.top + plotH * (1 - val / yMax);
 
-  // 横グリッド + Y軸ラベル
-  ctx.font = "11px sans-serif";
-  ctx.fillStyle = "#7a8a82";
-  ctx.strokeStyle = "#e6ece8";
+  // 横罫 + Y軸ラベル（点線の罫、底だけ実線）
+  ctx.font = AXIS_FONT;
+  ctx.fillStyle = C_SOFT;
   ctx.lineWidth = 1;
   ctx.textAlign = "right";
   for (let v = 0; v <= yMax; v += step) {
+    ctx.strokeStyle = v === 0 ? C_INK : C_RULE;
+    ctx.setLineDash(v === 0 ? [] : [2, 3]);
     ctx.beginPath();
-    ctx.moveTo(PAD.left, y(v));
-    ctx.lineTo(w - PAD.right, y(v));
+    ctx.moveTo(PAD.left, Math.round(y(v)) + .5);
+    ctx.lineTo(w - PAD.right, Math.round(y(v)) + .5);
     ctx.stroke();
     ctx.fillText(v >= 10000 ? (v / 10000) + "億" : v.toLocaleString() + "万", PAD.left - 6, y(v) + 4);
   }
+  ctx.setLineDash([]);
 
-  // X軸ラベル（〜8個程度）
+  // X軸ラベル（〜8個程度）と目盛りの短い縦線
   ctx.textAlign = "center";
   const xStep = years <= 8 ? 1 : years <= 16 ? 2 : years <= 32 ? 5 : 10;
+  ctx.strokeStyle = C_INK;
   for (let yr = 0; yr <= years; yr += xStep) {
     ctx.fillText(yr + "年", x(yr), h - 8);
+    ctx.beginPath();
+    ctx.moveTo(Math.round(x(yr)) + .5, y(0));
+    ctx.lineTo(Math.round(x(yr)) + .5, y(0) + 4);
+    ctx.stroke();
   }
 
   // 面（評価額 → 元本の順に重ねる）
@@ -415,19 +565,43 @@ function drawChart() {
     ctx.fillStyle = fill;
     ctx.fill();
   }
-  area(r => r.value, "rgba(15, 138, 95, 0.18)");
-  area(r => r.principal, "rgba(150, 168, 158, 0.30)");
+  area(r => r.value, "rgba(29, 90, 66, .14)");
+  area(r => r.principal, C_PAPER);
+  area(r => r.principal, hatchPattern(ctx, dpr));
 
   // 線
-  function line(getVal, color) {
+  function line(getVal, color, width) {
     ctx.beginPath();
     rows.forEach((r, i) => i === 0 ? ctx.moveTo(x(r.year), y(getVal(r))) : ctx.lineTo(x(r.year), y(getVal(r))));
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = width;
+    ctx.lineJoin = "round";
     ctx.stroke();
   }
-  line(r => r.principal, "#9fb2a8");
-  line(r => r.value, "#0f8a5f");
+  line(r => r.principal, C_INK, 1.2);
+  line(r => r.value, C_GREEN, 2.6);
+
+  // 最終年の注記: 元本と評価額の差（＝運用で増えた分）を括弧でくくる
+  const last = rows[rows.length - 1];
+  const xe = x(years), yv = y(last.value), yp = y(last.principal);
+  ctx.fillStyle = C_GREEN;
+  ctx.beginPath(); ctx.arc(xe, yv, 3.4, 0, Math.PI * 2); ctx.fill();
+  if (last.value - last.principal > 0 && yp - yv >= 30) {
+    const bx = xe - 7;
+    ctx.strokeStyle = C_GREEN; ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(bx + 4, yv + 3); ctx.lineTo(bx, yv + 3); ctx.lineTo(bx, yp - 2); ctx.lineTo(bx + 4, yp - 2);
+    ctx.stroke();
+    const my = (yv + yp) / 2;
+    ctx.textAlign = "right";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 4; ctx.strokeStyle = "rgba(243, 238, 226, .92)";
+    const l1 = "運用で増えた分", l2 = "+" + fmtMan(last.value - last.principal);
+    ctx.font = "500 10.5px 'Shippori Mincho B1', 'Yu Mincho', serif";
+    ctx.strokeText(l1, bx - 6, my - 3); ctx.fillStyle = C_INK; ctx.fillText(l1, bx - 6, my - 3);
+    ctx.font = "800 13px 'Shippori Mincho B1', 'Yu Mincho', serif";
+    ctx.strokeText(l2, bx - 6, my + 12); ctx.fillStyle = C_GREEN; ctx.fillText(l2, bx - 6, my + 12);
+  }
 }
 
 /* ---------- グラフのホバー表示 ---------- */
@@ -467,16 +641,17 @@ function calcReverse() {
 
   $("rGoalLabel").textContent = fmtMan(target);
   $("rYearsLabel").textContent = years;
-  $("rResult").innerHTML = monthly === 0
+  $("rResult").innerHTML = !isFinite(monthly * 10000) ? "—" // 計算できない大きさ（極端な入力）
+    : monthly === 0
     ? "積立不要<small>（初期投資だけで達成見込み）</small>"
-    : "毎月 " + fmtYen(monthly) + "<small>（約" + (Math.round(monthly * 10) / 10).toLocaleString() + "万円）</small>";
+    : "<span class='u'>毎月 </span>" + fmtYen(monthly).replace("円", "<span class='u'>円</span>") + "<small>（約" + (Math.round(monthly * 10) / 10).toLocaleString() + "万円）</small>";
   $("rPrincipal").textContent = fmtMan(principal);
   $("rGain").textContent = "+" + fmtMan(Math.max(0, target - principal));
   $("rNoInvest").textContent = "毎月 " + fmtYen(noInvest);
 
   $("rNisa").innerHTML = monthly <= 10
-    ? "🌙 毎月の必要額が10万円以内なので、新NISAの「つみたて投資枠」（月10万円・年120万円まで）の範囲内で目指せる計算です。"
-    : "🌙 毎月の必要額が新NISAつみたて投資枠（月10万円）を超えています。期間を延ばす・目標を分割するなどの調整も検討してみてください。";
+    ? "毎月の必要額が10万円以内なので、新NISAの「つみたて投資枠」（月10万円・年120万円まで）の範囲内で目指せる計算です。"
+    : "毎月の必要額が新NISAつみたて投資枠（月10万円）を超えています。期間を延ばす・目標を分割するなどの調整も検討してみてください。";
 }
 
 /* ---------- タブ切り替え ---------- */
@@ -495,6 +670,11 @@ $("tabRev").addEventListener("click", () => {
 });
 
 /* ---------- 初期化 ---------- */
+(function () {
+  const d = new Date();
+  $("issueDate").textContent = d.getFullYear() + "年" + (d.getMonth() + 1) + "月" + d.getDate() + "日 作成";
+})();
+
 bindPair("fMonthly", "fMonthlyR", calcForward);
 bindPair("fRate", "fRateR", calcForward);
 bindPair("fYears", "fYearsR", calcForward);
@@ -507,6 +687,11 @@ bindPair("rInitial", "rInitialR", calcReverse);
 window.addEventListener("resize", drawChart);
 calcForward();
 calcReverse();
+// canvas は自分からフォントを読みに行かないので、同梱フォントが届いたら描き直す
+if (document.fonts && document.fonts.load) {
+  Promise.all([document.fonts.load(AXIS_FONT), document.fonts.load("800 13px 'Shippori Mincho B1'")])
+    .then(drawChart, () => {});
+}
 </script>
 
 <!-- rb-blog-link: りんね☆ブログ導線。iframe埋め込み時は非表示なので埋め込み高さに影響しない -->

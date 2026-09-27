@@ -1,7 +1,7 @@
 // MOON DODGE Service Worker (キャッシュ優先・オフライン動作)
 // bgm/ は容量が大きいためキャッシュ対象外(オンライン時のみ再生)
-const CACHE = "moon-dodge-v7";
-const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+const CACHE = "moon-dodge-v8";
+const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./fonts/syncopate-700.woff"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
