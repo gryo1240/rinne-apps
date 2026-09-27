@@ -1894,7 +1894,7 @@ $('dexBtn').onclick = openDex;
 $('dexClose').onclick = () => { sfx.ui(); show('dex', false); };
 
 // ================================================================ share (the player posts it themselves)
-const SHARE_URL = '';   // set to the public page URL once the game is published
+const SHARE_URL = 'https://rinne-blog.com/moon-rabbit-rescue';   // the blog article that embeds the game
 let shareText = '';
 function setupShare(text) {
   shareText = text + (SHARE_URL ? '\n' + SHARE_URL : '');
@@ -2235,7 +2235,7 @@ function frame() {
 }
 
 // ================================================================ boot
-window.__mrr = { game, player, capture, endless, openDex, panic, fxOn, chunks, get colliders() { return colliders; }, get earth() { return earthGroup; } };  // debug/test hook
+window.__mrr = { game, player, input, cam, capture, endless, openDex, panic, fxOn, chunks, get colliders() { return colliders; }, get earth() { return earthGroup; } };  // debug/test hook (also drives the promo-video recorder)
 settings.fx = (load('mrr-fx') ?? (matchMedia('(prefers-reduced-motion: reduce)').matches ? '0' : '1')) !== '0';
 settings.quality = load('mrr-quality') === 'low' || (load('mrr-quality') === null && IS_TOUCH) ? 'low' : 'high';
 if (settings.quality === 'low') applyQuality('low');
