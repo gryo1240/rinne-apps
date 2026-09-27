@@ -383,6 +383,12 @@
     night: { sky1: "#0f1530", sky2: "#1b254c", far: "#34427a", near: "#141a36", house: "#cfc6b4", roof: "#5a4a66", win: "#ffd27a" },
     latenight: { sky1: "#070a18", sky2: "#10172f", far: "#222c54", near: "#0b1124", house: "#a8a190", roof: "#3f3650", win: "#d9a25a" }
   };
+  // 満月の夕方・夜は丘を金色に（index.html の #scene.full-moon-glow と同じ値。2026-09-27 オーナー指示）
+  var SHARE_FULL = {
+    evening: { far: "#d6a862", near: "#957040" },
+    night: { far: "#d9b262", near: "#9c7a3e" },
+    latenight: { far: "#bf9a4f", near: "#856636" }
+  };
   function star4(ctx, x, y, r) {
     ctx.beginPath();
     ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.22, y - r * 0.22); ctx.lineTo(x + r, y); ctx.lineTo(x + r * 0.22, y + r * 0.22);
@@ -390,11 +396,18 @@
     ctx.closePath(); ctx.fill();
   }
   // 色紙1枚を塗る(縁の影は上向き＝奥の紙に落ちる影)
-  function paperFill(ctx, color, shadowY, build) {
+  // build は丘の上の曲線だけを描く。塗りは下端まで閉じ、rim があれば稜線だけに明るいふちを引く
+  function paperFill(ctx, color, shadowY, build, rim) {
+    var W = ctx.canvas.width, H = ctx.canvas.height;
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.3)"; ctx.shadowBlur = 16; ctx.shadowOffsetY = shadowY;
     ctx.fillStyle = color;
-    ctx.beginPath(); build(ctx); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); build(ctx); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
+    if (rim) {
+      ctx.shadowColor = "transparent";
+      ctx.strokeStyle = rim; ctx.lineWidth = 5; ctx.lineJoin = "round";
+      ctx.beginPath(); build(ctx); ctx.stroke();
+    }
     ctx.restore();
   }
   function drawShareCard() {
@@ -407,6 +420,8 @@
     var W = cv.width, H = cv.height;
 
     var pal = SHARE_PAL[band];
+    var fullGlow = phase === "full" && SHARE_FULL[band];   // 画面の full-moon-glow と同じ条件（満月かつ夕方・夜・深夜）
+    var gold = fullGlow ? SHARE_FULL[band] : null;
     // 空(2枚の色紙)
     ctx.fillStyle = pal.sky1; ctx.fillRect(0, 0, W, H * 0.46);
     ctx.fillStyle = pal.sky2; ctx.fillRect(0, H * 0.46, W, H);
@@ -436,18 +451,24 @@
     ctx.fill();
     if (MOON_PATHS[phase]) {
       ctx.fillStyle = MOON_LIT;
+      if (gold) {
+        // 満月: 輪郭から金色の光がにじむ（外側の広い光 → 輪郭の近くの明るい光の順に重ねる）
+        ctx.shadowOffsetY = 0;
+        ctx.shadowColor = "rgba(255,200,100,0.55)"; ctx.shadowBlur = 70; ctx.fill(new Path2D(MOON_PATHS[phase]));
+        ctx.shadowColor = "rgba(255,212,120,0.9)"; ctx.shadowBlur = 30; ctx.fill(new Path2D(MOON_PATHS[phase]));
+        ctx.shadowColor = "#fff0c0"; ctx.shadowBlur = 8;
+      }
       ctx.fill(new Path2D(MOON_PATHS[phase]));
     }
     ctx.restore();
 
     // 遠くの丘
-    paperFill(ctx, pal.far, -6, function (c) {
+    paperFill(ctx, gold ? gold.far : pal.far, -6, function (c) {
       c.moveTo(0, H - 205);
       c.bezierCurveTo(W * 0.14, H - 290, W * 0.3, H - 282, W * 0.42, H - 232);
       c.bezierCurveTo(W * 0.54, H - 186, W * 0.66, H - 318, W * 0.8, H - 300);
       c.bezierCurveTo(W * 0.9, H - 288, W * 0.96, H - 262, W, H - 250);
-      c.lineTo(W, H); c.lineTo(0, H);
-    });
+    }, gold ? "#ffe8a8" : null);
     // 家(窓は夜だけ灯る色)
     ctx.save();
     ctx.translate(W * 0.045, H - 330);
@@ -461,12 +482,11 @@
     ctx.fillStyle = pal.roof; ctx.fillRect(33, 38, 10, 19);
     ctx.restore();
     // 手前の丘
-    paperFill(ctx, pal.near, -8, function (c) {
+    paperFill(ctx, gold ? gold.near : pal.near, -8, function (c) {
       c.moveTo(0, H - 128);
       c.bezierCurveTo(W * 0.18, H - 176, W * 0.38, H - 190, W * 0.54, H - 178);
       c.bezierCurveTo(W * 0.72, H - 166, W * 0.86, H - 142, W, H - 152);
-      c.lineTo(W, H); c.lineTo(0, H);
-    });
+    }, gold ? "#f7d98c" : null);
 
     // うさぎ(簡略シルエット)
     ctx.save();
@@ -502,7 +522,13 @@
     ctx.fillText("おつきまいり " + state.streak.count + "日目", 400, 424);
     ctx.font = "bold 30px 'Hiragino Maru Gothic ProN', 'Yu Gothic UI', Meiryo, sans-serif";
     ctx.fillStyle = band === "morning" || band === "noon" ? "#5a5030" : "#e8c872";
+    if (gold) {
+      // 金色の原っぱの上では金の文字が沈むので、明るいクリーム色＋薄い影にする
+      ctx.fillStyle = "#fff6dc";
+      ctx.shadowColor = "rgba(60,40,10,0.55)"; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+    }
     ctx.fillText("月うさぎのすみか｜rinne-blog.com/tsuki-usagi", 400, 600);
+    ctx.shadowColor = "transparent";
   }
   $("btnShare").addEventListener("click", function () {
     drawShareCard();
