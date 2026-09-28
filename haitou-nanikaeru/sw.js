@@ -1,7 +1,7 @@
 // 配当金なに買える？ Service Worker（キャッシュ優先・オフライン動作）
-const CACHE = "haitou-nanikaeru-v6";
+const CACHE = "haitou-nanikaeru-v7";
 const ASSETS = ["./", "./index.html", "./data.js", "./logic.js", "./manifest.json",
-  "./icon-192.png", "./icon-512.png"];
+  "./icon-192.png", "./icon-512.png", "./jp-phrase-3.js", "./fonts/shippori-b1-800.woff"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));

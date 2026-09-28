@@ -5,222 +5,255 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>毎月分配カレンダー｜J-REIT ETFの組み合わせで毎月分配金をもらう</title>
 <meta name="description" content="J-REIT ETFを選ぶだけで、分配金が何月に入るかを12ヶ月カレンダーで表示。受け取りのない空白月と、その月に受け取りがある銘柄が分かります。登録不要・入力した数値は端末外に送信されません。">
-<meta name="theme-color" content="#f2f8f5">
+<meta name="theme-color" content="#f7f6f1">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
+  /* 2026-09-28 刷新:「手帳の年間予定表に、入金のある月を蛍光ペンで引く」。
+     色は 手帳の紙・青黒のインク・蛍光イエロー の3系統。書体は端末の標準のまま（数字は等幅）。
+     見せ場は1つだけ: 12ヶ月すべてに入金がある組み合わせになった瞬間、合計の行に蛍光ペンが1本引かれる。
+     カレンダーの ●・✕ は文字として残し（読み上げ・結果の文字列は従来どおり）、見た目だけ蛍光ペンの線と手書きの✕にする */
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
+  :root {
+    --paper: #f7f6f1; --page: #fffffc; --ink: #1d2a3f; --soft: #56607a; --faint: #666d80;
+    --rule: #dcdfe6; --grid: #e8eaf0; --hl: #f6e64b; --hl-soft: #fbf3a6; --hl-ink: #1d2a3f;
+    color-scheme: light;
+  }
   body {
     font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
-    background: #f2f8f5;
-    color: #22322c;
+    background: var(--paper);
+    color: var(--ink);
     line-height: 1.6;
   }
   .wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px 28px; }
+  a { color: var(--ink); }
 
-  .head { text-align: center; padding: 8px 0 12px; }
-  .head h1 { font-size: 22px; letter-spacing: .02em; color: #14614a; }
-  .head p { font-size: 14.5px; color: #5d6f68; margin-top: 4px; }
-  .privacy { font-size: 13.5px; color: #6b7d76; margin-top: 6px; }
+  /* 手帳の表紙の見返し（中央ぞろえをやめ、左に寄せて細い二重線で区切る） */
+  .head { text-align: left; padding: 2px 2px 9px; margin-bottom: 11px; border-bottom: 3px double var(--ink); }
+  .head h1 { font-size: 22px; letter-spacing: .06em; color: var(--ink); line-height: 1.4; }
+  .head p { font-size: 14px; color: var(--soft); margin-top: 2px; line-height: 1.5; }
+  .privacy { font-size: 13px; color: var(--faint); margin-top: 4px; }
 
+  /* 手帳のページ（角を立て、見出しの左にインデックスの札） */
   .card {
-    background: #fff; border: 1px solid #dde9e3; border-radius: 14px;
-    padding: 14px 14px 12px; margin-bottom: 13px;
-    box-shadow: 0 1px 4px rgba(20, 90, 70, .06);
+    background: var(--page); border: 1px solid var(--rule); border-radius: 3px;
+    padding: 13px 14px 12px; margin-bottom: 13px;
   }
   .card > h2 {
-    font-size: 16.5px; color: #14614a; margin-bottom: 10px;
-    padding-bottom: 7px; border-bottom: 1px solid #e8f0ec;
+    font-size: 16px; color: var(--ink); margin-bottom: 10px; letter-spacing: .03em;
+    padding: 0 0 6px 10px; border-bottom: 1px solid var(--ink); border-left: 4px solid var(--ink); line-height: 1.45;
   }
 
   .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; }
-  .row + .row { border-top: 1px dashed #eaf1ee; }
-  .row .lbl { font-size: 15px; color: #33463f; }
-  .row .lbl small { display: block; font-size: 13px; color: #74867f; line-height: 1.45; }
+  .row + .row { border-top: 1px dotted var(--rule); }
+  .row .lbl { font-size: 15px; color: var(--ink); }
+  .row .lbl small { display: block; font-size: 13px; color: var(--soft); line-height: 1.45; }
 
   /* トグルスイッチ: 必ず <label> で包む（見た目の部分をクリックしても反応させるため） */
   .switch { position: relative; width: 44px; height: 25px; flex-shrink: 0; display: inline-block; cursor: pointer; }
   .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; cursor: pointer; z-index: 2; }
   .switch .track {
-    position: absolute; inset: 0; background: #c7d6cf; border-radius: 999px; transition: background .15s; pointer-events: none;
+    position: absolute; inset: 0; background: var(--page); border: 1.5px solid var(--ink); border-radius: 999px; transition: background .15s; pointer-events: none;
   }
   .switch .track::before {
-    content: ""; position: absolute; left: 3px; top: 3px; width: 19px; height: 19px;
-    background: #fff; border-radius: 50%; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2);
+    content: ""; position: absolute; left: 3px; top: 2.5px; width: 17px; height: 17px;
+    background: var(--ink); border-radius: 50%; transition: transform .15s;
   }
-  .switch input:checked + .track { background: #1b7a5a; }
-  .switch input:checked + .track::before { transform: translateX(19px); }
+  .switch input:checked + .track { background: var(--hl); }
+  .switch input:checked + .track::before { transform: translateX(19px); background: var(--hl-ink); }
+  .switch input:focus-visible + .track { outline: 2px solid var(--ink); outline-offset: 2px; }
 
-  .seg { display: flex; gap: 6px; }
+  .seg { display: flex; gap: 0; border: 1.5px solid var(--ink); border-radius: 3px; overflow: hidden; }
   .seg button {
-    flex: 1; padding: 9px 4px; font-size: 15px; font-weight: 700; font-family: inherit;
-    color: #3d534b; background: #e7f1ec; border: 1px solid #d5e5dd;
-    border-radius: 9px; cursor: pointer;
+    flex: 1; padding: 8px 4px; font-size: 15px; font-weight: 700; font-family: inherit;
+    color: var(--soft); background: var(--page); border: 0; border-radius: 0; cursor: pointer;
   }
-  .seg button.on { background: #1b7a5a; border-color: #1b7a5a; color: #fff; }
+  .seg button + button { border-left: 1.5px solid var(--ink); }
+  .seg button.on { background: var(--hl); color: var(--hl-ink); }
 
-  .lagbox { margin-top: 9px; padding-top: 9px; border-top: 1px dashed #eaf1ee; }
+  .lagbox { margin-top: 9px; padding-top: 9px; border-top: 1px dotted var(--rule); }
   .lagbox.hidden { display: none; }
 
   input[type=number], input[type=range] { font-family: inherit; }
   input[type=number] {
-    width: 122px; padding: 7px 9px; font-size: 16px; text-align: right;
-    border: 1px solid #cddcd5; border-radius: 8px; background: #fff; color: #22322c;
+    width: 122px; padding: 6px 9px; font-size: 16px; text-align: right; font-variant-numeric: tabular-nums;
+    border: 0; border-bottom: 1.5px solid var(--ink); border-radius: 0; background: transparent; color: var(--ink);
   }
-  input[type=range] { width: 100%; accent-color: #1b7a5a; height: 26px; }
+  input[type=number]:focus { outline: 2px solid var(--ink); outline-offset: 1px; background: var(--hl-soft); }
+  input[type=range] { width: 100%; accent-color: var(--ink); height: 26px; }
+  button:focus-visible, a:focus-visible, .fund .chk:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
-  /* 銘柄カード */
-  .fund { border: 1px solid #e2ece7; border-radius: 11px; padding: 10px 11px; margin-bottom: 9px; background: #fcfefd; }
-  .fund.sel { border-color: #1b7a5a; background: #f4fbf8; }
+  /* 銘柄カード（手帳に貼った付箋のメモ。選ぶと証券コードに蛍光ペン） */
+  .fund { border: 1px solid var(--rule); border-radius: 2px; padding: 9px 11px; margin-bottom: 8px; background: var(--page); }
+  .fund.sel { border-color: var(--ink); }
   .fund .top { display: flex; align-items: flex-start; gap: 9px; cursor: pointer; }
-  .fund .chk { width: 20px; height: 20px; margin-top: 2px; flex-shrink: 0; accent-color: #1b7a5a; cursor: pointer; }
+  .fund .chk { width: 20px; height: 20px; margin-top: 2px; flex-shrink: 0; accent-color: var(--ink); cursor: pointer; }
   .fund .info { flex: 1; min-width: 0; }
-  .fund .code { font-size: 16px; font-weight: 700; color: #14614a; }
-  .fund .nm { font-size: 14px; color: #44574f; line-height: 1.4; }
-  .fund .co { font-size: 13px; color: #7b8d86; margin-top: 1px; }
-  .badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
-  .badge { font-size: 13px; padding: 2px 7px; border-radius: 999px; background: #e8f1ed; color: #3d6b5c; }
-  .badge.hi { background: #1b7a5a; color: #fff; }
-  .fund .amt { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  .fund .amt span { font-size: 14px; color: #55675f; }
+  .fund .code { font-size: 16px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; display: inline-block; padding: 0 3px; margin-left: -3px; }
+  .fund.sel .code { background: linear-gradient(transparent 18%, var(--hl) 18%, var(--hl) 88%, transparent 88%); }
+  .fund .nm { font-size: 14px; color: var(--ink); line-height: 1.4; }
+  .fund .co { font-size: 13px; color: var(--faint); margin-top: 1px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+  .badge { font-size: 13px; padding: 1px 6px; border-radius: 2px; background: transparent; color: var(--soft); border: 1px solid var(--rule); }
+  .badge.hi { color: var(--ink); border-color: var(--ink); font-weight: 700; }
+  .fund .amt { margin-top: 7px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .fund .amt span { font-size: 14px; color: var(--soft); }
 
   /* ============================================================
      内部スクロール化（2026-09-05・オーナー指示）
      ねらいは「短くする」ことよりも **状態で総高が変わらないようにする** こと。
      記事のiframeは「取りうる最大の高さ」で固定するため、状態差はそのまま余白として見える。
-     実測(カラム630px)では 初期5,241px / 1銘柄+FAQ全開6,031px ＝ **790pxが余白**だった。
-
      ⚠ ここのメディアクエリを 630〜720px の帯に置かないこと。
         この帯はブログ本文の既定段が1つの高さで受け持つ幅で、ここで切り替えると
         記事側の階段と食い違って見切れる（lessons/app-iframe-height-measure-inner-width.md 7項目目）。
-        本アプリの body max-width は 720px なので、haitou(680px)より帯が広い。
+     ⚠ 2026-09-28 刷新でも、以下の枠の高さ（900/520・440・210/250・230/270・430/500）は変えていない
      ============================================================ */
 
-  /* 銘柄リスト: 高さ固定・表示枚数は幅にまかせる。
-     **枚数を固定して高さを可変にしない**。カード1枚の高さは実測で
-     幅630px=179px / 343px=197px / 208px=328px と幅で大きく変わるため、
-     「ちょうどN枚」をCSS変数で決めると狭い幅で静かに崩れる（実測 2026-09-05）。 */
+  /* 銘柄リスト: 高さ固定・表示枚数は幅にまかせる（枚数を固定して高さを可変にしない。2026-09-05） */
   #fundList {
     --fundbox-h: 900px;
     height: var(--fundbox-h); overflow-y: auto;
     padding-right: 4px;
-    /* 実機Windowsはスクロールバーが約15px幅を取るがヘッドレスは0。
-       確保しないと「手元では収まったのに実機で折り返す」環境差が出る */
+    /* 実機Windowsはスクロールバーが約15px幅を取るがヘッドレスは0。確保しないと環境差が出る */
     scrollbar-gutter: stable;
   }
-  /* 選択中の銘柄が枠の外にあっても分かるようにする（内部スクロール化の副作用対策）。
-     チップの「＋追加」を押しても画面が変わらないように見えるのを防ぐ */
-  .selnow { font-size: 14px; color: #44574f; background: #f4fbf8; border: 1px solid #d8ebe3;
-            border-radius: 9px; padding: 7px 9px; margin: 0 0 9px; line-height: 1.5; }
-  .selnow b { color: #14614a; }
-  /* スクロールできることの手掛かり。
-     ⚠ 枠の内側にグラデーションを敷く定番の手は、**このアプリでは効かない**。
-        銘柄カードが不透明な背景を持つため、影がカードの裏に隠れて見えない（2026-09-05に実測）。
-        枠の外に文字で出すほうが確実で、高さも一定に保てる */
-  .scrollhint { font-size: 13px; color: #7b8d86; margin: 6px 0 0; line-height: 1.5; }
-  /* キーボードで枠を選んだことが分かるように（tabindexを付けた枠用） */
-  .calbox:focus-visible, #fundList:focus-visible { outline: 2px solid #1b7a5a; outline-offset: 2px; }
+  /* 選択中の銘柄が枠の外にあっても分かるようにする（内部スクロール化の副作用対策） */
+  .selnow { font-size: 14px; color: var(--soft); background: transparent; border: 0; border-bottom: 1px dotted var(--rule);
+            border-radius: 0; padding: 2px 0 6px; margin: 0 0 9px; line-height: 1.5; }
+  .selnow b { color: var(--ink); background: linear-gradient(transparent 55%, var(--hl-soft) 55%); font-variant-numeric: tabular-nums; }
+  /* スクロールできることの手掛かりは、枠の外に文字で出す（2026-09-05 実測: 枠の内側の影はカードの裏に隠れる） */
+  .scrollhint { font-size: 13px; color: var(--faint); margin: 6px 0 0; line-height: 1.5; }
+  .calbox:focus-visible, #fundList:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
-  /* 受け取りカレンダー: 行数(選択銘柄数+2)で 92〜433px 動く。高さを固定して変動を消す */
-  /* 表は12銘柄でも433pxで頭打ち（全幅で実測・2026-09-05）。
-     440pxにしておけば **通常はスクロールが起きず、合計行が必ず見える**。
-     記事本文が「カレンダーの合計行を見る」と誘導しているため、ここを隠してはいけない。
-     overflow-y は保険（将来行が増えたとき用）。tabindex はキーボードでも操作できるようにするため */
+  /* 受け取りカレンダー: 高さを固定して変動を消す（表は12銘柄でも433pxで頭打ち・2026-09-05実測）。
+     記事本文が「カレンダーの合計行を見る」と誘導しているため、合計行を隠してはいけない */
   .calbox { height: 440px; overflow-y: auto; scrollbar-gutter: stable; }
   .calbox .calwrap { overflow-x: auto; }
 
-  /* 空白月カード: 従来は display:none ↔ 表示で 0〜465px 動いていた（選択を減らすほど背が伸びる）。
-     常時表示＋高さ固定にして変動を消す */
+  /* 空白月カード: 常時表示＋高さ固定（2026-09-05） */
   #gapBody { height: 210px; overflow-y: auto; scrollbar-gutter: stable; }
 
-  /* FAQ: details を開くと 630px幅で +375px、343px幅で +651px 伸びる。
-     開いても枠の外に出ないようにして変動を消す */
+  /* FAQ: 開いても枠の外に出ないようにして変動を消す */
   .faqbox { height: 230px; overflow-y: auto; scrollbar-gutter: stable; }
 
-  /* 組み合わせ一覧: 418〜484px。ほぼ一定だが幅で変わるので上限だけ与える */
+  /* 組み合わせ一覧: 上限だけ与える */
   #comboList { max-height: 430px; overflow-y: auto; scrollbar-gutter: stable; }
-  .links { margin-top: 7px; display: flex; flex-wrap: wrap; gap: 10px; }
-  .links a { font-size: 13.5px; color: #1b7a5a; }
+  .links { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .links a { font-size: 13.5px; color: var(--soft); }
 
-  /* カレンダー */
+  /* カレンダー（手帳の年間予定表。方眼の上に、入金のある月だけ蛍光ペン） */
   .calwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table.cal { border-collapse: collapse; width: 100%; min-width: 228px; font-size: 14px; table-layout: fixed; }
-  table.cal th, table.cal td { border: 1px solid #e4ede9; padding: 5px 0; text-align: center; }
-  table.cal th { background: #edf5f1; color: #3d6b5c; font-weight: 700; font-size: 12.5px; }
+  table.cal { border-collapse: collapse; width: 100%; min-width: 228px; font-size: 14px; table-layout: fixed; font-variant-numeric: tabular-nums; }
+  table.cal th, table.cal td { border: 1px solid var(--grid); padding: 5px 0; text-align: center; }
+  table.cal th { background: transparent; color: var(--ink); font-weight: 700; font-size: 12.5px; border-bottom: 1.5px solid var(--ink); }
   table.cal th.rowhead, table.cal td.rowhead {
     text-align: left; padding-left: 6px; white-space: nowrap; position: sticky; left: 0;
-    background: #f7fbf9; font-size: 13px; width: 38px;
+    background: var(--page); font-size: 13px; width: 38px; font-weight: 700; color: var(--ink);
   }
-  table.cal td.hit { color: #1b7a5a; font-weight: 700; font-size: 14.5px; }
-  table.cal td.miss { color: #cfdcd6; }
-  table.cal tr.total td { background: #f4fbf8; font-weight: 700; }
-  table.cal tr.total td.gap { background: #fdf1f0; color: #c0554a; }
-  table.cal tr.total td.hit { color: #14614a; }
+  table.cal td { background: var(--page); }
+  /* ● と ・ は文字のまま残し、見た目だけ消す（蛍光ペンの帯に置き換える） */
+  table.cal td.hit, table.cal td.miss { color: transparent; }
+  table.cal td.hit {
+    font-weight: 700; font-size: 14.5px;
+    background: linear-gradient(transparent 20%, var(--hl) 20%, var(--hl) 76%, var(--ink) 76%, var(--ink) 80%, transparent 80%) var(--page);
+    border-left-color: transparent; border-right-color: transparent;
+  }
+  table.cal tr.total td { font-weight: 700; border-top: 1.5px solid var(--ink); }
+  table.cal tr.total td.rowhead { color: var(--ink); }
+  /* 合計行: 入金のある月はインクで塗りつぶした帯、ない月は手書きの✕ */
+  table.cal tr.total td.hit { background: linear-gradient(transparent 16%, var(--ink) 16%, var(--ink) 84%, transparent 84%) var(--page); }
+  table.cal tr.total td.gap { color: var(--ink); background: var(--page); font-size: 15px; }
+  /* 見せ場: 12ヶ月すべてに入金があるとき、合計の行に蛍光ペンを1本（左から右へ一度だけ引く） */
+  table.cal.full tr.total td.hit { background: linear-gradient(transparent 12%, var(--hl) 12%, var(--hl) 82%, var(--ink) 82%, var(--ink) 88%, transparent 88%) var(--page); }
+  table.cal.full tr.total td.rowhead { background: linear-gradient(transparent 12%, var(--hl) 12%, var(--hl) 82%, var(--ink) 82%, var(--ink) 88%, transparent 88%) var(--page); }
+  table.cal.full.draw tr.total td { animation: hlsweep .05s linear both; background-position: left center; }
+  @keyframes hlsweep { from { background-size: 0 100%; } to { background-size: 100% 100%; } }
+  table.cal.full.draw tr.total td:nth-child(2) { animation-delay: .04s; }  table.cal.full.draw tr.total td:nth-child(3) { animation-delay: .08s; }
+  table.cal.full.draw tr.total td:nth-child(4) { animation-delay: .12s; }  table.cal.full.draw tr.total td:nth-child(5) { animation-delay: .16s; }
+  table.cal.full.draw tr.total td:nth-child(6) { animation-delay: .20s; }  table.cal.full.draw tr.total td:nth-child(7) { animation-delay: .24s; }
+  table.cal.full.draw tr.total td:nth-child(8) { animation-delay: .28s; }  table.cal.full.draw tr.total td:nth-child(9) { animation-delay: .32s; }
+  table.cal.full.draw tr.total td:nth-child(10) { animation-delay: .36s; } table.cal.full.draw tr.total td:nth-child(11) { animation-delay: .40s; }
+  table.cal.full.draw tr.total td:nth-child(12) { animation-delay: .44s; } table.cal.full.draw tr.total td:nth-child(13) { animation-delay: .48s; }
+  table.cal.full.draw tr.total td { background-repeat: no-repeat; }
 
-  .summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; }
-  .sm { background: #f4fbf8; border: 1px solid #e0ede8; border-radius: 10px; padding: 9px 10px; }
-  .sm .k { font-size: 13px; color: #6c7f77; }
-  .sm .v { font-size: 18px; font-weight: 700; color: #14614a; margin-top: 1px; }
-  .sm .v.warn { color: #c0554a; }
+  .summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; margin-top: 12px; border-top: 1px solid var(--ink); }
+  .sm { background: transparent; border: 0; border-bottom: 1px dotted var(--rule); border-radius: 0; padding: 8px 8px 8px 0; }
+  .sm:nth-child(odd) { border-right: 1px dotted var(--rule); }
+  .sm:nth-child(even) { padding-left: 10px; }
+  .sm .k { font-size: 13px; color: var(--soft); }
+  .sm .v { font-size: 18px; font-weight: 700; color: var(--ink); margin-top: 1px; font-variant-numeric: tabular-nums; }
+  .sm .v.warn { color: var(--ink); }
 
-  .verdict { margin-top: 11px; padding: 10px 11px; border-radius: 10px; font-size: 15px; line-height: 1.55; }
-  .verdict.good { background: #eaf7f1; border: 1px solid #c9e6da; color: #17614a; }
-  .verdict.bad { background: #fdf3f2; border: 1px solid #f0d6d2; color: #9d4438; }
-  .verdict.none { background: #f4f6f5; border: 1px solid #e2e8e5; color: #5d6f68; }
+  .verdict { margin-top: 11px; padding: 9px 11px; border-radius: 2px; font-size: 15px; line-height: 1.55; }
+  .verdict.good { background: var(--hl-soft); border: 1px solid var(--ink); color: var(--ink); font-weight: 700; }
+  .verdict.bad { background: transparent; border: 1px dashed var(--ink); color: var(--ink); }
+  .verdict.none { background: transparent; border: 1px dotted var(--rule); color: var(--soft); }
 
-  /* 金額バー */
+  /* 金額バー（蛍光ペンで引いた長さ） */
   .bars { margin-top: 12px; }
-  .bars .bhead { font-size: 14px; color: #6c7f77; margin-bottom: 6px; }
+  .bars .bhead { font-size: 14px; color: var(--soft); margin-bottom: 6px; }
   .bar { display: flex; align-items: center; gap: 7px; padding: 2px 0; }
-  .bar .bm { width: 30px; font-size: 13.5px; color: #6c7f77; text-align: right; flex-shrink: 0; }
-  .bar .btrack { flex: 1; height: 15px; background: #eef4f1; border-radius: 4px; overflow: hidden; }
-  .bar .bfill { height: 100%; background: #1b7a5a; border-radius: 4px; }
-  .bar .bfill.zero { background: #e3c9c5; }
-  .bar .bv { width: 86px; font-size: 13.5px; text-align: right; color: #44574f; flex-shrink: 0; }
+  .bar .bm { width: 30px; font-size: 13.5px; color: var(--soft); text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .bar .btrack { flex: 1; height: 15px; background: transparent; border-bottom: 1px solid var(--grid); border-radius: 0; overflow: hidden; }
+  .bar .bfill { height: 100%; background: var(--hl); border-radius: 0; box-shadow: inset 0 -2px 0 var(--ink); }
+  .bar .bfill.zero { background: transparent; box-shadow: none; }
+  .bar .bv { width: 86px; font-size: 13.5px; text-align: right; color: var(--ink); flex-shrink: 0; font-variant-numeric: tabular-nums; }
 
-  .cand { border: 1px solid #e4ede9; border-radius: 10px; padding: 9px 10px; margin-bottom: 8px; background: #fcfefd; }
-  .cand .ct { font-size: 15px; color: #33463f; }
+  .cand { border: 0; border-bottom: 1px dotted var(--rule); border-radius: 0; padding: 7px 0 9px; margin-bottom: 4px; background: transparent; }
+  .cand .ct { font-size: 15px; color: var(--ink); }
 
   /* 組み合わせカード: 決算月の枠ごとに、該当銘柄を横一列のチップで並べる。
      縦に列挙すると「上のほうが良い」という順位に見えるため、同じ枠は必ず横並びにする。 */
-  .combo { border: 1px solid #e4ede9; border-radius: 10px; padding: 10px 11px; margin-bottom: 8px; background: #fcfefd; }
+  .combo { border: 1px solid var(--rule); border-radius: 2px; padding: 9px 11px; margin-bottom: 8px; background: var(--page); }
   .combo .chead { display: flex; align-items: center; justify-content: space-between; gap: 9px; }
-  .combo .ctitle { font-size: 15px; color: #33463f; }
-  .combo .ctitle b { color: #14614a; }
+  .combo .ctitle { font-size: 15px; color: var(--ink); }
+  .combo .ctitle b { color: var(--ink); }
   .grp { margin-top: 7px; }
-  .grp .gl { font-size: 13.5px; color: #74867f; line-height: 1.45; }
+  .grp .gl { font-size: 13.5px; color: var(--soft); line-height: 1.45; }
   .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
   .chip {
-    font-size: 14px; font-weight: 700; font-family: inherit; padding: 5px 10px;
-    border-radius: 999px; border: 1px solid #cddcd5; background: #fff; color: #3d6b5c; cursor: pointer;
+    font-size: 14px; font-weight: 700; font-family: inherit; padding: 4px 10px; font-variant-numeric: tabular-nums;
+    border-radius: 2px; border: 1px solid var(--rule); background: var(--page); color: var(--ink); cursor: pointer;
   }
-  .chip.on { background: #1b7a5a; border-color: #1b7a5a; color: #fff; }
+  .chip.on { background: var(--hl); border-color: var(--ink); color: var(--hl-ink); }
   .btn {
     padding: 7px 13px; font-size: 14.5px; font-weight: 700; font-family: inherit;
-    color: #fff; background: #1b7a5a; border: none; border-radius: 8px; cursor: pointer; white-space: nowrap;
+    color: var(--page); background: var(--ink); border: 1px solid var(--ink); border-radius: 2px; cursor: pointer; white-space: nowrap;
   }
-  .btn.ghost { background: #fff; color: #1b7a5a; border: 1px solid #b9d8cb; }
+  .btn.ghost { background: var(--page); color: var(--ink); border: 1px solid var(--ink); }
 
-  .note { font-size: 13.5px; color: #5d6f68; line-height: 1.65; }
-  .note li { margin-left: 1.1em; margin-bottom: 5px; }
+  .note { font-size: 13.5px; color: var(--soft); line-height: 1.52; }
+  .note li { margin-left: 1.1em; margin-bottom: 4px; }
   .disc {
-    background: #fbfaf4; border: 1px solid #e9e4cf; border-radius: 10px;
-    padding: 11px 12px; font-size: 13.5px; color: #6a6448; line-height: 1.7;
+    background: transparent; border: 1px solid var(--ink); border-radius: 0;
+    padding: 9px 11px; font-size: 13.5px; color: var(--ink); line-height: 1.58;
   }
 
-  details.faq { border-top: 1px solid #eaf1ee; padding: 9px 0; }
+  details.faq { border-top: 1px dotted var(--rule); padding: 8px 0; }
   details.faq:first-of-type { border-top: none; }
-  details.faq summary { font-size: 15px; color: #14614a; cursor: pointer; font-weight: 700; list-style-position: inside; }
-  details.faq p { font-size: 14.5px; color: #44574f; margin-top: 7px; line-height: 1.7; }
+  details.faq summary { font-size: 15px; color: var(--ink); cursor: pointer; font-weight: 700; list-style-position: inside; }
+  details.faq p { font-size: 14.5px; color: var(--soft); margin-top: 6px; line-height: 1.7; }
 
   .rel { display: flex; flex-wrap: wrap; gap: 8px; }
   .rel a {
-    font-size: 14px; color: #1b7a5a; text-decoration: none;
-    border: 1px solid #cfe4da; border-radius: 999px; padding: 5px 11px; background: #fff;
+    font-size: 14px; color: var(--ink); text-decoration: none;
+    border: 1px solid var(--rule); border-radius: 2px; padding: 4px 10px; background: var(--page);
   }
 
+  /* 文節の切れ目でしか折らなくなったぶん（2026-09-28 jp-phrase 導入）、スマホ幅では説明文を少し小さくして行数を据え置く */
+  @media (max-width: 420px) {
+    .note, .disc { font-size: 13px; }
+    .row .lbl small { font-size: 12.5px; }
+  }
+  /* 最狭幅: 銘柄カードの会社名（「農林中金全共連アセットマネジメント」17文字は1語）が1行に入るように詰める */
+  @media (max-width: 330px) {
+    .fund { padding-left: 6px !important; padding-right: 6px !important; }
+    .fund .top { gap: 7px; }
+    .fund .nm { font-size: 12.5px !important; }
+    .fund .co { font-size: 11.5px !important; }
+  }
   /* 極小幅の端末: 余白と文字を詰めて折り返しを減らす（縦の伸びを抑えてiframe高さを安定させる） */
   @media (max-width: 350px) {
     .wrap { padding: 12px 9px 22px; }
@@ -235,7 +268,7 @@
     #comboList { max-height: 500px; }
     .fund .nm { font-size: 13px; }
     .fund .co { font-size: 12.5px; }
-    .badge { font-size: 12px; padding: 2px 5px; }
+    .badge { font-size: 12px; padding: 1px 5px; }
     .links a { font-size: 13px; }
     .row .lbl small { font-size: 12.5px; }
     .note, .disc { font-size: 13px; }
@@ -243,67 +276,25 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    body { background: #10201b; color: #dfeae5; }
-    .head h1 { color: #6fd4ab; }
-    .head p, .privacy { color: #93a8a0; }
-    .card { background: #172b25; border-color: #234137; box-shadow: none; }
-    .card > h2 { color: #6fd4ab; border-bottom-color: #234137; }
-    .row + .row { border-top-color: #22392f; }
-    .row .lbl { color: #d3e2dc; }
-    .row .lbl small { color: #90a49c; }
-    .seg button { background: #1e372f; border-color: #2b4a3f; color: #b6cdc4; }
-    .seg button.on { background: #2b9b74; border-color: #2b9b74; color: #06231a; }
-    .switch .track { background: #3a5a4e; }
-    .switch input:checked + .track { background: #2b9b74; }
-    input[type=number] { background: #12251f; border-color: #2b4a3f; color: #dfeae5; }
-    .fund { background: #14261f; border-color: #234137; }
-    .selnow { background: #16332a; border-color: #2b9b74; color: #c2d6ce; }
-    .scrollhint { color: #8fa39b; }
-    .selnow b { color: #6fd4ab; }
-    .fund.sel { background: #16332a; border-color: #2b9b74; }
-    .fund .code { color: #6fd4ab; }
-    .fund .nm { color: #c2d6ce; }
-    .fund .co { color: #8fa39b; }
-    .badge { background: #1e3a31; color: #8fd8bb; }
-    .badge.hi { background: #2b9b74; color: #06231a; }
-    .fund .amt span { color: #a9bdb5; }
-    .links a { color: #6fd4ab; }
-    table.cal th { background: #1c332b; color: #8fd8bb; }
-    table.cal th, table.cal td { border-color: #26443a; }
-    table.cal th.rowhead, table.cal td.rowhead { background: #14261f; }
-    table.cal td.hit { color: #6fd4ab; }
-    table.cal td.miss { color: #37544a; }
-    table.cal tr.total td { background: #16332a; }
-    table.cal tr.total td.gap { background: #3a231f; color: #f0a094; }
-    .sm { background: #14261f; border-color: #26443a; }
-    .sm .k { color: #93a8a0; }
-    .sm .v { color: #6fd4ab; }
-    .sm .v.warn { color: #f0a094; }
-    .verdict.good { background: #14332a; border-color: #266b52; color: #8fd8bb; }
-    .verdict.bad { background: #35211d; border-color: #6b3a31; color: #f0a094; }
-    .verdict.none { background: #1a2a25; border-color: #2b4a3f; color: #a9bdb5; }
-    .bars .bhead, .bar .bm, .bar .bv { color: #a9bdb5; }
-    .bar .btrack { background: #1e352d; }
-    .bar .bfill { background: #2b9b74; }
-    .bar .bfill.zero { background: #6b463f; }
-    .cand { background: #14261f; border-color: #26443a; }
-    .cand .ct { color: #d3e2dc; }
-    .combo { background: #14261f; border-color: #26443a; }
-    .combo .ctitle { color: #d3e2dc; }
-    .combo .ctitle b { color: #6fd4ab; }
-    .grp .gl { color: #90a49c; }
-    .chip { background: #172b25; border-color: #2b6b55; color: #9fd8c2; }
-    .chip.on { background: #2b9b74; border-color: #2b9b74; color: #06231a; }
-    .btn { background: #2b9b74; color: #06231a; }
-    .btn.ghost { background: #172b25; color: #6fd4ab; border-color: #2b6b55; }
-    .note { color: #a9bdb5; }
-    .disc { background: #262218; border-color: #4a442f; color: #c9c19d; }
-    details.faq { border-top-color: #234137; }
-    details.faq summary { color: #6fd4ab; }
-    details.faq p { color: #c2d6ce; }
-    .rel a { background: #172b25; border-color: #2b6b55; color: #6fd4ab; }
+    :root {
+      --paper: #14171e; --page: #1b1f28; --ink: #e4e7ee; --soft: #a7aec0; --faint: #7d8497;
+      --rule: #343a48; --grid: #2a2f3b; --hl: #d9c93c; --hl-soft: #4a4520; --hl-ink: #14171e;
+      color-scheme: dark;
+    }
+    /* 黄色の上の文字は暗い色にする */
+    .seg button.on, .chip.on, .fund.sel .code, table.cal.full tr.total td.rowhead { color: var(--hl-ink); }
+  }
+  /* 動きを減らす設定では、左から伸ばさずにまとめて薄く出す（消さずに弱める） */
+  @media (prefers-reduced-motion: reduce) {
+    table.cal.full.draw tr.total td { animation: hlfade .3s ease-out both; animation-delay: 0s !important; }
+    @keyframes hlfade { from { opacity: .35; } to { opacity: 1; } }
+  }
+  @media (forced-colors: active) {
+    table.cal td.hit, table.cal td.miss { color: CanvasText; }
+    table.cal td.hit { forced-color-adjust: none; background: Highlight; color: HighlightText; }
   }
 </style>
+<script src="jp-phrase-3.js" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -353,9 +344,9 @@
     <div class="selnow" id="selNow">選択中: <b>—</b></div>
     <div id="fundList"></div>
     <p class="scrollhint">枠の中を下にスクロールすると、全12銘柄を確認できます。</p>
-    <div class="row" style="border-top:1px solid #e8f0ec;">
+    <div class="row" style="border-top:1px solid var(--ink);">
       <div class="lbl">合計の投資金額</div>
-      <div style="font-size:17px;font-weight:700;color:#14614a;" id="totalAmount">0円</div>
+      <div style="font-size:17px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;" id="totalAmount">0円</div>
     </div>
   </div>
 
@@ -409,7 +400,7 @@
     <ul class="note" style="margin-top:10px;">
       <li>分配金の額・回数は運用状況により変動し、支払われないこともあります。</li>
       <li>入金月は「決算月の翌月」で計算しためやすです（ETFの分配金は決算日から40日程度で支払われるという運用会社の解説に基づきます）。銘柄ごとの正確な支払開始日は公表されておらず、証券会社によっても前後します。</li>
-      <li>表示している決算月は<strong>2026年8月25日時点</strong>の各運用会社の公表情報に基づきます。最新は各銘柄の「運用会社の公式ページ」でご確認ください。</li>
+      <li>表示している決算月は<strong>2026年8月25日時点</strong>の<wbr>各運用会社の公表情報に基づきます。最新は各銘柄の「運用会社の公式ページ」でご確認ください。</li>
       <li>入力した数値はこの端末の中だけで計算され、どこにも送信されません。</li>
     </ul>
   </div>
@@ -448,8 +439,8 @@
 <!-- ?v= は sw.js の CACHE 名と必ず同じ番号にする。
      付けないと「新しい index.html ＋ ブラウザに残った古い logic.js」が混ざり、
      L.patternCombos is not a function で画面が動かなくなる（2026-08-08の同型事故の予防）。 -->
-<script src="data.js?v=7"></script>
-<script src="logic.js?v=7"></script>
+<script src="data.js?v=8"></script>
+<script src="logic.js?v=8"></script>
 <script>
 (function () {
   "use strict";
@@ -668,7 +659,18 @@
     total += "</tr>";
 
     t.innerHTML = head + body + total;
+    // 2026-09-28 刷新: 12ヶ月そろった組み合わせになった瞬間だけ .draw を付け、合計の行に蛍光ペンを引く（見た目だけ）
+    t.classList.toggle("full", !!r.isMonthly);
+    if (!r.isMonthly) {
+      t.classList.remove("draw");
+    } else if (!wasFull) {
+      t.classList.add("draw");
+      clearTimeout(drawTimer);
+      drawTimer = setTimeout(function () { t.classList.remove("draw"); }, 1200);
+    }
+    wasFull = !!r.isMonthly;
   }
+  var wasFull = false, drawTimer = 0;
 
   function drawSummary(r) {
     $("smMonths").textContent = r.paidMonthCount + " / 12ヶ月";

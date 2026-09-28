@@ -6,57 +6,89 @@
 <title>三河の旬カレンダー（非公式）｜西三河8市町の旬を月から探す</title>
 <meta name="description" content="愛知県西三河の8市町で、いま何が旬なのかを月から探せる非公式ツールです。ふるさと納税サイトで使う検索ワードをそのままコピーできます。">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#4a7c3f">
+<meta name="theme-color" content="#f2ecdc">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
-/* 仕様 §5: 1画面完結・単一スクロール・position:fixed 不使用。
-   外部CDN/外部フォント/外部画像を一切読み込まない（new-app 規約） */
+/* 2026-09-28 刷新:「種袋の裏の栽培暦」。
+   色は 生成りの紙・墨・苗の緑 の3系統。アプリ名・市町名・品目名は同梱の佑字粛（使う文字だけ・SIL OFL）。
+   見せ場は1つだけ: 月を選ぶ12マスの帯と、各品目の旬を塗った帯（種袋の裏の「とりどき」の帯グラフと同じ形）。
+   帯の月の数字と「出荷期」などの札は CSS で描く飾り（結果の文字列・コピーされる文字には入らない）。
+   仕様 §5: 1画面完結・単一スクロール・position:fixed 不使用。外部CDN/外部フォント/外部画像を一切読み込まない（new-app 規約） */
+/* ⚠ data.js に市町・品目を足したら fonts/chars.txt を作り直してフォントを再生成する（入っていない字だけ別の書体になる） */
+@font-face{font-family:"MSK Yuji"; font-display:swap; src:url("fonts/yuji-syuku.woff") format("woff")}
 :root{
-  --ink:#2f3b2c; --sub:#5f6b5c; --line:#dfe3d9; --bg:#f7f8f4; --card:#ffffff;
-  --accent:#4a7c3f; --accent-weak:#eaf1e5;
+  --paper:#f2ecdc; --card:#fbf8f0; --ink:#2c2a23; --sub:#5d584a; --line:#d9cfb6; --rule:#b3a888;
+  --leaf:#46702c; --leaf-weak:#e1e8cc; --on-leaf:#fff; --warn:#9a4424;
+  --brush:"MSK Yuji","Hiragino Mincho ProN","Yu Mincho",serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#1c1b16; --card:#24231c; --ink:#ebe5d2; --sub:#b2aa94; --line:#3b382d; --rule:#5c5645;
+    --leaf:#93c170; --leaf-weak:#2c3721; --on-leaf:#14200b; --warn:#f0a07c;
+    color-scheme:dark;
+  }
 }
 *{box-sizing:border-box}
 body{
-  margin:0; padding:16px 14px 32px; background:var(--bg); color:var(--ink);
+  margin:0; padding:16px 14px 32px; background:var(--paper); color:var(--ink);
   font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;
   line-height:1.75; font-size:15px; max-width:680px; margin-left:auto; margin-right:auto;
   -webkit-text-size-adjust:100%;
 }
-h1{font-size:1.32rem; margin:0 0 4px; letter-spacing:.02em}
-.lead{margin:0 0 14px; color:var(--sub); font-size:.9rem}
-.controls{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:20px}
-.field{margin-bottom:14px}
+a{color:var(--leaf)}
+h1{font-family:var(--brush); font-weight:400; font-size:1.55rem; line-height:1.3; margin:0 0 2px; letter-spacing:-.03em}
+h1 small{font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",Meiryo,sans-serif; font-size:.78rem; letter-spacing:0; color:var(--sub); margin-left:.3em; font-weight:bold}
+.lead{margin:0 0 12px; color:var(--sub); font-size:.88rem}
+
+/* 種袋の裏の囲み（角は立てて、線は墨の細線） */
+.controls{background:var(--card); border:1px solid var(--ink); border-radius:2px; padding:12px 12px 11px; margin-bottom:14px;
+  box-shadow:3px 3px 0 var(--line)}
+.field{margin-bottom:12px}
 .field:last-child{margin-bottom:0}
-.field > .label{display:block; font-size:.8rem; font-weight:bold; color:var(--sub); margin-bottom:6px}
+.field > .label{display:block; font-size:.78rem; font-weight:bold; color:var(--sub); margin-bottom:5px; letter-spacing:.08em}
 select{
-  font:inherit; padding:9px 10px; border:1px solid var(--line); border-radius:8px;
-  background:#fff; color:var(--ink); width:100%; max-width:220px;
+  font:inherit; padding:7px 10px; border:1px solid var(--rule); border-radius:2px;
+  background:var(--card); color:var(--ink); width:100%; max-width:220px;
 }
 .chips{display:flex; flex-wrap:wrap; gap:6px}
-/* 月は12個あるので grid にする（2026-09-04）。flex-wrap だと文字幅次第で折り返し位置が
-   不規則に動き、iframe高さの階段が作れなくなる。grid なら列数が幅に対して単調に決まる */
-.chips-month{display:grid; grid-template-columns:repeat(auto-fit,minmax(46px,1fr)); gap:5px}
-.chips-month .chip{padding:7px 2px; text-align:center; font-size:.8rem}
-.chips-special{margin-top:6px}
 .chip{
-  font:inherit; font-size:.83rem; padding:7px 12px; border-radius:999px; cursor:pointer;
-  border:1px solid var(--line); background:#fff; color:var(--sub); min-height:36px;
+  font:inherit; font-size:.83rem; padding:6px 11px; border-radius:2px; cursor:pointer;
+  border:1px solid var(--rule); background:var(--card); color:var(--ink); min-height:34px;
 }
-.chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:#fff}
-.chip-actions{margin-top:8px; display:flex; flex-wrap:wrap; gap:14px}
+.chip[aria-pressed="true"]{background:var(--leaf); border-color:var(--leaf); color:var(--on-leaf); font-weight:bold}
+.chip:focus-visible,.linkbtn:focus-visible,.copy:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(--leaf); outline-offset:2px}
+
+/* 月を選ぶ帯: 12マスを1本の帯に（狭い幅は6マス×2段）。
+   月は12個あるので grid にする（2026-09-04）。flex-wrap だと文字幅次第で折り返し位置が
+   不規則に動き、iframe高さの階段が作れなくなる。grid なら列数が幅に対して単調に決まる */
+.chips-month{display:grid; grid-template-columns:repeat(6,1fr); gap:0; border:1px solid var(--ink); background:var(--card)}
+.chips-month .chip{border:0; border-left:1px solid var(--line); border-top:1px solid var(--line); border-radius:0;
+  padding:6px 0; min-height:34px; text-align:center; font-size:.8rem; font-variant-numeric:tabular-nums}
+.chips-month .chip:nth-child(6n+1){border-left:0}
+.chips-month .chip:nth-child(-n+6){border-top:0}
+@media (min-width:430px){
+  .chips-month{grid-template-columns:repeat(12,1fr)}
+  .chips-month .chip{border-top:0}
+  .chips-month .chip:nth-child(6n+1){border-left:1px solid var(--line)}
+  .chips-month .chip:first-child{border-left:0}
+}
+.chips-special{margin-top:6px}
+.chip-actions{margin-top:5px; display:flex; flex-wrap:wrap; gap:0 14px}
 .linkbtn{
-  font:inherit; font-size:.8rem; background:none; border:none; color:var(--accent);
-  text-decoration:underline; cursor:pointer; padding:4px 0;
+  font:inherit; font-size:.78rem; background:none; border:none; color:var(--sub);
+  text-decoration:underline; text-underline-offset:2px; cursor:pointer; padding:3px 0;
 }
-h2{font-size:1.05rem; margin:26px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--accent-weak)}
-h3{font-size:.92rem; margin:18px 0 8px; color:var(--accent); font-weight:bold}
+h2{font-size:1.02rem; margin:22px 0 8px; padding-bottom:5px; border-bottom:1px solid var(--ink)}
+h3{font-family:var(--brush); font-weight:400; font-size:1.08rem; margin:14px 0 6px; color:var(--ink); letter-spacing:.02em;
+  display:flex; align-items:center; gap:8px}
+h3::after{content:""; flex:1; border-top:1px dashed var(--rule)}
 /* 縦を短くするためリストは内部スクロール（2026-09-03 オーナー指示「3件くらい表示できたら
-   あとはスクロールで十分」）。カード1枚は333〜406px（幅により変動）なので、3枚強が収まる高さ。
+   あとはスクロールで十分」）。
 
    【2026-09-04 オーナー指示】「月の結果と通年の結果でそれぞれにスクロールバーがあるけど、統一しよう」
    → **スクロール枠は #lists の1つだけ**。月の結果と通年の結果を同じ枠に入れる。
-      枠が2つあったころは 1180 + 通年の見出し・説明 + 560 = 約1,800px を占めていた。
    ⚠ **埋め込みiframeの高さを短く保つための仕組み。値を変えたら必ず高さを測り直すこと**
       （python tools/measure_iframe_heights.py mikawa-shun --live）。 */
 #lists{
@@ -64,65 +96,92 @@ h3{font-size:.92rem; margin:18px 0 8px; color:var(--accent); font-weight:bold}
   padding-right:4px;
   /* スクロールできることが分かるように、続きがある側に薄い影を出す */
   background:
-    linear-gradient(var(--bg) 30%, rgba(255,255,255,0)) top / 100% 24px no-repeat,
-    linear-gradient(rgba(255,255,255,0), var(--bg) 70%) bottom / 100% 24px no-repeat;
+    linear-gradient(var(--paper) 30%, rgba(242,236,220,0)) top / 100% 24px no-repeat,
+    linear-gradient(rgba(242,236,220,0), var(--paper) 70%) bottom / 100% 24px no-repeat;
   background-attachment:local, local;
 }
+#lists #results > h3:first-child{margin-top:4px}
 /* 枠の中の1つ目の見出しは、上に余白を取らない（枠の上端に張り付かせる） */
 #lists #year-round-section h2{margin-top:20px}
-.card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:13px 14px; margin-bottom:10px}
-.card h4{margin:0 0 2px; font-size:1.02rem; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
-.tag{font-size:.72rem; font-weight:normal; background:var(--accent-weak); color:var(--accent); border-radius:4px; padding:2px 7px}
-.variety{margin:0 0 8px; font-size:.83rem; color:var(--sub)}
-.season{margin:0 0 8px; font-size:.88rem; background:var(--accent-weak); border-radius:6px; padding:7px 10px}
-.bg{margin:0 0 10px; font-size:.85rem; color:var(--sub)}
-.searchbox{border-top:1px dashed var(--line); padding-top:10px; margin-top:10px}
-.searchbox .label{display:block; font-size:.76rem; color:var(--sub); margin-bottom:5px}
-.searchrow{display:flex; gap:8px; align-items:stretch; flex-wrap:wrap}
+
+/* 品目カード（種袋の裏書き） */
+.card{background:var(--card); border:1px solid var(--line); border-left:3px solid var(--leaf); border-radius:2px;
+  padding:10px 12px 9px; margin-bottom:9px}
+.card h4{margin:0 0 1px; font-family:var(--brush); font-weight:400; font-size:1.2rem; line-height:1.45; letter-spacing:-.05em;
+  display:flex; align-items:baseline; gap:8px; flex-wrap:wrap}
+.tag{font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",Meiryo,sans-serif; font-size:.7rem; font-weight:bold; letter-spacing:.06em;
+  color:var(--sub); border:1px solid var(--rule); border-radius:1px; padding:0 6px; line-height:1.6}
+.variety{margin:0 0 5px; font-size:.82rem; color:var(--sub)}
+
+/* 栽培暦の帯: 12マスのうち旬の月を塗る。左の札（出荷期・収穫期など）と月の数字は CSS の飾り。
+   読み上げには aria-label で「出荷期 7・8・9月」と伝える */
+.koyomi{display:grid; grid-template-columns:3.6em repeat(12,1fr); align-items:stretch; margin:2px 0 5px;
+  font-size:.62rem; line-height:1; color:var(--sub)}
+.koyomi::before{content:attr(data-kind); align-self:center; font-weight:bold; letter-spacing:.04em; color:var(--ink); white-space:nowrap}
+.koyomi i{display:block; height:17px; border:1px solid var(--rule); border-left-width:0; position:relative;
+  font-style:normal; font-variant-numeric:tabular-nums; text-align:center; line-height:15px}
+.koyomi i:nth-of-type(1){border-left-width:1px}
+.koyomi i::after{content:attr(data-m)}
+.koyomi i.on{background:var(--leaf); border-color:var(--leaf); color:var(--on-leaf); font-weight:bold}
+.koyomi i.on + i.on{box-shadow:-1px 0 0 var(--leaf)}
+/* 選んでいる月には、帯の下に墨の短い線（「いま見ている月」） */
+.koyomi i.now::before{content:""; position:absolute; left:2px; right:2px; bottom:-4px; border-bottom:2px solid var(--ink)}
+.koyomi.all i{background:repeating-linear-gradient(135deg, var(--rule) 0 1.5px, transparent 1.5px 5px)}
+
+.season{margin:0 0 5px; font-size:.86rem}
+.bg{margin:0 0 7px; font-size:.83rem; color:var(--sub)}
+.searchbox{border-top:1px dashed var(--rule); padding-top:7px; margin-top:7px}
+.searchbox .label{display:block; font-size:.74rem; color:var(--sub); margin-bottom:4px}
+.searchrow{display:flex; gap:6px; align-items:stretch; flex-wrap:wrap}
 .word{
-  flex:1 1 150px; min-width:0; font:inherit; font-size:.95rem; background:#f3f5ef;
-  border:1px solid var(--line); border-radius:6px; padding:8px 10px;
-  user-select:all; -webkit-user-select:all; word-break:break-all;
+  flex:1 1 150px; min-width:0; font:inherit; font-size:.95rem; font-weight:bold; background:var(--paper);
+  border:1px dashed var(--rule); border-radius:2px; padding:6px 10px;
+  user-select:all; -webkit-user-select:all; overflow-wrap:anywhere;
 }
 .copy{
-  font:inherit; font-size:.85rem; padding:8px 14px; border-radius:6px; cursor:pointer;
-  border:1px solid var(--accent); background:var(--accent); color:#fff; min-height:38px; white-space:nowrap;
+  font:inherit; font-size:.85rem; font-weight:bold; padding:6px 14px; border-radius:2px; cursor:pointer;
+  border:1px solid var(--ink); background:var(--ink); color:var(--card); min-height:36px; white-space:nowrap;
 }
 .copy:disabled{opacity:.6; cursor:default}
-.copy-msg{font-size:.78rem; color:var(--accent); margin:6px 0 0; min-height:1.2em}
-.copy-msg.err{color:#a8482f}
+.copy-msg{font-size:.76rem; color:var(--leaf); margin:4px 0 0; min-height:1.2em}
+.copy-msg.err{color:var(--warn)}
 .links{margin:10px 0 0; font-size:.82rem}
-.links a{color:var(--accent)}
 /* 検索するサイトの選択（仕様§6-2・2026-09-04） */
-.portal-pick{background:var(--card); border:1px solid var(--line); border-radius:10px;
-  padding:8px 12px; margin-bottom:14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
-.portal-pick > .label{font-size:.8rem; font-weight:bold; color:var(--sub); white-space:nowrap}
+.portal-pick{border-top:1px solid var(--ink); border-bottom:1px solid var(--ink);
+  padding:6px 2px; margin-bottom:12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.portal-pick > .label{font-size:.8rem; font-weight:bold; color:var(--ink); white-space:nowrap}
 .portal-pick > select{flex:0 1 auto}
 .portal-note{font-size:.72rem; color:var(--sub)}
 /* 検索ワードのコピーと同じ行に置く小さなリンク（2026-09-04オーナー指示で文面を廃止）。
    コピーと押し間違えないよう枠線の色で区別し、狭い幅では折り返して2段になる */
-a.gosearch{display:inline-block; padding:7px 10px; border:1px solid var(--accent);
-  border-radius:6px; text-decoration:none; font-weight:bold; line-height:1.3;
-  color:var(--accent); white-space:nowrap; font-size:.82rem}
+a.gosearch{display:inline-flex; align-items:center; padding:6px 10px; border:1px solid var(--leaf);
+  border-radius:2px; text-decoration:none; font-weight:bold; line-height:1.4;
+  color:var(--leaf); white-space:nowrap; font-size:.82rem; background:var(--card)}
 a.gosearch::after{content:" ↗"; font-weight:normal}
-a.gosearch:hover,a.gosearch:focus{background:var(--accent); color:#fff}
-.src{margin:6px 0 0; font-size:.76rem; color:var(--sub)}
+a.gosearch:hover,a.gosearch:focus{background:var(--leaf); color:var(--on-leaf)}
+.src{margin:4px 0 0; font-size:.74rem; line-height:1.6; color:var(--sub)}
 .src a{color:var(--sub)}
-.empty{background:var(--card); border:1px dashed var(--line); border-radius:10px; padding:18px 14px; color:var(--sub); font-size:.9rem}
-.howto{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px}
+.empty{background:var(--card); border:1px dashed var(--rule); border-radius:2px; padding:16px 14px; color:var(--sub); font-size:.9rem}
+.howto{background:var(--card); border:1px solid var(--line); border-radius:2px; padding:12px 14px}
 .howto ol{margin:0; padding-left:1.3em}
-.howto li{margin-bottom:6px; font-size:.88rem}
+.howto li{margin-bottom:5px; font-size:.87rem}
 .howto li:last-child{margin-bottom:0}
-.notes{font-size:.8rem; color:var(--sub); margin-top:26px; border-top:1px solid var(--line); padding-top:14px}
-.notes ul{padding-left:1.2em; margin:8px 0 0}
-.notes li{margin-bottom:6px}
+.howto li::marker{font-weight:bold; color:var(--leaf)}
+.notes{font-size:.78rem; line-height:1.7; color:var(--sub); margin-top:22px; border-top:1px solid var(--ink); padding-top:12px}
+.notes ul{padding-left:1.2em; margin:6px 0 0}
+.notes li{margin-bottom:5px}
 /* コピーのフォールバック用の一時要素。仕様§4-4により position:fixed は使わない */
 #copy-helper{position:absolute; left:-9999px; top:0; opacity:0}
+@media (forced-colors:active){
+  .koyomi i.on{forced-color-adjust:none; background:Highlight; color:HighlightText}
+  .chip[aria-pressed="true"]{outline:3px solid Highlight; outline-offset:-3px}
+}
 </style>
+<script src="jp-phrase-3.js" defer></script>
 </head>
 <body>
 
-<h1>三河の旬カレンダー（非公式）</h1>
+<h1>三河の旬カレンダー<small>（非公式）</small></h1>
 <p class="lead">西三河8市町の「いま旬のもの」を月から探せます。</p>
 
 
@@ -376,6 +435,7 @@ a.gosearch:hover,a.gosearch:focus{background:var(--accent); color:#fff}
     card.appendChild(h);
 
     if (item.itemNote) card.appendChild(el("p", "variety", item.itemNote));
+    card.appendChild(koyomi(item));
     card.appendChild(el("p", "season", item.seasonNote));
     if (item.background) card.appendChild(el("p", "bg", item.background));
 
@@ -427,6 +487,25 @@ a.gosearch:hover,a.gosearch:focus{background:var(--accent); color:#fff}
       card.appendChild(src2);
     }
     return card;
+  }
+
+  /* 栽培暦の帯（2026-09-28 刷新の飾り）。旬の月を data.js の seasonMonths から塗るだけで、
+     月を推測して足さない。数字と札（出荷期など）は CSS の attr() で描き、文字としては持たない
+     （結果の文字列・コピーされる文字を変えないため）。読み上げは aria-label で伝える */
+  function koyomi(item) {
+    var yr = L.isYearRound(item);
+    var box = el("div", "koyomi" + (yr ? " all" : ""));
+    box.setAttribute("data-kind", item.seasonKind || "");
+    box.setAttribute("role", "img");
+    box.setAttribute("aria-label", yr ? (item.seasonKind || "通年") : (item.seasonKind || "") + " " +
+      item.seasonMonths.join("・") + "月");
+    for (var m = 1; m <= 12; m++) {
+      var c = el("i", (!yr && item.seasonMonths.indexOf(m) !== -1 ? "on" : "") +
+        (state.mode === null && state.months.indexOf(m) !== -1 ? " now" : ""));
+      c.setAttribute("data-m", String(m));
+      box.appendChild(c);
+    }
+    return box;
   }
 
   function renderGroups(container, items) {

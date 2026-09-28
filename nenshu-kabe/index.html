@@ -609,6 +609,9 @@ $("tabNew").addEventListener("click", function () {
 $("updated").textContent = CONFIG.updated;
 window.addEventListener("resize", drawChart);
 update();
+// 2026-09-28 オーナー指示: 賃金要件の撤廃（2026年10月1日施行）以降は「2026年10月〜」のタブを最初に開く。
+// 端末の日付で切り替えるので、公開を10/1に合わせなくてよい（日本時間の10/1 0時が境目）
+if (Date.now() >= new Date("2026-10-01T00:00:00+09:00").getTime()) $("tabNew").click();
 // canvas は自分からフォントを読みに行かないので、同梱フォントが届いたら描き直す
 if (document.fonts && document.fonts.load) document.fonts.load("700 12px 'BIZ UDGothic'").then(drawChart, function () {});
 

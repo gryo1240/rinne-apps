@@ -6,14 +6,29 @@
 <title>配当金なに買える？｜配当・分配金を身近なモノに換算</title>
 <meta name="description" content="受け取った配当金・分配金が、身近なモノでいくつ分になるかを換算します。価格は自分で書き換えられます。登録不要・無料。">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1f6f5c">
+<meta name="theme-color" content="#f7f5f0">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
-/* 単一スクロール・position:fixed 不使用。外部CDN/フォント/画像を読み込まない */
+/* 2026-09-28 刷新:「カタログギフトの誌面」（この金額で選べる品）。
+   色は 紙の白・墨・臙脂 の3系統。品名・数・見出しは同梱のしっぽり明朝（使う文字だけ・SIL OFL）。
+   見せ場は1つだけ: 上の「コース」の札（ひと月あたりの金額で、いちばん身近な品がいくつ分か）。
+   一覧の「No.01」は CSS の連番で描く飾り（結果の文字列・共有文には入らない）。絵文字は画面に出さない（共有文には従来どおり入る）。
+   単一スクロール・position:fixed 不使用。外部CDN/フォント/画像を読み込まない */
+/* ⚠ data.js の品名・単位や見出しの文言を変えたら fonts/chars.txt を作り直してフォントを再生成する（入っていない字だけ別の書体になる） */
+@font-face{font-family:"HNK Mincho"; font-weight:800; font-display:swap; src:url("fonts/shippori-b1-800.woff") format("woff")}
 :root{
-  --ink:#25302e; --sub:#5d6b68; --line:#dde5e2; --bg:#f6f9f8; --card:#fff;
-  --accent:#1f6f5c; --accent-weak:#e6f2ee; --gold:#b8893b; --warn-bg:#fff8e6; --warn-line:#e6cf8a;
+  --ink:#23211e; --sub:#5f5a54; --line:#e1ddd5; --rule:#c9c2b6; --bg:#f7f5f0; --card:#fffefb;
+  --accent:#8a2d3b; --accent-weak:#f4e9ea;
+  --mincho:"HNK Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --ink:#ece7df; --sub:#b4ada3; --line:#39352f; --rule:#57514a; --bg:#1b1916; --card:#23211d;
+    --accent:#e39aa5; --accent-weak:#3a2327;
+    color-scheme:dark;
+  }
 }
 *{box-sizing:border-box}
 body{
@@ -21,144 +36,134 @@ body{
   font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;
   line-height:1.75; font-size:15px; max-width:680px; -webkit-text-size-adjust:100%;
 }
-h1{font-size:1.3rem; margin:0 0 4px}
-.lead{margin:0 0 14px; color:var(--sub); font-size:.9rem}
-h2{font-size:1.05rem; margin:18px 0 8px; padding-bottom:6px; border-bottom:2px solid var(--accent-weak)}
-.panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:13px; margin-bottom:13px}
+a{color:var(--accent)}
+h1{font-family:var(--mincho); font-weight:800; font-size:1.42rem; line-height:1.4; margin:0 0 2px; letter-spacing:.04em}
+.lead{margin:0 0 12px; color:var(--sub); font-size:.88rem}
+h2{font-family:var(--mincho); font-weight:800; font-size:1.05rem; margin:18px 0 8px; padding-bottom:5px; border-bottom:1px solid var(--ink); letter-spacing:.04em}
+.panel{background:var(--card); border:1px solid var(--line); border-radius:2px; padding:13px; margin-bottom:13px}
 .field{margin-bottom:14px}
 .field:last-child{margin-bottom:0}
-.label{display:block; font-size:.8rem; font-weight:bold; color:var(--sub); margin-bottom:6px}
-.amount-row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.label{display:block; font-size:.78rem; font-weight:bold; color:var(--sub); margin-bottom:6px; letter-spacing:.06em}
+.amount-row{display:flex; gap:8px; align-items:baseline; flex-wrap:wrap}
 #amount{
-  font:inherit; font-size:1.35rem; font-weight:bold; padding:10px 12px; width:190px;
-  border:1px solid var(--line); border-radius:8px; text-align:right; background:#fff; color:var(--ink);
+  font-family:var(--mincho); font-weight:800; font-size:1.4rem; padding:8px 12px; width:190px;
+  border:0; border-bottom:2px solid var(--ink); border-radius:0; text-align:right; background:transparent; color:var(--ink);
+  font-variant-numeric:tabular-nums;
 }
-.yen{font-size:1.05rem; font-weight:bold}
-.seg{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff}
+#amount:focus{outline:2px solid var(--accent); outline-offset:2px; border-bottom-color:var(--accent); background:var(--accent-weak)}
+.yen{font-family:var(--mincho); font-size:1.05rem; font-weight:800}
+.seg{display:inline-flex; border:1px solid var(--ink); border-radius:2px; overflow:hidden; background:var(--card)}
 .seg button{
-  font:inherit; font-size:.85rem; padding:9px 14px; border:none; background:#fff; color:var(--sub);
+  font:inherit; font-size:.85rem; padding:9px 14px; border:none; background:var(--card); color:var(--ink);
   cursor:pointer; min-height:40px;
 }
-.seg button[aria-pressed="true"]{background:var(--accent); color:#fff}
+.seg button + button{border-left:1px solid var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink); color:var(--card); font-weight:bold}
 .chips{display:flex; flex-wrap:wrap; gap:6px}
 .chip{
-  font:inherit; font-size:.83rem; padding:7px 12px; border-radius:999px; cursor:pointer;
-  border:1px solid var(--line); background:#fff; color:var(--sub); min-height:36px;
+  font:inherit; font-size:.83rem; padding:7px 12px; border-radius:2px; cursor:pointer;
+  border:1px solid var(--rule); background:var(--card); color:var(--ink); min-height:36px;
 }
-.chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:#fff}
+.chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--card); font-weight:bold}
 .toggle{display:flex; align-items:center; gap:8px; font-size:.85rem; color:var(--sub); margin-top:10px}
-.toggle input{width:18px; height:18px}
+.toggle input{width:18px; height:18px; accent-color:var(--accent)}
+button:focus-visible,.toggle input:focus-visible,.row .price input:focus-visible,a:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 
+/* 見せ場: コースの札（カタログの表紙の「○○コース」）。二重の細線で囲み、中の品と数を明朝で大きく */
 .headline{
-  background:linear-gradient(180deg,#fff,#f2f8f6); border:2px solid var(--accent-weak);
-  border-radius:12px; padding:15px 16px; text-align:center; margin-bottom:12px;
+  background:var(--card); border:1px solid var(--ink); outline:1px solid var(--ink); outline-offset:-5px;
+  border-radius:0; padding:14px 16px; text-align:center; margin-bottom:12px; position:relative;
 }
-.headline .small{font-size:.85rem; color:var(--sub); display:block}
-.headline .big{font-size:1.5rem; font-weight:bold; line-height:1.5; display:block; margin-top:4px}
+.headline .small{font-size:.82rem; color:var(--sub); display:block; letter-spacing:.04em}
+.headline .big{font-family:var(--mincho); font-weight:800; font-size:1.5rem; line-height:1.5; display:block; margin-top:2px}
 .headline .big .em{color:var(--accent)}
-.headline .emoji{font-size:2.4rem; display:block; line-height:1.2; margin-bottom:2px}
+/* 絵文字は画面に出さない（共有文と共有画像の文字は logic.js が作るので変わらない） */
+.headline .emoji{display:none}
 
 /* 結果リストは内部スクロール（2026-09-04 オーナー指示「アプリの縦サイズを半分以下に。
    それぞれの換算結果をスクロールするようにしてくれれば良い」）。
-   ここが全体の高さの約6割を占めていた（実測 3,525px 中 2,128px）。
-   ⚠ **この値を変えたら iframe の高さを測り直すこと**（記事側のCSSは実測値で固定している）。
-   三河の旬カレンダーと同じ方式。項目を増やしても外側の高さが伸びないので、
-   今後の追加でオーナーに高さの相談をしなくて済む */
+   ⚠ **この値を変えたら iframe の高さを測り直すこと**（記事側のCSSは実測値で固定している）。 */
 #rows{
-  /* 【2026-09-04 オーナー指示・その2】「全体の縦サイズはそのままに、見える範囲を3行から5行に。
-     横の余白をもっと狭くして、換算結果を無理なく2列に」
-
-     枠の高さは「行の高さ x 表示行数 + すき間 x (表示行数-1) + 覗き分」で決める。
-     数字を直接書かずに変数にしてあるのは、**行の高さを変えたときに枠の高さを直し忘れると
-     『ちょうど5行』が静かに崩れる**から。直すならここの3つだけを見ればよい。
-     --row-h はブラウザでの実測値（2026-09-04時点で65.4px。切り捨てて65pxを入れてある）。
-     行の中身を変えたら測り直すこと。
-
-     末尾の +5px は端数の吸収用で、**6行目は覗いていない**（実測: 6行目の上端は枠の5px下）。
-     覗かせるには すき間ぶん(+8px)が要り、枠370px＝総高+13pxになる。
-     オーナー指示が「縦はそのまま」なので**覗きは入れない**。
-     続きがあることは、下端のグラデーションと本文の「下へスクロールすると続きが見られます」で示す。
-
-     行を詰めた（間隔89px→73px）ぶんで、3.4行→5行にしても総高は据え置き
-     （630px幅で1,740→1,741px・スマホ343pxでは2,079→2,058px・実測） */
+  /* 【2026-09-04 オーナー指示・その2】「全体の縦サイズはそのままに、見える範囲を3行から5行に」
+     枠の高さは「行の高さ x 表示行数 + すき間 x (表示行数-1) + 端数」で決める。
+     --row-h はブラウザでの実測値（65px）。**行の中身を変えたら測り直すこと**（2026-09-28 刷新後も65pxに収まることを実測）。
+     末尾の +5px は端数の吸収用で、6行目は覗いていない。続きがあることは下端の影と本文の案内で示す */
   --row-h:65px; --row-gap:8px; --visible-rows:5;
   max-height:calc(var(--row-h) * var(--visible-rows)
                   + var(--row-gap) * (var(--visible-rows) - 1) + 5px);
   overflow-y:auto; overscroll-behavior:contain; padding-right:4px;
   display:grid; grid-template-columns:1fr; gap:var(--row-gap); align-content:start;
-  /* スクロールバーの幅を常に確保する。**ヘッドレスChromiumはバーを重ねて表示する(幅0)が、
-     実機のWindowsは約15px取る**ので、確保しないと『手元では2列が入ったのに実機では折り返す』
-     という環境差が出る。ここを固定すると幅の勘定がどの環境でも同じになる */
+  /* 実機のWindowsはスクロールバーが約15px取るので、幅の勘定をどの環境でも同じにする */
   scrollbar-gutter:stable;
-  /* 続きがあることが分かるように、上下に薄い影を出す */
+  counter-reset:item;
   background:
-    linear-gradient(var(--bg) 30%, rgba(255,255,255,0)) top / 100% 20px no-repeat,
-    linear-gradient(rgba(255,255,255,0), var(--bg) 70%) bottom / 100% 20px no-repeat;
+    linear-gradient(var(--bg) 30%, rgba(247,245,240,0)) top / 100% 20px no-repeat,
+    linear-gradient(rgba(247,245,240,0), var(--bg) 70%) bottom / 100% 20px no-repeat;
   background-attachment:local, local;
 }
-.row{
-  background:var(--card); border:1px solid var(--line); border-radius:10px;
-  padding:9px 9px; display:flex; align-items:center; gap:8px; line-height:1.35;
-}
-/* 描画幅620px以上で2列。**ブログ本文のカラム幅は実測でデスクトップ630〜920px**なので、
-   PCでは2列・スマホ(343px前後)では1列になる。
-   iframe内のメディアクエリはiframeの幅を見る（＝アプリの描画幅）。
-   ⚠ 1列でも2列でも #rows の高さは固定なので、**切り替わっても総高は変わらない**
-   （2026-09-04 実測: 630px幅=1,741px / 619px幅=1,741px）。記事側の高さ指定はこの性質に依存している */
+/* 描画幅620px以上で2列（1列でも2列でも #rows の高さは固定なので総高は変わらない） */
 @media (min-width:620px){ #rows{grid-template-columns:1fr 1fr} }
-.row .ico{font-size:1.45rem; line-height:1; width:1.7rem; text-align:center; flex:none}
+.row{
+  background:var(--card); border:0; border-top:1px solid var(--ink); border-radius:0;
+  padding:8px 6px 8px 4px; display:flex; align-items:center; gap:8px; line-height:1.35;
+  counter-increment:item;
+}
+/* カタログの品番（飾り）。数字は CSS の連番で、文字としては持たない */
+.row::before{content:"No." counter(item, decimal-leading-zero); content:"No." counter(item, decimal-leading-zero) / ""; flex:none; align-self:flex-start; margin-top:2px;
+  font-family:var(--mincho); font-weight:800; font-size:.66rem; letter-spacing:0; color:var(--accent); min-width:2.9em; white-space:nowrap}
+.row .ico{display:none}
 .row .mid{flex:1 1 auto; min-width:0}
-.row .name{font-size:.88rem; font-weight:bold}
-.row .price{font-size:.76rem; color:var(--sub); display:flex; align-items:center; gap:4px; margin-top:2px; flex-wrap:wrap}
+.row .name{font-family:var(--mincho); font-weight:800; font-size:.92rem; line-height:1.35}
+.row .price{font-size:.74rem; color:var(--sub); display:flex; align-items:center; gap:4px; margin-top:3px; flex-wrap:wrap}
 .row .price input{
-  font:inherit; font-size:.76rem; width:64px; padding:3px 5px; text-align:right;
-  border:1px solid var(--line); border-radius:5px; background:#fdfdfd; color:var(--ink);
+  font:inherit; font-size:.76rem; width:64px; padding:2px 5px; text-align:right; font-variant-numeric:tabular-nums;
+  border:1px solid var(--rule); border-radius:0; background:var(--bg); color:var(--ink);
 }
 .row .cnt{flex:none; text-align:right; white-space:nowrap}
-.row .cnt b{font-size:1.35rem; color:var(--accent)}
-.row .cnt .u{font-size:.8rem; color:var(--sub); margin-left:2px}
-.row.zero{opacity:.55}
+.row .cnt b{font-family:var(--mincho); font-weight:800; font-size:1.45rem; color:var(--accent); font-variant-numeric:tabular-nums}
+.row .cnt .u{font-size:.78rem; color:var(--sub); margin-left:2px}
+.row.zero{opacity:.5}
 .row.zero .cnt b{color:var(--sub)}
 
-/* 【2026-09-04 オーナー指示・その3】「アプリの下の余白をもっと消してほしい」
-   原因は**状態によって高さが変わること**だった。記事のiframeの高さは
-   「アプリが取りうる最大の高さ」で固定するので、画像を出すと217px伸びる設計だと、
-   読者が最初に見る初期状態では**その217pxがまるごと空白になる**（実測315px）。
-   → 共有文と画像を**同じ固定高さの枠に重ねて**、切り替えるようにした。
-   これで「画像を作っても総高が1pxも変わらない」＝空白が消える。
-   ⚠ この枠の高さを変えたら記事のiframe高さを測り直すこと */
+/* 【2026-09-04 オーナー指示・その3】共有文と画像を**同じ固定高さの枠に重ねて**切り替える
+   （画像を作っても総高が1pxも変わらない）。⚠ この枠の高さを変えたら記事のiframe高さを測り直すこと */
 .preview{height:110px; position:relative}
 .preview textarea{
   width:100%; height:100%; font:inherit; font-size:.85rem; line-height:1.7; padding:10px;
-  border:1px solid var(--line); border-radius:8px; background:#fdfdfd; color:var(--ink);
+  border:1px solid var(--rule); border-radius:0; background:var(--bg); color:var(--ink);
   resize:none;   /* 枠が固定なので伸ばさせない（伸ばされるとiframeからはみ出す） */
 }
 .btnrow{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
 .btn{
-  font:inherit; font-size:.88rem; padding:10px 16px; border-radius:8px; cursor:pointer;
-  border:1px solid var(--accent); background:var(--accent); color:#fff; min-height:42px;
+  font:inherit; font-size:.88rem; font-weight:bold; padding:10px 16px; border-radius:2px; cursor:pointer;
+  border:1px solid var(--ink); background:var(--ink); color:var(--card); min-height:42px;
 }
-.btn.ghost{background:#fff; color:var(--accent)}
-/* 2行ぶん先に確保しておく。画像を作ったときの案内文がここに出るが、
-   **出た瞬間に高さが変わると空白対策が台無しになる**ので最初から場所を取っておく */
+.btn.ghost{background:var(--card); color:var(--ink)}
+/* 2行ぶん先に確保しておく（出た瞬間に高さが変わると空白対策が台無しになる） */
 .msg{font-size:.8rem; color:var(--accent); margin:8px 0 0; min-height:2.4em}
 /* 狭い画面では案内文が2行になるので、その分も先に確保する。
    しきい値420pxは記事の既定段が受け持つ帯(630〜680px)の外に置いてある */
 @media (max-width:420px){ .msg{min-height:3.6em} }
-.msg.err{color:#a8482f}
-/* 表示だけ小さくする。**保存される画像は canvas の 1200x630 のまま**なので画質は落ちない
-   （長押し保存の対象は img の src＝フルサイズのデータURL） */
+.msg.err{color:var(--accent)}
 /* 共有文と同じ枠にぴったり重ねる。**保存される画像は canvas の 1200x630 のまま**なので
    画面で小さく見えても画質は落ちない（長押し保存の対象は img の src＝フルサイズのデータURL） */
 #cardimg{position:absolute; inset:0; width:100%; height:100%; object-fit:contain;
-  border:1px solid var(--line); border-radius:8px; background:#fdfdfd; display:none}
+  border:1px solid var(--rule); border-radius:0; background:var(--bg); display:none}
 
-.notes{font-size:.8rem; color:var(--sub); margin-top:16px; border-top:1px solid var(--line); padding-top:14px}
-.notes ul{padding-left:1.2em; margin:8px 0 0}
-.notes li{margin-bottom:6px}
+.notes{font-size:.78rem; line-height:1.7; color:var(--sub); margin-top:16px; border-top:1px solid var(--ink); padding-top:13px}
+.notes ul{padding-left:1.2em; margin:6px 0 0}
+.notes li{margin-bottom:5px}
 .notes a{color:var(--accent)}
+/* 一覧の上の案内と「使い方」は、文節の切れ目でしか折らなくなったぶん行が増えるので、文字と行間を少し詰めて総高を据え置く */
+.hint{margin:0 0 8px; font-size:.84rem; line-height:1.6}
+.howto p{font-size:.88rem; line-height:1.62}
 #copy-helper{position:absolute; left:-9999px; top:0; opacity:0}
+@media (forced-colors:active){
+  .headline{outline-color:CanvasText}
+  .seg button[aria-pressed="true"],.chip[aria-pressed="true"]{border:2px solid Highlight}
+}
 </style>
+<script src="jp-phrase-3.js" defer></script>
 </head>
 <body>
 
@@ -186,7 +191,7 @@ h2{font-size:1.05rem; margin:18px 0 8px; padding-bottom:6px; border-bottom:2px s
 
 <div id="headline" class="headline" aria-live="polite"></div>
 
-<p class="hint" style="margin:0 0 8px">価格はすべて<strong>目安</strong>です。数字を書き換えると、その場で計算し直します。<strong>下へスクロール</strong>すると続きが見られます。</p>
+<p class="hint">価格はすべて<strong>目安</strong>です。数字を書き換えると、その場で計算し直します。<strong>下へスクロール</strong>すると続きが見られます。</p>
 <div id="rows"></div>
 
 <h2>結果を共有する</h2>
@@ -204,10 +209,10 @@ h2{font-size:1.05rem; margin:18px 0 8px; padding-bottom:6px; border-bottom:2px s
 </div>
 
 <h2>使い方</h2>
-<div class="panel">
+<div class="panel howto">
   <p style="margin:0 0 8px">受け取った金額を入れるだけです。金額は<strong>税金が引かれたあとの金額</strong>で入れてください。</p>
   <p style="margin:0 0 8px">価格はすべて<strong>目安</strong>です。実際と違うと感じたら、各行の価格をその場で書き換えられます。書き換えるとすぐ計算し直します。</p>
-  <p style="margin:0">配当金そのものを計算したいときは<a href="https://rinne-blog.com/dividend">配当金シミュレーター</a>をどうぞ。あちらは「いくらもらえるか」、こちらは「もらった金額が何になるか」を担当しています。</p>
+  <p style="margin:0">配当金そのものを計算したいときは<wbr><a href="https://rinne-blog.com/dividend">配当金シミュレーター</a>をどうぞ。あちらは「いくらもらえるか」、こちらは「もらった金額が何になるか」を担当しています。</p>
 </div>
 
 <div class="notes">
@@ -433,46 +438,73 @@ h2{font-size:1.05rem; margin:18px 0 8px; padding-bottom:6px; border-bottom:2px s
   /* ---------- 画像化（ダウンロードAPIに頼らず、imgとして出して長押し保存させる） ---------- */
   document.getElementById("makeimg").addEventListener("click", function () {
     if (imageShown()) { showText(); showMsg("", false); return; }
+    /* 同梱の明朝で描くので、読み込みを待ってから描く（待てなくても代わりの書体で描く） */
+    var ready = (document.fonts && document.fonts.load)
+      ? document.fonts.load('800 40px "HNK Mincho"').catch(function () {})
+      : Promise.resolve();
+    ready.then(drawCard, drawCard);
+  });
+
+  function drawCard() {
     try {
       var cv = document.getElementById("cv");
       var g = cv.getContext("2d");
       var W = cv.width, H = cv.height;
+      var MIN = "'HNK Mincho','Hiragino Mincho ProN','Yu Mincho',serif";
+      var GOT = "'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif";
+      var INK = "#23211e", SUB = "#5f5a54", ACC = "#8a2d3b";
 
-      g.fillStyle = "#f6f9f8"; g.fillRect(0, 0, W, H);
-      g.fillStyle = "#1f6f5c"; g.fillRect(0, 0, W, 14);
-      g.fillStyle = "#25302e";
+      g.fillStyle = "#f7f5f0"; g.fillRect(0, 0, W, H);
+      /* 二重の細線の枠（画面の「コース」の札と同じ） */
+      g.strokeStyle = INK; g.lineWidth = 2; g.strokeRect(36, 36, W - 72, H - 72);
+      g.lineWidth = 1; g.strokeRect(46, 46, W - 92, H - 92);
+
+      g.fillStyle = INK;
       g.textAlign = "center";
-      g.font = "bold 40px 'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif";
+      g.font = "800 40px " + MIN;
       g.fillText(state.hideAmount ? "ひと月の配当金で買えるもの"
-                                  : "ひと月の配当金 " + L.formatYen(lastMonthly) + "円 で買えるもの", W / 2, 92);
+                                  : "ひと月の配当金 " + L.formatYen(lastMonthly) + "円 で買えるもの", W / 2, 122);
+      g.fillStyle = INK; g.fillRect(W / 2 - 40, 148, 80, 2);
 
       var top3 = lastRows.filter(function (r) { return r.count >= 1; }).slice(0, 3);
       if (top3.length === 0) {
-        g.font = "bold 54px 'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif";
-        g.fillText("まだ1つも届きませんが、ここからです", W / 2, H / 2 + 10);
+        g.font = "800 50px " + MIN;
+        g.fillText("まだ1つも届きませんが、ここからです", W / 2, H / 2 + 16);
       } else {
-        var y = 200;
-        top3.forEach(function (r) {
-          g.font = "64px 'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif";
-          g.fillText(r.item.emoji, 250, y + 12);
+        var y = 236;
+        top3.forEach(function (r, i) {
           g.textAlign = "left";
-          g.fillStyle = "#25302e";
-          g.font = "bold 40px 'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif";
-          g.fillText(r.item.label, 330, y - 8);
-          g.fillStyle = "#1f6f5c";
-          g.font = "bold 52px 'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif";
-          g.fillText(L.formatYen(r.count) + r.item.unit, 330, y + 48);
-          g.textAlign = "center";
-          g.fillStyle = "#25302e";
-          y += 130;
+          g.fillStyle = ACC;
+          g.font = "800 24px " + MIN;
+          g.fillText("No." + ("0" + (i + 1)).slice(-2), 170, y - 4);
+          var num = L.formatYen(r.count);
+          g.font = "800 28px " + MIN;
+          var uw = g.measureText(r.item.unit).width;
+          g.font = "800 56px " + MIN;
+          var room = (W - 176 - uw - g.measureText(num).width - 24) - 270;
+          var fs = 40;
+          g.font = "800 " + fs + "px " + MIN;
+          while (fs > 20 && g.measureText(r.item.label).width > room) { fs -= 2; g.font = "800 " + fs + "px " + MIN; }
+          g.fillStyle = INK;
+          g.fillText(r.item.label, 270, y);
+          g.textAlign = "right";
+          g.font = "800 28px " + MIN;
+          g.fillStyle = SUB;
+          g.fillText(r.item.unit, W - 170, y);
+          g.fillStyle = ACC;
+          g.font = "800 56px " + MIN;
+          g.fillText(num, W - 176 - uw, y + 2);
+          g.fillStyle = "#c9c2b6"; g.fillRect(170, y + 30, W - 340, 1);
+          y += 104;
         });
       }
 
-      g.fillStyle = "#5d6b68";
-      g.font = "26px 'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif";
-      g.fillText("配当金なに買える？ ／ りんねブログ", W / 2, H - 76);
-      g.font = "22px 'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif";
-      g.fillText("価格は目安です。配当金は増減します。", W / 2, H - 38);
+      g.textAlign = "center";
+      g.fillStyle = SUB;
+      g.font = "24px " + GOT;
+      g.fillText("配当金なに買える？ ／ りんねブログ", W / 2, H - 98);
+      g.font = "20px " + GOT;
+      g.fillText("価格は目安です。配当金は増減します。", W / 2, H - 66);
 
       var img = document.getElementById("cardimg");
       img.src = cv.toDataURL("image/png");
@@ -481,7 +513,7 @@ h2{font-size:1.05rem; margin:18px 0 8px; padding-bottom:6px; border-bottom:2px s
     } catch (e) {
       showMsg("画像を作れませんでした。文章のコピーをお使いください", true);
     }
-  });
+  }
 
   render();
 
