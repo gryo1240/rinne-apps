@@ -373,6 +373,8 @@ footer{font-size:11.5px; color:var(--muted); line-height:1.66; margin-top:18px; 
   }
 
   function select(qi, oi){
+    // 2026-09-28 オーナー指示: 選んでいる答えをもう一度押したら、選択を外す
+    if (answers[qi] === oi) oi = null;
     answers[qi] = oi;
     var btns = document.querySelectorAll('.opt[data-q="' + qi + '"]');
     for (var i = 0; i < btns.length; i++){
