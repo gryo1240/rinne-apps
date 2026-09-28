@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#3E7A6E">
+<meta name="theme-color" content="#9cc7e0">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
@@ -12,80 +12,131 @@
 <meta name="apple-mobile-web-app-title" content="持ち物リスト">
 <title>旅行持ち物チェックリスト</title>
 <style>
+/* 2026-09-28 刷新:「旅のしおり」（わら半紙に刷って、左上をホッチキスで留めた持ち物のページ）。
+   色は わら半紙の生成り・鉛筆の黒鉛・表紙の色画用紙（空色） の3系統。表題と分類名は同梱のキウイ丸（使う文字だけ・SIL OFL）。
+   見せ場は1つだけ: チェックすると、鉛筆のレ点がひと筆で入る。全部そろったときの演出は足さない。
+   ⚠ 分類名・表題を変えたら fonts/chars.txt を作り直してフォントを再生成する */
+@font-face{font-family:"MC Kiwi"; font-weight:500; font-display:swap; src:url("fonts/kiwi-maru-500.woff") format("woff")}
 :root{
-  --bg:#F4F6F5; --surface:#FFFFFF; --ink:#242A28; --muted:#6B7570;
-  --line:#DEE4E1; --accent:#3E7A6E; --accent-ink:#FFFFFF; --accent-soft:#E3EEEC;
-  --warn:#B4643C; --warn-soft:#F5E8DF; --chip:#EAEFEC; --ok:#3E7A52;
-  --shadow:0 1px 3px rgba(30,40,36,.08);
+  --bg:#ece8dc; --surface:#f7f4ea; --ink:#34332f; --muted:#67635a;
+  --line:#cfc9b8; --accent:#34332f; --accent-ink:#f7f4ea; --accent-soft:#dbe9f2;
+  --warn:#8a3f24; --warn-soft:#f1e3d6; --chip:#e4dfd0; --ok:#34332f;
+  --cover:#9cc7e0; --cover-ink:#1f3442;
+  --shadow:none;
+  --kiwi:"MC Kiwi","Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+  color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
   :root{
-    --bg:#15191A; --surface:#1E2422; --ink:#E4E9E6; --muted:#9AA6A0;
-    --line:#313A37; --accent:#7FC0AF; --accent-ink:#0F1917; --accent-soft:#233A34;
-    --warn:#D89468; --warn-soft:#3A2C22; --chip:#293330; --ok:#7FBE97;
-    --shadow:0 1px 3px rgba(0,0,0,.35);
+    --bg:#1b1a17; --surface:#24221e; --ink:#e7e2d4; --muted:#aca597;
+    --line:#403c34; --accent:#e7e2d4; --accent-ink:#1b1a17; --accent-soft:#233845;
+    --warn:#e3a07f; --warn-soft:#3a2a22; --chip:#2e2b25; --ok:#e7e2d4;
+    --cover:#3d6680; --cover-ink:#e8f3fa;
+    color-scheme:dark;
   }
 }
 :root[data-theme="light"]{
-  --bg:#F4F6F5; --surface:#FFFFFF; --ink:#242A28; --muted:#6B7570;
-  --line:#DEE4E1; --accent:#3E7A6E; --accent-ink:#FFFFFF; --accent-soft:#E3EEEC;
-  --warn:#B4643C; --warn-soft:#F5E8DF; --chip:#EAEFEC; --ok:#3E7A52;
-  --shadow:0 1px 3px rgba(30,40,36,.08);
+  --bg:#ece8dc; --surface:#f7f4ea; --ink:#34332f; --muted:#67635a;
+  --line:#cfc9b8; --accent:#34332f; --accent-ink:#f7f4ea; --accent-soft:#dbe9f2;
+  --warn:#8a3f24; --warn-soft:#f1e3d6; --chip:#e4dfd0; --ok:#34332f;
+  --cover:#9cc7e0; --cover-ink:#1f3442; color-scheme:light;
 }
 :root[data-theme="dark"]{
-  --bg:#15191A; --surface:#1E2422; --ink:#E4E9E6; --muted:#9AA6A0;
-  --line:#313A37; --accent:#7FC0AF; --accent-ink:#0F1917; --accent-soft:#233A34;
-  --warn:#D89468; --warn-soft:#3A2C22; --chip:#293330; --ok:#7FBE97;
-  --shadow:0 1px 3px rgba(0,0,0,.35);
+  --bg:#1b1a17; --surface:#24221e; --ink:#e7e2d4; --muted:#aca597;
+  --line:#403c34; --accent:#e7e2d4; --accent-ink:#1b1a17; --accent-soft:#233845;
+  --warn:#e3a07f; --warn-soft:#3a2a22; --chip:#2e2b25; --ok:#e7e2d4;
+  --cover:#3d6680; --cover-ink:#e8f3fa; color-scheme:dark;
 }
 *{box-sizing:border-box; margin:0; padding:0;}
 html,body{background:var(--bg); color:var(--ink);
   font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Noto Sans JP",Meiryo,sans-serif;
-  font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;}
-#app{max-width:640px; margin:0 auto; padding:14px 14px 40px;}
-header.top{padding:4px 2px 12px;}
-header.top h1{font-size:18px; font-weight:700; letter-spacing:.02em;}
-.card{background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); padding:14px; margin-bottom:12px;}
-h2{font-size:14.5px; font-weight:700; letter-spacing:.03em; margin:0 0 10px;}
+  font-size:15px; line-height:1.58; -webkit-font-smoothing:antialiased;}
+#app{max-width:640px; margin:0 auto; padding:14px 14px 38px;}
+/* しおりの表紙（色画用紙＋左上のホッチキス） */
+header.top{padding:12px 14px 11px 16px; margin-bottom:12px; background:var(--cover); color:var(--cover-ink); position:relative; border-radius:1px;}
+header.top::before{content:""; position:absolute; left:9px; top:7px; width:18px; height:3px; border-radius:1px;
+  background:linear-gradient(#9a9ea3,#6e7378); transform:rotate(-38deg); opacity:.85;}
+header.top h1{font-family:var(--kiwi); font-size:20px; font-weight:500; letter-spacing:.06em; line-height:1.4;}
+header.top .small{color:var(--cover-ink); opacity:.88;}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:1px; box-shadow:var(--shadow); padding:13px 14px; margin-bottom:12px;}
+h2{font-family:var(--kiwi); font-size:15px; font-weight:500; letter-spacing:.05em; margin:0 0 9px;}
 .small{font-size:12.5px; color:var(--muted);}
 .row{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
 .grow{flex:1 1 auto; min-width:0;}
-button{font:inherit; cursor:pointer; border:none; border-radius:8px; padding:8px 14px; background:var(--chip); color:var(--ink);}
-button:focus-visible, input:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+button{font:inherit; cursor:pointer; border:none; border-radius:2px; padding:8px 14px; background:var(--chip); color:var(--ink);}
+button:focus-visible, input:focus-visible{outline:2px solid var(--ink); outline-offset:2px;}
 button.primary{background:var(--accent); color:var(--accent-ink); font-weight:700;}
 button.ghost{background:transparent; border:1px solid var(--line);}
 button:disabled{opacity:.45; cursor:default;}
-input[type=text],input[type=number]{font:inherit; color:var(--ink); background:var(--surface);
-  border:1px solid var(--line); border-radius:8px; padding:7px 10px; max-width:100%;}
-.seg{display:flex; flex-wrap:wrap; gap:6px;}
-.seg button{padding:7px 14px; font-size:13.5px; border:1px solid var(--line); background:var(--surface);}
-.seg button.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent); font-weight:700;}
+input[type=text],input[type=number]{font:inherit; color:var(--ink); background:transparent;
+  border:0; border-bottom:1.5px solid var(--ink); border-radius:0; padding:6px 6px; max-width:100%;}
+.seg{display:flex; flex-wrap:wrap; gap:0; border:1.5px solid var(--ink); width:max-content; max-width:100%;}
+.seg button{padding:7px 14px; font-size:13.5px; border:0; border-radius:0; background:var(--surface);}
+.seg button + button{border-left:1.5px solid var(--ink);}
+.seg button.on{background:var(--cover); color:var(--cover-ink); font-weight:700;}
 .toggle{display:flex; align-items:center; gap:8px; padding:8px 2px;}
-.toggle input[type=checkbox]{width:20px; height:20px; accent-color:var(--accent);}
 .field{margin-bottom:10px;}
-.field .lbl{font-size:12.5px; color:var(--muted); font-weight:700; letter-spacing:.03em; margin-bottom:5px;}
-.progress-wrap{background:var(--chip); border-radius:999px; height:10px; overflow:hidden; margin:4px 0 2px;}
-.progress-bar{background:var(--accent); height:100%; border-radius:999px; transition:width .25s;}
+.field .lbl{font-size:12.5px; color:var(--muted); font-weight:700; letter-spacing:.04em; margin-bottom:4px;}
+.progress-wrap{background:transparent; border:1px solid var(--ink); border-radius:0; height:8px; overflow:hidden; margin:4px 0 2px;}
+.progress-bar{background:repeating-linear-gradient(115deg, var(--ink) 0 1.5px, transparent 1.5px 4px); height:100%; border-radius:0; transition:width .25s;}
 .progress-txt{font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums;}
-.cat-title{font-size:13px; font-weight:700; color:var(--muted); letter-spacing:.06em; margin:16px 0 4px; display:flex; align-items:center; gap:8px;}
+.cat-title{font-family:var(--kiwi); font-size:14px; font-weight:500; color:var(--ink); letter-spacing:.06em; margin:15px 0 3px; display:flex; align-items:center; gap:8px;}
 .cat-title:first-child{margin-top:0;}
-.cat-title::after{content:""; flex:1; height:1px; background:var(--line);}
-.item{display:flex; align-items:center; gap:10px; padding:8px 2px; border-bottom:1px solid var(--line);}
+.cat-title::after{content:""; flex:1; height:0; border-top:1px dashed var(--muted);}
+.item{display:flex; align-items:center; gap:10px; padding:7px 2px; border-bottom:1px solid var(--line);}
 .item:last-child{border-bottom:none;}
-.item input[type=checkbox]{width:21px; height:21px; accent-color:var(--accent); flex-shrink:0;}
+/* 鉛筆で書き込む □ とレ点 */
+input[type=checkbox]{appearance:none; -webkit-appearance:none; width:20px; height:20px; flex-shrink:0; margin:0;
+  border:1.5px solid var(--ink); border-radius:1px; background:transparent; position:relative; cursor:pointer;}
+input[type=checkbox]::after{content:""; position:absolute; left:5px; top:-3px; width:7px; height:15px;
+  border:solid var(--ink); border-width:0 2.4px 2.4px 0; border-radius:0 0 2px 0; transform:rotate(38deg);
+  opacity:0;}
+/* 見せ場: レ点がひと筆で入る（短い払いから長い払いへ） */
+input[type=checkbox]:checked::after{opacity:.92;}
+.item input.just:checked::after{animation:pencil .26s ease-out both;}
+@keyframes pencil{
+  0%{clip-path:inset(60% 0 0 0);}
+  40%{clip-path:inset(60% 0 0 0);}
+  100%{clip-path:inset(0 0 0 0);}
+}
+.toggle input[type=checkbox]{width:20px; height:20px;}
+.item input[type=checkbox]{width:21px; height:21px;}
 .item .nm{flex:1; min-width:0;}
-.item.done .nm{text-decoration:line-through; color:var(--muted);}
-.item .tag{font-size:11px; padding:1px 7px; border-radius:999px; background:var(--accent-soft); color:var(--accent); flex-shrink:0;}
-.item .del{padding:4px 9px; font-size:12px; flex-shrink:0;}
-.footer-actions{display:flex; gap:8px; margin-top:6px;}
-.notice{background:var(--warn-soft); border-radius:8px; padding:10px 12px; font-size:13px; margin-bottom:12px;}
+.item.done .nm{text-decoration:line-through; text-decoration-color:var(--muted); color:var(--muted);}
+.item .tag{font-size:11px; padding:0 6px; border-radius:1px; background:transparent; border:1px solid var(--muted); color:var(--muted); flex-shrink:0;}
+.item .del{padding:3px 9px; font-size:12px; flex-shrink:0;}
+.footer-actions{display:flex; gap:8px; margin-top:4px;}
+.notice{background:var(--warn-soft); border-radius:2px; padding:10px 12px; font-size:13px; margin-bottom:12px;}
+.pr-ico{display:none;}
+/* 文節の切れ目でしか折らなくなったぶん（jp-phrase）、スマホ幅では長い項目名が1行ふえやすいので、文字と行間を少し詰めて総高を据え置く */
+@media (max-width:440px){
+  .item{padding:6px 2px;}
+  .item .nm{font-size:14px; line-height:1.48;}
+}
+@media (max-width:340px){ header.top h1{font-size:17px; letter-spacing:.03em;} }
+@media (prefers-reduced-motion: reduce){ input[type=checkbox]:checked::after{animation-duration:.1s;} }
+@media (forced-colors: active){
+  input[type=checkbox]{appearance:auto; -webkit-appearance:auto;}
+  input[type=checkbox]::after{display:none;}
+  .seg button.on{outline:2px solid Highlight; outline-offset:-3px;}
+  .progress-bar{background:Highlight;}
+}
 @media print{
-  body{background:#fff;}
+  /* 暗い画面の設定のまま印刷しても白地に黒になるよう、色の変数ごと戻す */
+  :root, :root[data-theme="dark"]{ --ink:#000; --muted:#555; --cover-ink:#000; --line:#ccc; --surface:#fff; --bg:#fff; --accent:#000; }
+  html,body{background:#fff; color:#000;}
+  header.top{background:#fff; color:#000; border-bottom:2px solid #000;}
+  header.top::before{display:none;}
   #settings-card, #add-card, #action-card, .no-print{display:none !important;}
-  .card{box-shadow:none; border:1px solid #ccc;}
+  .card{box-shadow:none; border:1px solid #ccc; background:#fff;}
+  input[type=checkbox]{border-color:#000;}
+  input[type=checkbox]::after{animation:none; border-color:#000;}
   .item input[type=checkbox]{width:16px; height:16px;}
+  .item input[type=checkbox]::after{left:4px; top:-2px; width:5px; height:11px; border-width:0 2px 2px 0;}
+  .item.done .nm{color:#555;}
 }
 </style>
+<script src="jp-phrase-3.js" defer></script>
 </head>
 <body>
 <div id="app">
@@ -137,7 +188,7 @@ input[type=text],input[type=number]{font:inherit; color:var(--ink); background:v
 
   <div class="card no-print" id="action-card">
     <div class="footer-actions">
-      <button class="ghost grow" id="btnPrint">🖨️ 印刷する</button>
+      <button class="ghost grow" id="btnPrint"><span class="pr-ico">🖨️ </span>印刷する</button>
       <button class="ghost" id="btnReset" style="color:var(--warn)">チェックをリセット</button>
     </div>
     <p class="small" style="margin-top:8px">次の旅行に備えて、リストの内容と条件はこの端末に自動保存されます。</p>
@@ -274,7 +325,9 @@ function render(){
   $("#progressBar").style.width = total ? Math.round(done/total*100)+"%" : "0%";
 
   $("#listBody").querySelectorAll("[data-chk]").forEach(c=>{
-    c.onchange = ()=>{ S.checked[c.dataset.chk] = c.checked; save(); render(); };
+    c.onchange = ()=>{ S.checked[c.dataset.chk] = c.checked; save(); render();
+      // 2026-09-28 刷新: いま押した1つにだけ鉛筆のレ点の動きを付ける（見た目だけ）
+      if(c.checked){ const e = $("#listBody").querySelector('[data-chk="'+CSS.escape(c.dataset.chk)+'"]'); if(e) e.classList.add("just"); } };
   });
   $("#listBody").querySelectorAll("[data-delcustom]").forEach(b=>{
     b.onclick = ()=>{

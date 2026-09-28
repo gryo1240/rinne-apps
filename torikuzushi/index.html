@@ -5,117 +5,151 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>新NISA取り崩しシミュレーター｜資産はいつまで・いくら使える？</title>
 <meta name="description" content="貯めた資産を毎月取り崩すと何年もつ？を無料でシミュレーション。定額・定率の受け取り方比較、「毎月10万円を30年」に必要な元本の逆算もできます。新NISA対応・登録不要。">
-<meta name="theme-color" content="#f3f6fa">
+<meta name="theme-color" content="#fbf7ea">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
+  /* 2026-09-28 刷新:「記録計のロール紙」（温湿度計や地震計が紙に線を引いていく、あの方眼の記録紙）。
+     色は クリーム地に橙の方眼・紫のインク・墨 の3系統。書体は端末の標準のまま（数字は等幅）。
+     見せ場は1つだけ: 最初とタブ・受け取り方を切り替えたときだけ、ペンが左から右へ残高の線を引く（入力中はすぐ描く）。
+     つみたて（紙の運用報告書・朱と緑・明朝）とは紙の種類と色で分ける */
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
+  :root {
+    --paper: #fbf7ea; --grid: #f0d9bd; --grid-major: #e6bd92; --ink: #2a2520; --soft: #635b50;
+    --pen: #5b3a8c; --pen-soft: rgba(91, 58, 140, .10); --page: #fffdf6; --rule: #d9c9ad;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1d1a15; --grid: #3a2f22; --grid-major: #56432c; --ink: #ede5d6; --soft: #b5aa98;
+      --pen: #c3a6f0; --pen-soft: rgba(195, 166, 240, .14); --page: #24201a; --rule: #4a4032;
+      color-scheme: dark;
+    }
+  }
   body {
     font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
-    background: #f3f6fa;
-    color: #26303e;
+    /* 記録紙の方眼（1目盛り 8px・5目盛りごとに太線）。ページ全体に敷き、枠の下の余白まで続ける */
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--grid-major) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px, 40px 40px, 8px 8px, 8px 8px;
+    color: var(--ink);
     line-height: 1.6;
+    min-height: 100vh;
   }
   .wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px 28px; }
 
-  .head { text-align: center; padding: 10px 0 14px; }
-  .head h1 { font-size: 22px; letter-spacing: 0.04em; color: #234e85; }
-  .head h1 .sun { font-size: 20px; }
-  .head p { font-size: 12.5px; color: #5c6a7d; margin-top: 2px; }
+  .head { text-align: left; padding: 6px 0 10px; }
+  .head h1 { font-size: 22px; letter-spacing: 0.04em; color: var(--ink); line-height: 1.35;
+    display: inline; background: var(--paper); box-shadow: 0 0 0 4px var(--paper); }
+  .head h1 .sun { display: none; }
+  .head p { font-size: 13px; color: var(--soft); margin-top: 6px; display: table; background: var(--paper); box-shadow: 0 0 0 3px var(--paper); }
 
-  .tabs { display: flex; gap: 8px; margin: 10px 0 14px; }
+  /* 切り替えは記録紙の送り穴のついたタブ（2つの記録チャンネル） */
+  .tabs { display: flex; gap: 0; margin: 10px 0 12px; border: 1.5px solid var(--ink); background: var(--page); }
   .tab {
     flex: 1; padding: 10px 6px; font-size: 14px; font-weight: 700;
-    color: #47576b; background: #e4ebf4; border: 1px solid #d2dce9;
-    border-radius: 10px; cursor: pointer; text-align: center;
-    transition: background .15s, color .15s;
+    color: var(--soft); background: var(--page); border: 0; border-radius: 0; cursor: pointer; text-align: center;
   }
-  .tab.active { background: #2b5c9e; border-color: #2b5c9e; color: #fff; }
+  .tab + .tab { border-left: 1.5px solid var(--ink); }
+  .tab.active { background: var(--ink); color: var(--page); }
 
   .card {
-    background: #fff; border: 1px solid #e2e9f2; border-radius: 14px;
-    padding: 16px 16px 14px; margin-bottom: 14px;
-    box-shadow: 0 1px 4px rgba(30, 60, 100, .05);
+    background: var(--page); border: 1px solid var(--rule); border-radius: 2px;
+    padding: 14px 14px 13px; margin-bottom: 12px;
   }
-  .card h2 { font-size: 14px; color: #234e85; margin-bottom: 10px; }
+  .card h2 { font-size: 14px; color: var(--ink); margin-bottom: 10px; letter-spacing: .04em;
+    padding-bottom: 5px; border-bottom: 1px solid var(--ink); }
 
-  .field { margin-bottom: 14px; }
+  .field { margin-bottom: 13px; }
   .field:last-child { margin-bottom: 2px; }
-  .field .row { display: flex; align-items: baseline; justify-content: space-between; }
-  .field label { font-size: 13.5px; font-weight: 700; color: #34404f; }
-  .field .val { display: flex; align-items: baseline; gap: 4px; }
+  .field .row { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+  .field label { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+  .field .val { display: flex; align-items: baseline; gap: 4px; flex: none; }
   .field input[type="number"] {
-    width: 96px; padding: 5px 8px; font-size: 16px; font-weight: 700;
-    color: #2b5c9e; text-align: right;
-    border: 1px solid #c9d6e6; border-radius: 8px; background: #fafcfe;
+    width: 96px; padding: 4px 8px; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums;
+    color: var(--pen); text-align: right;
+    border: 0; border-bottom: 1.5px solid var(--ink); border-radius: 0; background: transparent;
   }
-  .field .unit { font-size: 13px; color: #5c6a7d; }
+  .field input[type="number"]:focus { outline: 2px solid var(--pen); outline-offset: 1px; }
+  .field .unit { font-size: 13px; color: var(--soft); }
   .field input[type="range"] {
-    width: 100%; margin-top: 8px; accent-color: #2b5c9e; height: 22px;
+    width: 100%; margin-top: 8px; accent-color: var(--pen); height: 22px;
   }
 
-  .method { display: flex; gap: 8px; margin-top: 6px; }
+  .method { display: flex; gap: 0; margin-top: 6px; border: 1.5px solid var(--ink); }
   .method button {
-    flex: 1; padding: 9px 6px; font-size: 13px; font-weight: 700;
-    color: #47576b; background: #eef3f9; border: 1px solid #d2dce9;
-    border-radius: 10px; cursor: pointer; line-height: 1.4;
+    flex: 1; padding: 8px 6px; font-size: 13px; font-weight: 700;
+    color: var(--soft); background: var(--page); border: 0; border-radius: 0; cursor: pointer; line-height: 1.4;
   }
-  .method button.active { background: #2b5c9e; border-color: #2b5c9e; color: #fff; }
+  .method button + button { border-left: 1.5px solid var(--ink); }
+  .method button.active { background: var(--ink); color: var(--page); }
   .method button small { display: block; font-size: 10.5px; font-weight: 400; opacity: .85; }
+  button:focus-visible, summary:focus-visible, input[type="range"]:focus-visible { outline: 2px solid var(--pen); outline-offset: 2px; }
 
   details.adv { margin-top: 4px; }
-  details.adv summary { cursor: pointer; font-size: 13px; font-weight: 700; color: #46618a; padding: 4px 0; }
+  details.adv summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--soft); padding: 4px 0; }
   details.adv .inner { padding-top: 8px; }
 
-  .result { text-align: center; padding-top: 4px; }
-  .result .label { font-size: 13px; color: #5c6a7d; }
-  .result .big { font-size: 32px; font-weight: 800; color: #2b5c9e; letter-spacing: 0.02em; line-height: 1.3; }
+  .result { text-align: left; padding-top: 2px; }
+  .result .label { font-size: 13px; color: var(--soft); }
+  .result .big { font-size: 32px; font-weight: 800; color: var(--pen); letter-spacing: 0.02em; line-height: 1.3; font-variant-numeric: tabular-nums; }
   .result .big small { font-size: 17px; }
-  .result .sub { font-size: 13.5px; color: #34404f; margin-top: 4px; font-weight: 700; }
-  .result .range { font-size: 12px; color: #6a7789; margin-top: 4px; }
-  .stats { display: flex; gap: 8px; margin-top: 12px; }
-  .stat { flex: 1; background: #eef3f9; border-radius: 10px; padding: 8px 4px; text-align: center; }
-  .stat .k { font-size: 11.5px; color: #5c6a7d; }
-  .stat .v { font-size: 15px; font-weight: 700; color: #26303e; }
-  .stat .v.plus { color: #2b6e46; }
+  .result .sub { font-size: 13.5px; color: var(--ink); margin-top: 4px; font-weight: 700; }
+  .result .range { font-size: 12px; color: var(--soft); margin-top: 4px; }
+  .stats { display: flex; gap: 0; margin-top: 12px; border-top: 1px solid var(--ink); }
+  .stat { flex: 1; background: transparent; border-radius: 0; padding: 7px 6px 4px 0; text-align: left; }
+  .stat + .stat { border-left: 1px dotted var(--rule); padding-left: 8px; }
+  .stat .k { font-size: 11.5px; color: var(--soft); }
+  .stat .v { font-size: 15px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .stat .v.plus { color: var(--pen); }
 
   .idea {
-    margin-top: 12px; font-size: 12.5px; color: #4f4a33;
-    background: #faf6e8; border-left: 4px solid #c9a23c; border-radius: 6px;
-    padding: 8px 10px; text-align: left;
+    margin-top: 12px; font-size: 12.5px; color: var(--ink);
+    background: transparent; border: 1px dashed var(--ink); border-radius: 0;
+    padding: 7px 10px; text-align: left;
   }
-  .idea strong { color: #6b5010; }
+  .idea strong { color: var(--ink); }
   .nisa {
-    margin-top: 12px; font-size: 12.5px; color: #33465e;
-    background: #eaf1f9; border-left: 4px solid #2b5c9e; border-radius: 6px;
-    padding: 8px 10px; text-align: left;
+    margin-top: 10px; font-size: 12.5px; color: var(--ink);
+    background: var(--pen-soft); border-left: 3px solid var(--pen); border-radius: 0;
+    padding: 7px 10px; text-align: left;
   }
+  /* 🌱・💡 は画面に出さない（文章そのものは変えない） */
+  .nisa .ico, .idea .ico { display: none; }
 
+  /* 残高の推移は、記録紙の上にペンで引いた線（グラフの地は透明にして方眼を透かす） */
   .chart-box { position: relative; }
+  .chart-box.card { background: transparent; border-color: var(--ink); }
+  .chart-box h2 { display: table; background: var(--paper); box-shadow: 0 0 0 3px var(--paper); border-bottom: 0; }
   canvas { width: 100%; height: 240px; display: block; }
-  .legend { display: flex; gap: 16px; justify-content: center; margin-top: 8px; font-size: 12px; color: #47576b; }
+  .legend { display: flex; gap: 16px; justify-content: flex-start; margin-top: 8px; font-size: 12px; color: var(--soft); }
+  .legend span { background: var(--paper); box-shadow: 0 0 0 3px var(--paper); }
   .legend .lg-bal::before {
-    content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 3px;
-    margin-right: 5px; vertical-align: -1px; background: #3a72c0;
+    content: ""; display: inline-block; width: 16px; height: 0; border-top: 2.5px solid var(--pen);
+    margin-right: 5px; vertical-align: 3px;
   }
 
   details.tbl summary {
-    cursor: pointer; font-size: 13.5px; font-weight: 700; color: #234e85;
+    cursor: pointer; font-size: 13.5px; font-weight: 700; color: var(--ink);
     padding: 4px 0; list-style-position: inside;
   }
   .table-scroll { max-height: 320px; overflow-y: auto; margin-top: 8px; }
-  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-  th, td { padding: 6px 4px; text-align: right; border-bottom: 1px solid #edf1f7; }
-  th { color: #5c6a7d; font-weight: 700; background: #f6f9fc; position: sticky; top: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 6px 4px; text-align: right; border-bottom: 1px dotted var(--rule); }
+  th { color: var(--soft); font-weight: 700; background: var(--page); position: sticky; top: 0; border-bottom: 1px solid var(--ink); }
   th:first-child, td:first-child { text-align: center; }
 
   .disclaimer {
-    font-size: 11.5px; color: #6a7789; background: #e9eef5;
-    border-radius: 10px; padding: 10px 12px; margin-top: 2px;
+    font-size: 11.5px; color: var(--soft); background: var(--page);
+    border: 1px solid var(--rule); border-radius: 0; padding: 10px 12px; margin-top: 2px;
   }
-  .disclaimer strong { color: #47576b; }
+  .disclaimer strong { color: var(--ink); }
 
   .hidden { display: none; }
 
@@ -125,7 +159,12 @@
     .stats { flex-wrap: wrap; }
     .stat { min-width: 45%; }
   }
+  @media (max-width: 340px) { .head h1 { font-size: 17px; letter-spacing: .02em; } }
+  @media (forced-colors: active) {
+    .tab.active, .method button.active { outline: 2px solid Highlight; outline-offset: -3px; }
+  }
 </style>
+<script src="jp-phrase-3.js" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -209,7 +248,7 @@
       </div>
       <div class="stats" id="fwStats"></div>
       <div class="idea" id="fwIdea"></div>
-      <div class="nisa">🌱 <strong>新NISAなら</strong>売却して受け取るお金に税金がかかりません。課税口座（特定口座など）では売却益に約20%の税金がかかるため、実際に使える額はこの試算より少なくなります。</div>
+      <div class="nisa"><span class="ico">🌱</span> <strong>新NISAなら</strong>売却して受け取るお金に税金がかかりません。課税口座（特定口座など）では売却益に約20%の税金がかかるため、実際に使える額はこの試算より少なくなります。</div>
     </div>
 
     <div class="card chart-box">
@@ -261,7 +300,7 @@
         <div class="sub" id="rvSub"></div>
       </div>
       <div class="stats" id="rvStats"></div>
-      <div class="nisa">🌱 運用しながら取り崩すと、必要な元本は「受取総額」より少なくて済みます。これが出口でも運用を続ける効果です。</div>
+      <div class="nisa"><span class="ico">🌱</span> 運用しながら取り崩すと、必要な元本は「受取総額」より少なくて済みます。これが出口でも運用を続ける効果です。</div>
     </div>
   </section>
 
@@ -345,12 +384,12 @@
       if (res.depleted && res.months < targetMonths) {
         var w2 = CALC.sustainableMonthly(P, targetMonths, R);
         var r2 = CALC.simulateFixed(P, W, Math.min(7, R + 1), G);
-        $("fwIdea").innerHTML = "💡 <strong>こうすると長持ちします</strong>: 毎月の受け取りを<strong>約" + fmtManDetail(w2)
+        $("fwIdea").innerHTML = "<span class=\"ico\">💡</span> <strong>こうすると長持ちします</strong>: 毎月の受け取りを<strong>約" + fmtManDetail(w2)
           + "</strong>に抑えると、" + "95歳ごろまで続けられる計算です。利回りがあと1%高いと"
           + (r2.depleted ? fmtYm(r2.months) : "50年以上") + "になります。";
       } else {
         var lastBal2 = res.series[res.series.length - 1].balance;
-        $("fwIdea").innerHTML = "💡 今の条件なら、" + (res.depleted ? "95歳ごろまで続く計算です。"
+        $("fwIdea").innerHTML = "<span class=\"ico\">💡</span> 今の条件なら、" + (res.depleted ? "95歳ごろまで続く計算です。"
           : (lastBal2 >= P ? "受け取りを続けても資産が減らないペースです。" : "50年以上もつ計算です。"))
           + "余裕があれば、少し多めに受け取る選択もできます。";
       }
@@ -370,7 +409,7 @@
         '<div class="stat"><div class="k">10年後</div><div class="v">月' + fmtManDetail(y10.monthlyReceipt) + '</div></div>' +
         '<div class="stat"><div class="k">20年後</div><div class="v">月' + fmtManDetail(y20.monthlyReceipt) + '</div></div>' +
         '<div class="stat"><div class="k">30年後</div><div class="v">月' + fmtManDetail(y30.monthlyReceipt) + '</div></div>';
-      $("fwIdea").innerHTML = "💡 <strong>定率のとくちょう</strong>: 残高がゼロにはなりませんが、受け取れる額は残高しだいで増えたり減ったりします。「毎月決まった額がほしい」なら定額を選んでください。";
+      $("fwIdea").innerHTML = "<span class=\"ico\">💡</span> <strong>定率のとくちょう</strong>: 残高がゼロにはなりませんが、受け取れる額は残高しだいで増えたり減ったりします。「毎月決まった額がほしい」なら定額を選んでください。";
       drawChart(res2.series, null);
       renderTable(res2.yearly);
     }
@@ -393,6 +432,10 @@
   }
 
   // ---- グラフ ----
+  // 2026-09-28 刷新: 色は CSS の変数（記録紙の方眼・紫のインク）から読む。
+  // 最初に開いたときと、タブ・受け取り方を切り替えたときだけ、ペンが左から右へ線を引く（見た目だけ。数値は同じ）
+  var animNext = true, animId = 0, drawSeq = 0;
+  function cssVar(n, fb) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim() || fb; }
   function drawChart(series, depletedMonth) {
     var cv = $("chart");
     var dpr = window.devicePixelRatio || 1;
@@ -400,7 +443,6 @@
     cv.width = cssW * dpr; cv.height = cssH * dpr;
     var ctx = cv.getContext("2d");
     ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, cssW, cssH);
 
     var padL = 46, padR = 12, padT = 12, padB = 26;
     var w = cssW - padL - padR, h = cssH - padT - padB;
@@ -408,47 +450,80 @@
     for (var k = 0; k < series.length; k++) if (series[k].balance > maxBal) maxBal = series[k].balance;
     if (maxBal <= 0) maxBal = 1;
     if (maxM <= 0) maxM = 1;
+    var PEN = cssVar("--pen", "#5b3a8c"), GRID = cssVar("--grid-major", "#e6bd92"), SOFT = cssVar("--soft", "#635b50"), INK = cssVar("--ink", "#2a2520");
 
-    // 目盛り
-    ctx.strokeStyle = "#e2e9f2"; ctx.fillStyle = "#8a96a6";
-    ctx.font = "10.5px sans-serif"; ctx.lineWidth = 1;
-    var steps = 4;
-    for (var s = 0; s <= steps; s++) {
-      var y = padT + h - (h * s / steps);
-      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + w, y); ctx.stroke();
-      ctx.textAlign = "right";
-      ctx.fillText(Math.round(maxBal * s / steps / MAN).toLocaleString() + "万", padL - 5, y + 3.5);
-    }
-    var yearStep = Math.max(1, Math.ceil(maxM / 12 / 6));
-    ctx.textAlign = "center";
-    for (var yy = 0; yy * 12 <= maxM; yy += yearStep) {
-      var x = padL + w * (yy * 12) / maxM;
-      ctx.fillText(yy + "年", x, padT + h + 16);
+    function frame(p) {
+      ctx.clearRect(0, 0, cssW, cssH);
+      // 目盛り
+      ctx.strokeStyle = GRID; ctx.fillStyle = SOFT;
+      ctx.font = "10.5px sans-serif"; ctx.lineWidth = 1;
+      var steps = 4;
+      for (var s = 0; s <= steps; s++) {
+        var y = padT + h - (h * s / steps);
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + w, y); ctx.stroke();
+        ctx.textAlign = "right";
+        ctx.fillText(Math.round(maxBal * s / steps / MAN).toLocaleString() + "万", padL - 5, y + 3.5);
+      }
+      var yearStep = Math.max(1, Math.ceil(maxM / 12 / 6));
+      ctx.textAlign = "center";
+      for (var yy = 0; yy * 12 <= maxM; yy += yearStep) {
+        var x = padL + w * (yy * 12) / maxM;
+        ctx.fillText(yy + "年", x, padT + h + 16);
+      }
+
+      // 残高ライン + 塗り（p まで）
+      ctx.save();
+      ctx.beginPath(); ctx.rect(0, 0, padL + w * p + 1, cssH); ctx.clip();
+      ctx.beginPath();
+      for (var j = 0; j < series.length; j++) {
+        var px = padL + w * series[j].month / maxM;
+        var py = padT + h - h * Math.max(0, series[j].balance) / maxBal;
+        if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = PEN; ctx.lineWidth = 2.2; ctx.lineJoin = "round"; ctx.stroke();
+      ctx.lineTo(padL + w * series[series.length - 1].month / maxM, padT + h);
+      ctx.lineTo(padL, padT + h);
+      ctx.closePath();
+      ctx.globalAlpha = 0.12; ctx.fillStyle = PEN; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.restore();
+
+      // 残高0マーカー（線が届いてから出す）
+      if (depletedMonth && p >= 1) {
+        var mx = padL + w * depletedMonth / maxM;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(mx, padT); ctx.lineTo(mx, padT + h); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = INK; ctx.textAlign = mx > cssW - 90 ? "right" : "left";
+        ctx.fillText("ここで残高0", mx + (mx > cssW - 90 ? -6 : 6), padT + 14);
+      }
+      // ペン先
+      if (p < 1) {
+        var ix = padL + w * p, best = series[0];
+        for (var q = 0; q < series.length; q++) { if (padL + w * series[q].month / maxM <= ix) best = series[q]; }
+        var iy = padT + h - h * Math.max(0, best.balance) / maxBal;
+        ctx.fillStyle = PEN; ctx.beginPath(); ctx.arc(ix, iy, 3, 0, Math.PI * 2); ctx.fill();
+      }
     }
 
-    // 残高ライン + 塗り
-    ctx.beginPath();
-    for (var j = 0; j < series.length; j++) {
-      var px = padL + w * series[j].month / maxM;
-      var py = padT + h - h * Math.max(0, series[j].balance) / maxBal;
-      if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    cancelAnimationFrame(animId);
+    drawSeq++;
+    if (!animNext || !window.requestAnimationFrame) { frame(1); return; }
+    animNext = false;
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var dur = reduce ? 200 : 900, t0 = 0;
+    frame(0);
+    function tick(t) {
+      if (!t0) t0 = t;
+      var p = Math.min(1, (t - t0) / dur);
+      frame(p);
+      if (p < 1) animId = requestAnimationFrame(tick);
     }
-    ctx.strokeStyle = "#3a72c0"; ctx.lineWidth = 2.2; ctx.stroke();
-    ctx.lineTo(padL + w * series[series.length - 1].month / maxM, padT + h);
-    ctx.lineTo(padL, padT + h);
-    ctx.closePath();
-    ctx.fillStyle = "rgba(58,114,192,.10)"; ctx.fill();
-
-    // 残高0マーカー
-    if (depletedMonth) {
-      var mx = padL + w * depletedMonth / maxM;
-      ctx.setLineDash([4, 4]);
-      ctx.strokeStyle = "#c96f2b"; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(mx, padT); ctx.lineTo(mx, padT + h); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = "#c96f2b"; ctx.textAlign = mx > cssW - 90 ? "right" : "left";
-      ctx.fillText("ここで残高0", mx + (mx > cssW - 90 ? -6 : 6), padT + 14);
-    }
+    animId = requestAnimationFrame(tick);
+    // 画面外の iframe などで描画が止まっても軸だけのグラフが残らないよう、時間がたったら完成形を描く
+    // （その間に新しく描き直していたら何もしない）
+    var mySeq = drawSeq;
+    setTimeout(function () { if (mySeq === drawSeq) { cancelAnimationFrame(animId); frame(1); } }, dur + 400);
   }
 
   // ---- 年次テーブル ----
@@ -471,6 +546,7 @@
   $("tabFwd").addEventListener("click", function () {
     this.classList.add("active"); $("tabRev").classList.remove("active");
     $("paneFwd").classList.remove("hidden"); $("paneRev").classList.add("hidden");
+    animNext = true;
     calcFwd();
   });
   $("tabRev").addEventListener("click", function () {
@@ -483,6 +559,7 @@
     this.classList.add("active"); $("mRate").classList.remove("active");
     $("fieldAmount").classList.remove("hidden"); $("fieldRate").classList.add("hidden");
     $("fieldInc").classList.remove("hidden");
+    animNext = true;
     calcFwd();
   });
   $("mRate").addEventListener("click", function () {
@@ -490,6 +567,7 @@
     this.classList.add("active"); $("mFixed").classList.remove("active");
     $("fieldRate").classList.remove("hidden"); $("fieldAmount").classList.add("hidden");
     $("fieldInc").classList.add("hidden"); // 増額オプションは定額専用
+    animNext = true;
     calcFwd();
   });
 

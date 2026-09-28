@@ -1,8 +1,9 @@
 // リスク許容度チェック Service Worker（キャッシュ優先・オフライン動作）
-const CACHE = "risk-check-v3";
+const CACHE = "risk-check-v4";
 const ASSETS = [
   "./", "./index.html", "./logic.js", "./data.js",
-  "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"
+  "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png",
+  "./jp-phrase-3.js", "./fonts/biz-udgothic-700.woff"
 ];
 
 self.addEventListener("install", (e) => {
