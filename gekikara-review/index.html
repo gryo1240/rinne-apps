@@ -6,55 +6,80 @@
 <title>激辛レビュー生成器｜誇張ジョークで全力こき下ろし</title>
 <meta name="description" content="褒めてほしいモノ・作品名(または画像)を入れると、AIが全力でこき下ろす誇張ジョークレビューを生成。結果はカード画像として保存・共有できます。登録不要・完全無料。">
 <link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#fffaf6">
+<meta name="theme-color" content="#D21F1B">
 <link rel="icon" href="./icon-192.png">
 <style>
+  /* 2026-09-29 刷新:「激辛スナック菓子の袋の警告ラベル」。赤い袋の上に貼られた白いラベル、上に黒と黄の警告の縞。
+     色は 袋の赤・墨・警告の黄 の3系統。見出しだけ同梱の BIZ UDゴシック Bold（使う文字だけ・SIL OFL）。入力・レビュー文は端末の書体。
+     見せ場は1つだけ: 結果のカードが、ラベルの印刷機から出てくるように上から現れる（辛さは5つの唐辛子の枠で表示）。
+     ⚠ 見出しの文言を変えたら fonts/chars.txt を作り直してフォントを再生成する */
+  @font-face { font-family: "GK Head"; font-weight: 700; font-display: swap; src: url("fonts/biz-udgothic-700.woff") format("woff"); }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
-    background: #fffaf6; color: #3a2418;
+    background-color: #D21F1B;
+    background-image: radial-gradient(rgba(255,255,255,.07) 1.5px, transparent 1.6px);
+    background-size: 14px 14px;
+    color: #141414;
   }
+  /* 袋に貼った白い警告ラベル */
   .wrap {
-    max-width: 560px; margin: 0 auto; padding: 32px 20px 48px;
-    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    max-width: 560px; margin: 0 auto; padding: 26px 20px 34px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    background: #fff; border-left: 3px solid #141414; border-right: 3px solid #141414; position: relative; min-height: 100%;
   }
-  h1 { font-size: 26px; font-weight: 800; color: #d94f2b; text-align: center; }
-  .subtitle { font-size: 13px; color: #8a6f63; text-align: center; max-width: 340px; margin-bottom: 6px; }
+  .wrap::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 10px;
+    background: repeating-linear-gradient(-45deg, #141414 0 10px, #FFD21F 10px 20px);
+  }
+  h1 { font-family: "GK Head", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; font-size: 26px; font-weight: 700; color: #141414; text-align: center; line-height: 1.35; }
+  h1::after { content: ""; display: block; height: 4px; margin: 3px auto 0; width: 70%; background: #D21F1B; }
+  .subtitle { font-size: 13px; line-height: 1.5; color: #4a4a4a; text-align: center; max-width: 340px; margin-bottom: 2px; }
   .input-row { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 10px; }
   input[type=text] {
-    width: 100%; border: 2px solid #eccabd; border-radius: 12px;
-    padding: 12px 14px; font-size: 15px; background: #fff; color: #3a2418;
+    width: 100%; border: 2.5px solid #141414; border-radius: 4px;
+    padding: 12px 14px; font-size: 15px; background: #fff; color: #141414;
   }
   .btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
   button {
     font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
-    border: none; border-radius: 999px; padding: 12px 24px;
+    border: none; border-radius: 4px; padding: 12px 24px;
   }
-  #genBtn { background: #d94f2b; color: #fff; }
-  #imgBtn { background: #fff; color: #d94f2b; border: 2px solid #d94f2b; padding: 10px 22px; }
-  #imgStatus { font-size: 12px; color: #8a6f63; min-height: 1.4em; text-align: center; }
-  #result { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 8px; }
+  button:focus-visible, input:focus-visible { outline: 3px solid #1f5fd1; outline-offset: 2px; }
+  #genBtn { background: #D21F1B; color: #fff; border: 2.5px solid #141414; padding: 10px 22px; box-shadow: 3px 3px 0 #141414; }
+  #imgBtn { background: #FFD21F; color: #141414; border: 2.5px solid #141414; padding: 10px 22px; box-shadow: 3px 3px 0 #141414; }
+  #genBtn:active, #imgBtn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #141414; }
+  #imgStatus { font-size: 12px; color: #4a4a4a; min-height: 1.4em; text-align: center; }
+  #result { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 6px; }
   #result[hidden] { display: none; }
   #cardWrap { max-width: 100%; }
-  .card-preview { max-width: 100%; border-radius: 14px; box-shadow: 0 4px 18px rgba(60, 30, 10, .12); }
+  .card-preview { max-width: 100%; display: block; border-radius: 3px; box-shadow: 4px 4px 0 #141414; animation: printout .55s cubic-bezier(.25,.8,.3,1) both; }
+  /* 見せ場: ラベルの印刷機から出てくるように、上から現れる */
+  @keyframes printout { from { clip-path: inset(0 0 100% 0); transform: translateY(-6px); } to { clip-path: inset(0 0 0 0); transform: none; } }
   .action-row { display: flex; gap: 12px; }
-  #saveBtn, #shareBtn { background: #3a2418; color: #fff; }
-  #saveBtn { background: #fff; color: #3a2418; border: 2px solid #3a2418; }
-  #shareStatus { font-size: 12px; color: #8a6f63; min-height: 1.4em; text-align: center; }
+  #saveBtn, #shareBtn { background: #141414; color: #fff; border: 2.5px solid #141414; padding: 10px 22px; }
+  #saveBtn { background: #fff; color: #141414; }
+  #shareStatus { font-size: 12px; color: #4a4a4a; min-height: 1.4em; text-align: center; }
   #shareStatus[hidden] { display: none; }
   .share-fallback { width: 100%; max-width: 340px; text-align: center; margin-top: 2px; }
   .share-fallback[hidden] { display: none; }
-  .share-fallback p { font-size: 12px; color: #8a6f63; margin-bottom: 8px; }
+  .share-fallback p { font-size: 12px; line-height: 1.45; color: #4a4a4a; margin-bottom: 6px; }
   .share-btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-  .sh { border: none; border-radius: 8px; color: #fff; font-size: 12px; font-weight: bold; padding: 8px 12px; cursor: pointer; min-width: 64px; }
+  .sh { border: none; border-radius: 4px; color: #fff; font-size: 12px; font-weight: bold; padding: 8px 12px; cursor: pointer; min-width: 64px; }
   .sh-x { background: #0f1419; border: 1px solid #3a4048; }
   .sh-threads { background: #101010; border: 1px solid #3a3a3a; }
   .sh-line { background: #06c755; }
   .sh-ig { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
   .footer-note {
-    margin-top: 20px; font-size: 11px; color: #b79b8f; text-align: center; max-width: 340px;
+    margin-top: 14px; font-size: 11px; color: #5a5a5a; text-align: center; max-width: 340px;
+    border-top: 2px solid #141414; padding-top: 10px;
   }
+  /* 単独で開いたときだけ出るブログ導線は、赤い袋の上なので白で（インラインの opacity を打ち消す） */
+  #rb-blog-link a { color: #fff !important; opacity: 1 !important; }
+  @media (prefers-reduced-motion: reduce) { .card-preview { animation-duration: .12s; } }
+  @media (forced-colors: active) { .wrap::before { display: none; } }
 </style>
+<script src="jp-phrase-3.js" defer></script>
 </head>
 <body>
 <div class="wrap">

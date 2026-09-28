@@ -4,97 +4,147 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>今日の10パズル｜4つの数字で10をつくる脳トレ</title>
-<meta name="theme-color" content="#1fae57">
+<meta name="theme-color" content="#FBF8EE">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
+/* 2026-09-29 刷新（オーナー指示で作り直し「小学生受けしそうなコミカル目な見た目」）:
+   「算数ノートと先生の赤ペン」。クリームの方眼ノートに、算数セットの白い数字カードと黄色い記号カード。
+   色は 鉛筆の墨・方眼の水色・赤ペン（花丸だけ）の3系統（記号カードの黄色は補助）。数字と見出しは同梱の M PLUS Rounded 1c ExtraBold。
+   見せ場は1つだけ: 正解した瞬間、結果の上に赤ペンの花丸が1回だけ描かれる（タイムアップでは描かない）。
+   ⚠ 表題・数字まわりの文言を変えたら fonts/chars.txt を作り直してフォントを再生成する */
+@font-face{font-family:"TP Round"; font-weight:800; font-display:swap; src:url("fonts/mplus-rounded-800.woff") format("woff");
+  /* 小数点・ハイフン・分数の斜線（⁄）は端末の書体に任せる（教訓 app-font-monospace-digits-fraction） */
+  unicode-range:U+0030-0039, U+0041-005A, U+2026, U+3000-9FFF, U+FF01}
 :root{
-  --bg:#f3f7f4; --panel:#ffffff; --ink:#243027; --sub:#6b7a70; --line:#dbe6df;
-  --accent:#1fae57; --accent-d:#178f47; --accent-bg:#e4f6ec;
-  --warn:#e2603f; --card:#eef5f0; --shadow:0 2px 8px rgba(30,60,40,.08);
+  --bg:#FBF8EE; --panel:#ffffff; --ink:#2B2F36; --sub:#5C636E; --line:#C9D6E0;
+  --grid:rgba(96,160,205,.22); --blue:#2870AA; --blue-d:#1B4F7C; --yellow:#FFD84A; --red:#E23E2B;
+  --accent:#2870AA; --accent-d:#1B4F7C; --accent-bg:#E4F0F9;
+  --warn:#2B2F36; --card:#ffffff; --shadow:0 3px 0 #D3DCE4; --btn-ink:#ffffff;
+  --num:"TP Round","Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+  color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
-  :root{ --bg:#161c18; --panel:#1f2823; --ink:#e8f0ea; --sub:#9db0a4; --line:#33403a;
-    --accent:#37c46f; --accent-d:#2aa259; --accent-bg:#1d3327; --card:#26322c; --shadow:0 2px 10px rgba(0,0,0,.35);}
+  :root{ --bg:#1B1F26; --panel:#252A33; --ink:#E9EDF2; --sub:#A7B0BC; --line:#3B4452;
+    --grid:rgba(120,175,225,.10); --blue:#6DB3EA; --blue-d:#3F7FB0; --yellow:#E2BE3A; --red:#FF6E5C;
+    --accent:#6DB3EA; --accent-d:#8CC4EF; --accent-bg:#233447; --warn:#E9EDF2; --card:#252A33; --shadow:0 3px 0 #11141a; --btn-ink:#10202E; color-scheme:dark;}
 }
-:root[data-theme="dark"]{ --bg:#161c18; --panel:#1f2823; --ink:#e8f0ea; --sub:#9db0a4; --line:#33403a;
-  --accent:#37c46f; --accent-d:#2aa259; --accent-bg:#1d3327; --card:#26322c; --shadow:0 2px 10px rgba(0,0,0,.35);}
-:root[data-theme="light"]{ --bg:#f3f7f4; --panel:#ffffff; --ink:#243027; --sub:#6b7a70; --line:#dbe6df;
-  --accent:#1fae57; --accent-d:#178f47; --accent-bg:#e4f6ec; --card:#eef5f0; --shadow:0 2px 8px rgba(30,60,40,.08);}
+:root[data-theme="dark"]{ --bg:#1B1F26; --panel:#252A33; --ink:#E9EDF2; --sub:#A7B0BC; --line:#3B4452;
+  --grid:rgba(120,175,225,.10); --blue:#6DB3EA; --blue-d:#3F7FB0; --yellow:#E2BE3A; --red:#FF6E5C;
+  --accent:#6DB3EA; --accent-d:#8CC4EF; --accent-bg:#233447; --warn:#E9EDF2; --card:#252A33; --shadow:0 3px 0 #11141a; --btn-ink:#10202E; color-scheme:dark;}
+:root[data-theme="light"]{ --bg:#FBF8EE; --panel:#ffffff; --ink:#2B2F36; --sub:#5C636E; --line:#C9D6E0;
+  --grid:rgba(96,160,205,.22); --blue:#2870AA; --blue-d:#1B4F7C; --yellow:#FFD84A; --red:#E23E2B;
+  --accent:#2870AA; --accent-d:#1B4F7C; --accent-bg:#E4F0F9; --warn:#2B2F36; --card:#ffffff; --shadow:0 3px 0 #D3DCE4; --btn-ink:#ffffff; color-scheme:light;}
 
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
 html,body{margin:0;}
-body{background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+/* 方眼ノート（5mm方眼のつもりで 14px。背景だけなので高さは変わらない） */
+body{background-color:var(--bg);
+  background-image:linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:14px 14px; background-position:-1px -1px;
+  color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
   line-height:1.5; -webkit-text-size-adjust:100%;}
-#app{max-width:460px; margin:0 auto; padding:14px 14px 26px; min-height:100%;}
+#app{max-width:460px; margin:0 auto; padding:14px 14px 22px; min-height:100%;}
 .screen{display:none;}
 .screen.active{display:block;}
-h1{font-size:1.5rem; margin:.2em 0 .1em; letter-spacing:.02em;}
-.tagline{color:var(--sub); font-size:.92rem; margin:0 0 16px;}
-.panel{background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow);}
+h1{font-family:var(--num); font-size:1.5rem; font-weight:800; line-height:1.3; margin:.2em 0 .1em; letter-spacing:.02em;}
+.tagline{color:var(--sub); font-size:.9rem; margin:0 0 14px;}
+.tagline b{font-family:var(--num); color:var(--blue); font-size:1.05rem;}
+.panel{background:var(--panel); border:2px solid var(--ink); border-radius:10px; box-shadow:var(--shadow);}
 button{font-family:inherit; cursor:pointer; border:none; color:inherit;}
-.btn{display:block; width:100%; padding:15px; border-radius:14px; font-size:1.05rem; font-weight:700;
-  background:var(--accent); color:#fff; box-shadow:var(--shadow); user-select:none;}
-.btn:active{transform:translateY(1px);}
-.btn.sub{background:var(--card); color:var(--ink); border:1px solid var(--line);}
-.btn.small{padding:11px; font-size:.95rem;}
-.bigbtn{padding:20px 16px; font-size:1.2rem; margin-bottom:12px;}
-.bigbtn .state{display:block; font-size:.82rem; font-weight:600; opacity:.9; margin-top:4px;}
+.btn{display:block; width:100%; padding:13px; border-radius:12px; font-size:1.02rem; font-weight:800;
+  background:var(--blue); color:var(--btn-ink); box-shadow:0 4px 0 var(--blue-d); user-select:none; transition:transform .06s, box-shadow .06s;}
+.btn:active{transform:translateY(3px); box-shadow:0 1px 0 var(--blue-d);}
+.btn.sub{background:var(--panel); color:var(--ink); border:2px solid var(--ink); box-shadow:var(--shadow);}
+.btn.sub:active{box-shadow:none;}
+.btn.small{padding:10px; font-size:.95rem;}
+button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible{outline:3px dashed var(--ink); outline-offset:3px;} /* 選択中（青の実線）と見分ける */
+.bigbtn{padding:18px 16px 16px; font-size:1.2rem; margin-bottom:14px; border-radius:14px;}
+.bigbtn .state{display:block; font-size:.8rem; font-weight:700; margin-top:4px;}
 .row{display:flex; gap:10px;}
 .row>*{flex:1;}
-.records{display:flex; gap:8px; margin:14px 0; text-align:center;}
-.rec{flex:1; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:10px 6px;}
-.rec .num{font-size:1.35rem; font-weight:800; color:var(--accent);}
+.records{display:flex; gap:8px; margin:12px 0; text-align:center;}
+.rec{flex:1; background:var(--panel); border:2px solid var(--ink); border-radius:10px; padding:7px 4px 6px; box-shadow:var(--shadow);}
+.rec .num{font-family:var(--num); font-size:1.35rem; font-weight:800; line-height:1.3; color:var(--blue);}
 .rec .lbl{font-size:.72rem; color:var(--sub);}
-.toprow{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+.toprow{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
 .toggle{display:flex; align-items:center; gap:6px; font-size:.85rem; color:var(--sub); user-select:none;}
-.toggle input{width:38px; height:22px; appearance:none; background:var(--line); border-radius:11px; position:relative; transition:.15s;}
-.toggle input:checked{background:var(--accent);}
-.toggle input::after{content:""; position:absolute; width:18px; height:18px; border-radius:50%; background:#fff; top:2px; left:2px; transition:.15s;}
+.toggle .ico{display:none;}
+.toggle.snd::before{content:"おと"; font-weight:700;}
+.toggle input{width:40px; height:22px; appearance:none; -webkit-appearance:none; margin:0; background:var(--line); border:2px solid var(--ink); border-radius:11px; position:relative; transition:background .15s;}
+.toggle input:checked{background:var(--blue);}
+.toggle input::after{content:""; position:absolute; width:14px; height:14px; border-radius:50%; background:#fff; border:2px solid var(--ink); top:0; left:0; transition:left .15s;}
 .toggle input:checked::after{left:18px;}
-details{margin-top:14px; font-size:.9rem; color:var(--sub);}
-details summary{cursor:pointer; padding:8px 0; font-weight:600;}
+details{margin-top:12px; font-size:.9rem; color:var(--sub);}
+details summary{cursor:pointer; padding:6px 0; font-weight:700;}
 details p, details li{margin:.3em 0;}
 
 /* プレイ画面 */
 .play-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; font-size:.85rem; color:var(--sub);}
-.timerbar-wrap{height:10px; background:var(--card); border-radius:6px; overflow:hidden; margin-bottom:6px;}
-.timerbar{height:100%; width:100%; background:var(--accent); transition:none;}
-.target{ text-align:center; font-size:1.05rem; color:var(--sub); margin:12px 0 4px;}
-.target b{font-size:2.1rem; color:var(--accent); display:inline-block; vertical-align:middle; margin:0 6px;}
+#time-num{font:800 1.1rem var(--num); color:var(--ink); font-variant-numeric:tabular-nums;}
+.timerbar-wrap{height:10px; background:var(--panel); border:2px solid var(--ink); border-radius:6px; overflow:hidden; margin-bottom:6px;}
+.timerbar{height:100%; width:100%; background:var(--blue); transition:none;}
+.target{ text-align:center; font-size:1rem; color:var(--sub); margin:10px 0 4px;}
+.target b{font-family:var(--num); font-size:2.2rem; line-height:1.2; color:var(--blue); display:inline-block; vertical-align:middle; margin:0 6px;}
 .cards{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; min-height:88px; align-items:center; margin:10px 0 14px;}
-.card{min-width:66px; height:78px; padding:0 8px; border-radius:14px; background:var(--card); border:2px solid var(--line);
-  font-size:1.7rem; font-weight:800; display:flex; align-items:center; justify-content:center; position:relative; user-select:none;}
-.card.frac{font-size:1.25rem;}
-.card.sel{border-color:var(--accent); background:var(--accent-bg); color:var(--accent-d);}
-.ops{display:flex; gap:10px; margin-bottom:10px;}
-.op{flex:1; height:56px; border-radius:12px; background:var(--panel); border:1px solid var(--line);
-  font-size:1.5rem; font-weight:800; color:var(--ink); user-select:none;}
-.op:disabled{opacity:.4;}
-.op:active:not(:disabled){background:var(--accent-bg);}
-.op.sel{border-color:var(--accent); background:var(--accent-bg); color:var(--accent-d);}
+/* 算数セットの白い数字カード（下に厚み） */
+.card{min-width:64px; height:76px; padding:0 8px; border-radius:10px; background:var(--panel); border:2.5px solid var(--ink); color:var(--ink);
+  box-shadow:0 4px 0 var(--ink);
+  font-family:var(--num); font-size:1.85rem; font-weight:800; display:flex; align-items:center; justify-content:center; position:relative; user-select:none;}
+.card.frac{font-size:1.25rem; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;} /* 分数は端末の書体で組む */
+/* 選んだカードは鉛筆でぐるっと囲む */
+.card.sel{background:var(--accent-bg); outline:3px solid var(--blue); outline-offset:4px; transform:rotate(-3deg);}
+.ops{display:flex; gap:10px; margin-bottom:12px;}
+/* 黄色い記号カード */
+.op{flex:1; height:54px; border-radius:10px; background:var(--yellow); border:2.5px solid var(--ink); box-shadow:0 4px 0 var(--ink);
+  font-size:1.6rem; font-weight:800; color:#2B2F36; user-select:none;}
+.op:disabled{opacity:.45; box-shadow:0 2px 0 var(--ink);}
+.op:active:not(:disabled){transform:translateY(3px); box-shadow:0 1px 0 var(--ink);}
+.op.sel{outline:3px solid var(--blue); outline-offset:4px; transform:rotate(3deg);}
 .ctrls{display:flex; gap:10px;}
 .ctrls .btn{flex:1;}
 .steps{margin-top:12px; min-height:20px; font-size:.85rem; color:var(--sub); text-align:center;}
 .hint{font-size:.78rem; color:var(--sub); text-align:center; margin-top:6px;}
 
-/* リザルト */
-.result-head{text-align:center; font-size:1.7rem; font-weight:800; margin:20px 0 6px;}
-.result-head.clear{color:var(--accent);}
-.result-head.timeup{color:var(--warn);}
-.result-time{text-align:center; font-size:2.6rem; font-weight:800; margin:6px 0;}
-.result-sub{text-align:center; color:var(--sub); font-size:.92rem; margin-bottom:8px;}
-.badge{display:inline-block; background:var(--accent-bg); color:var(--accent-d); border-radius:999px; padding:4px 12px; font-size:.85rem; font-weight:700;}
-.result-answer{margin:10px auto 0; max-width:360px; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:.95rem; color:var(--ink); text-align:center; line-height:1.9;}
+/* リザルト: 答案の紙と赤ペンの花丸 */
+.result-sheet{position:relative; margin:6px 0 2px; padding:8px 16px 9px; background:var(--panel); border:2px solid var(--ink); border-radius:10px; box-shadow:var(--shadow);}
+.result-head{text-align:center; font-family:var(--num); font-size:1.6rem; font-weight:800; line-height:1.3; margin:4px 0 2px;}
+.result-head.clear{color:var(--ink);}
+.result-head.timeup{color:var(--sub);}
+.result-time{text-align:center; font-family:var(--num); font-size:2.5rem; font-weight:800; line-height:1.25; margin:2px 0; font-variant-numeric:tabular-nums;}
+.result-time:empty{display:none;}
+.result-sub{text-align:center; color:var(--sub); font-size:.9rem; margin-bottom:4px;}
+.badge{display:inline-block; background:var(--accent-bg); color:var(--ink); border:2px solid var(--blue); border-radius:999px; padding:1px 12px; font-size:.82rem; font-weight:800;}
+/* 見せ場: 赤ペンの花丸（重ねるだけ・場所を取らない） */
+.result-sheet .maru{position:absolute; right:4px; top:-12px; width:104px; height:104px; pointer-events:none; opacity:0; transform:rotate(-8deg);}
+.result-sheet .maru path{fill:none; stroke:var(--red); stroke-width:3.4; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:1; stroke-dashoffset:1;}
+.result-sheet.hanamaru .maru{opacity:.92;}
+.result-sheet.hanamaru .maru path{animation:maru .65s .1s cubic-bezier(.45,.1,.35,1) forwards;}
+@keyframes maru{to{stroke-dashoffset:0;}}
+.result-answer{margin:10px auto 0; max-width:360px; background:var(--panel); border:2px dashed var(--line); border-radius:10px; padding:8px 12px; font-size:.95rem; color:var(--ink); text-align:center; line-height:1.9;}
 .result-answer .ans-label{display:block; font-size:.72rem; color:var(--sub); margin-bottom:3px;}
-.graph-wrap{margin:14px 0;}
+.graph-wrap{margin:10px 0;}
 .graph-wrap h3{font-size:.85rem; color:var(--sub); margin:0 0 4px;}
-canvas{width:100%; height:120px; display:block; background:var(--panel); border:1px solid var(--line); border-radius:12px;}
-.countdown{position:relative; text-align:center; font-size:4rem; font-weight:800; color:var(--accent); padding:40px 0;}
-.copied{color:var(--accent); font-size:.8rem; text-align:center; height:1em; margin-top:4px;}
-a.xlink{display:block; text-align:center; margin-top:8px; color:var(--sub); font-size:.85rem; text-decoration:none;}
-.mini{font-size:.78rem; color:var(--sub); text-align:center; margin-top:16px;}
+canvas{width:100%; height:120px; display:block; background:var(--panel); border:2px solid var(--ink); border-radius:10px;}
+.countdown{position:relative; text-align:center; font-family:var(--num); font-size:4.2rem; font-weight:800; line-height:1.2; color:var(--blue); padding:40px 0;}
+.copied{color:var(--blue); font-size:.8rem; text-align:center; height:1em; margin-top:4px;}
+a.xlink{display:block; text-align:center; margin-top:8px; color:var(--sub); font-size:.85rem; text-decoration:underline; text-underline-offset:3px;}
+.mini{font-size:.78rem; color:var(--sub); text-align:center; margin-top:14px;}
+@media (max-width:340px){
+  .result-sheet .maru{width:88px; height:88px; top:-10px; right:0;}
+}
+@media (prefers-reduced-motion: reduce){
+  .result-sheet.hanamaru .maru path{animation:none; stroke-dashoffset:0;}
+  .card.sel, .op.sel{transform:none;}
+}
+@media (forced-colors: active){
+  .toggle input{forced-color-adjust:auto; appearance:auto; -webkit-appearance:auto;}
+  .toggle input::after{display:none;}
+  .card.sel, .op.sel{outline:3px solid Highlight;}
+  .result-sheet .maru path{stroke:CanvasText;}
+}
 </style>
+<script src="jp-phrase-3.js" defer></script>
 </head>
 <body>
 <div id="app">
@@ -103,7 +153,7 @@ a.xlink{display:block; text-align:center; margin-top:8px; color:var(--sub); font
   <section id="scr-title" class="screen active">
     <div class="toprow">
       <h1>今日の10パズル</h1>
-      <label class="toggle" title="音">🔊<input type="checkbox" id="sound-toggle"></label>
+      <label class="toggle snd" title="音"><span class="ico" aria-hidden="true">🔊</span><input type="checkbox" id="sound-toggle" aria-label="音"></label>
     </div>
     <p class="tagline">4つの数字を＋−×÷で組み合わせて <b>10</b> をつくろう。制限は60秒。</p>
 
@@ -164,10 +214,12 @@ a.xlink{display:block; text-align:center; margin-top:8px; color:var(--sub); font
 
   <!-- ========== リザルト ========== -->
   <section id="scr-result" class="screen">
+    <div class="result-sheet"><svg class="maru" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><path pathLength="1" d="M61.4 56.3 L61.6 56.2 L61.8 56.2 L62.0 56.2 L62.2 56.2 L62.5 56.2 L62.7 56.2 L62.9 56.3 L63.1 56.3 L63.3 56.4 L63.5 56.4 L63.7 56.5 L64.0 56.6 L64.2 56.7 L64.4 56.8 L64.6 57.0 L64.8 57.1 L65.0 57.3 L65.2 57.4 L65.4 57.6 L65.6 57.8 L65.8 58.0 L65.9 58.2 L66.1 58.4 L66.3 58.6 L66.4 58.9 L66.6 59.1 L66.7 59.4 L66.8 59.7 L66.9 59.9 L67.0 60.2 L67.1 60.5 L67.2 60.8 L67.2 61.1 L67.3 61.4 L67.3 61.8 L67.3 62.1 L67.3 62.4 L67.3 62.8 L67.3 63.1 L67.2 63.4 L67.2 63.8 L67.1 64.1 L67.0 64.5 L66.9 64.8 L66.8 65.1 L66.7 65.5 L66.5 65.8 L66.3 66.1 L66.1 66.5 L65.9 66.8 L65.7 67.1 L65.5 67.4 L65.2 67.7 L65.0 68.0 L64.7 68.3 L64.4 68.6 L64.1 68.8 L63.7 69.1 L63.4 69.3 L63.0 69.6 L62.7 69.8 L62.3 70.0 L61.9 70.2 L61.5 70.3 L61.1 70.5 L60.7 70.6 L60.2 70.7 L59.8 70.8 L59.3 70.9 L58.9 71.0 L58.4 71.0 L57.9 71.0 L57.5 71.0 L57.0 71.0 L56.5 71.0 L56.0 70.9 L55.5 70.9 L55.1 70.8 L54.6 70.6 L54.1 70.5 L53.6 70.3 L53.1 70.1 L52.7 69.9 L52.2 69.7 L51.7 69.4 L51.3 69.2 L50.9 68.9 L50.4 68.6 L50.0 68.2 L49.6 67.9 L49.2 67.5 L48.8 67.1 L48.4 66.7 L48.1 66.2 L47.8 65.8 L47.4 65.3 L47.1 64.8 L46.8 64.3 L46.6 63.8 L46.3 63.3 L46.1 62.8 L45.9 62.2 L45.7 61.6 L45.6 61.1 L45.5 60.5 L45.3 59.9 L45.3 59.3 L45.2 58.6 L45.2 58.0 L45.2 57.4 L45.2 56.8 L45.2 56.1 L45.3 55.5 L45.4 54.9 L45.5 54.2 L45.7 53.6 L45.9 53.0 L46.1 52.4 L46.3 51.8 L46.6 51.1 L46.9 50.5 L47.2 50.0 L47.6 49.4 L47.9 48.8 L48.3 48.2 L48.8 47.7 L49.2 47.2 L49.7 46.7 L50.2 46.2 L50.7 45.7 L51.2 45.2 L51.8 44.8 L52.4 44.4 L53.0 44.0 L53.6 43.6 L54.3 43.3 L54.9 43.0 L55.6 42.7 L56.3 42.4 L57.0 42.2 L57.7 42.0 L58.5 41.8 L59.2 41.6 L60.0 41.5 L60.7 41.4 L61.5 41.4 L62.3 41.4 L63.1 41.4 L63.8 41.4 L64.6 41.5 L65.4 41.6 L66.2 41.7 L67.0 41.9 L67.7 42.1 L68.5 42.4 L69.3 42.6 L70.0 43.0 L70.8 43.3 L71.5 43.7 L72.2 44.1 L72.9 44.5 L73.6 45.0 L74.3 45.5 L75.0 46.0 L75.6 46.6 L76.2 47.2 L76.8 47.8 L77.4 48.4 L77.9 49.1 L78.4 49.8 L78.9 50.5 L79.4 51.3 L79.8 52.0 L80.2 52.8 L80.6 53.6 L81.0 54.4 L81.3 55.3 L81.5 56.1 L81.8 57.0 L82.0 57.9 L82.2 58.8 L82.3 59.7 L82.4 60.6 L82.4 61.6 L82.5 62.5 L82.4 63.4 L82.4 64.4 L82.3 65.3 L82.1 66.2 L82.0 67.2 L81.7 68.1 L81.5 69.0 L81.2 69.9 L80.8 70.8 L80.5 71.7 L80.1 72.6 L79.6 73.5 L79.1 74.3 L78.6 75.2 L83.2 79.0 Q90.3 107.1 67.6 89.0 Q56.8 115.9 49.1 88.0 Q24.6 103.4 34.8 76.2 Q5.8 74.3 30.0 58.3 Q7.8 39.7 36.8 41.0 Q29.7 12.9 52.4 31.0 Q63.2 4.1 70.9 32.0 Q95.4 16.6 85.2 43.8 Q114.2 45.7 90.0 61.7 Q112.2 80.3 83.2 79.0"/></svg>
     <div class="result-head" id="result-head"></div>
     <div class="result-time" id="result-time"></div>
     <div class="result-sub" id="result-sub"></div>
     <div style="text-align:center;"><span class="badge" id="result-badge" style="display:none;"></span></div>
+    </div>
 
     <div style="text-align:center;"><button class="btn sub small" id="btn-answer" style="display:none;">答えを見る</button></div>
     <div class="result-answer" id="result-answer" style="display:none;"></div>
@@ -465,6 +517,10 @@ a.xlink{display:block; text-align:center; margin-top:8px; color:var(--sub); font
     $("x-share").href="https://twitter.com/intent/tweet?text="+encodeURIComponent(share);
     $("copied").textContent="";
     $("result-note").textContent = (mode==="daily") ? "記録はこの端末内のみに保存されます。" : "れんしゅうは記録に残りません。";
+    // 2026-09-29 刷新: 正解したときだけ、答案の紙に赤ペンの花丸を描く（見た目だけ）
+    var sheet = document.querySelector("#scr-result .result-sheet");
+    sheet.classList.remove("hanamaru");
+    if (cleared) { void sheet.offsetWidth; sheet.classList.add("hanamaru"); }
     show("scr-result");
   }
 

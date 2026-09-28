@@ -218,7 +218,10 @@ function wrapText(ctx, text, maxWidth) {
     let cur = "";
     for (const ch of rawLine) {
       const test = cur + ch;
-      if (ctx.measureText(test).width > maxWidth && cur !== "") {
+      // 行頭に句読点・閉じかっこを置かない（前の行にぶら下げる。2026-09-29 刷新）
+      // ぶら下げは1文字まで（今の行が幅に収まっているときだけ。連続した「ーーー」「！！！」で右へはみ出さない）
+      const hang = "、。，．」』）)！？!?ー…".includes(ch) && ctx.measureText(cur).width <= maxWidth;
+      if (ctx.measureText(test).width > maxWidth && cur !== "" && !hang) {
         lines.push(cur);
         cur = ch;
       } else {
@@ -252,20 +255,27 @@ function drawCardCanvas(result, imageEl) {
   cardCanvasEl.height = H;
   const ctx = cardCanvasEl.getContext("2d");
 
-  // 背景
-  ctx.fillStyle = "#fff8f2";
+  // 背景（2026-09-29 刷新: 激辛スナックの袋の警告ラベル。白地・墨の太枠・上端に黒と黄の縞。配置と高さは改修前のまま）
+  ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, H);
-  ctx.strokeStyle = "#d94f2b";
-  ctx.lineWidth = 5;
-  roundRect(ctx, 8, 8, W - 16, H - 16, 22);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(11, 11, W - 22, 12); ctx.clip();
+  for (let sx = -20; sx < W; sx += 24) {
+    ctx.fillStyle = "#FFD21F"; ctx.fillRect(sx, 11, 24, 12);
+    ctx.fillStyle = "#141414"; ctx.beginPath(); ctx.moveTo(sx, 23); ctx.lineTo(sx + 12, 11); ctx.lineTo(sx + 24, 11); ctx.lineTo(sx + 12, 23); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+  ctx.strokeStyle = "#141414";
+  ctx.lineWidth = 6;
+  roundRect(ctx, 8, 8, W - 16, H - 16, 6);
   ctx.stroke();
 
   let y = 50;
   // バッジ
-  ctx.fillStyle = "#d94f2b";
-  roundRect(ctx, W / 2 - 90, y - 26, 180, 40, 20);
+  ctx.fillStyle = "#141414";
+  roundRect(ctx, W / 2 - 90, y - 26, 180, 40, 4);
   ctx.fill();
-  ctx.fillStyle = "#fff";
+  ctx.fillStyle = "#FFD21F";
   ctx.font = "bold 20px sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("激辛レビュー", W / 2, y + 1);
@@ -280,49 +290,55 @@ function drawCardCanvas(result, imageEl) {
     ctx.clip();
     drawImageCover(ctx, imageEl, bx, by, boxW, boxH);
     ctx.restore();
-    ctx.strokeStyle = "#eccabd";
+    ctx.strokeStyle = "#141414";
     ctx.lineWidth = 3;
     roundRect(ctx, bx, by, boxW, boxH, 14);
     ctx.stroke();
-    y += boxH + 20;
+    y += boxH + 44; // 2026-09-29: 対象名が画像の下端に重なっていたので下げる
   }
 
   // 対象名
-  ctx.fillStyle = "#8a3a1f";
-  ctx.font = "bold 24px sans-serif";
-  ctx.fillText(`「${result.noun}」より`, W / 2, y);
-  y += 40;
+  ctx.fillStyle = "#141414";
+  // 長い対象名はカードの幅に収まるまで文字を小さくする（改修前は右へ切れていた）
+  const nounText = `「${result.noun}」より`;
+  let nounSize = 24;
+  ctx.font = `bold ${nounSize}px sans-serif`;
+  while (ctx.measureText(nounText).width > W - pad * 2 && nounSize > 14) { nounSize--; ctx.font = `bold ${nounSize}px sans-serif`; }
+  ctx.fillText(nounText, W / 2, y);
+  y += 44;
 
   // 辛さ
-  ctx.font = "32px sans-serif";
-  ctx.fillText("🌶".repeat(result.chili), W / 2, y);
-  y += 46;
+  // 辛さ: 絵文字の代わりに、唐辛子の枠を5つ描いて辛さの数だけ赤く塗る
+  for (let k = 0; k < 5; k++) drawPepper(ctx, W / 2 + (k - 2) * 44, y - 11, 34, k < result.chili);
+  y += 52;
 
   // 本文
-  ctx.fillStyle = "#3a2418";
+  ctx.fillStyle = "#1a1a1a";
   ctx.font = "26px sans-serif";
   ctx.textAlign = "left";
   for (const line of bodyLines) {
     ctx.fillText(line, pad, y);
     y += 34;
   }
-  y += 14;
+  y += 24;
 
-  // スコア
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#8a3a1f";
+  // スコア（2026-09-29: ラベルと数字が重なっていたので、中央の左右に寄せて並べる）
+  ctx.textAlign = "right";
+  ctx.fillStyle = "#141414";
   ctx.font = "20px sans-serif";
-  ctx.fillText("辛口スコア", W / 2 - 60, y);
-  ctx.fillStyle = "#d94f2b";
+  ctx.fillText("辛口スコア", W / 2 - 10, y);
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#D21F1B";
   ctx.font = "bold 30px sans-serif";
-  ctx.fillText(`${result.score} / 100`, W / 2 + 50, y + 2);
+  ctx.fillText(`${result.score} / 100`, W / 2 + 2, y + 2);
+  ctx.textAlign = "center";
   y += 40;
 
-  ctx.fillStyle = "#a3877a";
+  ctx.fillStyle = "#5a5a5a";
   ctx.font = "16px sans-serif";
   ctx.fillText("※全部ネタです。誇張ジョークとしてお楽しみください", W / 2, y);
   y += 24;
-  ctx.fillStyle = "#c9b8ae";
+  ctx.fillStyle = "#6a6a6a";
   ctx.font = "14px sans-serif";
   ctx.fillText("激辛レビュー生成器", W / 2, y);
 
@@ -336,6 +352,30 @@ function drawCardCanvas(result, imageEl) {
   previewImg.alt = "レビュー結果カード";
   previewImg.className = "card-preview";
   els.cardWrap.appendChild(previewImg);
+}
+
+// 唐辛子の枠（2026-09-29 刷新）。filled=true なら赤く塗る。中心 (cx, cy)・大きさ s
+function drawPepper(ctx, cx, cy, s, filled) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(-0.5);
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.08, -s * 0.34);
+  ctx.bezierCurveTo(s * 0.26, -s * 0.36, s * 0.24, s * 0.1, s * 0.06, s * 0.5);
+  ctx.bezierCurveTo(-s * 0.02, s * 0.2, -s * 0.24, -s * 0.06, -s * 0.08, -s * 0.34);
+  ctx.closePath();
+  ctx.fillStyle = filled ? "#D21F1B" : "#ffffff";
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = filled ? "#141414" : "#8a8a8a";
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(s * 0.02, -s * 0.34);
+  ctx.quadraticCurveTo(s * 0.02, -s * 0.5, -s * 0.12, -s * 0.52);
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = filled ? "#2E7D32" : "#8a8a8a";
+  ctx.stroke();
+  ctx.restore();
 }
 
 function roundRect(ctx, x, y, w, h, r) {

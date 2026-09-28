@@ -4,31 +4,36 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>今日の造語ジェネレーター</title>
-<meta name="theme-color" content="#2e6e4e">
+<meta name="theme-color" content="#EDE7D6">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
+  /* 2026-09-29 刷新:「国語辞典の本文ページ」（墨と藍の2色刷り・ページ上端の柱・側面の爪）。
+     真面目な辞書の体裁で架空の語を載せる、すまし顔の笑い。見出し語だけ同梱の しっぽり明朝B1（data.js の全文字・SIL OFL）。
+     見せ場は1つだけ: 側面の爪（あかさたな…）のうち、その語の読みの行に藍の印が付く（おかわりで移る）。
+     ⚠ data.js に語を足したら fonts/chars.txt を作り直してフォントを再生成する */
+  @font-face{font-family:"ZG Head"; font-weight:800; font-display:swap; src:url("fonts/shippori-b1-800.woff") format("woff")}
   :root{
-    --paper:#f7f3e8;        /* 辞書の紙面 */
-    --paper-line:#c9bfa4;   /* 二重罫線 */
-    --ink:#2b2b2b;          /* 墨色 */
-    --green:#2e6e4e;        /* 装丁の深緑 */
-    --green-d:#245a40;
-    --bg:#f5f2ea;
-    --ui-text:#33352f;
-    --sub:#6b6b60;
-    --btn-bg:#ffffff;
-    --btn-line:#d8d2c2;
-    --shadow:rgba(50,50,40,.14);
+    --paper:#F5F0E2;        /* 辞書の紙面 */
+    --paper-line:#C8BEA4;   /* 罫 */
+    --ink:#231F1A;          /* 墨 */
+    --green:#28407A;        /* 2色刷りの藍（変数名は既存のまま） */
+    --green-d:#1D2F5C;
+    --bg:#EDE7D6;
+    --ui-text:#2E2A24;
+    --sub:#5E574B;
+    --btn-bg:#FBF8EF;
+    --btn-line:#8F8674;
+    --shadow:rgba(60,50,30,.16);
   }
   @media (prefers-color-scheme: dark){
     :root{
-      --bg:#20221f;
-      --ui-text:#e7e4da;
-      --sub:#a9a89c;
-      --btn-bg:#2c2e2a;
-      --btn-line:#43463f;
-      --shadow:rgba(0,0,0,.4);
+      --bg:#1C1D22;
+      --ui-text:#E6E2D6;
+      --sub:#A9A597;
+      --btn-bg:#26282E;
+      --btn-line:#555a64;
+      --shadow:rgba(0,0,0,.45);
       /* カード紙面はダークでもクリーム色のまま=紙らしさ優先（仕様§4） */
     }
   }
@@ -41,95 +46,106 @@
     line-height:1.7;
     -webkit-text-size-adjust:100%;
   }
-  .wrap{max-width:600px;margin:0 auto;padding:20px 16px 48px;}
-  .head{text-align:center;margin-bottom:14px;}
+  .wrap{max-width:600px;margin:0 auto;padding:16px 18px 40px;}
+  /* 柱（ページ上端の見出し）: 左に書名、下に罫 */
+  .head{text-align:left;margin-bottom:10px;border-bottom:1px solid var(--ui-text);padding-bottom:3px;display:flex;justify-content:space-between;align-items:baseline;}
   .head .brand{
-    display:inline-block;font-weight:700;letter-spacing:.06em;color:var(--green);
-    border-bottom:2px solid var(--green);padding-bottom:2px;font-size:17px;
+    display:inline-block;font-weight:700;letter-spacing:.14em;color:var(--green);font-size:14px;
+    font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","BIZ UDMincho","MS Mincho",serif;
   }
-  @media (prefers-color-scheme: dark){ .head .brand{color:#7fc4a0;border-color:#7fc4a0;} }
+  .head::after{content:"ぞうご" / "";font-size:12px;letter-spacing:.3em;color:var(--sub);font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho",serif;}
+  @media (prefers-color-scheme: dark){ .head .brand{color:#9DB2E8;} }
   .subhead{
-    text-align:center;font-size:17px;color:var(--sub);margin:14px 0 8px;font-weight:600;
+    text-align:left;font-size:15px;color:var(--sub);margin:10px 0 8px;font-weight:600;letter-spacing:.04em;
   }
 
-  /* ===== 辞書カード ===== */
+  /* ===== 辞書の本文 ===== */
   .card{
     background:var(--paper);
     color:var(--ink);
-    border-radius:6px;
-    padding:22px 20px 20px;
-    box-shadow:0 3px 14px var(--shadow);
+    border-radius:2px;
+    padding:18px 18px 16px;
+    box-shadow:0 1px 0 var(--paper-line), 0 3px 12px var(--shadow);
     position:relative;
-    /* 二重罫線（外＋内） */
     border:1px solid var(--paper-line);
-    outline:3px double var(--paper-line);
-    outline-offset:-7px;
     font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","BIZ UDMincho","MS Mincho",serif;
   }
   .card .entry{
     display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;
-    border-bottom:1px solid var(--paper-line);padding-bottom:10px;margin-bottom:12px;
+    border-bottom:1px solid var(--ink);padding-bottom:8px;margin-bottom:12px;
   }
   .card .surface{
-    font-size:36px;font-weight:700;letter-spacing:.02em;line-height:1.25;color:var(--ink);
+    font-family:"ZG Head","Hiragino Mincho ProN","Yu Mincho","YuMincho",serif;
+    font-size:36px;font-weight:800;letter-spacing:.02em;line-height:1.25;color:var(--ink);
   }
-  .card .yomi{font-size:18px;color:#5a5a4e;}
+  .card .yomi{font-size:17px;color:var(--green);font-weight:600;}
   .card .pos{
-    font-size:14.5px;color:#5a5a4e;border:1px solid var(--paper-line);
-    border-radius:3px;padding:1px 6px;align-self:center;
+    font-size:13.5px;color:#fff;background:var(--green);border:0;
+    border-radius:2px;padding:0 6px;align-self:center;line-height:1.6;
   }
   .card .def{font-size:19px;margin:0 0 12px;text-indent:1.1em;position:relative;}
-  .card .def::before{content:"①";position:absolute;left:-.15em;text-indent:0;color:#7a7a6a;}
-  .card .ex{font-size:17px;color:#4a4a3e;margin:0 0 12px;padding-left:1.1em;position:relative;}
-  .card .ex::before{content:"▽";position:absolute;left:0;color:#7a9a7a;}
-  .card .note{font-size:14.5px;color:#5f5f50;margin:0;padding-left:1.1em;position:relative;}
-  .card .note::before{content:"※";position:absolute;left:0;}
+  .card .def::before{content:"①";position:absolute;left:-.15em;text-indent:0;color:var(--green);}
+  .card .ex{font-size:17px;color:#3F3A30;margin:0 0 12px;padding-left:1.1em;position:relative;}
+  .card .ex::before{content:"▽";position:absolute;left:0;color:var(--green);}
+  .card .note{font-size:14.5px;color:#4F493D;margin:0;padding-left:1.1em;position:relative;}
+  .card .note::before{content:"※";position:absolute;left:0;color:var(--green);}
+  /* 見せ場: 側面の爪（あ〜わの10段）。その語の読みの行に藍の印 */
+  .tsume{position:absolute;top:8px;bottom:8px;right:-17px;width:15px;display:flex;flex-direction:column;gap:2px;pointer-events:none;}
+  .tsume span{flex:1;display:flex;align-items:center;justify-content:center;font-size:9.5px;line-height:1;color:#6F6756;
+    background:var(--paper);border:1px solid var(--paper-line);border-left:0;border-radius:0 3px 3px 0;
+    transition:background .25s, color .25s;}
+  .tsume span.on{background:var(--green);color:#fff;border-color:var(--green);}
 
   /* ===== ボタン群 ===== */
   .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
   .btns .primary{grid-column:1 / -1;}
   button{
     font:inherit;font-size:17px;font-weight:600;cursor:pointer;
-    border-radius:10px;padding:13px 10px;border:1px solid var(--btn-line);
+    border-radius:3px;padding:12px 10px;border:1px solid var(--btn-line);
     background:var(--btn-bg);color:var(--ui-text);
     -webkit-tap-highlight-color:transparent;transition:transform .04s ease, background .15s;
     min-height:48px;
   }
   button:active{transform:scale(.98);}
+  button:focus-visible, summary:focus-visible{outline:2px solid var(--green);outline-offset:2px;}
+  @media (prefers-color-scheme: dark){ button:focus-visible, summary:focus-visible{outline-color:#9DB2E8;} }
   button.primary{
-    background:var(--green);color:#fff;border-color:var(--green-d);font-size:18px;
+    background:var(--green);color:#fff;border-color:var(--green-d);font-size:18px;letter-spacing:.04em;
   }
-  @media (prefers-color-scheme: dark){ button.primary{background:#2e7a54;border-color:#256444;} }
+  @media (prefers-color-scheme: dark){ button.primary{background:#34508F;border-color:#28407A;} }
 
   .disclaimer{
-    text-align:center;font-size:14.5px;color:var(--sub);margin:16px 4px 0;line-height:1.6;
+    text-align:center;font-size:14px;color:var(--sub);margin:14px 4px 0;line-height:1.6;
   }
   .back{
-    display:block;text-align:center;margin:14px auto 0;background:none;border:none;
+    display:block;text-align:center;margin:12px auto 0;background:none;border:none;
     color:var(--green);font-weight:600;font-size:16px;text-decoration:underline;
     min-height:auto;padding:6px;
   }
-  @media (prefers-color-scheme: dark){ .back{color:#7fc4a0;} }
+  @media (prefers-color-scheme: dark){ .back{color:#9DB2E8;} }
   .back[hidden]{display:none;}
 
-  /* ===== あそびかた（折りたたみ） ===== */
-  details{margin-top:22px;background:var(--btn-bg);border:1px solid var(--btn-line);border-radius:10px;padding:2px 14px;}
-  summary{cursor:pointer;font-weight:600;font-size:16px;padding:11px 0;list-style:none;}
+  /* ===== あそびかた（折りたたみ）＝ 辞書の「凡例」 ===== */
+  details{margin-top:18px;background:var(--btn-bg);border:1px solid var(--btn-line);border-radius:2px;padding:2px 14px;}
+  summary{cursor:pointer;font-weight:600;font-size:16px;padding:10px 0;list-style:none;}
   summary::-webkit-details-marker{display:none;}
   summary::before{content:"▶ ";color:var(--sub);font-size:13px;}
   details[open] summary::before{content:"▼ ";}
-  details .body{font-size:16px;color:var(--sub);padding:2px 0 12px;line-height:1.75;}
+  details .body{font-size:15.5px;color:var(--sub);padding:2px 0 10px;line-height:1.62;}
   details .body p{margin:6px 0;}
 
   .toast{
     position:absolute;left:50%;bottom:14px;transform:translateX(-50%) translateY(10px);
-    background:rgba(43,43,43,.92);color:#fff;font-size:15px;padding:8px 16px;border-radius:20px;
+    background:rgba(35,31,26,.92);color:#fff;font-size:15px;padding:8px 16px;border-radius:3px;
     opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;white-space:nowrap;
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   /* シェアカード生成用の隠しcanvas */
   #shareCanvas{display:none;}
+  @media (prefers-reduced-motion: reduce){ .tsume span{transition-duration:.05s;} }
+  @media (forced-colors: active){ .tsume span.on{outline:2px solid Highlight;} }
 </style>
+<script src="jp-phrase-3.js" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -147,6 +163,7 @@
     <p class="ex" id="ex"></p>
     <p class="note" id="note"></p>
     <div class="toast" id="toast">コピーしました</div>
+    <div class="tsume" aria-hidden="true"><span>あ</span><span>か</span><span>さ</span><span>た</span><span>な</span><span>は</span><span>ま</span><span>や</span><span>ら</span><span>わ</span></div>
   </div>
 
   <div class="btns">
@@ -197,6 +214,7 @@
     el("def").textContent = word.def;
     el("ex").textContent = word.ex;
     el("note").textContent = word.note;
+    markTsume(word.yomi);
     if(mode === "daily"){
       var dd = dispDate(word);
       el("subhead").textContent = "今日の造語　" + dd.m + "月" + dd.d + "日";
@@ -207,6 +225,15 @@
     }
   }
 
+  // 2026-09-29 刷新: 側面の爪（あかさたな…）に、読みの1文字目の行の印を付ける（見た目だけ）
+  var TSUME_ROWS = ["あいうえおぁぃぅぇぉゔ","かきくけこがぎぐげご","さしすせそざじずぜぞ","たちつてとだぢづでどっ","なにぬねの",
+                    "はひふへほばびぶべぼぱぴぷぺぽ","まみむめも","やゆよゃゅょ","らりるれろ","わをん"];
+  function markTsume(yomi){
+    var c = String(yomi || "").charAt(0), row = -1;
+    for(var i = 0; i < TSUME_ROWS.length; i++){ if(TSUME_ROWS[i].indexOf(c) >= 0){ row = i; break; } }
+    var tabs = document.querySelectorAll(".tsume span");
+    for(var j = 0; j < tabs.length; j++){ tabs[j].className = (j === row) ? "on" : ""; }
+  }
   function showToast(msg){
     var t = el("toast");
     t.textContent = msg;
