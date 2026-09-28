@@ -3,123 +3,172 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#2E7A5B">
+<meta name="theme-color" content="#F2EDE3">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="献立">
+<script src="jp-phrase-3.js" defer></script>
 </head>
 <body>
 <title>週の献立プランナー</title>
 <style>
+/* 2026-09-29 刷新:「定食屋の壁の品書き」（漆喰の壁に、釘で掛けた木札が7枚並ぶ）。
+   色は 漆喰の生成り・木札の木地・墨 の3系統（差し色に朱を少しだけ）。書体は端末の標準のまま。
+   見せ場は1つだけ: 「提案」を押したとき（1日だけ替えたときはその札だけ）、木札が掛け替えたように揺れて止まる。
+   ロックやチェックでの描き直しでは動かさない（毎日使う道具なので） */
 :root{
-  --bg:#F6F5F1; --surface:#FFFFFF; --ink:#242B26; --muted:#6B746D;
-  --line:#E2E1DA; --accent:#2E7A5B; --accent-ink:#FFFFFF; --accent-soft:#E4F0E9;
-  --warn:#B4562F; --warn-soft:#F6E7DE; --chip:#EEEDE6; --shadow:0 1px 3px rgba(30,40,32,.08);
+  --bg:#F2EDE3; --surface:#FBF8F1; --ink:#2B2520; --muted:#6A6158;
+  --line:#D9D0C0; --accent:#2B2520; --accent-ink:#FBF8F1; --accent-soft:#EDE4D3;
+  --warn:#A8412C; --warn-soft:#F4E2DA; --chip:#E7DFD0; --shadow:none;
+  --wood:#E3CDA4; --wood-edge:#C4A574; --grain:rgba(110,72,34,.07); --nail:#6d5a45;
+  --wood-muted:#574F46; --wood-warn:#92321F; --wood-btn:rgba(255,255,255,.28);
+  color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
   :root{
-    --bg:#161B18; --surface:#1F2521; --ink:#E6E9E5; --muted:#98A29A;
-    --line:#333B35; --accent:#5BB48D; --accent-ink:#10211A; --accent-soft:#24352C;
-    --warn:#D98A62; --warn-soft:#3A2A21; --chip:#2A312C; --shadow:0 1px 3px rgba(0,0,0,.35);
+    --bg:#1A1714; --surface:#221E1A; --ink:#ECE4D6; --muted:#ADA395;
+    --line:#3B342C; --accent:#ECE4D6; --accent-ink:#1A1714; --accent-soft:#2E2821;
+    --warn:#E28B70; --warn-soft:#3A2820; --chip:#2E2821;
+    --wood:#3A2E22; --wood-edge:#54432F; --grain:rgba(0,0,0,.18); --nail:#0d0906;
+    --wood-muted:#ADA395; --wood-warn:#E28B70; --wood-btn:rgba(0,0,0,.18);
+    color-scheme:dark;
   }
 }
 :root[data-theme="light"]{
-  --bg:#F6F5F1; --surface:#FFFFFF; --ink:#242B26; --muted:#6B746D;
-  --line:#E2E1DA; --accent:#2E7A5B; --accent-ink:#FFFFFF; --accent-soft:#E4F0E9;
-  --warn:#B4562F; --warn-soft:#F6E7DE; --chip:#EEEDE6; --shadow:0 1px 3px rgba(30,40,32,.08);
+  --bg:#F2EDE3; --surface:#FBF8F1; --ink:#2B2520; --muted:#6A6158;
+  --line:#D9D0C0; --accent:#2B2520; --accent-ink:#FBF8F1; --accent-soft:#EDE4D3;
+  --warn:#A8412C; --warn-soft:#F4E2DA; --chip:#E7DFD0;
+  --wood:#E3CDA4; --wood-edge:#C4A574; --grain:rgba(110,72,34,.07); --nail:#6d5a45;
+  --wood-muted:#574F46; --wood-warn:#92321F; --wood-btn:rgba(255,255,255,.28); color-scheme:light;
 }
 :root[data-theme="dark"]{
-  --bg:#161B18; --surface:#1F2521; --ink:#E6E9E5; --muted:#98A29A;
-  --line:#333B35; --accent:#5BB48D; --accent-ink:#10211A; --accent-soft:#24352C;
-  --warn:#D98A62; --warn-soft:#3A2A21; --chip:#2A312C; --shadow:0 1px 3px rgba(0,0,0,.35);
+  --bg:#1A1714; --surface:#221E1A; --ink:#ECE4D6; --muted:#ADA395;
+  --line:#3B342C; --accent:#ECE4D6; --accent-ink:#1A1714; --accent-soft:#2E2821;
+  --warn:#E28B70; --warn-soft:#3A2820; --chip:#2E2821;
+  --wood:#3A2E22; --wood-edge:#54432F; --grain:rgba(0,0,0,.18); --nail:#0d0906;
+  --wood-muted:#ADA395; --wood-warn:#E28B70; --wood-btn:rgba(0,0,0,.18); color-scheme:dark;
 }
 *{box-sizing:border-box; margin:0; padding:0;}
 html,body{background:var(--bg); color:var(--ink);
   font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Noto Sans JP",Meiryo,sans-serif;
-  font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;}
-#app{max-width:720px; margin:0 auto; padding:0 14px 84px;}
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;}
+#app{max-width:720px; margin:0 auto; padding:0 14px 72px;}
 header.top{position:sticky; top:0; z-index:20; background:var(--bg);
-  padding:14px 2px 10px; display:flex; align-items:baseline; gap:10px; border-bottom:1px solid var(--line);}
-header.top h1{font-size:18px; font-weight:700; letter-spacing:.02em;}
+  padding:12px 2px 8px; display:flex; align-items:baseline; gap:10px; border-bottom:3px double var(--ink);}
+header.top h1{font-size:18px; font-weight:800; letter-spacing:.14em;}
 header.top .range{color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums;}
-main{padding-top:14px;}
-h2{font-size:15px; font-weight:700; letter-spacing:.04em; margin:18px 0 8px;}
+main{padding-top:12px;}
+h2{font-size:15px; font-weight:700; letter-spacing:.06em; margin:16px 0 8px;}
 .small{font-size:12.5px; color:var(--muted);}
-.card{background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); padding:12px 14px; margin-bottom:10px;}
-button{font:inherit; cursor:pointer; border:none; border-radius:8px; padding:8px 14px; background:var(--chip); color:var(--ink);}
-button:focus-visible, input:focus-visible, select:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
-button.primary{background:var(--accent); color:var(--accent-ink); font-weight:700;}
-button.ghost{background:transparent; border:1px solid var(--line);}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:2px; box-shadow:none; padding:11px 13px; margin-bottom:9px;}
+button{font:inherit; cursor:pointer; border:none; border-radius:2px; padding:8px 14px; background:var(--chip); color:var(--ink);}
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible{outline:2px solid var(--warn); outline-offset:2px;}
+button.primary{background:var(--ink); color:var(--accent-ink); font-weight:700; letter-spacing:.04em;}
+button.ghost{background:transparent; border:1px solid var(--ink);}
 button.icon{padding:6px 10px; font-size:14px; line-height:1;}
-button:disabled{opacity:.45; cursor:default;}
+button:disabled{opacity:.4; cursor:default;}
 select,input[type=text],input[type=number],textarea{font:inherit; color:var(--ink); background:var(--surface);
-  border:1px solid var(--line); border-radius:8px; padding:7px 10px; max-width:100%;}
+  border:1px solid var(--muted); border-radius:2px; padding:7px 10px; max-width:100%;}
 textarea{width:100%; min-height:110px;}
 .row{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
 .grow{flex:1 1 auto;}
-/* tabs */
-nav.tabs{position:fixed; bottom:0; left:0; right:0; z-index:30; background:var(--surface);
-  border-top:1px solid var(--line); display:flex; justify-content:center;}
+/* 線画のアイコン（絵文字の代わり。錠前・開いた錠前・さいころ） */
+.emo{display:none;}
+.ico{display:inline-block; width:14px; height:14px; vertical-align:-2px; background:currentColor;
+  -webkit-mask:var(--m) center/contain no-repeat; mask:var(--m) center/contain no-repeat;}
+.i-lock{--m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8'%3E%3Crect x='2.5' y='7' width='11' height='7.5' rx='1'/%3E%3Cpath d='M5 7V5a3 3 0 0 1 6 0v2'/%3E%3C/svg%3E");}
+.i-unlock{--m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8'%3E%3Crect x='2.5' y='7' width='11' height='7.5' rx='1'/%3E%3Cpath d='M5 7V5a3 3 0 0 1 5.8-1'/%3E%3C/svg%3E");}
+.i-dice{--m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1.5' y='1.5' width='13' height='13' rx='2' fill='none' stroke='black' stroke-width='1.8'/%3E%3Ccircle cx='5' cy='5' r='1.4'/%3E%3Ccircle cx='11' cy='11' r='1.4'/%3E%3Ccircle cx='8' cy='8' r='1.4'/%3E%3C/svg%3E");}
+/* tabs（絵文字を外して文字だけ。選んでいるタブは朱の下線） */
+nav.tabs{position:fixed; bottom:0; left:0; right:0; z-index:30; background:var(--bg);
+  border-top:1.5px solid var(--ink); display:flex; justify-content:center;}
 nav.tabs .inner{display:flex; width:100%; max-width:720px;}
-nav.tabs button{flex:1; background:none; border-radius:0; padding:10px 0 12px; font-size:12px; color:var(--muted); display:flex; flex-direction:column; gap:2px; align-items:center;}
-nav.tabs button .ic{font-size:18px; line-height:1;}
-nav.tabs button.on{color:var(--accent); font-weight:700;}
-/* day cards */
+nav.tabs button{flex:1; background:none; border-radius:0; padding:12px 0 13px; font-size:13px; color:var(--muted); display:flex; flex-direction:column; gap:2px; align-items:center; letter-spacing:.06em;}
+nav.tabs button .ic{display:none;}
+nav.tabs button.on{color:var(--ink); font-weight:800; box-shadow:inset 0 -3px 0 var(--warn);}
+/* day cards = 釘で掛けた木札 */
+.card.day{background-color:var(--wood);
+  background-image:repeating-linear-gradient(90deg, var(--grain) 0 1px, transparent 1px 7px, var(--grain) 7px 9px, transparent 9px 23px);
+  border:1px solid var(--wood-edge); border-radius:3px; position:relative; transform-origin:50% -8px;
+  --muted:var(--wood-muted); --warn:var(--wood-warn);}
+.card.day::before{content:""; position:absolute; left:50%; top:4px; width:6px; height:6px; margin-left:-3px; border-radius:50%;
+  background:var(--nail); box-shadow:0 1px 0 rgba(255,255,255,.35);}
 .day{display:flex; gap:12px; align-items:flex-start;}
-.day .date{min-width:52px; text-align:center; padding-top:2px;}
-.day .date .dow{font-weight:700; font-size:15px;}
+.day .date{min-width:48px; text-align:center; padding-top:2px;}
+.day .date .dow{font-weight:800; font-size:15px; display:inline-block; min-width:30px; border-bottom:2px solid var(--ink);}
 .day .date .md{font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums;}
 .day .body{flex:1; min-width:0;}
-.day .name{font-weight:700; font-size:15.5px;}
+.day .name{font-weight:800; font-size:15.5px; letter-spacing:.02em;}
 button.linklike{background:none; border:none; border-radius:0; padding:0; text-align:left;
   font-weight:700; color:var(--ink); text-decoration:underline;
-  text-decoration-color:var(--accent); text-decoration-thickness:1.5px; text-underline-offset:3px;}
+  text-decoration-color:var(--warn); text-decoration-thickness:1px; text-underline-offset:4px;}
 .steps{margin:6px 0 0; padding-left:1.5em;}
-.steps li{margin-bottom:6px;}
+.steps li{margin-bottom:5px;}
 .sealist{margin:4px 0 2px; padding-left:1.3em; columns:2; column-gap:18px;}
 .sealist li{margin-bottom:3px; break-inside:avoid; font-variant-numeric:tabular-nums;}
 @media (max-width:480px){ .sealist{columns:1;} }
-.day .meta{display:flex; flex-wrap:wrap; gap:6px; margin-top:5px;}
-.chip{display:inline-block; font-size:11.5px; padding:2px 8px; border-radius:999px; background:var(--chip); color:var(--muted); letter-spacing:.03em;}
-.chip.fresh{background:var(--warn-soft); color:var(--warn); font-weight:700;}
-.chip.keep{background:var(--accent-soft); color:var(--accent); font-weight:700;}
-.day .ings{font-size:12.5px; color:var(--muted); margin-top:4px; overflow:hidden; text-overflow:ellipsis;}
-.day .ops{display:flex; flex-direction:column; gap:6px;}
-.day.locked{border-color:var(--accent);}
-.sat .dow{color:var(--accent);} .sun .dow{color:var(--warn);}
+.day .meta{display:flex; flex-wrap:wrap; gap:5px; margin-top:4px;}
+.chip{display:inline-block; font-size:11.5px; padding:0 6px; border-radius:2px; background:transparent; border:1px solid var(--muted); color:var(--ink); letter-spacing:.03em;}
+.chip.fresh{border-color:var(--warn); color:var(--warn); font-weight:700;}
+.chip.keep{border-color:var(--ink); font-weight:700;}
+.day .ings{font-size:12.5px; color:var(--muted); margin-top:3px; overflow:hidden; text-overflow:ellipsis;}
+.day .ops{display:flex; flex-direction:column; gap:5px;}
+.day .ops button.ghost{background:var(--wood-btn); border-color:var(--wood-edge);}
+.day.locked{border-color:var(--ink); box-shadow:inset 3px 0 0 var(--warn);}
+.day .ops button.primary{background:var(--ink); color:var(--wood);}
+.sat .dow{color:var(--ink);} .sun .dow{color:var(--warn); border-bottom-color:var(--warn);}
+/* 見せ場: 掛け替えた木札が揺れて止まる */
+.card.day.swing{animation:swing .75s cubic-bezier(.3,.7,.4,1) both; animation-delay:calc(var(--i,0) * 55ms);}
+@keyframes swing{0%{transform:rotate(-4.5deg);} 35%{transform:rotate(2.6deg);} 65%{transform:rotate(-1.1deg);} 85%{transform:rotate(.4deg);} 100%{transform:rotate(0);}}
 /* shopping */
-.shop-item{display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid var(--line);}
+.shop-item{display:flex; align-items:center; gap:10px; padding:8px 2px; border-bottom:1px dotted var(--muted);}
 .shop-item:last-child{border-bottom:none;}
-.shop-item input[type=checkbox]{width:20px; height:20px; accent-color:var(--accent); flex-shrink:0;}
+.shop-item input[type=checkbox]{width:20px; height:20px; accent-color:var(--ink); flex-shrink:0;}
 .shop-item .nm{flex:1; min-width:0;}
 .shop-item .qty{font-variant-numeric:tabular-nums; color:var(--muted); font-size:13.5px; white-space:nowrap;}
-.shop-item.done .nm{ text-decoration:line-through; color:var(--muted);}
-.cat-title{font-size:12.5px; font-weight:700; color:var(--muted); letter-spacing:.08em; margin:14px 0 2px;}
+.shop-item.done .nm{ text-decoration:line-through; text-decoration-color:var(--warn); color:var(--muted);}
+.cat-title{font-size:12.5px; font-weight:800; color:var(--ink); letter-spacing:.12em; margin:12px 0 2px; display:flex; align-items:center; gap:8px;}
+.cat-title::after{content:""; flex:1; border-top:1px solid var(--ink); opacity:.5;}
 details{margin-top:8px;}
 details summary{cursor:pointer; font-size:13px; color:var(--muted); padding:4px 0;}
 /* recipes */
-.rec{display:flex; align-items:center; gap:10px; padding:10px 2px; border-bottom:1px solid var(--line);}
+.rec{display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px dotted var(--muted);}
 .rec:last-child{border-bottom:none;}
 .rec .nm{flex:1; min-width:0;}
-.rec .nm .t{font-weight:600;}
+.rec .nm .t{font-weight:700;}
 .rec .nm .s{font-size:12px; color:var(--muted);}
 .rec.off .nm .t{color:var(--muted); text-decoration:line-through;}
 /* modal */
-.overlay{position:fixed; inset:0; background:rgba(10,14,12,.45); z-index:40; display:flex; align-items:flex-end; justify-content:center;}
-.sheet{background:var(--surface); width:100%; max-width:720px; max-height:82vh; border-radius:14px 14px 0 0; padding:16px 16px 24px; overflow-y:auto;}
-.sheet h3{font-size:15px; margin-bottom:10px;}
-.pick{display:block; width:100%; text-align:left; background:none; border-bottom:1px solid var(--line); border-radius:0; padding:10px 2px;}
+.overlay{position:fixed; inset:0; background:rgba(26,20,14,.45); z-index:40; display:flex; align-items:flex-end; justify-content:center;}
+.sheet{background:var(--surface); width:100%; max-width:720px; max-height:82vh; border-radius:3px 3px 0 0; border-top:3px double var(--ink); padding:16px 16px 24px; overflow-y:auto;}
+.sheet h3{font-size:16px; margin-bottom:10px; letter-spacing:.04em;}
+.pick{display:block; width:100%; text-align:left; background:none; border-bottom:1px dotted var(--muted); border-radius:0; padding:10px 2px;}
 .pick .s{font-size:12px; color:var(--muted);}
 .ing-row{display:grid; grid-template-columns:1fr 64px 64px 96px 96px 34px; gap:6px; margin-bottom:6px;}
 @media (max-width:560px){ .ing-row{grid-template-columns:1fr 56px 56px; }
   .ing-row select{grid-column:span 1;} }
-.notice{background:var(--accent-soft); color:var(--ink); border-radius:8px; padding:8px 12px; font-size:13px; margin-bottom:10px;}
+.notice{background:transparent; color:var(--ink); border-left:3px solid var(--warn); border-radius:0; padding:4px 12px; font-size:13px; margin-bottom:10px;}
 .tablewrap{overflow-x:auto;}
-@media (prefers-reduced-motion: no-preference){
-  .card{transition:border-color .15s;}
+@media (max-width:400px){
+  .day{gap:9px;}
+  .day .date{min-width:40px;}
+  .card{padding:10px 11px;}
+}
+@media (prefers-reduced-motion: reduce){
+  .card.day.swing{animation-duration:.25s; animation-delay:0s; animation-name:swing-soft;}
+  @keyframes swing-soft{from{transform:rotate(-1deg);} to{transform:rotate(0);}}
+}
+@media (forced-colors: active){
+  .ico{background:CanvasText;}
+  nav.tabs button.on{outline:2px solid Highlight; outline-offset:-3px;}
+  .card.day::before{display:none;}
+}
+@media print{
+  nav.tabs{display:none;}
+  .card.day{background:#fff; border-color:#000; color:#000; --muted:#333; --warn:#000;}
 }
 </style>
 
@@ -378,6 +427,7 @@ function rerollDay(idx){
   });
   S.week.days[idx].rid = best.id;
   S.week.decided = false;
+  swing = idx;
   save(); renderPlan();
 }
 
@@ -418,6 +468,7 @@ function fmtQty(q){
 /* ---------- 描画 ---------- */
 const $ = s=>document.querySelector(s);
 let tab = "plan";
+let swing = null;   // 2026-09-29 刷新: 次の描画で揺らす木札（"all" か 日の番号）。見た目だけ
 document.querySelectorAll("nav.tabs button").forEach(b=>{
   b.addEventListener("click",()=>{ tab=b.dataset.tab; syncTabs(); });
 });
@@ -455,7 +506,7 @@ function renderPlan(){
         </select></label>
       <button class="primary grow" id="btnGen">${S.week?"提案しなおす":"1週間の献立を提案"}</button>
     </div>
-    <p class="small" style="margin-top:6px">🔒でロックした日はそのまま残ります。傷みやすい食材の料理は週の前半(土曜寄り)に置かれます。</p>
+    <p class="small" style="margin-top:6px"><span class="emo" aria-hidden="true">🔒</span><span class="ico i-lock" aria-hidden="true"></span>でロックした日はそのまま残ります。傷みやすい食材の料理は週の前半(土曜寄り)に置かれます。</p>
   </div>`;
 
   if(S.week){
@@ -474,12 +525,12 @@ function renderPlan(){
           <div class="meta"><span class="chip">${r.time}分</span><span class="chip">${esc(r.main)}</span>${chip}</div>
           <div class="ings">${r.ing.map(x=>esc(x.n)).join("・")}</div>`;
       }
-      html += `<div class="card day ${d.locked?"locked":""} ${dowCls}">
+      html += `<div class="card day ${d.locked?"locked":""} ${dowCls}${(swing==="all"&&!d.locked)||swing===i?" swing":""}" style="--i:${i}">
         <div class="date"><div class="dow ${dowCls}">${DOW[dt.getDay()]}</div><div class="md">${dt.getMonth()+1}/${dt.getDate()}</div></div>
         <div class="body">${body}</div>
         <div class="ops">
-          <button class="icon ${d.locked?"primary":"ghost"}" data-lock="${i}" title="ロック">${d.locked?"🔒":"🔓"}</button>
-          <button class="icon ghost" data-roll="${i}" title="別の料理に">🎲</button>
+          <button class="icon ${d.locked?"primary":"ghost"}" data-lock="${i}" title="ロック" aria-label="ロック" aria-pressed="${d.locked?"true":"false"}"><span class="emo" aria-hidden="true">${d.locked?"🔒":"🔓"}</span><span class="ico ${d.locked?"i-lock":"i-unlock"}" aria-hidden="true"></span></button>
+          <button class="icon ghost" data-roll="${i}" title="別の料理に" aria-label="別の料理に"><span class="emo" aria-hidden="true">🎲</span><span class="ico i-dice" aria-hidden="true"></span></button>
           <button class="icon ghost" data-pick="${i}" title="一覧から選ぶ">選ぶ</button>
         </div>
       </div>`;
@@ -492,11 +543,13 @@ function renderPlan(){
     html += `<div class="card"><p>まだ今週の献立がありません。上の「1週間の献立を提案」を押すと、土曜始まりの7日分がひとまとめに提案されます。</p></div>`;
   }
   el.innerHTML = html;
+  swing = null;
   if($("#optTime")) $("#optTime").value = el.dataset.time||"0";
   if($("#optFocus")) $("#optFocus").value = el.dataset.focus||"";
   $("#btnGen").onclick = ()=>{
     el.dataset.time = $("#optTime").value; el.dataset.focus = $("#optFocus").value;
     generateWeek({timeLimit:+$("#optTime").value, focus:$("#optFocus").value, keepLocked:!!S.week});
+    swing = "all";
     renderPlan();
   };
   el.querySelectorAll("[data-lock]").forEach(b=>b.onclick=()=>{
@@ -550,7 +603,7 @@ function openPicker(idx){
       || `<p class="small">見つかりませんでした</p>`;
     m.querySelectorAll(".pick").forEach(b=>b.onclick=()=>{
       S.week.days[idx].rid=b.dataset.id; S.week.decided=false; save();
-      m.innerHTML=""; renderPlan();
+      m.innerHTML=""; swing = idx; renderPlan();
     });
   }
   draw("");
@@ -574,7 +627,7 @@ function renderShop(){
 
   let html = `<div class="notice">残り <b>${remaining}</b> 品(${weekRangeText()} の7食 × ${S.settings.factor==2?"昼夜2食分":S.settings.factor+"食分"}・2人)</div>
   <div class="row" style="margin-bottom:10px">
-    <button id="btnCopy" class="ghost grow">📋 リストをテキストでコピー</button>
+    <button id="btnCopy" class="ghost grow"><span class="emo" aria-hidden="true">📋 </span>リストをテキストでコピー</button>
     <button id="btnUncheck" class="ghost">チェックを全部外す</button>
   </div><div class="card">`;
   order.forEach(cat=>{
@@ -586,7 +639,7 @@ function renderShop(){
       html += `<div class="shop-item ${done?"done":""}">
         <input type="checkbox" data-chk="${esc(k)}" ${done?"checked":""}>
         <span class="nm">${esc(it.n)}</span><span class="qty">${fmtQty(it.q)}${esc(it.u)}</span>
-        <button class="icon ghost" data-have="${esc(k)}" title="家にあるので外す">家🏠</button>
+        <button class="icon ghost" data-have="${esc(k)}" title="家にあるので外す">家<span class="emo" aria-hidden="true">🏠</span></button>
       </div>`;
     });
   });
@@ -635,7 +688,7 @@ function renderShop(){
     });
     const ex = shop.extra.filter(x=>!x.done);
     if(ex.length) t += "■その他\n" + ex.map(x=>"・"+x.n).join("\n") + "\n";
-    copyText(t, $("#btnCopy"), "✅ コピーしました", renderShop);
+    copyText(t, $("#btnCopy"), "コピーしました", renderShop);
   };
 }
 
@@ -752,7 +805,7 @@ function renderSettings(){
   $("#btnExport").onclick = ()=>{
     const t = JSON.stringify(S);
     $("#ioArea").value = t;
-    copyText(t, $("#btnExport"), "✅ コピーしました");
+    copyText(t, $("#btnExport"), "コピーしました");
   };
   $("#btnImport").onclick = ()=>{
     try{
