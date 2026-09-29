@@ -1,9 +1,9 @@
-/* jp-phrase v3 — 日本語を「文節の切れ目」でだけ改行させる（りんねアプリ共通・外部通信なし）
+/* jp-phrase v4 — 日本語を「文節の切れ目」でだけ改行させる（りんねアプリ共通・外部通信なし）
  * 生成元: AIcompany/tools/jp_phrase.py build（このファイルを直接編集しない）
  * 区切りの判定は BudouX 0.9.2 の日本語モデルと手順（Copyright 2021 Google LLC, Apache License 2.0
  * https://www.apache.org/licenses/LICENSE-2.0 / https://github.com/google/budoux）。
- * 改変: 判定手順を ES5 に移植し、1文字文節の結合・金額(億/兆/万)の後での分割・記号の後の結合・DOMへの適用を追加した。
- * 使い方: <script src="jp-phrase-3.js" defer></script> を head に置くだけ。
+ * 改変: 判定手順を ES5 に移植し、1文字文節の結合・金額(億/兆/万)の後での分割・記号の後の結合・行頭行末の禁則（v4）・DOMへの適用を追加した。
+ * 使い方: <script src="jp-phrase-4.js" defer></script> を head に置くだけ。
  * 触らない場所: input/textarea/select/option・canvas・svg・pre/code・contenteditable・[data-nophrase] の中。
  * 目印は <wbr>（textContent/innerText に出ないので、共有文やコピーに混ざらない）。 */
 (function () {
@@ -15,6 +15,18 @@
   var base = 0;
   KEYS.forEach(function (k) { var g = MODEL[k] || {}; for (var s in g) base += g[s]; });
   base *= -0.5;
+
+  var NOSTART = /^[）」』】〕〉》〙〛”’)\]｝}、。，．・！？!?…‥〜～ぁぃぅぇぉっゃゅょゎゕゖァィゥェォッャュョヮヵヶㇰ-ㇿーｰ々〻ゝゞヽヾ]+/, NOEND = /[（「『【〔〈《〘〚“‘(\[｛{]+$/, WORDTAIL = /[ぁぃぅぇぉっゃゅょゎゕゖァィゥェォッャュョヮヵヶㇰ-ㇿーｰ々〻ゝゞヽヾ]$/;
+
+  function joinOne(out) {
+    var merged = [];
+    for (var m = 0; m < out.length; m++) {
+      if (merged.length && out[m].replace(/\s/g, "").length <= 1) merged[merged.length - 1] += out[m];
+      else merged.push(out[m]);
+    }
+    if (merged.length > 1 && merged[0].replace(/\s/g, "").length <= 1) merged.splice(0, 2, merged[0] + merged[1]);
+    return merged;
+  }
 
   function parse(s) {
     var out = [], start = 0;
@@ -29,12 +41,23 @@
     }
     out.push(s.slice(start));
     // 1文字だけの文節（「見える|化」の「化」など）は前にくっつけ、1文字が行頭に落ちないようにする
-    var merged = [];
-    for (var m = 0; m < out.length; m++) {
-      if (merged.length && out[m].replace(/\s/g, "").length <= 1) merged[merged.length - 1] += out[m];
-      else merged.push(out[m]);
+    var merged = joinOne(out);
+    // v4: 行頭に来てはいけない記号（閉じかっこ・句読点・小書きかな・ー など）は前の文節の末尾へ、
+    //     行末に来てはいけない開きかっこは次の文節の頭へ移す。ブラウザが元々折らない位置に <wbr> を置かないため
+    //     （BudouX のモデルに半角「)」の値が無く、「宵乃(よいの|)こよみです。」の「)」が行頭に来た）。一覧は jp_phrase.py の NO_START / NO_END
+    //     1文字の結合の後に行い、移して新しくできた1文字の文節はもう一度結合する（先に移すと「で|ぃずにー」→「でぃ|ずにー」と割れた）
+    for (var n = 1; n < merged.length; n++) {
+      var hd = merged[n].match(NOSTART);
+      // 移す記号が小書きかな・ー などで終わるなら、残りも同じ語の続きなので文節ごと前へ（「うさぎが…っ|て」→「うさぎが…って」）
+      if (hd) { var k = WORDTAIL.test(hd[0]) ? merged[n].length : hd[0].length; merged[n - 1] += merged[n].slice(0, k); merged[n] = merged[n].slice(k); }
+      if (merged[n] === "") { merged.splice(n, 1); n--; }   // 空いた枠は詰める（記号だけの文節が続くと、次の記号が空の枠に入って境目が残った）
     }
-    if (merged.length > 1 && merged[0].replace(/\s/g, "").length <= 1) merged.splice(0, 2, merged[0] + merged[1]);
+    for (var e = merged.length - 2; e >= 0; e--) {
+      var tl = merged[e].match(NOEND);
+      if (tl) { merged[e + 1] = tl[0] + merged[e + 1]; merged[e] = merged[e].slice(0, merged[e].length - tl[0].length); }
+      if (merged[e] === "") merged.splice(e, 1);
+    }
+    merged = joinOne(merged.filter(function (x) { return x.length > 0; }));
     // v2: 「がは」「をは」という助詞の並びは無いので、次がひらがなならその「は」は次の語の頭（「効果が|はたらきます」「気が|はいる」）
     for (var q = 0; q + 1 < merged.length; q++) {
       if (/[がを]は$/.test(merged[q]) && /^[ぁ-ゟ]/.test(merged[q + 1])) {
@@ -154,7 +177,7 @@
     walk(document.body);
     mo.observe(document.body, opts);
   }
-  window.__jpPhrase = { version: "3", parse: parse, apply: walk };
+  window.__jpPhrase = { version: "4", parse: parse, apply: walk };
   if (document.body) start();
   else document.addEventListener("DOMContentLoaded", start);
 })();

@@ -1,9 +1,9 @@
-/* jp-phrase v1 — 日本語を「文節の切れ目」でだけ改行させる（りんねアプリ共通・外部通信なし）
+/* jp-phrase v4 — 日本語を「文節の切れ目」でだけ改行させる（りんねアプリ共通・外部通信なし）
  * 生成元: AIcompany/tools/jp_phrase.py build（このファイルを直接編集しない）
  * 区切りの判定は BudouX 0.9.2 の日本語モデルと手順（Copyright 2021 Google LLC, Apache License 2.0
  * https://www.apache.org/licenses/LICENSE-2.0 / https://github.com/google/budoux）。
- * 改変: 判定手順を ES5 に移植し、1文字文節の結合・金額(億/兆/万)の後での分割・記号の後の結合・DOMへの適用を追加した。
- * 使い方: <script src="jp-phrase-1.js" defer></script> を head に置くだけ。
+ * 改変: 判定手順を ES5 に移植し、1文字文節の結合・金額(億/兆/万)の後での分割・記号の後の結合・行頭行末の禁則（v4）・DOMへの適用を追加した。
+ * 使い方: <script src="jp-phrase-4.js" defer></script> を head に置くだけ。
  * 触らない場所: input/textarea/select/option・canvas・svg・pre/code・contenteditable・[data-nophrase] の中。
  * 目印は <wbr>（textContent/innerText に出ないので、共有文やコピーに混ざらない）。 */
 (function () {
@@ -15,6 +15,18 @@
   var base = 0;
   KEYS.forEach(function (k) { var g = MODEL[k] || {}; for (var s in g) base += g[s]; });
   base *= -0.5;
+
+  var NOSTART = /^[）」』】〕〉》〙〛”’)\]｝}、。，．・！？!?…‥〜～ぁぃぅぇぉっゃゅょゎゕゖァィゥェォッャュョヮヵヶㇰ-ㇿーｰ々〻ゝゞヽヾ]+/, NOEND = /[（「『【〔〈《〘〚“‘(\[｛{]+$/, WORDTAIL = /[ぁぃぅぇぉっゃゅょゎゕゖァィゥェォッャュョヮヵヶㇰ-ㇿーｰ々〻ゝゞヽヾ]$/;
+
+  function joinOne(out) {
+    var merged = [];
+    for (var m = 0; m < out.length; m++) {
+      if (merged.length && out[m].replace(/\s/g, "").length <= 1) merged[merged.length - 1] += out[m];
+      else merged.push(out[m]);
+    }
+    if (merged.length > 1 && merged[0].replace(/\s/g, "").length <= 1) merged.splice(0, 2, merged[0] + merged[1]);
+    return merged;
+  }
 
   function parse(s) {
     var out = [], start = 0;
@@ -29,12 +41,30 @@
     }
     out.push(s.slice(start));
     // 1文字だけの文節（「見える|化」の「化」など）は前にくっつけ、1文字が行頭に落ちないようにする
-    var merged = [];
-    for (var m = 0; m < out.length; m++) {
-      if (merged.length && out[m].replace(/\s/g, "").length <= 1) merged[merged.length - 1] += out[m];
-      else merged.push(out[m]);
+    var merged = joinOne(out);
+    // v4: 行頭に来てはいけない記号（閉じかっこ・句読点・小書きかな・ー など）は前の文節の末尾へ、
+    //     行末に来てはいけない開きかっこは次の文節の頭へ移す。ブラウザが元々折らない位置に <wbr> を置かないため
+    //     （BudouX のモデルに半角「)」の値が無く、「宵乃(よいの|)こよみです。」の「)」が行頭に来た）。一覧は jp_phrase.py の NO_START / NO_END
+    //     1文字の結合の後に行い、移して新しくできた1文字の文節はもう一度結合する（先に移すと「で|ぃずにー」→「でぃ|ずにー」と割れた）
+    for (var n = 1; n < merged.length; n++) {
+      var hd = merged[n].match(NOSTART);
+      // 移す記号が小書きかな・ー などで終わるなら、残りも同じ語の続きなので文節ごと前へ（「うさぎが…っ|て」→「うさぎが…って」）
+      if (hd) { var k = WORDTAIL.test(hd[0]) ? merged[n].length : hd[0].length; merged[n - 1] += merged[n].slice(0, k); merged[n] = merged[n].slice(k); }
+      if (merged[n] === "") { merged.splice(n, 1); n--; }   // 空いた枠は詰める（記号だけの文節が続くと、次の記号が空の枠に入って境目が残った）
     }
-    if (merged.length > 1 && merged[0].replace(/\s/g, "").length <= 1) merged.splice(0, 2, merged[0] + merged[1]);
+    for (var e = merged.length - 2; e >= 0; e--) {
+      var tl = merged[e].match(NOEND);
+      if (tl) { merged[e + 1] = tl[0] + merged[e + 1]; merged[e] = merged[e].slice(0, merged[e].length - tl[0].length); }
+      if (merged[e] === "") merged.splice(e, 1);
+    }
+    merged = joinOne(merged.filter(function (x) { return x.length > 0; }));
+    // v2: 「がは」「をは」という助詞の並びは無いので、次がひらがなならその「は」は次の語の頭（「効果が|はたらきます」「気が|はいる」）
+    for (var q = 0; q + 1 < merged.length; q++) {
+      if (/[がを]は$/.test(merged[q]) && /^[ぁ-ゟ]/.test(merged[q + 1])) {
+        merged[q] = merged[q].slice(0, -1);
+        merged[q + 1] = "は" + merged[q + 1];
+      }
+    }
     // 金額は「億」「兆」「万」の後ろなら折ってよい（「11926億／4,486万円」。狭い表のマスで「万／円」に割れないように）
     var res = [];
     merged.forEach(function (p) { p.replace(/([億兆万])(?=[0-9０-９])/g, "$1\u0000").split("\u0000").forEach(function (q) { res.push(q); }); });
@@ -42,7 +72,7 @@
   }
 
   var JP = /[぀-ヿ㐀-鿿ｦ-ﾟ]/;
-  var GLUE = /[）」』】〕〉》”’)\]]+[^\s）」』】〕〉》”’)\]、。，．・]|[〜～≒＝=×＋+\/／][^\s]/;
+  var GLUE = /[）」』】〕〉》”’)\]]+[^\s）」』】〕〉》”’)\]、。，．・]|[〜～≒＝=×＋+\/／%％℃][^\s]|[0-9０-９][億万兆円]/;   // v2: %と℃、数字の直後の単位も（「約20%／の」「80℃／上限」「1／億」「300／円」）
   var SKIP = { SCRIPT: 1, STYLE: 1, TEXTAREA: 1, INPUT: 1, SELECT: 1, OPTION: 1, OPTGROUP: 1, CANVAS: 1, PRE: 1, CODE: 1, NOSCRIPT: 1, TEMPLATE: 1, TITLE: 1 };
   var HTML_NS = "http://www.w3.org/1999/xhtml";
   var done = typeof WeakSet === "function" ? new WeakSet() : null;
@@ -77,30 +107,51 @@
     }
     if (last < s.length) text(f, s.slice(last));
   }
-  function split(t) {
+  function split(t, flexy) {
     if (done.has(t)) return;
     done.add(t);
     var s = t.nodeValue;
     if (!s || s.length < 4 || !JP.test(s) || !t.parentNode) return;
-    var parts = parse(s);
-    if (parts.length < 2 && !GLUE.test(s)) return;   // 1文節でも「時間/日」のような記号の後ろはつなぐ
-    var f = document.createDocumentFragment();
-    for (var i = 0; i < parts.length; i++) {
-      if (i) f.appendChild(document.createElement("wbr"));
-      phrase(f, parts[i]);
+    // v3: 改行文字で先に分け、改行は折らない囲みの外に置く。pre-wrap の欄で <jp-nw>（nowrap）が改行を空白に変えていた
+    //     （輪廻の塔のチュートリアル「【破】は…／【流】は…」が1段落につながった）
+    var segs = s.split(/(\n)/), f = document.createDocumentFragment(), changed = false;
+    for (var k = 0; k < segs.length; k++) {
+      var seg = segs[k];
+      if (!seg) continue;
+      if (seg === "\n") { text(f, seg); continue; }
+      var parts = parse(seg);
+      if (parts.length < 2 && !GLUE.test(seg)) { text(f, seg); continue; }   // 1文節でも「時間/日」のような記号の後ろはつなぐ
+      changed = true;
+      for (var i = 0; i < parts.length; i++) {
+        if (i) f.appendChild(document.createElement("wbr"));
+        phrase(f, parts[i]);
+      }
+    }
+    if (!changed) return;
+    // v2: 親が flex/grid だと <wbr> や <jp-nw> が1つずつ別の並びの部品になり、gap が文字の間に入る
+    //     （「NISA （非課税） で 計算」）。そのときは全体を1つのインライン要素にまとめて、元の1つの文字のかたまりに戻す
+    if (flexy) {
+      var box = document.createElement("jp-p");
+      box.appendChild(f);
+      f = box;
     }
     t.parentNode.replaceChild(f, t);
   }
   function walk(root) {
     if (!root || !document.documentElement.contains(root)) return;
-    if (root.nodeType === 3) { if (!insideSkip(root.parentNode)) split(root); return; }
+    if (root.nodeType === 3) { if (!insideSkip(root.parentNode)) split(root, isFlexy(root.parentNode)); return; }
     if (root.nodeType !== 1 || insideSkip(root)) return;
     var w = document.createTreeWalker(root, 5, { acceptNode: function (n) {
       return n.nodeType === 1 ? (rejected(n) ? 2 : 3) : 1;   // 2=中ごと飛ばす 3=要素自体は飛ばして中は見る 1=文字
     } });
     var list = [];
     while (w.nextNode()) list.push(w.currentNode);
-    list.forEach(split);
+    // 親の display は、書き換える前にまとめて読む（書き換えのたびに読むと、その都度スタイルの再計算が走り遅い）
+    var flexy = list.map(function (t) { return !done.has(t) && t.nodeValue && t.nodeValue.length >= 4 && JP.test(t.nodeValue) && isFlexy(t.parentNode); });
+    list.forEach(function (t, i) { split(t, flexy[i]); });
+  }
+  function isFlexy(el) {
+    return !!(el && el.nodeType === 1 && window.getComputedStyle && /flex|grid/.test(getComputedStyle(el).display));
   }
 
   // 改行の規則。アプリ側のCSSで上書きできるよう、head の先頭に入れる
@@ -126,7 +177,7 @@
     walk(document.body);
     mo.observe(document.body, opts);
   }
-  window.__jpPhrase = { version: "1", parse: parse, apply: walk };
+  window.__jpPhrase = { version: "4", parse: parse, apply: walk };
   if (document.body) start();
   else document.addEventListener("DOMContentLoaded", start);
 })();

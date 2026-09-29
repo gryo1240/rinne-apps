@@ -1,8 +1,8 @@
 // 謎の名言メーカー Service Worker (キャッシュ優先・オフライン動作)
-const CACHE = "meigen-maker-v6";
+const CACHE = "meigen-maker-v7";
 const ASSETS = [
   "./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png",
-  "./app.js", "./generator.js", "./jp-phrase-3.js",
+  "./app.js", "./generator.js", "./jp-phrase-4.js",
 ];
 
 self.addEventListener("install", (e) => {

@@ -1,6 +1,6 @@
 // 新NISA取り崩しシミュレーター Service Worker (キャッシュ優先・オフライン動作)
-const CACHE = "torikuzushi-v3";
-const ASSETS = ["./", "./index.html", "./calc.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./jp-phrase-3.js"];
+const CACHE = "torikuzushi-v4";
+const ASSETS = ["./", "./index.html", "./calc.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./jp-phrase-4.js"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));

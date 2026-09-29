@@ -1,9 +1,9 @@
 // 今日の造語ジェネレーター Service Worker（キャッシュ優先・オフライン動作）
-const CACHE = "kyou-no-zougo-v4";
+const CACHE = "kyou-no-zougo-v5";
 const ASSETS = [
   "./", "./index.html", "./logic.js", "./data.js",
   "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png",
-  "./jp-phrase-3.js", "./fonts/shippori-b1-800.woff"
+  "./jp-phrase-4.js", "./fonts/shippori-b1-800.woff"
 ];
 
 self.addEventListener("install", (e) => {

@@ -1,11 +1,11 @@
 // 激辛レビュー生成器 Service Worker (キャッシュ優先・オフライン動作)
 // vendor/(TensorFlow.js+MobileNetモデル、計約18MB)はインストール時に強制ダウンロードさせず、
 // 画像モードを実際に使った時にブラウザの通常キャッシュへ乗る形にする(初回訪問を軽くするため)。
-const CACHE = "gekikara-review-v6";
+const CACHE = "gekikara-review-v7";
 const ASSETS = [
   "./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png",
   "./app.js", "./generator.js", "./labels-ja.js", "./imagenet-classes.js",
-  "./jp-phrase-3.js", "./fonts/biz-udgothic-700.woff",
+  "./jp-phrase-4.js", "./fonts/biz-udgothic-700.woff",
 ];
 
 self.addEventListener("install", (e) => {

@@ -1,6 +1,6 @@
 // FIREシミュレーター Service Worker (キャッシュ優先・オフライン動作)
-const CACHE = "fire-calc-v3";
-const ASSETS = ["./", "./index.html", "./logic.js", "./manifest.webmanifest", "./jp-phrase-3.js", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
+const CACHE = "fire-calc-v4";
+const ASSETS = ["./", "./index.html", "./logic.js", "./manifest.webmanifest", "./jp-phrase-4.js", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));

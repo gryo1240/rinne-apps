@@ -1,8 +1,8 @@
 // ネタ診断「あなたを○○に例えると」 Service Worker（キャッシュ優先・オフライン動作）
-const CACHE = "neta-shindan-v4";
+const CACHE = "neta-shindan-v5";
 const ASSETS = [
   "./", "./index.html", "./logic.js", "./data.js",
-  "./manifest.webmanifest", "./jp-phrase-3.js", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"
+  "./manifest.webmanifest", "./jp-phrase-4.js", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"
 ];
 
 self.addEventListener("install", (e) => {

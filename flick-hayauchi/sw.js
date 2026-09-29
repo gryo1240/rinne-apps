@@ -1,7 +1,7 @@
 // フリック早撃ち Service Worker（キャッシュ優先・オフライン動作）
-const CACHE = "flick-hayauchi-v6";
+const CACHE = "flick-hayauchi-v7";
 const ASSETS = [
-  "./", "./index.html", "./engine.js", "./words.js", "./jp-phrase-3.js",
+  "./", "./index.html", "./engine.js", "./words.js", "./jp-phrase-4.js",
   "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"
 ];
 

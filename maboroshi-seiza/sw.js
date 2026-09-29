@@ -1,9 +1,9 @@
 // 存在しない占星術 Service Worker (キャッシュ優先・オフライン動作)
-const CACHE = "maboroshi-seiza-v7";
+const CACHE = "maboroshi-seiza-v8";
 const ASSETS = [
   "./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png",
   "./app.js", "./generator.js", "./koyomi-uranai.jpg",
-  "./jp-phrase-3.js", "./fonts/yuji-syuku.woff",
+  "./jp-phrase-4.js", "./fonts/yuji-syuku.woff",
 ];
 
 self.addEventListener("install", (e) => {

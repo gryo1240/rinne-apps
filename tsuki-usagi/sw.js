@@ -1,6 +1,6 @@
 // 月うさぎのすみか Service Worker (network-first・オフライン時のみキャッシュ)
-const CACHE = "tsuki-usagi-v3";
-const ASSETS = ["./", "./index.html", "./logic.js", "./data.js", "./app.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./fonts/kiwi-maru-500.woff", "./jp-phrase-1.js"];
+const CACHE = "tsuki-usagi-v4";
+const ASSETS = ["./", "./index.html", "./logic.js", "./data.js", "./app.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./fonts/kiwi-maru-500.woff", "./jp-phrase-4.js"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
