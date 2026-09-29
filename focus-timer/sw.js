@@ -1,7 +1,8 @@
 // 月夜の集中タイマー Service Worker (キャッシュ優先・オフライン動作)
-const CACHE = "tsukiyo-timer-v6";
+const CACHE = "tsukiyo-timer-v7";
 const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png",
-  "./koyomi-work-mini.jpg", "./koyomi-rest-mini.jpg"];
+  "./koyomi-work-mini.jpg", "./koyomi-rest-mini.jpg",
+  "./jp-phrase-3.js", "./fonts/biz-udgothic-700.woff"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));

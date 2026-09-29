@@ -222,7 +222,8 @@ P.save = function(){
     ids: plan.slice(),
     from: origin ? origin.name : "",
     km: Math.round(P.totalKm()*10)/10,
-    at: new Date().toISOString().slice(0,10)
+    at: (function(){ /* 日付は日本時間（2026-09-29 オーナー指示: 日付の切り替わりは日本時間0時。toISOString は世界時で朝9時に切り替わっていた） */
+      var j = U.nowJST(); return j.getFullYear()+"-"+String(j.getMonth()+1).padStart(2,"0")+"-"+String(j.getDate()).padStart(2,"0"); })()
   });
   U.toast("プランを保存しました");
   if(AGM.ui.personal) AGM.ui.personal.render();

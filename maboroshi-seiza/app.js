@@ -101,76 +101,113 @@ function drawCardCanvas(result) {
   cardCanvasEl.height = H;
   const ctx = cardCanvasEl.getContext("2d");
 
-  // 夜空の背景
-  const grad = ctx.createRadialGradient(W * 0.7, H * 0.05, 40, W * 0.5, H * 0.4, 700);
-  grad.addColorStop(0, "#232c4d");
-  grad.addColorStop(1, "#0c0f1d");
-  ctx.fillStyle = grad;
+  // 2026-09-29 刷新: 紺紙銀泥の星図の1ページ（藍の和紙・銀・月の淡黄）。位置と高さの式は改修前のまま。光らせない
+  ctx.fillStyle = "#1D2838";
   ctx.fillRect(0, 0, W, H);
-
-  // 細かい星の粒(装飾。Canvas高さが可変になったため、位置はHに対する比率で指定)
-  ctx.fillStyle = "rgba(255,255,255,.5)";
-  const decoFrac = [
-    [40, 0.044], [90, 0.1], [660, 0.067], [610, 0.144], [50, 0.867], [670, 0.889],
-    [30, 0.556], [690, 0.511], [120, 0.033], [560, 0.944],
-  ];
-  for (const [dx, fy] of decoFrac) {
+  // 和紙の繊維: 決まった並び（乱数は使わない）の細く短い線をうっすら
+  ctx.strokeStyle = "rgba(255,255,255,.035)";
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 140; i++) {
+    const fx = (i * 197) % W, fy = (i * 131) % H, fl = 10 + (i * 7) % 26, fa = ((i * 37) % 180) * Math.PI / 180;
     ctx.beginPath();
-    ctx.arc(dx, fy * H, 1.6, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(fx, fy);
+    ctx.lineTo(fx + Math.cos(fa) * fl, fy + Math.sin(fa) * fl);
+    ctx.stroke();
   }
 
-  // 星図エリア(上部)
+  // 匡郭（二重の罫・灰銀）
+  ctx.strokeStyle = "#A9AFB5";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(9, 9, W - 18, H - 18);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(16, 16, W - 32, H - 32);
+
+  // 星図の枠と経緯線（灰銀の細い線）
   const pts = result.stars.map((s) => ({
     x: 60 + s.x * (W - 120),
     y: chartTop + s.y * chartH,
     r: s.r,
   }));
-  ctx.strokeStyle = "rgba(217,185,106,.55)";
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(48, chartTop - 4, W - 96, chartH + 8);
+  ctx.clip();
+  ctx.strokeStyle = "rgba(169,175,181,.22)";
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 6; i++) {
+    ctx.beginPath();
+    ctx.arc(W / 2, chartTop + chartH + 520, 400 + i * 52, Math.PI * 1.1, Math.PI * 1.9);
+    ctx.stroke();
+  }
+  for (let i = -4; i <= 4; i++) {
+    ctx.beginPath();
+    ctx.moveTo(W / 2 + i * 70, chartTop - 4);
+    ctx.lineTo(W / 2 + i * 150, chartTop + chartH + 4);
+    ctx.stroke();
+  }
+  // 三日月（星図の左上の隅。星は x≥132 にしか来ないので重ならない）: 淡黄の円を藍の円で欠く
+  ctx.fillStyle = "#E3D6A6";
+  ctx.beginPath();
+  ctx.arc(82, chartTop + 26, 13, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#1D2838";
+  ctx.beginPath();
+  ctx.arc(88, chartTop + 22, 11.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = "rgba(169,175,181,.6)";
+  ctx.strokeRect(48, chartTop - 4, W - 96, chartH + 8);
+
+  // 星座の線（灰銀）と星（銀白の丸に4本の光条）
+  ctx.strokeStyle = "rgba(169,175,181,.85)";
   ctx.lineWidth = 1.6;
   ctx.beginPath();
   pts.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
   ctx.stroke();
   for (const p of pts) {
-    ctx.fillStyle = "#f0dca8";
-    ctx.shadowColor = "rgba(240,220,168,.8)";
-    ctx.shadowBlur = 10;
+    ctx.fillStyle = "#EEF0F2";
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
     ctx.fill();
-    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "#DADDE0";
+    ctx.lineWidth = 1;
+    const k = p.r * 2.6;
+    ctx.beginPath();
+    ctx.moveTo(p.x - k, p.y); ctx.lineTo(p.x + k, p.y);
+    ctx.moveTo(p.x, p.y - k); ctx.lineTo(p.x, p.y + k);
+    ctx.stroke();
   }
 
   y = chartTop + chartH + 70;
   ctx.textAlign = "center";
-  ctx.fillStyle = "#f0dca8";
+  ctx.fillStyle = "#EEF0F2";
   ctx.font = "bold 60px serif";
   ctx.fillText(result.starName, W / 2, y);
   y += 60;
 
   ctx.font = "25.5px sans-serif";
-  ctx.fillStyle = "#9aa3bf";
+  ctx.fillStyle = "#A9AFB5";
   ctx.fillText("あなただけの架空の星座", W / 2, y);
   y += 72;
 
   ctx.textAlign = "left";
   ctx.font = "24px sans-serif";
-  ctx.fillStyle = "#d9b96a";
+  ctx.fillStyle = "#E3D6A6";
   ctx.fillText("守護天体", 60, y);
-  ctx.fillStyle = "#e8e4d8";
+  ctx.fillStyle = "#DADDE0";
   ctx.font = "30px serif";
   ctx.fillText(result.guardian, 225, y);
   y += 72;
 
   ctx.font = "25.5px sans-serif";
-  ctx.fillStyle = "#e8e4d8";
+  ctx.fillStyle = "#DADDE0";
   for (const line of temperLines) {
     ctx.fillText(line, 60, y);
     y += 42;
   }
   y += 30;
 
-  ctx.fillStyle = "#d9b96a";
+  ctx.fillStyle = "#C9CED3";
   ctx.font = "25.5px sans-serif";
   ctx.fillText(`ラッキーカラー: ${result.color}`, 60, y);
   y += 42;
@@ -181,7 +218,7 @@ function drawCardCanvas(result) {
   ctx.fillText(`ラッキー方角: ${result.luckyDirection}`, 60, y);
 
   ctx.textAlign = "center";
-  ctx.fillStyle = "#6b7390";
+  ctx.fillStyle = "#A9AFB5";
   ctx.font = "19.5px sans-serif";
   ctx.fillText("存在しない占星術 〜 宵乃こよみ 〜", W / 2, footerY);
 

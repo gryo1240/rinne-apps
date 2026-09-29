@@ -5,144 +5,177 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>月夜の集中タイマー｜ポモドーロ式の無料作業タイマー</title>
 <meta name="description" content="夜空の下で集中。25分作業+5分休憩のポモドーロ式タイマー。占い師・宵乃こよみが夜のお供に。今日の集中時間も自動で記録される無料アプリです。">
-<meta name="theme-color" content="#0c0f1d">
+<meta name="theme-color" content="#1F2733">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
+  /* 2026-09-29 刷新（同日オーナー指示「月夜って感じ」で作り直し）:「月の文字盤」。
+     文字盤そのものが月。残り時間は月の明るい面、過ぎた時間は日時計の影のように回ってくる夜の影で覆われていく。
+     色は 墨を混ぜた藍の夜・月の生成り・灰銀 の3系統。光らせない（glow・グラデーションの夜空・金は使わない）。
+     数字と見出しは同梱の BIZ UDゴシック Bold（使う文字だけ・SIL OFL）。
+     見せ場は1つだけ: 月の明るい面が、時間とともに影に覆われていく（既存の SVG の円をそのまま使う。
+       ring-bg を月の円盤、ring-fg を太さ260の影色の線にして「過ぎた分」を覆う。進み方は JS のまま）。
+     休憩中は、月の手前に薄い雲の帯が1本かかる（朧月）。
+     こよみの写真は小さな写真立て（動かさない）。ひと言は月明かりで読む書き付け。
+     ⚠ 文言を変えたら fonts/chars.txt を作り直してフォントを再生成する */
+  @font-face { font-family: "FT Num"; font-weight: 700; font-display: swap; src: url("fonts/biz-udgothic-700.woff") format("woff"); }
+  :root { --night: #1F2733; --moon: #E9E2CC; --shade: #323C4B; --ink: #1B2129; --silver: #A9B0B8; --line: #3E4958; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
   body {
     font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
-    background: linear-gradient(180deg, #0c0f1d 0%, #131a33 70%, #0c0f1d 100%);
-    color: #e8e6dd;
+    /* 夜: 単色。瞬かない星を数個だけ */
+    background-color: var(--night);
+    background-image:
+      radial-gradient(circle at 8% 12%, rgba(233,226,204,.55) 0 1px, transparent 1.6px),
+      radial-gradient(circle at 91% 7%, rgba(233,226,204,.45) 0 1px, transparent 1.6px),
+      radial-gradient(circle at 84% 31%, rgba(233,226,204,.35) 0 .8px, transparent 1.4px),
+      radial-gradient(circle at 14% 44%, rgba(233,226,204,.35) 0 .8px, transparent 1.4px),
+      radial-gradient(circle at 95% 58%, rgba(233,226,204,.4) 0 1px, transparent 1.6px),
+      radial-gradient(circle at 5% 76%, rgba(233,226,204,.3) 0 .8px, transparent 1.4px);
+    color: var(--moon);
     min-height: 100vh;
     overflow-x: hidden;
   }
-  #sky { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
-  .star {
-    position: absolute; border-radius: 50%; background: #e8e6dd;
-    animation: twinkle 3s ease-in-out infinite;
-  }
-  @keyframes twinkle { 0%,100% { opacity: .15; } 50% { opacity: .8; } }
-
+  #sky { display: none; }
   .wrap { position: relative; z-index: 1; max-width: 560px; margin: 0 auto; padding: 18px 14px 26px; text-align: center; }
 
-  .head h1 { font-size: 20px; letter-spacing: .12em; color: #d9b96a; font-weight: 700; }
-  .head p { font-size: 12px; color: #9aa0b5; margin-top: 2px; }
+  .head h1 { font-family: "FT Num", sans-serif; font-size: 20px; letter-spacing: .12em; color: var(--moon); font-weight: 700; }
+  .head p { font-size: 12px; color: var(--silver); margin-top: 2px; }
 
   /* モード選択 */
   .modes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 14px 0 4px; }
   .mode {
-    padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer;
-    color: #b9bfd2; background: rgba(255,255,255,.05);
-    border: 1px solid #2c3552; border-radius: 999px; transition: all .15s;
+    padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: "FT Num", sans-serif;
+    color: var(--moon); background: transparent;
+    border: 1px solid #6B7584; border-radius: 3px; transition: background .15s, color .15s;
   }
-  .mode.active { color: #0c0f1d; background: #d9b96a; border-color: #d9b96a; }
-  .custom-row { display: none; gap: 10px; justify-content: center; align-items: center; margin-top: 10px; font-size: 13px; color: #b9bfd2; }
+  .mode.active { color: var(--ink); background: var(--moon); border-color: var(--moon); }
+  .custom-row { display: none; gap: 10px; justify-content: center; align-items: center; margin-top: 10px; font-size: 13px; color: var(--silver); }
   .custom-row.show { display: flex; }
-  .custom-hint { display: none; font-size: 11px; color: #7f88a6; margin-top: 5px; }
+  .custom-hint { display: none; font-size: 11px; color: var(--silver); margin-top: 5px; }
   .custom-hint.show { display: block; }
   .custom-row input {
-    width: 62px; padding: 5px 6px; font-size: 15px; font-weight: 700; text-align: center;
-    color: #d9b96a; background: rgba(255,255,255,.06);
-    border: 1px solid #2c3552; border-radius: 8px;
+    width: 62px; padding: 5px 6px; font-size: 15px; font-weight: 700; text-align: center; font-family: "FT Num", sans-serif;
+    color: var(--ink); background: var(--moon);
+    border: 1px solid var(--moon); border-radius: 3px;
   }
 
-  /* タイマー本体 */
-  .dial { position: relative; width: 290px; height: 290px; margin: 18px auto 6px; }
-  .dial svg { transform: rotate(-90deg); }
-  .ring-bg { fill: none; stroke: #232b47; stroke-width: 10; }
-  .ring-fg { fill: none; stroke: #d9b96a; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset .3s linear, stroke .3s; filter: drop-shadow(0 0 5px rgba(217,185,106,.45)); }
-  .ring-fg.break { stroke: #7fb69b; filter: drop-shadow(0 0 5px rgba(127,182,155,.45)); }
+  /* 月の文字盤: 外周は夜の地に月色の目盛り（5分ごとに太く）、内側が月。月の面には海（暗い模様）を塗りで入れる。光らせない */
+  .dial { position: relative; width: 290px; height: 290px; margin: 18px auto 6px; border-radius: 50%;
+    background:
+      radial-gradient(ellipse 17% 12% at 66% 26%, rgba(160,150,122,.20), transparent 100%),
+      radial-gradient(ellipse 11% 17% at 78% 54%, rgba(160,150,122,.17), transparent 100%),
+      radial-gradient(ellipse 15% 10% at 34% 74%, rgba(160,150,122,.16), transparent 100%),
+      radial-gradient(ellipse 11% 9% at 38% 22%, rgba(160,150,122,.14), transparent 100%),
+      radial-gradient(circle closest-side, var(--moon) 0 82.8%, transparent 83.2%),
+      repeating-conic-gradient(from -1deg, var(--moon) 0 2deg, transparent 2deg 30deg),
+      repeating-conic-gradient(from -.4deg, #6F7888 0 .8deg, transparent .8deg 6deg),
+      #263040;
+    box-shadow: 0 0 0 1px var(--line);
+  }
+  /* 円の外周を切り取って扇にする（ring-fg の太い線が中心まで届く）。月そのものは .dial の背景に描いてある */
+  .dial svg { transform: rotate(-90deg) scaleY(-1); clip-path: circle(41.4% at 50% 50%); }
+  .ring-bg { fill: none; stroke: none; }
+  .ring-fg { fill: none; stroke: var(--shade); stroke-width: 260; transition: stroke-dashoffset .3s linear; }
+  .ring-fg.break { stroke: var(--shade); }
+  /* 扇の切り口のふちに出るにじみを、文字盤の色の細い輪で隠す */
+  .dial::after { content: ""; position: absolute; left: 50%; top: 50%; width: calc(82.8% + 3px); height: calc(82.8% + 3px); box-sizing: border-box;
+    transform: translate(-50%,-50%); border-radius: 50%; border: 3px solid var(--moon); pointer-events: none; }
+  /* 休憩中: 月の手前に薄い雲の帯（朧月） */
+  .dial::before { content: ""; position: absolute; left: -4%; right: -4%; top: 60%; height: 7%; border-radius: 50%; pointer-events: none; z-index: 1;
+    /* 月の上でも見えるよう、雲は明るい銀ではなく灰に（レビュー: 明るい雲は月と 1.21:1 で見えなかった） */
+    background: linear-gradient(90deg, transparent, rgba(120,128,140,.55) 18%, rgba(128,136,148,.66) 50%, rgba(120,128,140,.52) 84%, transparent);
+    opacity: 0; transition: opacity .6s; }
+  .dial:has(.ring-fg.break)::before { opacity: 1; }
+  /* 中央のつまみ: 時刻と状態はここに書く */
   .dial-center {
     position: absolute; inset: 0; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 2px;
+    align-items: center; justify-content: center; gap: 2px; z-index: 2;
   }
-  .state { font-size: 14px; letter-spacing: .3em; color: #9aa0b5; }
-  .state.working { color: #d9b96a; }
-  .state.resting { color: #7fb69b; }
-  .time { font-size: 64px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: .04em; line-height: 1.1; }
+  .dial-center::before {
+    content: ""; position: absolute; left: 50%; top: 50%; width: 56%; height: 56%; transform: translate(-50%,-50%);
+    border-radius: 50%; background: var(--moon); box-shadow: 0 0 0 1px #C9C1A8; z-index: -1;
+  }
+  .state { font-size: 13px; letter-spacing: .3em; color: #5B6270; font-family: "FT Num", sans-serif; font-weight: 700; }
+  .state.working { color: var(--ink); }
+  .state.resting { color: #5B6270; }
+  .time { font-family: "FT Num", sans-serif; font-size: 50px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .02em; line-height: 1.1; color: var(--ink); }
   .cycle-dots { display: flex; gap: 7px; margin-top: 6px; }
-  .dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid #4a547a; }
-  .dot.done { background: #d9b96a; border-color: #d9b96a; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid #7D7766; }
+  .dot.done { background: var(--ink); border-color: var(--ink); }
 
-  /* こよみの相棒カード＋吹き出し */
-  .says { display: flex; align-items: center; gap: 12px; justify-content: center; margin: 8px auto 14px; max-width: 452px; }
-  .koyomi { position: relative; flex: 0 0 auto; width: 104px; height: 128px; animation: bob 3.8s ease-in-out infinite; }
-  .koyomi .glow {
-    position: absolute; inset: -26%; z-index: -1; border-radius: 50%;
-    background: radial-gradient(circle, rgba(217,185,106,.4) 0%, rgba(217,185,106,0) 66%);
-    filter: blur(6px); animation: glowPulse 4.6s ease-in-out infinite;
-  }
+  /* こよみ: 小さな写真立て ＋ 月明かりで読む書き付け */
+  .says { display: flex; align-items: center; gap: 14px; justify-content: center; margin: 12px auto 14px; max-width: 452px; }
+  .koyomi { position: relative; flex: 0 0 auto; width: 88px; height: 108px; }
+  .koyomi .glow, .koyomi .spark { display: none; }
   .koyomi .frame {
-    position: absolute; inset: 0; border-radius: 16px; overflow: hidden;
-    border: 2px solid rgba(217,185,106,.6); box-shadow: 0 6px 18px rgba(0,0,0,.5);
+    position: absolute; inset: 0; border-radius: 2px; overflow: hidden;
+    border: 4px solid var(--moon); box-shadow: 0 0 0 1px var(--line);
   }
   .koyomi .pic { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.2s ease; }
   .koyomi .pic.on { opacity: 1; }
-  .koyomi .spark {
-    position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #f5e3ad;
-    box-shadow: 0 0 6px 1px rgba(245,227,173,.85); opacity: 0;
-  }
-  .koyomi .s1 { left: -5px; bottom: 26px; animation: rise 3.6s ease-in-out .2s infinite; }
-  .koyomi .s2 { right: -4px; bottom: 48px; animation: rise 4.3s ease-in-out 1.5s infinite; }
-  .koyomi .s3 { left: 52%; bottom: 6px; animation: rise 5.1s ease-in-out 2.7s infinite; }
-  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-  @keyframes glowPulse { 0%,100% { opacity: .5; transform: scale(.95); } 50% { opacity: 1; transform: scale(1.06); } }
-  @keyframes rise { 0% { opacity: 0; transform: translateY(6px) scale(.6); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-28px) scale(1); } }
 
   .bubble {
-    position: relative; text-align: left; font-size: 13.5px; line-height: 1.55; color: #f2f0e6;
-    background: rgba(22,27,49,.9); border: 1px solid rgba(217,185,106,.42);
-    padding: 10px 13px; border-radius: 14px; min-height: 20px;
-    box-shadow: 0 4px 14px rgba(0,0,0,.35);
-    min-width: 0; flex: 1 1 auto; overflow-wrap: anywhere;
+    position: relative; text-align: left; font-size: 13.5px; line-height: 1.55; color: var(--moon);
+    background: transparent; border: 0; border-left: 2px solid var(--silver);
+    padding: 6px 4px 6px 14px; border-radius: 0; min-height: 20px;
+    min-width: 0; flex: 1 1 auto; overflow-wrap: anywhere; text-wrap: pretty;
   }
-  .bubble::before {
-    content: ""; position: absolute; left: -7px; top: 50%; transform: translateY(-50%);
-    border: 7px solid transparent; border-right-color: rgba(22,27,49,.9);
-  }
-  .bubble.pop { animation: pop .34s ease; }
-  @keyframes pop { 0% { transform: scale(.97); opacity: .5; } 100% { transform: scale(1); opacity: 1; } }
+  .bubble::before { display: none; }
+  .bubble.pop { animation: none; }
 
   /* ボタン */
   .btns { display: flex; gap: 10px; justify-content: center; }
   button.ctl {
-    min-width: 118px; padding: 13px 18px; font-size: 15px; font-weight: 700; cursor: pointer;
-    border-radius: 12px; border: 1px solid #d9b96a; transition: transform .1s;
+    min-width: 118px; padding: 13px 18px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: "FT Num", sans-serif;
+    border-radius: 4px; border: 1px solid var(--moon); transition: transform .1s;
   }
   button.ctl:active { transform: scale(.97); }
-  #btnMain { background: #d9b96a; color: #0c0f1d; }
-  .ctl.sub { background: transparent; color: #d9b96a; }
+  #btnMain { background: var(--moon); color: var(--ink); border-color: var(--moon); }
+  .ctl.sub { background: transparent; color: var(--moon); border-color: #7C8594; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--moon); outline-offset: 3px; }
 
   /* 統計 */
   .stats {
-    margin-top: 18px; padding: 12px; font-size: 13px; color: #b9bfd2;
-    background: rgba(255,255,255,.04); border: 1px solid #232b47; border-radius: 12px;
+    margin-top: 18px; padding: 12px; font-size: 13px; color: var(--silver);
+    background: transparent; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); border-radius: 0;
   }
-  .stats b { color: #d9b96a; font-size: 16px; }
+  .stats b { color: var(--moon); font-size: 16px; font-family: "FT Num", sans-serif; }
 
-  .note { margin-top: 12px; font-size: 11px; color: #6b7390; }
-  .note .who { color: #d9b96a; }
+  .note { margin-top: 12px; font-size: 11px; color: var(--silver); }
+  .note .who { color: var(--moon); }
 
   @media (max-width: 380px) {
     .dial { width: 250px; height: 250px; }
     .dial svg { width: 250px; height: 250px; }
-    .time { font-size: 52px; }
-    .koyomi { width: 92px; height: 114px; }
+    .time { font-size: 42px; }
+    .koyomi { width: 80px; height: 98px; }
+    .says { gap: 10px; }
+    .bubble { font-size: 13px; padding: 6px 2px 6px 10px; }
+    /* 改修前から320px以下で3つのボタンが横にはみ出していた */
+    button.ctl { min-width: 0; flex: 1 1 0; padding: 13px 8px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .koyomi, .koyomi .glow, .koyomi .spark { animation: none; }
+    .koyomi .pic { transition-duration: .01s; }
+    .dial::before { transition-duration: .05s; }
+  }
+  @media (forced-colors: active) {
+    .dial svg { clip-path: none; }
+    .ring-bg { fill: none; stroke: CanvasText; stroke-width: 2; }
+    .ring-fg { stroke: Highlight; stroke-width: 10; }
+    .dial::before { display: none; }
   }
 </style>
+<script src="jp-phrase-3.js" defer></script>
 </head>
 <body>
 <div id="sky"></div>
 <div class="wrap">
 
   <header class="head">
-    <h1>🌙 月夜の集中タイマー</h1>
+    <h1>月夜の集中タイマー</h1>
     <p>しずかな夜空の下で、こよみと一緒に集中。</p>
   </header>
 
@@ -164,14 +197,14 @@
     </svg>
     <div class="dial-center">
       <div class="state" id="state">じゅんび</div>
-      <div class="time" id="time">25:00</div>
-      <div class="cycle-dots" id="dots"></div>
+      <div class="time" id="time" data-nophrase>25:00</div>
+      <div class="cycle-dots" id="dots" data-nophrase></div>
     </div>
   </div>
 
   <div class="says">
     <div class="koyomi" id="koyomi">
-      <div class="glow"></div>
+      <div class="glow" aria-hidden="true"></div>
       <div class="frame">
         <img class="pic pic-work" src="koyomi-work-mini.jpg" alt="占い中の宵乃こよみ">
         <img class="pic pic-rest on" src="koyomi-rest-mini.jpg" alt="読書中の宵乃こよみ">
@@ -192,9 +225,9 @@
     <span id="sessionCount"></span>
   </div>
 
-  <p class="note">4回の集中ごとに長めの休憩が入ります。音が鳴るので音量にご注意ください🔔<br>
+  <p class="note">4回の集中ごとに長めの休憩が入ります。音が鳴るので音量にご注意ください<br>
   スマホでは「ホーム画面に追加」で単独アプリとして使えます。<br>
-  夜のお供は占い師 <span class="who">宵乃こよみ</span>。集中時は占い、休憩時は読書でそばにいます🌙</p>
+  夜のお供は占い師 <span class="who">宵乃こよみ</span>。集中時は占い、休憩時は読書でそばにいます</p>
 
 </div>
 
@@ -262,7 +295,8 @@ const WORK_MSGS = [
 
 /* ---------- 今日の記録 (localStorage) ---------- */
 const KEY = "tsukiyo-focus-stats";
-function todayKey() { return new Date().toISOString().slice(0, 10); }
+// 日本時間の日付（端末の時差に関係なく、日本時間の0時で切り替わる）
+function todayKey() { return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10); }
 function loadStats() {
   try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; }
 }
