@@ -6,7 +6,7 @@
 <title>宵乃こよみの事件簿 第一夜『十六夜の来客』｜無料ノベルゲーム</title>
 <meta name="description" content="夜だけ開く占いの店。“聞く”占い師・宵乃こよみが、少女の姉の秘密を解き明かす感動ノベル。1周5〜10分・マルチエンディング。無料・登録不要。">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0f0b17">
+<meta name="theme-color" content="#1c2133">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
@@ -63,6 +63,7 @@
   #text { font-size:1.02rem; line-height:1.85; white-space:pre-wrap; letter-spacing:0.02em; }
   #text.letter { font-style:normal; color:#f3e8d0; background:rgba(245,236,210,0.06);
     border-left:2px solid var(--gold-dim); padding:8px 12px; border-radius:4px; }
+  #text .tc { visibility:hidden; }
   #advance { position:absolute; right:16px; bottom:12px; color:var(--gold); font-size:0.8rem; opacity:0.7; animation:blink 1.3s infinite; }
   @keyframes blink { 0%,100%{opacity:0.2;} 50%{opacity:0.85;} }
 
@@ -115,23 +116,107 @@
   #result .note { font-size:0.64rem; color:#7d7397; margin-top:16px; line-height:1.7; }
 
   @media (max-height:620px){ #stage{ bottom:132px; } #textbox{ min-height:132px; } #text{ font-size:0.95rem; line-height:1.7; } }
+  /* ===== 2026-09-29 刷新（第13弾・試作A: タイトル画面だけ）「和綴じの事件簿の表紙」 =====
+     藍染めの表紙に、生成りの題簽（題名の短冊）を貼り、題名を縦に組む。右端は四つ目綴じの糸。
+     見せ場は1つ: 表紙の月。十六夜（満月の翌夜）なので右の縁がわずかに欠けた月を、光らせずに生成りで描く。
+     色は 藍・生成り・墨 の3系統。題名は同梱の しっぽり明朝 B1 ExtraBold（使う文字だけ・SIL OFL）。本文・立ち絵・背景には手を入れない */
+  @font-face { font-family:"KJ Title"; font-weight:800; font-display:swap; src:url("fonts/shippori-b1-800.woff") format("woff"); }
+  #title { background-color:#1c2133;
+    background-image:repeating-linear-gradient(0deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 3px); }
+  /* 右端の綴じ: 綴じしろの線と、4つの穴から表紙の端へ渡る糸 */
+  #title::before { content:""; position:absolute; top:0; bottom:0; right:26px; width:1px; background:rgba(236,228,206,0.22); }
+  #title::after { content:""; position:absolute; top:0; bottom:0; right:0; width:26px;
+    background:
+      radial-gradient(circle 3px at 12px 16%, #0e111b 2.5px, transparent 3px),
+      radial-gradient(circle 3px at 12px 38%, #0e111b 2.5px, transparent 3px),
+      radial-gradient(circle 3px at 12px 62%, #0e111b 2.5px, transparent 3px),
+      radial-gradient(circle 3px at 12px 84%, #0e111b 2.5px, transparent 3px),
+      linear-gradient(rgba(207,196,163,0.7),rgba(207,196,163,0.7)) 12px 16% / 14px 2px no-repeat,
+      linear-gradient(rgba(207,196,163,0.7),rgba(207,196,163,0.7)) 12px 38% / 14px 2px no-repeat,
+      linear-gradient(rgba(207,196,163,0.7),rgba(207,196,163,0.7)) 12px 62% / 14px 2px no-repeat,
+      linear-gradient(rgba(207,196,163,0.7),rgba(207,196,163,0.7)) 12px 84% / 14px 2px no-repeat,
+      linear-gradient(90deg, transparent 11px, rgba(207,196,163,0.55) 11px 12px, transparent 12px); }
+  #title .cover { display:flex; align-items:flex-start; justify-content:center; gap:26px; width:min(300px,82%); margin-right:14px; }
+  #title .daisen { writing-mode:vertical-rl; display:block; padding:16px 10px; background:#ece4ce; color:#1c2133;
+    box-shadow:inset 0 0 0 4px #ece4ce, inset 0 0 0 5px #b8ab86; }
+  #title .daisen h1 { font-family:"KJ Title",serif; font-weight:800; font-size:1.55rem; color:#1c2133; letter-spacing:0.12em; }
+  #title .daisen h2 { font-family:"KJ Title",serif; font-weight:800; font-size:1rem; color:#4a4f63; letter-spacing:0.1em; margin:2.4em 0.35em 0 0; }
+  #title .moon { flex:0 0 auto; width:84px; height:84px; margin:6px 0 0; border-radius:0; background:none; box-shadow:none; }
+  #title .credit { color:#aeb3c7; margin-top:20px; }
+  #title .menu { margin-top:24px; gap:0; margin-right:14px; }
+  #title .menu button { border-radius:0; border:0; border-top:1px solid rgba(236,228,206,0.3); background:transparent; padding:14px; }
+  #title .menu { border-bottom:1px solid rgba(236,228,206,0.3); }  /* last-of-type だと隠しボタン(ふだん非表示)に当たって線が出ない */
+  /* 表紙が画面より高いとき（横向き・小さいスマホ）も上下が切れないように: 中央寄せを margin:auto にしてスクロールさせる。
+     上の余白は左上の「音」(#sound, 下端38px)に題簽が重ならないため（レビュー 2026-09-29 高2・中1） */
+  #title { justify-content:flex-start; overflow-y:auto; padding-top:48px; }
+  #title > :first-child { margin-top:auto; }
+  #title > :last-child { margin-bottom:auto; }
+  @media (max-height:600px) {
+    #title { padding-top:44px; padding-bottom:14px; }
+    #title .daisen { padding:12px 8px; }
+    #title .daisen h1 { font-size:1.3rem; }
+    #title .daisen h2 { font-size:0.88rem; }
+    #title .moon { width:64px; height:64px; }
+    #title .credit { margin-top:12px; }
+    #title .menu { margin-top:14px; }
+    #title .menu button { padding:10px; }
+    #title .note { margin-top:12px; }
+  }
+  /* 狭い幅: 手紙は文節で折ると1〜2行増えて上のメニューに届くので、その幅だけ字と行間を詰める（中2） */
+  @media (max-width:340px) { #text.letter { font-size:0.92rem; line-height:1.7; padding:6px 10px; } }
+  #title .menu button.primary { background:#ece4ce; color:#1c2133; border-color:#ece4ce; font-weight:700; }
+  #title .menu button.hidden-btn { background:transparent; color:#ece4ce; border-top-style:dashed; }
+  #title .note { color:#9398ae; margin-right:14px; }
+
+  /* ===== 2026-09-29 刷新（第13弾B: 残りの画面）表紙と同じ 藍・生成り・墨 にそろえる =====
+     金（#e8c872）は月の淡黄（#e3d6a6）に。文字の枠・選択肢・上のボタン・ログ・結末の色と形だけを変える。
+     立ち絵・場面の背景（#bg）・文字の大きさと行間・枠の高さは変えない */
+  :root { --gold:#e3d6a6; --gold-dim:#b3a883; --line:rgba(236,228,206,0.3); --panel:rgba(20,24,38,0.9); }
+  html,body,#app { background:#1c2133; }
+  #textbox { background:linear-gradient(180deg, rgba(18,21,33,0) 0%, rgba(18,21,33,0.84) 22%, rgba(18,21,33,0.95) 100%); }
+  #text.letter { color:#efe7d2; background:rgba(236,228,206,0.07); border-left:0; border-radius:2px;
+    box-shadow:inset 0 0 0 1px rgba(236,228,206,0.25); }
+  #choices { background:rgba(12,14,24,0.55); }
+  #choices button { border-radius:2px; border-color:rgba(236,228,206,0.32); background:rgba(20,24,38,0.95); }
+  #choices button .ctag { color:#aeb3c7; }
+  #menu button, #sound { border-radius:3px; border-color:rgba(236,228,206,0.28); background:rgba(20,24,38,0.82); color:#d9dbe6; }
+  #menu button.on { background:#ece4ce; color:#1c2133; }
+  #sound .ic { font-size:0.74rem; color:#d9dbe6; opacity:1; }
+  #volSlider { accent-color:#e3d6a6; }
+  #backlog { background:rgba(14,17,27,0.96); }
+  #backlog .close button { border-radius:3px; background:rgba(20,24,38,0.95); }
+  #result { background-color:#1c2133;
+    background-image:repeating-linear-gradient(0deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 3px); }
+  #result .endname { color:#aeb3c7; }
+  #result .stats { border-radius:2px; background:rgba(236,228,206,0.05); }
+  #result .foretell { color:#aeb3c7; border-top-color:rgba(236,228,206,0.2); }
+  #result .btns { gap:0; }
+  #result .btns button { border-radius:0; border:0; border-top:1px solid rgba(236,228,206,0.3); background:transparent; }
+  #result .btns button:last-of-type { border-bottom:1px solid rgba(236,228,206,0.3); }
+  #result .btns button.primary { background:#ece4ce; color:#1c2133; border-color:#ece4ce; }
+  #result .note { color:#9398ae; }
+  /* 狭い幅: 「第二幕から（聞き取り）」が1行に収まるよう、ボタンの字間を詰める */
+  @media (max-width:340px) { #title .menu button, #result .btns button { letter-spacing:0.02em; } }
+
 </style>
+<script src="jp-phrase-4.js" defer></script>
 </head>
 <body>
 <div id="app">
-  <div id="sound"><span class="ic">🔊</span><input type="range" id="volSlider" min="0" max="100" step="1" aria-label="音量"></div>
+  <div id="sound"><span class="ic">音</span><input type="range" id="volSlider" min="0" max="100" step="1" aria-label="音量"></div>
 
   <!-- タイトル -->
   <section id="title" class="screen active">
-    <div class="moon"></div>
-    <h1>宵乃こよみの事件簿</h1>
-    <h2>第一夜『十六夜の来客』</h2>
+    <div class="cover">
+      <div class="daisen" data-nophrase><h1>宵乃こよみの事件簿</h1><h2>第一夜『十六夜の来客』</h2></div>
+      <svg class="moon" viewBox="0 0 84 84" width="84" height="84" aria-hidden="true"><defs><clipPath id="kjLit"><path d="M42 2 A40 40 0 0 0 42 82 A32 40 0 0 0 42 2 Z"/></clipPath></defs><g clip-path="url(#kjLit)"><rect width="84" height="84" fill="#e9e0c4"/><circle cx="30" cy="30" r="7" fill="#d9cfad"/><circle cx="50" cy="52" r="10" fill="#dcd2b0"/><circle cx="28" cy="56" r="5" fill="#d9cfad"/></g></svg>
+    </div>
     <div class="credit">— 夜に暦を読む、占い師の物語 —</div>
     <div class="menu">
       <button id="btnContinue" class="primary">つづきから</button>
       <button id="btnNew">はじめから</button>
       <button id="btnChapter">第二幕から（聞き取り）</button>
-      <button id="btnHidden" class="hidden-btn" style="display:none">🌙 こよみの独白（隠し）</button>
+      <button id="btnHidden" class="hidden-btn" style="display:none">こよみの独白（隠し）</button>
     </div>
     <div class="note">これはフィクション・エンタメ作品です。<br>データはこの端末のブラウザにだけ保存され、外部送信はありません。</div>
   </section>

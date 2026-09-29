@@ -21,8 +21,8 @@
  */
 
 /** ★NEWS の先頭と必ず一致させること★（test/test-version.mjs が機械で確かめる） */
-export const VERSION = 'v1.15';
-export const VERSION_DATE = '2026-09-11';
+export const VERSION = 'v1.16';
+export const VERSION_DATE = '2026-09-29';
 
 /**
  * 更新情報。**新しい順**に並べる。
@@ -30,6 +30,14 @@ export const VERSION_DATE = '2026-09-11';
  * ★アプリの「こうしんじょうほう」画面がそのまま出す★ ので、開発用語を書かない。
  */
 export const NEWS = [
+  {
+    v: 'v1.16',
+    d: '2026-09-29',
+    items: [
+      'がめんの 見た目を かえた（タイトルに 月の みちかけ）',
+      'ことばの とちゅうで 行が かわらないように した',
+    ],
+  },
   {
     v: 'v1.15',
     d: '2026-09-11',

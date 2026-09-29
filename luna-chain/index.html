@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ルナチェイン｜光をためて はじけさせる 陣取りゲーム【無料・登録不要】</title>
 <meta name="description" content="タップで光をためて、あふれたらはじけて相手の陣地をうばう。1回90秒の陣取り対戦。ひとりでも、1台で二人でも遊べる。無料・登録不要・インストール不要。">
-<meta name="theme-color" content="#070b1c">
+<meta name="theme-color" content="#131a33">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style/base.css?v=82f55fba">
+<link rel="stylesheet" href="style/base.css?v=f2d0978e">
 <!-- BEGIN importmap (tools/gen_importmap.py が生成。手で書き換えない) -->
 <script type="importmap">
 {"imports":{
@@ -25,11 +25,12 @@
   "./src/ui/audio.js":"./src/ui/audio.js?v=24d8e463",
   "./src/ui/coach.js":"./src/ui/coach.js?v=08412dd1",
   "./src/ui/render.js":"./src/ui/render.js?v=3185ab54",
-  "./src/version.js":"./src/version.js?v=aae0ae91",
+  "./src/version.js":"./src/version.js?v=63a247c7",
   "./data/tutorial.js":"./data/tutorial.js?v=78b74887"
 }}
 </script>
 <!-- END importmap -->
+<script src="jp-phrase-4.js" defer></script>
 </head>
 <body>
 
@@ -80,7 +81,7 @@
   <!-- タイトル -->
   <section id="scTitle" class="screen show">
     <div class="logo">
-      <div class="logoMoon"></div>
+      <div class="logoMoon"><svg class="phases" viewBox="0 0 258 42" width="258" height="42" aria-hidden="true"><line class="chain" x1="21" y1="21" x2="237" y2="21"/><g class="ph" style="--i:0"><circle cx="21" cy="21" r="19" class="dark"/></g><g class="ph" style="--i:1"><circle cx="75" cy="21" r="19" class="dark"/><path class="lit" d="M75 2 A19 19 0 0 1 75 40 A12.16 19 0 0 0 75 2 Z"/></g><g class="ph" style="--i:2"><circle cx="129" cy="21" r="19" class="dark"/><path class="lit" d="M129 2 A19 19 0 0 1 129 40 A0 19 0 0 1 129 2 Z"/></g><g class="ph" style="--i:3"><circle cx="183" cy="21" r="19" class="dark"/><path class="lit" d="M183 2 A19 19 0 0 1 183 40 A12.16 19 0 0 1 183 2 Z"/></g><g class="ph" style="--i:4"><circle cx="237" cy="21" r="19" class="dark"/><circle cx="237" cy="21" r="19" class="lit"/></g><circle class="burst" cx="237" cy="21" r="19"/></svg></div>
       <h1>ルナチェイン</h1>
       <p class="tag">ひかりをためて、はじけさせる。</p>
     </div>
@@ -271,6 +272,17 @@
 <noscript><p style="color:#fff;padding:2em">このゲームはJavaScriptが必要です。</p></noscript>
 
 <script>
+/* タイトルの月の満ち欠けは1回だけ（base.css「初回だけ」）。輪がはじけ終わるか、途中で画面を離れたら止める */
+(function () {
+  var t = document.getElementById('scTitle');
+  if (!t) return;
+  function done(e) { if (e.animationName === 'lcBurst') t.classList.add('played'); }
+  t.addEventListener('animationend', done);
+  t.addEventListener('animationcancel', done);
+})();
+</script>
+
+<script>
 /* ★起動に失敗しても「真っ黒のまま」にしない★
    モジュールの読み込みが1つでもこけると画面が何も出ないまま止まる。
    そのときは何が起きたかを画面に出す（原因が分からないと直せないため）。 */
@@ -310,5 +322,6 @@
   }
 })();
 </script>
+
 </body>
 </html>

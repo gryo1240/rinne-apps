@@ -610,3 +610,55 @@ button.verline:hover{color:var(--fg)}
 
 /* 見出しの下に添える小さな説明（どの枠が何を意味するか） */
 .sizehsub{display:block; font-size:11px; font-weight:400; color:var(--dim); margin-top:2px}
+
+/* ── 2026-09-29 刷新（第13弾・試作A: タイトル画面だけ）「月の満ち欠けの暦」 ──────────
+   新月→三日月→半月→十三夜→満月を細い線でつないで並べる（光をためて、はじけさせる＝月が満ちて、はじける）。
+   見せ場は1つ: 初めて開いたとき、月が左から順に満ちて、満月で細い輪が1度だけはじける。
+   夜は藍の単色（光のにじみ・グラデーションをやめる）。ボタンの金と紫はプレイヤー色（--p1/--p2）の意味なので色は残し、平らな面にする。
+   題字は同梱の M PLUS Rounded 1c ExtraBold（使う文字だけ・SIL OFL）。盤・対戦画面には手を入れない */
+@font-face{font-family:"LC Title"; font-weight:800; font-display:swap; src:url("../fonts/mplus-rounded-800.woff") format("woff")}
+#scTitle{background:#131a33}
+#scTitle .logo{gap:10px}
+#scTitle .logoMoon{width:auto; height:auto; border-radius:0; background:none; box-shadow:none; margin-bottom:6px}
+#scTitle .phases{display:block; overflow:visible}
+#scTitle .phases .dark{fill:#252e52; stroke:#3a4570; stroke-width:1}
+#scTitle .phases .lit{fill:#efe4c2}
+#scTitle .phases .chain{stroke:#3a4570; stroke-width:1.5}
+#scTitle .phases .burst{fill:none; stroke:#efe4c2; stroke-width:1.5; opacity:0}
+#scTitle h1{font-family:"LC Title",system-ui,sans-serif; font-weight:800; font-size:36px; letter-spacing:.12em; color:#efe4c2}
+#scTitle .tag{color:#aab3d6; font-size:14px; letter-spacing:.06em}
+#scTitle button.big{font-family:"LC Title",system-ui,sans-serif}
+#scTitle .menu button{min-height:44px; padding:9px 16px; border-radius:8px; background:transparent; border:1px solid #3a4570; color:#dfe3f5}
+#scTitle .menu button.lead{background:transparent; border-color:var(--p1); color:var(--p1)}
+#scTitle .credit{color:#7d86ab}
+/* 初回だけ: 月が左から順に満ち、満月で輪が1度はじける。
+   ★動かすかどうかは端末の prefers-reduced-motion ではなく、アプリの「がめんを ゆらす」に従う★
+     （resolveMotion の決まり。force-motion が無い＝'still' のときだけ止める。レビュー 2026-09-29 高1）
+   ★1回だけ★ .screen は display:none から戻すとアニメが最初からやり直しになるので、
+     輪がはじけ終わったら index.html の小さなスクリプトが #scTitle に .played を付けて止める。
+   輪は r ではなく transform で広げる（Safari が CSS の r を動かせるか未確認のため。19→40 ≒ 2.1倍） */
+html.force-motion #scTitle:not(.played) .phases .lit{animation:lcFill .35s ease-out both; animation-delay:calc(.25s + var(--i) * .16s)}
+html.force-motion #scTitle:not(.played) .phases .burst{animation:lcBurst .9s ease-out 1.25s both}
+#scTitle .phases .burst{transform-box:fill-box; transform-origin:center; vector-effect:non-scaling-stroke}
+@keyframes lcFill{from{opacity:0}to{opacity:1}}
+@keyframes lcBurst{0%{opacity:.9; transform:scale(1)}100%{opacity:0; transform:scale(2.1)}}
+
+/* ── 2026-09-29 刷新（第13弾B: 残りの画面）──────────
+   色と形だけを変える。**大きさ（高さ・幅・余白の合計）は1pxも変えない**（盤のマスの大きさ・通し検証の位置の検査に響くため）。
+   対戦画面の帯（#hud）・盤（canvas とふちの光）・カットイン（#chainPop）・コーチ・画面の枠の光には手を入れない。
+   題字のフォント（LC Title）はタイトルの決まった文字にしか入っていないので、ここでは使わない（ほかの字だけ別の書体になる） */
+.screen{background:#131a33}
+button.big{box-shadow:none; background:var(--p1); border-radius:10px;
+  padding:16px 26px 12px; border-bottom:4px solid #b8952f}          /* 上16＋下12＋線4＝もとの上下32pxと同じ */
+button.big.alt{background:var(--p2); border-bottom-color:#4c57b8}
+button.big:active{transform:translateY(2px)}
+button.ghost{background:transparent; border-color:#3a4570; border-radius:8px}
+.seg{background:transparent; border-color:#3a4570; border-radius:8px}
+.seg.on{background:transparent; border-color:var(--p1)}
+.stats div,.hrow,.sizelist .row1,.bprev{background:#182044; border-color:#2c3660; border-radius:6px}
+.hrow{border:1px solid #2c3660}
+.sizelist .row1.now{background:#182044; border-color:var(--p1)}
+#resultWhy{background:#182044; border-color:#5a5230; border-radius:6px}
+.slider::-webkit-slider-thumb{background:var(--p1); box-shadow:0 0 0 2px #b8952f inset, 0 2px 6px rgba(0,0,0,.45)}
+.slider::-moz-range-thumb{background:var(--p1); box-shadow:0 0 0 2px #b8952f inset, 0 2px 6px rgba(0,0,0,.45)}
+.slider::-webkit-slider-runnable-track{background:linear-gradient(90deg, var(--p1) var(--fill,50%), #232c50 var(--fill,50%))}

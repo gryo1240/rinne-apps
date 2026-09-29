@@ -117,10 +117,23 @@
     $("advance").style.display = "none";
     clearInterval(typeTimer);
     if (skipping) { el.textContent = t; typing = false; return; }
-    el.textContent = ""; var i = 0;
+    // 2026-09-29: 全文を先に文節で区切って並べ、1文字ずつ見せる（途中で行の折れ方が変わって言葉が跳ねないように）
+    el.textContent = t;
+    if (window.__jpPhrase && window.__jpPhrase.apply) window.__jpPhrase.apply(el);
+    var chars = [], tw = document.createTreeWalker(el, 4), n, nodes = [];
+    while ((n = tw.nextNode())) nodes.push(n);
+    nodes.forEach(function (tn) {
+      var f = document.createDocumentFragment();
+      for (var k = 0; k < tn.nodeValue.length; k++) {
+        var s = document.createElement("span"); s.className = "tc"; s.textContent = tn.nodeValue[k];
+        f.appendChild(s); chars.push(s);
+      }
+      tn.parentNode.replaceChild(f, tn);
+    });
+    var i = 0;
     typeTimer = setInterval(function () {
-      i++; el.textContent = t.slice(0, i);
-      if (i >= t.length) { clearInterval(typeTimer); typing = false; $("advance").style.display = "block"; }
+      if (i < chars.length) chars[i].className = ""; i++;
+      if (i >= chars.length) { clearInterval(typeTimer); typing = false; $("advance").style.display = "block"; }
     }, 20);
   }
   function completeType() { clearInterval(typeTimer); $("text").textContent = fullText; typing = false; $("advance").style.display = "block"; }
