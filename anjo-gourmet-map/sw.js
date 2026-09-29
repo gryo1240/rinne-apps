@@ -29,10 +29,11 @@
 "use strict";
 
 // PRECACHE:START  ここから PRECACHE:END までは build_pages.py が作ります。手で直さないこと。
-var VERSION = "6241bd7e2a";
+var VERSION = "97e9ac14d4";
 var SHELL = [
   "./",
   "assets/css/app.css",
+  "jp-phrase-5.js",
   "data/city.js",
   "data/categories.js",
   "data/shops.js",

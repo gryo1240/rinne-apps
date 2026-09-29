@@ -281,7 +281,8 @@ function restart(){
 App.restart = restart;
 
 document.addEventListener("click", function(e){
-  if(e.target && e.target.id==="empty-reset") Fx.reset();
+  // closest で探す: 改行スクリプト(jp-phrase)がボタンの文字を <jp-p> で包むので、文字の上を押すと e.target がその中の要素になる
+  if(e.target && e.target.closest && e.target.closest("#empty-reset")) Fx.reset();
   var w = e.target.closest && e.target.closest('[data-wz="restart"]');
   if(w){ AGM.ui.nav.go("home", {silent:true}); restart(); }
 });

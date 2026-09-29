@@ -257,6 +257,7 @@ footer{max-width:1400px;margin:0 auto;padding:20px 16px 40px;font-size:12px;
   .act{padding:6px 12px}         /* 指で押しやすく */
 }
 </style>
+<script src="jp-phrase-5.js" defer></script>
 </head>
 <body>
 
@@ -449,6 +450,15 @@ function gq(s){
 /* ---------- 地図 ---------- */
 // マウスホイールで拡大縮小できるようにする（地図の外ではページが普通にスクロールする）
 var map = L.map("map",{scrollWheelZoom:true, wheelPxPerZoomLevel:120}).setView([35.25,136.95],8);
+/* 改行スクリプト(jp-phrase)は吹き出しを開いた後に折り返しを変えるので、1フレーム後に位置と地図の送りを合わせ直す
+   （Leaflet は開いた瞬間に測って地図を動かすため、伸びた分だけ上が地図の外に出た。2026-09-29）
+   _updateLayout（幅の測り直し）は呼ばない: 開いた後に呼ぶと幅が半分ほどに縮み、吹き出しが縦に伸びた */
+map.on("popupopen", function(e){
+  var p = e.popup;
+  requestAnimationFrame(function(){
+    if(p.isOpen && p.isOpen() && p._adjustPan){ p._updatePosition(); p._adjustPan(); }
+  });
+});
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
   maxZoom:18, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);

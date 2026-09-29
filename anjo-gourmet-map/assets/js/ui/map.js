@@ -64,6 +64,15 @@ function build(){
   el.innerHTML="";
   map = L.map(el, {scrollWheelZoom:true, wheelPxPerZoomLevel:120});
   map.setView([34.96,137.08],13);
+  /* 改行スクリプト(jp-phrase)は吹き出しを開いた後に折り返しを変えるので、1フレーム後に位置と地図の送りを合わせ直す
+     （Leaflet は開いた瞬間に測って地図を動かすため、伸びた分だけ上が地図の外に出た。2026-09-29）
+     _updateLayout（幅の測り直し）は呼ばない: 開いた後に呼ぶと幅が半分ほどに縮み、吹き出しが縦に伸びた */
+  map.on("popupopen", function(e){
+    var p = e.popup;
+    requestAnimationFrame(function(){
+      if(p.isOpen && p.isOpen() && p._adjustPan){ p._updatePosition(); p._adjustPan(); }
+    });
+  });
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
     maxZoom:18,
     attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

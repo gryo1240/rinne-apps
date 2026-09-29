@@ -20,6 +20,16 @@ AGM.ui = AGM.ui || {};
 var U = AGM.util, T = AGM.taxonomy, ST = AGM.store;
 var C = AGM.ui.card = {};
 
+/* 設備の一覧は「／」の後ろでだけ改行させる（改行スクリプトは「／」でつないだ一覧を1つの長い文節とみなすので、
+   狭い欄で「全席完／全禁煙」と割れていた）。「／」だけが行頭に落ちないよう、項目の最後の1文字と「／」は折らない */
+var svcLine = function(list){
+  return list.map(function(v, i){
+    if(i === list.length - 1) return U.esc(v);
+    var n = /[\uDC00-\uDFFF]$/.test(v) ? 2 : 1;   // 最後が絵文字などの2単位の文字なら2つまとめて
+    return U.esc(v.slice(0, -n)) + '<span style="white-space:nowrap">' + U.esc(v.slice(-n)) + '／</span><wbr>';
+  }).join("");
+};
+
 /* ---------- 営業状態バッジ ----------
    色だけで意味を伝えないこと。記号（●○—?）と文字ラベルを必ず一緒に出す。 */
 C.openBadge = function(shop, now){
@@ -88,7 +98,7 @@ C.html = function(s, ctx){
       /* 「なし（駅西駐車場の駐車券サービス…）」のような但し書きを落とさないため、
          絞り込みは hasParking で判定しつつ、表示は元の文字をそのまま出す */
       (s.parking?'<div><span class="k">駐車場</span><span class="v">'+U.esc(s.parking)+'</span></div>':'')+
-      (s.svc.length?'<div><span class="k">設備</span><span class="v">'+U.esc(s.svc.join("／"))+'</span></div>':'')+
+      (s.svc.length?'<div><span class="k">設備</span><span class="v">'+svcLine(s.svc)+'</span></div>':'')+
       (s.tel?'<div><span class="k">電話</span><span class="v"><a href="tel:'+U.esc(String(s.tel).replace(/[^\d+]/g,""))+'">'+U.esc(s.tel)+'</a></span></div>':'')+
     '</div>'+
     '<p class="addr">安城市'+U.esc(s.addr)+'</p>'+

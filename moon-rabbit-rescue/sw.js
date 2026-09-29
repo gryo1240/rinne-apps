@@ -1,7 +1,7 @@
 // 月うさぎ大捕物 Service Worker
 // ページ本体はネットワーク優先（更新をすぐ届ける）、Three.js・フォント・アイコンはキャッシュ優先。
 // 更新でファイルを差し替えたら CACHE の vN を必ず1つ上げる。
-const CACHE = "moon-rabbit-rescue-v4";
+const CACHE = "moon-rabbit-rescue-v5";
 const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png",
   "./vendor/three/build/three.module.js",
   "./vendor/three/examples/jsm/postprocessing/EffectComposer.js",
@@ -15,7 +15,7 @@ const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./ic
   "./vendor/three/examples/jsm/shaders/LuminosityHighPassShader.js",
   "./vendor/three/examples/jsm/shaders/OutputShader.js",
   "./fonts/dela-gothic-one.woff", "./fonts/mplus-rounded-400.woff", "./fonts/mplus-rounded-700.woff",
-  "./fonts/mplus-rounded-800.woff", "./fonts/chakra-petch-500.woff", "./fonts/chakra-petch-700.woff"];
+  "./fonts/mplus-rounded-800.woff", "./fonts/chakra-petch-500.woff", "./fonts/chakra-petch-700.woff", "./jp-phrase-5.js"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
