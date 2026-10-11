@@ -581,6 +581,7 @@ export function recordOf(save) {
   if (!Array.isArray(a.rw)) a.rw = [];
   if (!Array.isArray(a.hist)) a.hist = [];
   if (!Array.isArray(a.copied)) a.copied = [];
+  if (typeof a.rerollDay !== 'string') a.rerollDay = '';
   delete a.day;        // 暦日で数えていたころの名残（2026-10-11 まで）
   delete a.copyDay;
   return a;
@@ -599,6 +600,20 @@ function tidyTimes(a, nowMs) {
   a.rw = a.rw.map(Number).filter((t) => Number.isFinite(t) && t > 0)
     .map((t) => Math.min(t, cap)).sort((x, z) => z - x).slice(0, DAILY_REWARDS);
   if (a.copyAt > cap) a.copyAt = cap;
+}
+
+/**
+ * 「別の相手を探す」を今日（端末の暦日 dayKey）もう使ったか。1日1回（オーナー指示 2026-10-11）。
+ * ★等号で比べる（`>=` にすると、時計を未来に誤設定した日付が残って、直しても使えなくなる・advisor 指摘）
+ */
+export function rerollUsed(save, dayKey) {
+  return recordOf(save).rerollDay === dayKey;
+}
+/** 使う（使えたら true）。セーブに残すので、戦い方を切り替えても・読み込み直しても戻らない */
+export function useReroll(save, dayKey) {
+  if (rerollUsed(save, dayKey)) return false;
+  recordOf(save).rerollDay = dayKey;
+  return true;
 }
 
 /** いま（nowMs）あと何回褒美が出るか（直近24時間で DAILY_REWARDS 回まで） */

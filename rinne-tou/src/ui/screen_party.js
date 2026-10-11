@@ -250,6 +250,9 @@ function attachHelp(body, btn) {
 function tabBtn(ctx, id, label, cur) {
   return h('button', {
     class: `btn btn--sm${cur === id ? ' btn--primary' : ''}`,
+    // ★タブの字は折らない（2026-10-11 文字を16pxへ上げたら幅330で「ステータ／ス」と割れた）。
+    //   収まらなければ btn-row ごと次の段へ折り返す
+    style: 'white-space:nowrap',
     onclick: () => ctx.go('party', { tab: id }),
   }, label);
 }

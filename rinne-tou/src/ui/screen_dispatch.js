@@ -110,14 +110,14 @@ function pendingPanel(ctx) {
         h('div', null, `${c.name}の影`),
         h('div', 'list__sub', `${where}へ ${d.hours}時間`),
       ]),
-      h('div', 'list__right', d.done
-        ? h('span', 'gold', '戻っている')
-        : h('span', 'dim', `あと${leftLabel(d.leftMs)}`)),
-      h('button', {
-        class: 'btn btn--sm',
-        style: 'margin-left:8px',
-        onclick: () => doRecall(ctx, d.charId, d.done),
-      }, d.done ? '受け取る' : '呼び戻す'),
+      // ★ボタンは残り時間の下に積む（横に並べると幅300pxではみ出した・2026-10-11 文字を16pxへ上げたとき）
+      h('div', 'list__right list__right--stack', [
+        d.done ? h('span', 'gold', '戻っている') : h('span', 'dim', `あと${leftLabel(d.leftMs)}`),
+        h('button', {
+          class: 'btn btn--sm',
+          onclick: () => doRecall(ctx, d.charId, d.done),
+        }, d.done ? '受け取る' : '呼び戻す'),
+      ]),
     ]));
   }
   panel.appendChild(list);

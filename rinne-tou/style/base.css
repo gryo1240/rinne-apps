@@ -10,7 +10,7 @@
   --paper:     #1e1926;   /* 和紙パネル */
   --paper2:    #262032;
   --ink:       #ece3d0;   /* 文字（生成り） */
-  --ink-dim:   #a99e8c;
+  --ink-dim:   #c2b7a2;   /* 2026-10-11 #a99e8c→明るく（オーナー指摘「灰色が全然読めない」） */
   /* 説明文の色（2026-08-12）。--ink-dim は「補足・添え字」用に暗く作ってあるので、
      まとまった説明文をこれで書くと読めない。読ませる文はこちらを使う */
   --ink-sub:   #cfc4ae;
@@ -39,10 +39,12 @@
 }
 
 /* 文字サイズ設定（設定画面から切替・spec §13-4） */
+/* 2026-10-11 既定（中）を15→16px・大17→18px・特大20pxを新設（オーナー指摘「フォントを拡大できないか」） */
 :root[data-textsize="s"] { --fs: 14px; }
-:root[data-textsize="m"] { --fs: 15px; }
-:root[data-textsize="l"] { --fs: 17px; }
-:root { --fs: 15px; }
+:root[data-textsize="m"] { --fs: 16px; }
+:root[data-textsize="l"] { --fs: 18px; }
+:root[data-textsize="xl"] { --fs: 20px; }
+:root { --fs: 16px; }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -253,7 +255,7 @@ h1, h2, h3 { font-weight: normal; letter-spacing: 0.08em; }
 .gold { color: var(--gold-lit); }
 .warn { color: var(--warn); }
 .ok   { color: var(--ok); }
-.small { font-size: 0.92em; }
+.small { font-size: 0.95em; }
 .center { text-align: center; }
 .nowrap { white-space: nowrap; }
 
@@ -335,10 +337,14 @@ h1, h2, h3 { font-weight: normal; letter-spacing: 0.08em; }
    打ち消さないと min-width:96px で横幅を食い、狭い画面（390px）で
    タブが折り返して2段になった（実機で確認） */
 .btn-row > .btn--help { flex: 0 0 auto; min-width: 34px; margin-left: auto; }
+/* 文字「大」「特大」では小さいボタンの字を折らず、ボタンを字の幅まで広げる（2026-10-11・特大で「記録す／る」と割れた）。
+   既定（中）の並び方は変えない（幅を揃える flex-basis:0 のまま） */
+:root[data-textsize="l"] .btn-row > .btn--sm,
+:root[data-textsize="xl"] .btn-row > .btn--sm { white-space: nowrap; flex: 1 0 auto; }
 
 .btn-sub {   /* ボタンの下段に添える補足（何が起きるかを事前に示す） */
   display: block;
-  font-size: 0.78em;
+  font-size: 0.85em;
   color: var(--ink-dim);
   letter-spacing: 0.02em;
   margin-top: 2px;
@@ -470,7 +476,7 @@ h1, h2, h3 { font-weight: normal; letter-spacing: 0.08em; }
 /* 当たり判定だけを広げる透明な円（見た目は変えない） */
 .map__hit { fill: transparent; stroke: none; cursor: pointer; }
 .map__label { fill: var(--ink); font-size: 13px; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
-.map__label--sub { fill: var(--ink-dim); font-size: 9px; }
+.map__label--sub { fill: var(--ink-dim); font-size: 10px; }
 
 .choice { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .choice__guide { display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -509,14 +515,14 @@ h1, h2, h3 { font-weight: normal; letter-spacing: 0.08em; }
 .enemy { width: 72px; min-width: 0; text-align: center; }
 /* ボスの紋(76px)がセル幅(72px)を超えて隣とぶつからないように収める */
 .enemy .mon--lg { max-width: 100%; height: auto; aspect-ratio: 1; }
-.enemy__name { font-size: 0.72em; margin: 2px 0 1px; line-height: 1.2; overflow-wrap: anywhere; }
+.enemy__name { font-size: 0.78em; margin: 2px 0 1px; line-height: 1.2; overflow-wrap: anywhere; }
 /* 写し身の印。**必ず行を改めて、それ自体は折り返さない**（2026-08-13 オーナー指摘）。
    枠が72pxしかないので、名前と続けて書くと「写し／身」で割れる */
 .enemy__dup {
   display: block; white-space: nowrap;
   font-size: 0.9em; color: var(--gold); letter-spacing: 0.02em;
 }
-.enemy__act  { font-size: 0.66em; color: var(--ink-dim); margin-top: 1px; line-height: 1.2; }
+.enemy__act  { font-size: 0.74em; color: var(--ink-dim); margin-top: 1px; line-height: 1.2; }
 .enemy--targeted .mon { box-shadow: 0 0 0 2px var(--gold-lit), 0 0 14px var(--gold); }
 /* プレイヤーが指した敵（2026-08-10 オーナー要望の赤▼）。
    ★わざ選択中の金色（.enemy--targeted）より**後**に置くこと。
@@ -671,7 +677,7 @@ h1, h2, h3 { font-weight: normal; letter-spacing: 0.08em; }
 .party__row--down { opacity: 0.4; }
 .party__name { width: 4.5em; font-size: 0.85em; flex: 0 0 auto; }
 .party__bars { flex: 1 1 auto; min-width: 0; }
-.party__num  { font-size: 0.75em; color: var(--ink-dim); width: 6.5em; text-align: right; flex: 0 0 auto; }
+.party__num  { font-size: 0.8em; color: var(--ink-dim); width: 6.5em; text-align: right; flex: 0 0 auto; }
 
 /**
  * 戦闘画面だけ、味方を横に1列にする（2026-08-05 オーナー指示）。
@@ -682,8 +688,8 @@ h1, h2, h3 { font-weight: normal; letter-spacing: 0.08em; }
 .party--row .party__cell { flex: 1 1 0; min-width: 0; text-align: center; display: flex; flex-direction: column; gap: 3px; align-items: center; }
 .party--row .party__cell--down { opacity: 0.4; }
 .party--row .party__cell .bar { width: 100%; }
-.party--row .party__name { width: auto; font-size: 0.78em; line-height: 1.2; overflow-wrap: anywhere; }
-.party--row .party__ail  { font-size: 0.68em; line-height: 1.2; min-height: 1.2em; }
+.party--row .party__name { width: auto; font-size: 0.82em; line-height: 1.2; overflow-wrap: anywhere; }
+.party--row .party__ail  { font-size: 0.74em; line-height: 1.2; min-height: 1.2em; }
 
 /* 戦闘ログは敵の上に1行だけ。履歴はここでは持たない */
 .battle-line {
@@ -965,12 +971,17 @@ h1:focus, h2:focus { outline: none; }
 .list--2col .list__item { padding: 8px; gap: 6px; }
 /* 幅340px以下: 文節で折るようにしたぶん列の最小幅が広がるので、余白を詰めて枠に収める（2026-09-27。文字サイズ「大」の300pxで12pxはみ出していた） */
 @media (max-width: 340px) { .list--2col { gap: 4px; } .list--2col .list__item { padding: 6px 5px; gap: 4px; } }
+/* 文字「特大」で幅340px以下は2列に収まらない（2026-10-11 幅300で13pxはみ出し）ので1列にする */
+@media (max-width: 340px) { :root[data-textsize="xl"] .list--2col { grid-template-columns: 1fr; } }
 
 .list__main { flex: 1 1 auto; min-width: min(4.5em, 30%); }   /* 0 だと幅300pxで名前の欄が28pxまで縮み「鈴の／影」と折れた。4.5文字ぶんは残す（行の3割まで・2026-09-27） */
 /* ★0.78em は小さすぎた（2026-08-12 オーナー指摘「説明文が読みづらい」）。
    15px 基準で 11.7px → 13.4px。色も --ink-dim より一段明るいものを別に持つ */
 .list__sub  { font-size: 0.89em; color: var(--ink-sub); }
-.list__right { flex: 0 1 auto; text-align: right; font-size: 0.85em; }   /* 0 1: 狭いときは言葉の切れ目で2行にして、左の欄(名前)に幅を回す（2026-09-27） */
+.list__right { flex: 0 1 auto; text-align: right; font-size: 0.85em; }
+/* 残り時間の下にボタンを積む（影送りの「呼び戻す」。横に並べると幅300pxで画面からはみ出した・2026-10-11） */
+.list__right--stack { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.list__right--stack .btn--sm { font-size: 1em; }   /* 0 1: 狭いときは言葉の切れ目で2行にして、左の欄(名前)に幅を回す（2026-09-27） */
 
 /* 稀少度。色だけでなく記号（常/珍/稀/伝/銘）も併記する */
 .rar-0 { color: var(--ink-dim); }
@@ -1173,6 +1184,8 @@ input[type="text"], textarea {
 textarea { min-height: 90px; resize: vertical; word-break: break-all; }
 
 select {
+  /* ★横並びの中で縮められるように（長い選択肢の字幅に引っ張られて画面からはみ出していた・2026-10-11 特大で発覚） */
+  min-width: 0; max-width: 100%;
   font-family: inherit; font-size: 0.95em; color: var(--ink);
   background: #241e2e; border: 1px solid var(--line);
   border-radius: 8px; padding: 8px 10px; min-height: var(--tap);
@@ -1381,7 +1394,7 @@ select {
   color: var(--ink);
 }
 .fold__body .list__sub,
-.fold__body .small { font-size: 0.92em; }
+.fold__body .small { font-size: 0.95em; }
 .fold__body .kv { padding: 2px 0; }
 .fold__body > * + * { margin-top: 4px; }
 
@@ -1577,7 +1590,7 @@ select {
 .arena-member { width: 64px; text-align: center; }
 .arena-member .mon { margin: 0 auto; }
 .arena-member__name { font-size: 0.8em; line-height: 1.3; }
-.arena-member__lv { font-size: 0.75em; }
+.arena-member__lv { font-size: 0.82em; }
 .arena-card { margin-bottom: 10px; }
 .arena-card__head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .arena-card__name { color: var(--gold-lit); font-size: 1.05em; overflow-wrap: anywhere; }

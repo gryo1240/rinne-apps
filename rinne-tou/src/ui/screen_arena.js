@@ -13,7 +13,7 @@
  *   innerHTML に入れない。
  */
 
-import { h, mon, toast, alertBox, confirmBox, helpBtn, n } from './dom.js';
+import { h, mon, toast, helpBtn, n } from './dom.js';
 import * as A from '../meta/arena.js';
 import * as Net from '../net/api.js';
 import { CHAR_BY_ID } from '../../data/chars.js';
@@ -50,7 +50,8 @@ export function syncGhost(ctx, { force = false } = {}) {
 
 /**
  * ★既定で預ける（オーナー指示 2026-10-11「影を預けるのは確認しないでOK」）。
- *   止まるのは、この端末で「公開をやめる」を押したとき（consent:false）だけ
+ *   止まるのは consent:false の端末だけ（v1.2 の数時間だけあった「公開をやめる」を押した端末。
+ *   2026-10-11 オーナー指示でボタンは撤去したので、新たに false になることはない）
  */
 async function syncInner(ctx, force) {
   const save = ctx.save;
@@ -64,7 +65,7 @@ async function syncInner(ctx, force) {
     if (!au.ok) return;
     st = Net.loadNet();
   }
-  if (st.consent === false) return;      // 待っているあいだに止めた
+  if (st.consent === false) return;      // 念のため（ログインを待つあいだに変わった場合）
   const snap = A.snapshotOf(save, pubNameOf(st));
   if (!snap) return;
   const hash = JSON.stringify(snap);
@@ -74,7 +75,7 @@ async function syncInner(ctx, force) {
   const first = !st.noticed;
   Net.saveNet({ lastHash: hash, lastAt: now, slot: ctx.state.slot, noticed: true });
   // ★黙って送り始めない。初めて預けたときだけ1回知らせる（advisor 指摘）
-  if (first) toast('あなたの影を預けました。ほかの灯守の対戦相手になります（止めるのは影闘の画面から）');
+  if (first) toast('あなたの影を預けました。ほかの灯守の対戦相手になります（名前は影闘の画面で変えられます）');
 }
 
 /**
@@ -107,7 +108,7 @@ export function render(ctx) {
       '・勝つと影鋼（二つ銘の素材）。格上ほど多くもらえます（直近24時間で5回まで。受け取った時刻から24時間たつと1回ずつ戻ります）',
       '・ほかの灯守の格上・互角の影に勝つと、ときどき相手の装備の「写し」が手に入ります',
       '・調整戦の勝ち星で段位が上がり、預けた影に称号として表示されます',
-      '・あなたの編成も、祠に戻るたびに自動で「影」として預けられ、ほかの灯守の相手になります（名前の変更・公開の停止はこの画面で）',
+      '・あなたの編成も、祠に戻るたびに自動で「影」として預けられ、ほかの灯守の相手になります（名前の変更はこの画面で）',
       '・二つ銘は、鍛冶の画面で身につけている装備に刻めます',
       '・人が少ないうちは「塔の写し」（その日だけの相手）が混ざります',
     ].join('\n')),
@@ -174,16 +175,28 @@ export function render(ctx) {
   ].map(([id, label]) => h('button', {
     class: `btn btn--sm${mode === id ? ' btn--primary' : ''}`, type: 'button',
     'aria-pressed': mode === id ? 'true' : 'false',
-    onclick: () => { if (view.mode !== id) { view.mode = id; view.reroll = 0; ctx.render(); } },
+    onclick: () => { if (view.mode !== id) { view.mode = id; ctx.render(); } },
   }, label))));
   const list = h('div', null, h('p', 'dim small', '影を探しています…'));
   root.appendChild(list);
   if (fighters.length) {
     loadOpponents(ctx, list, mine, day);
+    /**
+     * 「別の相手を探す」は**1日1回**（端末の暦日・オーナー指示 2026-10-11）。使ったら「本日は使用済」。
+     * ★使ったかどうかは毎回セーブから数える（画面の中だけで持つと、戦い方を切り替えたら戻ってしまう）
+     */
+    const used = A.rerollUsed(save, day);
     root.appendChild(h('button', {
-      class: 'btn btn--sm', type: 'button',
-      onclick: () => { view.reroll += 1; list.replaceChildren(h('p', 'dim small', '影を探しています…')); loadOpponents(ctx, list, mine, day); },
-    }, '別の相手を探す'));
+      class: 'btn btn--sm', type: 'button', disabled: used ? 'disabled' : null,
+      onclick: (e) => {
+        if (!A.useReroll(save, day)) return;
+        ctx.saveNow(true);
+        e.currentTarget.disabled = true;
+        e.currentTarget.textContent = '別の相手を探す（本日は使用済）';
+        list.replaceChildren(h('p', 'dim small', '影を探しています…'));
+        loadOpponents(ctx, list, mine, day);
+      },
+    }, used ? '別の相手を探す（本日は使用済）' : '別の相手を探す（1日1回）'));
   } else list.replaceChildren(h('p', 'dim small', '戦える仲間がいないため、相手を選べません。'));
 
   root.appendChild(backBtn(ctx));
@@ -193,7 +206,7 @@ export function render(ctx) {
 }
 
 /** 画面をまたいで覚えておく見え方（戦闘から戻っても同じ戦い方のまま） */
-const view = { mode: 'fair', reroll: 0 };
+const view = { mode: 'fair' };
 
 /** 段位の表示（次の段位まで調整戦であと何勝か） */
 function rankLine(wins) {
@@ -233,41 +246,11 @@ function member(c, lv) {
 function drawPublish(ctx, box) {
   const st = Net.loadNet();
   if (st.consent !== false) {
+    // ★説明文と「公開をやめる」は置かない（オーナー指示 2026-10-11「公開中の名前と名前を変えるボタンだけ」）
     box.replaceChildren(
       kv('公開中の名前', pubNameOf(st) || '（初めて預けるときに決まります）'),
-      h('p', 'small dim', [
-        '祠に戻るたび、いま遊んでいる記録の編成が自動で影として預けられ、ほかの人の対戦相手になります。',
-        h('br'), '預けるもの：公開する名前・本編の到達階・段位と勝ち数・戦える仲間（最大4人）の強さと技と身につけている装備。それ以外のセーブの中身（持ち物・銭・物語の進み方）は預けません。',
-        h('br'), '★この端末で最後に遊んだ、エンディング後の記録の編成が影になります。',
-        h('br'), '★ブラウザのデータを消すと、預けた影をこちらから消せなくなり（30日で相手に出なくなります）、また自動で預ける状態に戻ります。',
-      ]),
       h('div', 'btn-row', [
         h('button', { class: 'btn btn--sm', onclick: () => askName(ctx, box) }, '名前を変える'),
-        h('button', {
-          class: 'btn btn--sm',
-          onclick: async () => {
-            if (!await confirmBox('影を預けるのをやめます。預けてある影も消します。', '消す', 'やめる')) return;
-            // ★先に止めてから、送っている途中の通信が終わるのを待って消す。
-            //   逆だと、送信が削除のあとに届いて影が復活する（advisor 指摘）
-            Net.saveNet({ consent: false });
-            if (syncing) await syncing;
-            const r = await Net.deleteGhost();
-            if (!r.ok && r.reason === 'lost') {
-              Net.saveNet({ consent: false, lastHash: null });
-              alertBox('この端末の身元が変わったため、前に預けた影はこちらから消せませんでした。預けるのはやめました（前の影は30日で相手に出なくなります）。');
-              drawPublish(ctx, box);
-              return;
-            }
-            if (!r.ok) {
-              Net.saveNet({ consent: true });     // 何も変わっていないので預けている状態に戻す
-              alertBox('通信できなかったため、影を消せませんでした。少し待ってからもう一度お試しください。');
-              return;
-            }
-            Net.saveNet({ consent: false, lastHash: null, lastAt: 0 });
-            toast('影を消した');
-            drawPublish(ctx, box);
-          },
-        }, '公開をやめる'),
       ]),
     );
     return;
@@ -359,8 +342,9 @@ async function loadOpponentsInner(ctx, list, mine, day) {
   if (!list.isConnected) return;     // 待っているあいだに画面を離れた
   const myUid = Net.loadNet().uid || null;
   const picked = A.pickOpponents(cache.ghosts, {
-    mode, myUid, myPower: mine ? mine.p : 0, myLv, nowMs: now, dayKey: day, reroll: view.reroll,
-    npcs: A.npcGhosts(save, day, mode),
+    mode, myUid, myPower: mine ? mine.p : 0, myLv, nowMs: now, dayKey: day, reroll: A.rerollUsed(save, day) ? 1 : 0,
+    // ★探し直した日は塔の写しも入れ替える（人が少ないと実在の影は変わらず、何も起きないように見える）
+    npcs: A.npcGhosts(save, A.rerollUsed(save, day) ? `${day}:re` : day, mode),
   });
   const kids = [];
   // ★条件に合う影がいないときは何も言わず塔の写しで埋める（オーナー指示 2026-10-11「いませんの一言は不要」）

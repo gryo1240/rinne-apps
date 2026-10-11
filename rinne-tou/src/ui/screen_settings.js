@@ -55,7 +55,7 @@ export function render(ctx) {
   root.appendChild(h('div', 'panel', [
     row('文字の大きさ', h('select', {
       onchange: (e) => { save.settings.textSize = e.target.value; applyAndSave(ctx); },
-    }, [['s', '小'], ['m', '中'], ['l', '大']].map(([v, l]) =>
+    }, [['s', '小'], ['m', '中'], ['l', '大'], ['xl', '特大']].map(([v, l]) =>
       h('option', { value: v, selected: (save.settings.textSize || 'm') === v }, l)))),
     row('画面の演出', h('select', {
       // ★端末側にも必ず書く。ここだけだと「タイトル画面で切った設定」と食い違う
@@ -174,7 +174,7 @@ function renderNoSave(ctx, root) {
     soundHelp(),
     row('文字の大きさ', h('select', {
       onchange: (e) => put('textSize', e.target.value),
-    }, [['s', '小'], ['m', '中'], ['l', '大']].map(([v, l]) =>
+    }, [['s', '小'], ['m', '中'], ['l', '大'], ['xl', '特大']].map(([v, l]) =>
       h('option', { value: v, selected: (cfg.textSize || 'm') === v }, l)))),
     row('画面の演出', h('select', {
       onchange: (e) => put('fx', e.target.value === 'on'),
