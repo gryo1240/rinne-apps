@@ -191,6 +191,18 @@ export function rebirth(save, { keepUids = null } = {}) {
     nextUid: save.inv?.nextUid,   // uid は使い回さない（図鑑・装備参照の取り違えを生む）
   };
   if (next.inv.nextUid == null) delete next.inv.nextUid;
+  /**
+   * ★影闘（2026-10-11）の積み上げは輪廻しても失わない（レビュー指摘）:
+   *   段位・戦績・直近24時間の褒美の回数・写した影の記録、影鋼（影闘でしか採れない）、二つ銘の抽選回数。
+   *   消すと段位が見習いに戻り、同じ日に褒美を取り直せてしまう。
+   *   戦いの途中の印（open）だけは捨てる（新しい周で戦いは始まっていない）
+   */
+  if (save.arena && typeof save.arena === 'object') {
+    const { open: _open, ...arena } = save.arena;
+    next.arena = JSON.parse(JSON.stringify(arena));
+  }
+  if (save.inv?.mats?.kagehagane) next.inv.mats.kagehagane = save.inv.mats.kagehagane;
+  if (save.inv?.futatsuN) next.inv.futatsuN = save.inv.futatsuN;
   // 残した装備は主人公に着せる（枠ごとに1つなので必ず収まる）
   next.chars.hero.equip = [0, 0, 0];
   for (const t of next.inv.equips) {

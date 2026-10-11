@@ -47,7 +47,13 @@ let epoch = 0;
 
 export function render(ctx) {
   const ev = ctx.state.params?.ev;
-  const run = ctx.state.run;
+  /**
+   * ★影闘（2026-10-11）は塔の外の戦い。潜行（run）は無い。
+   *   代わりに `ev.arena` が「上の帯に出すもの（status）」「終わったら何をするか（finish）」
+   *   「作戦の置き場（run.partyTactic）」を持ってくる。灯・階・ドロップには一切触れない
+   */
+  const arena = ev?.arena || null;
+  const run = arena ? arena.run : ctx.state.run;
   if (!ev || !run) {
     // 直接この画面に来た（リロード等）。安全に拠点へ戻す
     setTimeout(() => ctx.go(run ? 'explore' : 'home'), 0);
@@ -163,6 +169,7 @@ async function play(st) {
 
 function finish(st, res) {
   const { ctx, run, ev } = st;
+  if (ev.arena) { ev.arena.finish(res); return; }   // 影闘は呼び出し元が締める（screen_arena.js）
   const out = X.finishBattle(run, ev.node, res, ev.enemies, ev.isBoss);
 
   // ボスに敗れたとき。**全滅扱いにしない**（spec §4-5-b）ので、
@@ -494,6 +501,7 @@ function drawStatus(st) {
   const { run } = st;
   const el = st.el.status;
   clear(el);
+  if (st.ev.arena) { el.appendChild(st.ev.arena.status()); return; }
   el.appendChild(h('div', 'statusbar', [
     h('span', 'statusbar__floor', floorName(run.floor, run.tower)),
     h('span', 'statusbar__akari', [
@@ -577,6 +585,8 @@ function drawEnemies(st) {
       ]));
     }
     const ail = Object.entries(e.ailments || {}).filter(([, v]) => v > 0).map(([k]) => AILMENTS[k]?.name).filter(Boolean);
+    // ★影闘の影が「かばう」で前に出ている間は、単体攻撃がこの影に吸い寄せられる（engine.actAlly）。見せないと理不尽になる
+    if (e.ghost && e.alive && e.taunt > 0) ail.unshift('かばい中');
     if (ail.length) card.appendChild(h('div', 'enemy__act warn', ail.join('・')));
     el.appendChild(card);
   });

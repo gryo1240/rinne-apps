@@ -186,6 +186,10 @@ export const ITEM_BY_ID = Object.fromEntries(ITEMS.map((i) => [i.id, i]));
  *   `from` を「◯月のあいだだけ」と書いたままにしないこと。**待たなくても採れる**のが今の仕様。
  */
 export const MAT_INFO = {
+  kagehagane: {
+    desc: '影闘で、ほかの灯守の影を打ち負かしたときに残る黒い鋼。鍛冶で装備に二つ目の銘（二つ銘）を刻める。',
+    from: '影闘の勝利（1日5回まで）',
+  },
   enhance_stone: {
     desc: '塔の石を削り出したかけら。鍛冶で装備を鍛えるときの土台になる。',
     from: '塔の宝・影送り',

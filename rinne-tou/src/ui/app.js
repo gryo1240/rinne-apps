@@ -29,12 +29,13 @@ import * as Story from './screen_story.js';
 import * as Items from './screen_items.js';
 import * as Shop from './screen_shop.js';
 import * as Chars from './screen_chars.js';
+import * as Arena from './screen_arena.js';
 
 const SCREENS = {
   title: Title, home: Home, party: Party, explore: Explore,
   battle: Battle, result: Result, records: Records, settings: Settings,
   dispatch: Dispatch, board: Board, talk: Talk, story: Story, items: Items,
-  shop: Shop, chars: Chars,
+  shop: Shop, chars: Chars, arena: Arena,
 };
 
 /** アプリ全体の可変状態。セーブに入るのは state.save だけ */

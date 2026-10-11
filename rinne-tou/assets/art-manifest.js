@@ -279,7 +279,7 @@ export function bgForFloor(floor, tower = 'main') {
 /** 画面ごとの背景ID（塔の中は bgForFloor が決める） */
 export function bgForScreen(screen) {
   // 拠点まわり（祠・編成・鍛冶・記録・影送り・因果盤）は同じ庵の絵で通す
-  const HOME_SCREENS = ['home', 'party', 'records', 'dispatch', 'board', 'result', 'shop', 'chars'];
+  const HOME_SCREENS = ['home', 'party', 'records', 'dispatch', 'board', 'result', 'shop', 'chars', 'arena'];
   return HOME_SCREENS.includes(screen) && ART_BG.has('home') ? 'home' : null;
 }
 

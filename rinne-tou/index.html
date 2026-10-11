@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="style/base.css?v=110217a0">
+<link rel="stylesheet" href="style/base.css?v=bd23e3d1">
 
 <!--
   起動できなかったときの救済（2026-08-09 追加）
@@ -99,29 +99,31 @@
 <script type="importmap">
 {"imports":{
   "./src/battle/ai.js":"./src/battle/ai.js?v=2b5f66e4",
-  "./src/battle/engine.js":"./src/battle/engine.js?v=47d0fea0",
+  "./src/battle/engine.js":"./src/battle/engine.js?v=b377dce7",
   "./src/battle/run.js":"./src/battle/run.js?v=a1153e03",
   "./src/battle/tactics.js":"./src/battle/tactics.js?v=0cacbe13",
   "./src/core/rng.js":"./src/core/rng.js?v=5d57fe13",
   "./src/core/rules.js":"./src/core/rules.js?v=3c8b85ee",
-  "./src/core/save.js":"./src/core/save.js?v=260cb84b",
+  "./src/core/save.js":"./src/core/save.js?v=744b0587",
   "./src/core/time.js":"./src/core/time.js?v=93e79577",
   "./src/dungeon/events.js":"./src/dungeon/events.js?v=ef913cb4",
   "./src/dungeon/explore.js":"./src/dungeon/explore.js?v=2cbd8af5",
   "./src/dungeon/floor.js":"./src/dungeon/floor.js?v=aaf7a267",
   "./src/dungeon/towers.js":"./src/dungeon/towers.js?v=9938eb88",
+  "./src/meta/arena.js":"./src/meta/arena.js?v=bad7e38f",
   "./src/meta/board.js":"./src/meta/board.js?v=02b9535e",
   "./src/meta/dex.js":"./src/meta/dex.js?v=7523845a",
   "./src/meta/dispatch.js":"./src/meta/dispatch.js?v=dfe19ca3",
-  "./src/meta/growth.js":"./src/meta/growth.js?v=0633e942",
+  "./src/meta/growth.js":"./src/meta/growth.js?v=395b376a",
   "./src/meta/home.js":"./src/meta/home.js?v=ce5fd5b9",
   "./src/meta/profile.js":"./src/meta/profile.js?v=7b4ffcc0",
-  "./src/meta/rebirth.js":"./src/meta/rebirth.js?v=ff1f21f8",
+  "./src/meta/rebirth.js":"./src/meta/rebirth.js?v=a21aaa5f",
   "./src/meta/recruit.js":"./src/meta/recruit.js?v=9c2605d2",
   "./src/meta/shop.js":"./src/meta/shop.js?v=31f295a3",
   "./src/meta/story.js":"./src/meta/story.js?v=7e0774ae",
+  "./src/net/api.js":"./src/net/api.js?v=88a49726",
   "./src/ui/affix_help.js":"./src/ui/affix_help.js?v=5c148cd9",
-  "./src/ui/app.js":"./src/ui/app.js?v=a7365109",
+  "./src/ui/app.js":"./src/ui/app.js?v=2c6696a0",
   "./src/ui/audio.js":"./src/ui/audio.js?v=bd2fbfdc",
   "./src/ui/battle_fx.js":"./src/ui/battle_fx.js?v=47e92ac0",
   "./src/ui/confirm.js":"./src/ui/confirm.js?v=9b1ffda3",
@@ -131,15 +133,16 @@
   "./src/ui/med_target.js":"./src/ui/med_target.js?v=ef3519c7",
   "./src/ui/preload.js":"./src/ui/preload.js?v=e418c8db",
   "./src/ui/run_flow.js":"./src/ui/run_flow.js?v=ae9dbbcc",
-  "./src/ui/screen_battle.js":"./src/ui/screen_battle.js?v=3bb90e5b",
+  "./src/ui/screen_arena.js":"./src/ui/screen_arena.js?v=bdd85580",
+  "./src/ui/screen_battle.js":"./src/ui/screen_battle.js?v=f1fd5a39",
   "./src/ui/screen_board.js":"./src/ui/screen_board.js?v=a4a4cc46",
   "./src/ui/screen_chars.js":"./src/ui/screen_chars.js?v=84ed15fe",
   "./src/ui/screen_dispatch.js":"./src/ui/screen_dispatch.js?v=edfd99a0",
   "./src/ui/screen_explore.js":"./src/ui/screen_explore.js?v=bab5fb69",
-  "./src/ui/screen_home.js":"./src/ui/screen_home.js?v=da3d0208",
-  "./src/ui/screen_items.js":"./src/ui/screen_items.js?v=347bc56f",
-  "./src/ui/screen_party.js":"./src/ui/screen_party.js?v=f5a79965",
-  "./src/ui/screen_records.js":"./src/ui/screen_records.js?v=1a64dbea",
+  "./src/ui/screen_home.js":"./src/ui/screen_home.js?v=87f0d0ec",
+  "./src/ui/screen_items.js":"./src/ui/screen_items.js?v=e4512381",
+  "./src/ui/screen_party.js":"./src/ui/screen_party.js?v=6b703f8b",
+  "./src/ui/screen_records.js":"./src/ui/screen_records.js?v=7fc25900",
   "./src/ui/screen_result.js":"./src/ui/screen_result.js?v=6be9aa59",
   "./src/ui/screen_settings.js":"./src/ui/screen_settings.js?v=459c9d38",
   "./src/ui/screen_shop.js":"./src/ui/screen_shop.js?v=7cb1be62",
@@ -155,12 +158,12 @@
   "./data/enemies.js":"./data/enemies.js?v=bf0e1adb",
   "./data/equips.js":"./data/equips.js?v=da1409a6",
   "./data/events.js":"./data/events.js?v=49b1ec62",
-  "./data/items.js":"./data/items.js?v=13eaea5f",
+  "./data/items.js":"./data/items.js?v=7c2b3c93",
   "./data/profiles.js":"./data/profiles.js?v=a3cad86e",
   "./data/scenario.js":"./data/scenario.js?v=a745212a",
   "./data/skills.js":"./data/skills.js?v=60f3ae46",
-  "./assets/art-manifest.js":"./assets/art-manifest.js?v=f89f1382",
-  "./assets/audio-manifest.js":"./assets/audio-manifest.js?v=f6c2b964"
+  "./assets/art-manifest.js":"./assets/art-manifest.js?v=30ce6e0b",
+  "./assets/audio-manifest.js":"./assets/audio-manifest.js?v=54721afc"
 }}
 </script>
 <!-- END importmap -->
@@ -187,7 +190,7 @@
   <p style="padding:24px;color:#e8d9b0">このゲームはJavaScriptを使います。ブラウザの設定で有効にしてください。</p>
 </noscript>
 
-<script type="module" src="src/ui/app.js?v=a7365109"></script>
+<script type="module" src="src/ui/app.js?v=2c6696a0"></script>
 
 </body>
 </html>

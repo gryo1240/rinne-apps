@@ -18,7 +18,7 @@
 
 import { h, n, fold, zeni } from './dom.js';
 import { ITEMS, MAT_INFO } from '../../data/items.js';
-import { MAT_NAME, STONE, RENKI_MAT } from '../meta/growth.js';
+import { MAT_NAME, STONE, RENKI_MAT, KAGE_MAT } from '../meta/growth.js';
 import { PHASE_EFFECT } from '../core/time.js';
 import { BASES } from '../../data/equips.js';
 
@@ -65,7 +65,8 @@ export function render(ctx) {
 
   // ── 素材 ──
   root.appendChild(h('h2', 'sec-title', '素材'));
-  for (const el of matRows(save, [STONE, RENKI_MAT])) root.appendChild(el);
+  // ★影鋼（影闘の褒美・2026-10-11）はエンディング後にだけ並べる（それまでは手に入らない）
+  for (const el of matRows(save, save.progress?.cleared ? [STONE, RENKI_MAT, KAGE_MAT] : [STONE, RENKI_MAT])) root.appendChild(el);
 
   // ── 月齢素材 ──
   root.appendChild(h('h2', 'sec-title', '月の素材'));

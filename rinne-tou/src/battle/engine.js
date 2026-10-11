@@ -196,6 +196,13 @@ function push(b, text, kind = 'info', meta = null) {
 
 export function declareStances(b) {
   for (const e of livingOf(b.enemies)) {
+    /**
+     * ★影闘の「影」は**自分で次の一手を選ぶ**（`meta/arena.js` の ghostPick）。
+     *   他プレイヤーの仲間なので、気をやり繰りして場面に合う技を選ぶ（ランダムに撃たせると
+     *   全体攻撃を使いこなす自分側が鏡像対戦で100%勝ってしまう・2026-10-11 実測）。
+     *   `pickAct` を持たない既存の敵・ボスはこの行を素通りし、乱数の消費も変わらない
+     */
+    if (typeof e.pickAct === 'function') { e.nextAct = e.pickAct(b, e); continue; }
     // 形態変化（ボス）: HP割合で構えの傾向と行動が入れ替わる（data/bosses.js の phases）
     let actIds = e.acts, weights = e.stanceWeights;
     if (e.phases && e.phases.length) {
@@ -209,7 +216,10 @@ export function declareStances(b) {
         actIds = ph.acts; weights = ph.stance;
       }
     }
-    const acts = actIds.map((id) => ALL_ACTS[id]).filter(Boolean);
+    // ★影闘の「影」（他プレイヤーの仲間・`meta/arena.js`）は、技から作った行動を
+    //   **オブジェクトのまま**持っている（表に登録された行動ではないため）。
+    //   既存の敵・ボスは文字列IDなので、この分岐で挙動は1ビットも変わらない
+    const acts = actIds.map((id) => (typeof id === 'string' ? ALL_ACTS[id] : id)).filter(Boolean);
     // 構えの重み [剛,疾,呪] に従って構えを選び、その構えの行動から1つ選ぶ
     const [wg, ws, wj] = weights;
     const pickStance = b.rng.weighted([
@@ -341,7 +351,16 @@ export function actAlly(b, unit, action) {
   // 攻撃対象
   const enemies = livingOf(b.enemies);
   if (enemies.length === 0) return;
-  const targets = skill.target === 'all' ? enemies : [b.enemies[action.targetIndex]?.alive ? b.enemies[action.targetIndex] : enemies[0]];
+  let targets = skill.target === 'all' ? enemies : [b.enemies[action.targetIndex]?.alive ? b.enemies[action.targetIndex] : enemies[0]];
+  /**
+   * ★影闘の「影」がかばっている間は、単体攻撃がそちらへ吸い寄せられる（2026-10-11）。
+   *   敵の攻撃が味方の挑発に集まる（actEnemy）のと同じ決まりを、向きを逆にしただけ。
+   *   挑発（taunt）を持つ敵は影だけなので、既存の戦闘は素通りする。乱数は引かない
+   */
+  if (skill.target !== 'all') {
+    const guard = enemies.find((e) => e.ghost && e.taunt > 0);
+    if (guard) targets = [guard];
+  }
 
   for (const t of targets) {
     if (!t || !t.alive) continue;
@@ -468,7 +487,14 @@ export function actEnemy(b, unit) {
     push(b, `${unit.name} は麻痺で動けない`); return;
   }
 
-  const act = unit.nextAct;
+  let act = unit.nextAct;
+  /**
+   * ★影（影闘・2026-10-11）は「封」を受けると技を使えず、ふつうの攻撃に落ちる。
+   *   味方側の封（canUse）と同じ意味を持たせるため。予告した構えはそのまま
+   *   （崩しの判定は予告に対して済んでいる）。乱数は引かない。
+   *   `unit.ghost` を持たない既存の敵は、この行を素通りする
+   */
+  if (unit.ghost && act.skill && unit.ghostNormal && hasAilment(unit, 'fu')) act = unit.ghostNormal;
   // 崩された＝威力半減＋追加効果不発（2026-08-02 改訂・キャンセルは廃止）
   const mul = unit.crushed ? R.CRUSH_ENEMY_MUL : (unit.adverse ? R.ADVERSE_ENEMY_MUL : 1);
   const suppressed = !!unit.crushed;
@@ -478,6 +504,26 @@ export function actEnemy(b, unit) {
       if (k === 'turns') continue;
       unit.buffs.push({ key: k, value: v * mul, turns: act.selfBuff.turns });
     }
+  }
+  // 影の「かばう」（影闘）。既存の敵の行動には taunt が無いので、ここは影専用
+  if (act.taunt) { unit.taunt = act.taunt.turns; push(b, `${unit.name} は前へ出た`); return; }
+
+  /**
+   * 影の回復わざ（影闘・2026-10-11）。既存の敵の行動には `heal` が無いので、ここは影専用。
+   * 量の式は味方の回復（actAlly）と同じ。崩されたら半減（mul）。乱数は引かない。
+   * 対象は「HPの割合がいちばん低い仲間」（`allyAll` なら生きている全員）。
+   */
+  if (act.heal) {
+    const mates = livingOf(b.enemies);
+    const targets = act.target === 'allyAll' ? mates
+      : [mates.reduce((a, z) => (z.hp / z.max.hp < a.hp / a.max.hp ? z : a), mates[0])];
+    for (const t of targets) {
+      if (!t) continue;
+      const amount = Math.min(t.max.hp - t.hp, Math.floor(act.heal * (1 + effStat(unit, 'mag') / 200) * mul));
+      t.hp += amount;
+      push(b, `${unit.name} の${act.name}。${t.name} のHPが ${amount} 回復`, 'heal', { target: t, amount, actId: act.id });
+    }
+    return;
   }
 
   const allies = livingOf(b.allies);

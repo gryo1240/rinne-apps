@@ -114,6 +114,9 @@ export function bgmForScene(st) {
 
   if (screen === 'title') return pick('title');
 
+  // 影闘（2026-10-11）は潜行の外の戦い（run が無い）。戦闘曲を流す
+  if (screen === 'battle' && st?.params?.ev?.arena) return pick('battle', 'tower');
+
   // 塔の中。**探索と戦闘で曲を分ける**（2026-08-08 オーナー要望）
   if (st?.run) {
     if (screen === 'battle') {

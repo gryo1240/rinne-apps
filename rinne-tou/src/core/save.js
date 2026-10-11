@@ -90,6 +90,8 @@ export function newSave(name = 'ともし') {
     dex: { enemies: {}, equips: {}, events: {}, pairs: {}, bosses: {}, items: {}, mats: {} },
     stats: { battles: 0, deaths: 0, crushes: 0, floorsCleared: 0, noDeathRun: true },
     ranking: { optIn: true, uid: null, name },
+    // 影闘の記録（2026-10-11）。★輪廻しても引き継ぐ（rebirth.js）。中身の整え方は meta/arena.js の recordOf
+    arena: { win: 0, lose: 0, count: 0, fairWin: 0, rw: [], copyAt: 0, hist: [], copied: [] },
     // ★sound は未使用（廃止予定）。真偽値なので音量に作り替えると、既存セーブの
     //   false が「音量0」に化けて**全員が無音で起動する**。触らずに volume を別に足してある
     // ★seVolume は 2026-08-12 追加（曲と効果音を別のつまみにした）。

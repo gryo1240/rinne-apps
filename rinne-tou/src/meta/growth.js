@@ -23,6 +23,8 @@ export const MAT_NAME = {
   // ★「錬気の素材」からの改名（2026-08-16 オーナー指示「〜の素材というのが気に入らない」）。
   //   もう一方の素材が「鍛冶石」なので、同じ短い複合語にそろえた。
   renki_mat: '錬気玉',
+  // 影闘の褒美（2026-10-11）。二つ銘を付けるのに使う。影闘でしか手に入らない
+  kagehagane: '影鋼',
   ...Object.fromEntries(Object.values(PHASE_EFFECT).map((p) => [p.material, p.materialName])),
 };
 
@@ -92,13 +94,44 @@ export function rollEquip({ seed, floor, slot = null, luckBonus = 0 }) {
   };
 }
 
-/** タプル ⇄ オブジェクト（セーブサイズ削減） */
+/**
+ * タプル ⇄ オブジェクト（セーブサイズ削減）
+ *
+ * `[uid, 本体, 接頭, 接尾, +値, 発見階]` ＋（あれば）`[6]二つ銘の接尾 [7]写しなら1`（2026-10-11）。
+ * ★**普通の装備は6要素のまま**（末尾の空は詰める）。古いセーブはそのまま読める＝セーブの版は上げない。
+ * ★JSON を通ると配列の undefined は null になる。読むときは null・undefined・0（＝s_none）を「なし」と扱う。
+ * ★タプルの中身を書き換えるときは**配列ごと差し替える**（`replaceEquip`）。長さの違う配列へ
+ *   1要素ずつ書き戻すと、二つ銘が黙って消える（advisor 指摘）
+ */
 export function packEquip(e) {
-  return [e.uid, BASES.findIndex((b) => b.id === e.baseId), PREFIXES.findIndex((p) => p.id === e.prefixId),
+  const t = [e.uid, BASES.findIndex((b) => b.id === e.baseId), PREFIXES.findIndex((p) => p.id === e.prefixId),
     SUFFIXES.findIndex((s) => s.id === e.suffixId), e.plus, e.lv];
+  const s2 = e.suffix2Id ? SUFFIXES.findIndex((s) => s.id === e.suffix2Id) : 0;
+  if (s2 > 0 || e.copy) t.push(Math.max(0, s2));
+  if (e.copy) t.push(1);
+  return t;
 }
 export function unpackEquip(t) {
-  return { uid: t[0], baseId: BASES[t[1]]?.id, prefixId: PREFIXES[t[2]]?.id, suffixId: SUFFIXES[t[3]]?.id, plus: t[4], lv: t[5] };
+  const e = { uid: t[0], baseId: BASES[t[1]]?.id, prefixId: PREFIXES[t[2]]?.id, suffixId: SUFFIXES[t[3]]?.id, plus: t[4], lv: t[5] };
+  // ★無いときはキーごと作らない（普通の装備の形を1ビットも変えない＝test.mjs の往復テスト）
+  if (t[6] > 0 && SUFFIXES[t[6]]) e.suffix2Id = SUFFIXES[t[6]].id;
+  if (t[7] === 1) e.copy = true;
+  return e;
+}
+
+/** 持ち物の装備を、同じ uid の新しい中身に**配列ごと**差し替える */
+export function replaceEquip(save, e) {
+  const list = save.inv.equips || [];
+  const i = list.findIndex((x) => x[0] === e.uid);
+  if (i < 0) return false;
+  list[i] = packEquip(e);
+  return true;
+}
+
+/** 二つ銘の名前（「の風」→「風」） */
+export function futatsuLabel(id) {
+  const s = SUFFIXES.find((x) => x.id === id);
+  return s ? s.name.replace(/^の/, '') : '';
 }
 
 export function equipName(e) {
@@ -106,13 +139,15 @@ export function equipName(e) {
   const p = PREFIXES.find((x) => x.id === e.prefixId);
   const s = SUFFIXES.find((x) => x.id === e.suffixId);
   if (!b) return '?';
-  return `${p?.name || ''}${b.name}${s?.name || ''}${e.plus > 0 ? ` +${e.plus}` : ''}`;
+  const two = e.suffix2Id ? `〈${futatsuLabel(e.suffix2Id)}〉` : '';
+  return `${p?.name || ''}${b.name}${s?.name || ''}${two}${e.plus > 0 ? ` +${e.plus}` : ''}${e.copy ? '（写し）' : ''}`;
 }
 
 export function equipRarity(e) {
   const p = PREFIXES.find((x) => x.id === e.prefixId);
   const s = SUFFIXES.find((x) => x.id === e.suffixId);
-  return Math.max(p?.rarity || 0, s?.rarity || 0);
+  const s2 = e.suffix2Id ? SUFFIXES.find((x) => x.id === e.suffix2Id) : null;
+  return Math.max(p?.rarity || 0, s?.rarity || 0, s2?.rarity || 0);
 }
 
 /**
@@ -129,14 +164,16 @@ export function equipEffect(e) {
   const floorScale = 1 + (e.lv || 1) * R.EQUIP_FLOOR_SCALE;   // 深い階の装備ほど強い
   const plusMul = R.enhanceMul(e.plus || 0);
 
-  for (const src of [b.s, p?.s, s?.s]) {
+  // ★二つ銘（2026-10-11）は2つ目の接尾として**同じ倍率**で足す
+  const s2 = e.suffix2Id ? SUFFIXES.find((x) => x.id === e.suffix2Id) : null;
+  for (const src of [b.s, p?.s, s?.s, s2?.s]) {
     if (!src) continue;
     for (const [k, v] of Object.entries(src)) {
       if (out[k] == null) continue;
       out[k] += Math.round(v * floorScale * plusMul);
     }
   }
-  for (const src of [p, s]) {
+  for (const src of [p, s, s2]) {
     if (!src) continue;
     out.meguri += src.meguri || 0;
     out.crushBonus += src.crushBonus || 0;
@@ -233,7 +270,8 @@ export function sellEquip(save, uid) {
   const i = (save.inv.equips || []).findIndex((x) => x[0] === uid);
   if (i < 0) return { ok: false, reason: 'noitem' };
   const e = unpackEquip(save.inv.equips[i]);
-  const price = Math.floor((10 + e.lv * 4) * (1 + equipRarity(e)) * (1 + e.plus * 0.3));
+  // ★写し装備は売っても少し（銭の稼ぎ道にしない・advisor 指摘 2026-10-11）
+  const price = e.copy ? COPY_SELL_PRICE : Math.floor((10 + e.lv * 4) * (1 + equipRarity(e)) * (1 + e.plus * 0.3));
   save.inv.equips.splice(i, 1);
   save.inv.zeni = (save.inv.zeni || 0) + price;
   return { ok: true, price };
@@ -272,9 +310,52 @@ export function sellPreview(save, pred) {
     if (!pred(e)) continue;
     if (equipped.has(e.uid)) { kept++; continue; }
     count++;
-    gained += Math.floor((10 + e.lv * 4) * (1 + equipRarity(e)) * (1 + e.plus * 0.3));
+    gained += e.copy ? COPY_SELL_PRICE : Math.floor((10 + e.lv * 4) * (1 + equipRarity(e)) * (1 + e.plus * 0.3));
   }
   return { count, gained, kept };
+}
+
+// ── 二つ銘（影闘の褒美・2026-10-11） ────────────────────────
+
+/** 写し装備の売値（固定・少し） */
+export const COPY_SELL_PRICE = 10;
+export const KAGE_MAT = 'kagehagane';
+/** 二つ銘を付けるのに要る影鋼（初めて）と、付け直すのに要る影鋼 */
+export const FUTATSU_COST = 15;
+export const FUTATSU_REROLL = 8;
+/**
+ * 二つ銘になれる接尾。★「灯の節約」と「影送りの収穫」は外す。
+ * 2つ重なると、本作の芯である「灯をどこまで使うか」の判断がゆるむため（advisor 指摘）
+ */
+export const FUTATSU_SUFFIXES = SUFFIXES
+  .filter((x) => x.id !== 's_none' && !x.akariCut && !x.dispatch).map((x) => x.id);
+
+/** 二つ銘を付ける（付いていれば付け直す）のに要る影鋼 */
+export function futatsuCost(e) { return e && e.suffix2Id ? FUTATSU_REROLL : FUTATSU_COST; }
+
+/**
+ * 二つ銘を付ける／付け直す。**エンディング後だけ**。
+ * 候補は FUTATSU_SUFFIXES から「1つ目の接尾」「いまの二つ銘」を除いたもの（必ず変わる）。重みは接尾表の w。
+ * ★乱数は「装備の uid ＋ これまでに付けた回数」から作る（決定論。読み込み直しても同じ結果）
+ * @returns {{ok:true, suffix2Id:string, cost:number} | {ok:false, reason:string}}
+ */
+export function futatsumei(save, uid) {
+  if (!save?.progress?.cleared) return { ok: false, reason: 'locked' };
+  const t = (save.inv.equips || []).find((x) => x[0] === uid);
+  if (!t) return { ok: false, reason: 'noitem' };
+  const e = unpackEquip(t);
+  const cost = futatsuCost(e);
+  const have = save.inv.mats?.[KAGE_MAT] || 0;
+  if (have < cost) return { ok: false, reason: 'material', need: cost, have };
+  const pool = SUFFIXES.filter((x) => FUTATSU_SUFFIXES.includes(x.id) && x.id !== e.suffixId && x.id !== e.suffix2Id);
+  if (pool.length === 0) return { ok: false, reason: 'nopool' };
+  save.inv.futatsuN = (save.inv.futatsuN || 0) + 1;
+  const rng = makeRng(`futatsu:${uid}:${save.inv.futatsuN}`);
+  const pick = rng.weighted(pool.map((x) => ({ w: x.w, v: x }))).v;
+  save.inv.mats[KAGE_MAT] = have - cost;
+  e.suffix2Id = pick.id;
+  replaceEquip(save, e);
+  return { ok: true, suffix2Id: pick.id, cost, name: equipName(e) };
 }
 
 // ── 銘強化（鍛冶） ────────────────────────────────────────
@@ -321,8 +402,8 @@ export function enhance(save, uid) {
   if (matId) save.inv.mats[matId] = moonHave - moonNeed;
   save.inv.zeni = zeniHave - zeniNeed;
   e.plus += 1;                       // 失敗なし（理不尽なストレスを作らない・spec §6-2）
-  const packed = packEquip(e);
-  for (let i = 0; i < t.length; i++) t[i] = packed[i];
+  // ★配列ごと差し替える（以前の「1要素ずつ書き戻す」は、二つ銘のある装備で末尾が消える）
+  replaceEquip(save, e);
   return { ok: true, cost, moonCost: moonNeed, matId, zeniCost: zeniNeed, plus: e.plus };
 }
 

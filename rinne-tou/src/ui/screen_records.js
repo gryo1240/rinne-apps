@@ -1,6 +1,6 @@
 /**
  * 記録画面（spec §2 の画面7）
- * 統計／図鑑。ランキング（v1.1）と影闘の戦績（v1.2）はまだ入っていない。
+ * 統計／図鑑／影闘の戦績（2026-10-11）。ランキング（v1.1）はまだ入っていない。
  */
 
 import { h, hhmm, n, fold, swapInto, zeni } from './dom.js';
@@ -29,6 +29,7 @@ export function render(ctx) {
     kv('進んだ階数', `${n(save.stats.floorsCleared || 0)}階`),
     kv('力つきた回数', `${n(save.stats.deaths || 0)}回`),
     kv('輪廻した回数', `${save.progress.rebirth || 0}周`),
+    save.arena ? kv('影闘の戦績', `${save.arena.win || 0}勝 ${save.arena.lose || 0}敗`) : null,
     kv('いまの銭', zeni(save.inv.zeni || 0)),
     kv('たまった因果', n(save.karma.have || 0)),
     save.stats.noDeathRun
@@ -127,7 +128,7 @@ export function render(ctx) {
 const SLOT_NAME = { weapon: '武器', armor: '防具', charm: '護符' };
 
 /** 素材の並び順（鍛冶石・錬気の素材 → 月の順） */
-const MAT_ORDER = ['enhance_stone', 'renki_mat', ...Object.values(PHASE_EFFECT).map((p) => p.material)];
+const MAT_ORDER = ['enhance_stone', 'renki_mat', ...Object.values(PHASE_EFFECT).map((p) => p.material), 'kagehagane'];
 
 /** その敵がどこに出るか。支塔専用の種は塔の名前で出す（本編で探しても見つからないため） */
 function enemyWhere(sp) {

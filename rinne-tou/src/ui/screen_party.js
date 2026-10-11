@@ -786,6 +786,10 @@ function buildForge(ctx, root, redraw) {
   const save = ctx.save;
   const stones = save.inv.mats?.[G.STONE] || 0;
 
+  // ★二つ銘（影闘の褒美・2026-10-11）。エンディング後だけ。鍛冶の一覧より上に置く
+  //   （鍛えられる装備が無くて下の一覧が早く return しても、二つ銘は出るように）
+  if (save.progress?.cleared) futatsuSection(ctx, root, redraw);
+
   root.appendChild(h('h2', 'sec-title', '鍛冶（銘強化）'));
   // ※ここはプレーンテキストなので Markdown の記法は使わない（そのまま表示されてしまう）
   root.appendChild(h('p', 'small dim', [
@@ -849,6 +853,66 @@ function buildForge(ctx, root, redraw) {
   root.appendChild(list);
   const nav = pager(page, pages, (p) => { cur.fpage = p; redraw(); });
   if (nav) root.appendChild(nav);
+}
+
+/**
+ * 二つ銘の節（2026-10-11 オーナー指示「強い装備を作るモチベーション」）。
+ *
+ * ★対象は**仲間が身につけている装備だけ**。持ち物は最大500点あるので全部並べると縦に伸びる。
+ *   二つ銘は手間のかかる仕上げなので、使っている装備に刻めば足りる。
+ * ★影鋼は影闘でしか手に入らない。足りないときも行は出し、何がいくつ足りないかを書く。
+ * ★結果は抽選なので、押す前に確かめる（影鋼は戻らない）。
+ */
+function futatsuSection(ctx, root, redraw) {
+  const save = ctx.save;
+  const have = save.inv.mats?.[G.KAGE_MAT] || 0;
+  root.appendChild(h('h2', 'sec-title', '二つ銘'));
+  root.appendChild(h('p', 'small dim', [
+    `${G.MAT_NAME[G.KAGE_MAT]} ${n(have)}個。身につけている装備に、二つ目の銘（接尾の効果）を刻みます。`,
+    h('br'),
+    `刻む：${G.FUTATSU_COST}個　／　刻み直す：${G.FUTATSU_REROLL}個（いまと違う銘になります）。${G.MAT_NAME[G.KAGE_MAT]}は影闘で勝つと手に入ります。`,
+  ]));
+  const rows = [];
+  for (const id of save.party.active || []) {
+    const c = save.chars[id];
+    for (const uid of c?.equip || []) {
+      if (!uid) continue;
+      const t = (save.inv.equips || []).find((x) => x[0] === uid);
+      if (t) rows.push({ who: CHAR_BY_ID[id]?.name || id, e: G.unpackEquip(t) });
+    }
+  }
+  if (rows.length === 0) {
+    root.appendChild(h('p', 'small dim', '出撃する仲間が装備を身につけていません。'));
+    return;
+  }
+  const list = h('div', 'list');
+  for (const { who, e } of rows) {
+    const cost = G.futatsuCost(e);
+    const ok = have >= cost;
+    const btn = h('button', {
+      class: `btn btn--sm${ok ? ' btn--primary' : ''}`, type: 'button', disabled: ok ? null : true,
+      'aria-label': `${G.equipName(e)} に二つ銘を${e.suffix2Id ? '刻み直す' : '刻む'}（${G.MAT_NAME[G.KAGE_MAT]}${cost}個）`,
+      onclick: async () => {
+        const msg = `${G.equipName(e)} に二つ銘を${e.suffix2Id ? '刻み直します（いまの銘は消えます）' : '刻みます'}。\n${G.MAT_NAME[G.KAGE_MAT]}を${cost}個つかいます。どの銘になるかは刻んでみるまで分かりません。`;
+        if (!await confirmBox(msg, e.suffix2Id ? '刻み直す' : '刻む', 'やめる')) return;
+        const r = G.futatsumei(save, e.uid);
+        if (!r.ok) { alertBox(r.reason === 'material' ? `${G.MAT_NAME[G.KAGE_MAT]}が足りません。` : '刻めませんでした。'); return; }
+        ctx.saveNow(true);
+        toast(`二つ銘を刻んだ：${r.name}`);
+        redraw();
+      },
+    }, e.suffix2Id ? `刻み直す ${cost}` : `刻む ${cost}`);
+    list.appendChild(h('div', `forge-row ${ok ? 'forge-row--ok' : 'forge-row--lack'}`, [
+      h('div', { class: 'kv', style: 'align-items:center' }, [
+        h('div', 'list__main', [
+          h('div', `rar-${G.equipRarity(e)}`, G.equipName(e)),
+          h('div', 'list__sub', `${who}　／ 二つ銘：${e.suffix2Id ? G.futatsuLabel(e.suffix2Id) : 'なし'}${ok ? '' : `　（${G.MAT_NAME[G.KAGE_MAT]}があと${cost - have}個）`}`),
+        ]),
+        btn,
+      ]),
+    ]));
+  }
+  root.appendChild(list);
 }
 
 /**

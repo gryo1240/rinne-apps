@@ -18,6 +18,8 @@ import * as Rb from '../meta/rebirth.js';
 import { confirmOnce } from './confirm.js';
 import { TOWERS, availableTowers, canEnter, isBossFloor, powerFloorOf, floorName } from '../dungeon/towers.js';
 import { everMax } from '../core/save.js';
+import * as Ar from '../meta/arena.js';
+import { syncGhost } from './screen_arena.js';
 import { bossDefOf } from '../../data/bosses.js';
 
 export function render(ctx) {
@@ -50,6 +52,25 @@ export function render(ctx) {
     '塔へ入る',
     h('span', 'btn-sub', `本編 ${floorName(everMax(save))}まで到達`),
   ]));
+
+  /**
+   * ── 影闘（2026-10-11 オーナー指示「他人とのバトルを追加」） ──
+   * ★支度の格子（偶数個で4行）には入れない。塔の一つとして「塔へ入る」の下に置く。
+   * ★拠点に戻るたびに自分の影を送り直す（同意した人だけ・中身が変わったときだけ・待たない）
+   */
+  if (Ar.isUnlocked(save)) {
+    const rec = Ar.recordOf(save);
+    root.appendChild(h('button', { class: 'btn', onclick: () => ctx.go('arena') }, [
+      '影闘',
+      h('span', 'btn-sub', rec.win + rec.lose > 0 ? `戦績 ${rec.win}勝${rec.lose}敗` : '他の灯守と手合わせ'),
+    ]));
+    syncGhost(ctx);
+  } else {
+    root.appendChild(h('button', { class: 'btn', disabled: true }, [
+      '影闘',
+      h('span', 'btn-sub', 'エンディング後に開く'),
+    ]));
+  }
 
   /**
    * ── 支度（2列・2026-08-16 オーナー指示） ──
