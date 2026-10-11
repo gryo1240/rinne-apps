@@ -284,6 +284,9 @@ async function finishScene() {
   //   applyScene は既読の記録のほかに仲間の加入・章の進行・クリア判定まで動かす。
   //   「もう一度読んだら仲間がまた入った」「章が進んだ」を作らないための分岐
   const { joined } = cur.replay ? { joined: [] } : St.applyScene(ctx.save, sc.id);
+  // ★場面を読み終えたら（飛ばしても）、「自動で記録する: しない」の設定に関係なく**必ず記録する**。
+  //   エンディング（ending:true → progress.cleared）もここを通るので、記録しないで遊んでいても
+  //   エンディング到達は必ず残る（オーナー指示 2026-10-11）。潜行中でもセーブ本体は書ける
   if (!cur.replay) ctx.saveNow(true);
 
   for (const c of joined) {

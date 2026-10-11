@@ -38,24 +38,52 @@ export function dayKey(ms) {
  *   そこで通信すると途中で切られる（advisor 指摘 2026-10-11）
  * ★待たない・失敗を言わない。影闘は本編の外にある
  */
-let syncing = false;
-export async function syncGhost(ctx, { force = false } = {}) {
-  try {
-    const save = ctx.save;
-    const st = Net.loadNet();
-    if (!save || !st.consent || syncing || !A.isUnlocked(save)) return;
-    const snap = A.snapshotOf(save, st.pubName || save.name);
-    if (!snap) return;
-    const hash = JSON.stringify(snap);
-    const now = ctx.now();
-    if (!force && hash === st.lastHash) return;
-    if (st.lastAt && now - st.lastAt < SYNC_MIN_MS) return;
-    syncing = true;
-    const r = await Net.putGhost(snap);
-    if (r.ok) Net.saveNet({ lastHash: hash, lastAt: now, slot: ctx.state.slot });
-  } catch (_) { /* 影闘の通信で本編を止めない */ } finally {
-    syncing = false;
+let syncing = null;
+export function syncGhost(ctx, { force = false } = {}) {
+  if (syncing) return syncing;
+  // ★finally は非同期に走るので、早く抜けても syncing が残りっぱなしにならない
+  const p = syncInner(ctx, force).catch(() => { /* 影闘の通信で本編を止めない */ })
+    .finally(() => { if (syncing === p) syncing = null; });
+  syncing = p;
+  return p;
+}
+
+/**
+ * ★既定で預ける（オーナー指示 2026-10-11「影を預けるのは確認しないでOK」）。
+ *   止まるのは、この端末で「公開をやめる」を押したとき（consent:false）だけ
+ */
+async function syncInner(ctx, force) {
+  const save = ctx.save;
+  let st = Net.loadNet();
+  if (!save || st.consent === false || !A.isUnlocked(save)) return;
+  const now = ctx.now();
+  if (st.lastAt && now - st.lastAt < SYNC_MIN_MS) return;
+  // 既定の公開名に UID の末尾を使うので、まだ無ければ先にログインしておく
+  if (!st.pubName && !st.uid) {
+    const au = await Net.ensureAuth();
+    if (!au.ok) return;
+    st = Net.loadNet();
   }
+  if (st.consent === false) return;      // 待っているあいだに止めた
+  const snap = A.snapshotOf(save, pubNameOf(st));
+  if (!snap) return;
+  const hash = JSON.stringify(snap);
+  if (!force && hash === st.lastHash) return;
+  const r = await Net.putGhost(snap);
+  if (!r.ok) return;
+  const first = !st.noticed;
+  Net.saveNet({ lastHash: hash, lastAt: now, slot: ctx.state.slot, noticed: true });
+  // ★黙って送り始めない。初めて預けたときだけ1回知らせる（advisor 指摘）
+  if (first) toast('あなたの影を預けました。ほかの灯守の対戦相手になります（止めるのは影闘の画面から）');
+}
+
+/**
+ * 公開名。既定は「灯守」＋UIDの末尾4文字。
+ * ★ゲーム内の名前（save.name）は使わない。全員「ともし」で同じになるうえ、
+ *   あとで名前入力を足したとき本名がそのまま出てしまう（advisor 指摘 2026-10-11）
+ */
+function pubNameOf(st) {
+  return st.pubName || (st.uid ? `灯守${String(st.uid).slice(-4)}` : '');
 }
 
 export function render(ctx) {
@@ -79,6 +107,7 @@ export function render(ctx) {
       '・勝つと影鋼（二つ銘の素材）。格上ほど多くもらえます（直近24時間で5回まで。受け取った時刻から24時間たつと1回ずつ戻ります）',
       '・ほかの灯守の格上・互角の影に勝つと、ときどき相手の装備の「写し」が手に入ります',
       '・調整戦の勝ち星で段位が上がり、預けた影に称号として表示されます',
+      '・あなたの編成も、祠に戻るたびに自動で「影」として預けられ、ほかの灯守の相手になります（名前の変更・公開の停止はこの画面で）',
       '・二つ銘は、鍛冶の画面で身につけている装備に刻めます',
       '・人が少ないうちは「塔の写し」（その日だけの相手）が混ざります',
     ].join('\n')),
@@ -158,7 +187,8 @@ export function render(ctx) {
   } else list.replaceChildren(h('p', 'dim small', '戦える仲間がいないため、相手を選べません。'));
 
   root.appendChild(backBtn(ctx));
-  syncGhost(ctx);
+  // 送り終えたら「公開中の名前」を描き直す（初回は送るまで名前が決まらない）
+  syncGhost(ctx).then(() => { if (pubBox.isConnected) drawPublish(ctx, pubBox); });
   return root;
 }
 
@@ -201,18 +231,26 @@ function member(c, lv) {
 // ── 公開（同意） ──────────────────────────────────────────
 
 function drawPublish(ctx, box) {
-  const save = ctx.save;
   const st = Net.loadNet();
-  if (st.consent) {
+  if (st.consent !== false) {
     box.replaceChildren(
-      kv('公開中の名前', st.pubName || save.name),
-      h('p', 'small dim', '拠点に戻るたび、いま遊んでいる記録の編成（強さ・技・身につけている装備・段位）が影として預けられます。'),
+      kv('公開中の名前', pubNameOf(st) || '（初めて預けるときに決まります）'),
+      h('p', 'small dim', [
+        '祠に戻るたび、いま遊んでいる記録の編成が自動で影として預けられ、ほかの人の対戦相手になります。',
+        h('br'), '預けるもの：公開する名前・本編の到達階・段位と勝ち数・戦える仲間（最大4人）の強さと技と身につけている装備。それ以外のセーブの中身（持ち物・銭・物語の進み方）は預けません。',
+        h('br'), '★この端末で最後に遊んだ、エンディング後の記録の編成が影になります。',
+        h('br'), '★ブラウザのデータを消すと、預けた影をこちらから消せなくなり（30日で相手に出なくなります）、また自動で預ける状態に戻ります。',
+      ]),
       h('div', 'btn-row', [
         h('button', { class: 'btn btn--sm', onclick: () => askName(ctx, box) }, '名前を変える'),
         h('button', {
           class: 'btn btn--sm',
           onclick: async () => {
             if (!await confirmBox('影を預けるのをやめます。預けてある影も消します。', '消す', 'やめる')) return;
+            // ★先に止めてから、送っている途中の通信が終わるのを待って消す。
+            //   逆だと、送信が削除のあとに届いて影が復活する（advisor 指摘）
+            Net.saveNet({ consent: false });
+            if (syncing) await syncing;
             const r = await Net.deleteGhost();
             if (!r.ok && r.reason === 'lost') {
               Net.saveNet({ consent: false, lastHash: null });
@@ -220,7 +258,11 @@ function drawPublish(ctx, box) {
               drawPublish(ctx, box);
               return;
             }
-            if (!r.ok) { alertBox('通信できなかったため、影を消せませんでした。少し待ってからもう一度お試しください。'); return; }
+            if (!r.ok) {
+              Net.saveNet({ consent: true });     // 何も変わっていないので預けている状態に戻す
+              alertBox('通信できなかったため、影を消せませんでした。少し待ってからもう一度お試しください。');
+              return;
+            }
             Net.saveNet({ consent: false, lastHash: null, lastAt: 0 });
             toast('影を消した');
             drawPublish(ctx, box);
@@ -231,24 +273,16 @@ function drawPublish(ctx, box) {
     return;
   }
   box.replaceChildren(
-    h('p', 'small', '影を預けると、ほかの人があなたの影と手合わせできるようになります。'),
-    h('p', 'small dim', [
-      '預けるもの：公開する名前・本編の到達階・段位と勝ち数・戦える仲間（最大4人）の強さと技と身につけている装備。',
-      h('br'), 'それ以外のセーブの中身（持ち物・銭・物語の進み方）は預けません。',
-      h('br'), '★この端末で最後に遊んだ記録の編成が影になります。',
-      h('br'), '★ブラウザのデータを消すと、預けた影をこちらから消せなくなります（30日で相手に出なくなります）。',
-    ]),
-    h('button', { class: 'btn btn--primary', onclick: () => askName(ctx, box) }, '影を預ける'),
-    h('p', 'small dim', '預けなくても、ほかの人の影とは戦えます。'),
+    h('p', 'small', 'いまは影を預けるのを止めています。預けなくても、ほかの人の影とは戦えます。'),
+    h('button', { class: 'btn btn--primary', onclick: () => askName(ctx, box) }, 'また預ける'),
   );
 }
 
 /** 公開名を決めて、同意を記録して、すぐに送る */
 function askName(ctx, box) {
-  const save = ctx.save;
   const st = Net.loadNet();
   const input = h('input', {
-    type: 'text', maxlength: '12', value: st.pubName || save.name || '',
+    type: 'text', maxlength: '12', value: pubNameOf(st),
     'aria-label': '公開する名前', autocomplete: 'off',
   });
   box.replaceChildren(
@@ -262,11 +296,15 @@ function askName(ctx, box) {
           const name = A.cleanName(input.value);
           // ★lastAt は消さない。前に送ってから30秒たっていないとサーバーに拒否されるので、
           //   そのときは次に祠へ戻ったとき送る（lastHash を消してあるので必ず送り直す）
-          Net.saveNet({ consent: true, pubName: name, lastHash: null });
           e.currentTarget.disabled = true;
+          // ★送っている途中の自動送信（古い名前）を待ってから、新しい名前で送り直す（レビュー指摘）
+          if (syncing) await syncing;
+          Net.saveNet({ consent: true, pubName: name, lastHash: null });
           await syncGhost(ctx, { force: true });
-          const ok = Net.loadNet().lastHash;
-          toast(ok ? `「${name}」の影を預けた` : '少し後（次に祠へ戻ったとき）に預けます');
+          // 本当に新しい名前で送れたかは、送った中身（lastHash）で確かめる
+          let sentName = null;
+          try { sentName = JSON.parse(Net.loadNet().lastHash || 'null')?.n ?? null; } catch (_) { /* 読めなければ未送信扱い */ }
+          toast(sentName === name ? `「${name}」の影を預けた` : '少し後（次に祠へ戻ったとき）に預けます');
           drawPublish(ctx, box);
         },
       }, 'この名前で預ける'),
