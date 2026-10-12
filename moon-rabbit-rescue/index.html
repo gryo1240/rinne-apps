@@ -25,6 +25,10 @@
 }
 html,body{height:100%;margin:0;background:var(--space);color:var(--ink);overflow:hidden;font-family:var(--f-body);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none}
 [hidden]{display:none!important}
+/* 図鑑の画像を押したまま動かすと半透明の影が出るのを止める・共有文のコピー用の欄は選択を残す（2026-10-12 オーナー指摘・こよみ事件簿と同じ対策） */
+body{-webkit-touch-callout:none}
+input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+img,a{-webkit-user-drag:none}
 canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none}
 button{font-family:inherit;color:inherit;cursor:pointer}
 button:focus-visible{outline:2px solid var(--visor);outline-offset:3px}
@@ -234,7 +238,7 @@ kbd{font-family:var(--f-num);font-size:11px;background:#262d45;border:1px solid 
 <div id="loading" class="screen"><div class="moon"></div><p>LOADING LUNAR SURFACE…</p></div>
 
 <div id="title" class="screen" hidden>
-  <a id="embedBar" class="btn primary" href="./" target="_blank" rel="noopener">全画面で遊ぶ（新しいタブ）</a>
+  <a id="embedBar" draggable="false" class="btn primary" href="./" target="_blank" rel="noopener">全画面で遊ぶ（新しいタブ）</a>
   <div class="logo">
     <div class="eyebrow">LUNAR RABBIT RESCUE UNIT</div>
     <h1>月うさぎ大捕物<small>MOON RABBIT RESCUE</small></h1>
@@ -382,8 +386,8 @@ kbd{font-family:var(--f-num);font-size:11px;background:#262d45;border:1px solid 
     <div id="share" hidden>
       <div class="lbl">記録をシェア</div>
       <div class="row">
-        <a class="btn x" id="shareX" href="#" target="_blank" rel="noopener">Xに投稿</a>
-        <a class="btn th" id="shareTh" href="#" target="_blank" rel="noopener">Threadsに投稿</a>
+        <a class="btn x" id="shareX" draggable="false" href="#" target="_blank" rel="noopener">Xに投稿</a>
+        <a class="btn th" id="shareTh" draggable="false" href="#" target="_blank" rel="noopener">Threadsに投稿</a>
         <button class="btn" id="shareCopy">文章をコピー</button>
       </div>
       <textarea id="shareTxt" readonly hidden aria-label="シェアする文章"></textarea>
@@ -1885,7 +1889,7 @@ function openDex() {
   const types = Object.keys(DEX).sort((a, b) => DEX[a].no - DEX[b].no), got = types.filter(t => d[t] > 0).length;
   $('dexProg').textContent = `${got} / ${types.length} 種`;
   $('dexGrid').innerHTML = types.map(t => { const n = Number(d[t]) || 0, seen = n > 0;
-    return `<div class="dex${seen ? '' : ' locked'}"><div class="dex-img">${th[t] ? `<img src="${th[t]}" alt="">` : ''}</div>
+    return `<div class="dex${seen ? '' : ' locked'}"><div class="dex-img">${th[t] ? `<img src="${th[t]}" alt="" draggable="false">` : ''}</div>
       <div class="dex-no">No.${String(DEX[t].no).padStart(2, '0')}</div><div class="dex-nm">${seen ? TYPES[t].label : '？？？'}</div>
       <div class="dex-tx">${seen ? DEX[t].text : 'まだ保護していない。'}</div>
       <div class="dex-ft"><span>${dexWhere(t)}</span><span>${seen ? `保護 ${n}匹` : ''}</span></div></div>`; }).join('');
