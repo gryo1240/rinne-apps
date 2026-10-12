@@ -263,7 +263,7 @@ var SCENARIO = {
     hidden_03_p2: { id:"hidden_03_p2", type:"text", speaker:"宵乃こよみ", sprite:"koyomi_serious", bg:"bg_shop_dim",
       text:"今夜の月みたいに、少し欠けていても、その人たちが、じゅうぶんに、しあわせでありますように。", next:"hidden_04" },
     hidden_04: { id:"hidden_04", type:"text", speaker:"宵乃こよみ", sprite:"koyomi_smile", bg:"bg_window_moon",
-      text:"（暦帳を、そっと閉じる。窓の外で、十六夜の月が、静かに雲に隠れる）\n——次の夜、また、迷える誰かが訪ねてきます。\nその人の言葉を、ちゃんと、聞いてあげられますように。", next:"hidden_end" },
+      text:"（暦帳を、そっと閉じる。窓の外で、十六夜の月に、薄い雲がかかっていく）\n——次の夜、また、迷える誰かが訪ねてきます。\nその人の言葉を、ちゃんと、聞いてあげられますように。", next:"hidden_end" },
     hidden_end: { id:"hidden_end", type:"end", end:"HIDDEN" }
   }
 };
