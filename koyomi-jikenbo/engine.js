@@ -41,7 +41,7 @@
     catch (e) { return m; }
   }
   function loadRun() {
-    try { var r = localStorage.getItem(ep.keys.run); return r ? LOGIC.migrateRun(JSON.parse(r)) : null; }
+    try { var r = localStorage.getItem(ep.keys.run); return r ? LOGIC.migrateRun(JSON.parse(r), ep.scenario) : null; }
     catch (e) { return null; }
   }
   function saveRun(run) { try { localStorage.setItem(ep.keys.run, JSON.stringify(run)); } catch (e) {} }

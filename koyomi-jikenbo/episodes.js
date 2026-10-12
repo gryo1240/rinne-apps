@@ -17,7 +17,7 @@ var EPISODES = (function () {
   return [
     { key: "ep1", no: 1, label: "第一夜", scenario: load("SCENARIO", "./scenario.js"), ready: true,
       keys: { run: "koyomi-jikenbo:run", meta: "koyomi-jikenbo:meta" } },
-    { key: "ep2", no: 2, label: "第二夜", scenario: load("SCENARIO2", "./scenario-2.js"), ready: false,
+    { key: "ep2", no: 2, label: "第二夜", scenario: load("SCENARIO2", "./scenario-2.js"), ready: true,  // 2026-10-12 公開（オーナー試読v1.5で了承）
       keys: { run: "koyomi-jikenbo:ep2:run", meta: "koyomi-jikenbo:ep2:meta" } }
   ].filter(function (e) { return !!e.scenario; });
 })();

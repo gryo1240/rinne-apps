@@ -163,10 +163,13 @@ var LOGIC = (function () {
   function newRun(scenario) {
     return { v: RUN_V, nodeId: scenario.meta.startId, flags: newFlags(), cleared: false };
   }
-  function migrateRun(run) {
+  // scenario を渡すと、今のシナリオに無いノードを指す中断データも null にする
+  // （改稿でノードが消えた・名前が変わったあとに「つづきから」を押すと resolve が止まるため）
+  function migrateRun(run, scenario) {
     if (!run || typeof run !== "object" || run.v !== RUN_V) return null;
     if (typeof run.nodeId !== "string" || !run.flags) return null;
     if (typeof run.flags.a1 !== "boolean") return null;
+    if (scenario && scenario.nodes && !Object.prototype.hasOwnProperty.call(scenario.nodes, run.nodeId)) return null;
     return run;
   }
   function migrateMeta(meta) {

@@ -240,6 +240,12 @@ EPISODES.forEach(function (EP) {
   ok("正常runは素通し", L.migrateRun(run) === run);
   ok("未知バージョンrunはnull", L.migrateRun({ v: 99 }) === null);
   ok("壊れたrunはnull", L.migrateRun({ v: 1, nodeId: 5 }) === null);
+  // 改稿で消えた・名前が変わったノードを指す中断データは捨てる（「つづきから」で止まらないように）
+  EPISODES.forEach(function (e) {
+    ok(e.label + ": シナリオを渡しても正常runは素通し", L.migrateRun(L.newRun(e.scenario), e.scenario) !== null);
+    var gone = { v: L.RUN_V, nodeId: "no_such_node", flags: L.newFlags(), cleared: false };
+    ok(e.label + ": 無いノードを指すrunはnull", L.migrateRun(gone, e.scenario) === null);
+  });
   ok("未知metaは新規metaに", L.migrateMeta({ v: 99 }).v === L.META_V);
   var a = L.markRead(L.newMeta(), "x"), b = L.markRead(L.newMeta(), "y");
   var merged = L.mergeMeta(a, b);
