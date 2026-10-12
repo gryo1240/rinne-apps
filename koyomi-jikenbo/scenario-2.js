@@ -60,7 +60,7 @@ var SCENARIO2 = {
     e2_act1_06b: { id:"e2_act1_06b", type:"text", speaker:"男性", sprite:"makoto_worried", bg:"bg_shop",
       text:"問い詰めるべきか、黙っているべきか。……占って、もらえませんか。", next:"e2_act1_07" },
     e2_act1_07: { id:"e2_act1_07", type:"text", speaker:"宵乃こよみ", sprite:"koyomi_normal", bg:"bg_shop",
-      text:"（戸口の柱に片手をついて、そっと、ふくらはぎをさすっていらっしゃる。……いつから、歩いていらしたのでしょう）", next:"e2_act1_choice_welcome" },
+      text:"（首の後ろに手をやって、小さく息をついていらっしゃる。……いつから、歩いていらしたのでしょう）", next:"e2_act1_choice_welcome" },
 
     // 選択① フレーバー（エンド不変・合流。男性は座布団をすすめられても戸口のそばに立ったまま＝05b。
     // どれを選んでも男性が腰を下ろし、湯呑みが出る＝後の「湯呑みを持つ手が、膝の上で」につながる）
