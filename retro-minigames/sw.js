@@ -1,5 +1,5 @@
 // りんねの8bitミニゲーム集 Service Worker（キャッシュ優先・オフライン動作）
-const CACHE = "retro-minigames-v7";
+const CACHE = "retro-minigames-v8"; // 2026-10-12 文字の選択を止める
 const ASSETS = [
   "./", "./index.html", "./core.js", "./logic.js", "./games.js",
   "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./jp-phrase-4.js"
