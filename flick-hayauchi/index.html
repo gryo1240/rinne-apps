@@ -35,6 +35,10 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;overflow-x:hidden}
+/* 押したまま動かすと文字が青く選択されるのを止める（2026-10-12 オーナー指摘・こよみ事件簿と同じ対策）。共有文のコピーに使う入力欄だけは選択を残す */
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+img,a{-webkit-user-drag:none}
 body{
   background:var(--bg); color:var(--ink);
   font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
@@ -243,7 +247,7 @@ details.how li{margin:2px 0}
       </div>
       <div class="btns">
         <button class="btn primary" id="btnCopy">結果をコピー</button>
-        <a class="btn sub" id="btnShare" target="_blank" rel="noopener">Xでシェア</a>
+        <a class="btn sub" id="btnShare" draggable="false" target="_blank" rel="noopener">Xでシェア</a>
         <button class="btn sub" id="btnRetry">もういちど</button>
         <button class="btn sub" id="btnHome">コースをえらぶ</button>
       </div>
