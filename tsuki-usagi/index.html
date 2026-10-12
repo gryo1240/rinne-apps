@@ -27,6 +27,11 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { background: #0c0f1d; }
+  /* 押したまま動かすと文字が青く選択されるのを止める（2026-10-12 オーナー指摘・こよみ事件簿と同じ対策）。
+     名前の入力欄と引き継ぎコードの欄（写す・貼り付ける）だけは選択と長押しの「ペースト」を残す */
+  body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  input, textarea { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+  img, a { -webkit-user-drag: none; }
   body {
     font-family: "Hiragino Maru Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
     color: var(--ink);

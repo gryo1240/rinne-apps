@@ -1,5 +1,5 @@
 // 月うさぎのすみか Service Worker (network-first・オフライン時のみキャッシュ)
-const CACHE = "tsuki-usagi-v4";
+const CACHE = "tsuki-usagi-v5"; // 2026-10-12 文字の選択を止める
 const ASSETS = ["./", "./index.html", "./logic.js", "./data.js", "./app.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./fonts/kiwi-maru-500.woff", "./jp-phrase-4.js"];
 
 self.addEventListener("install", (e) => {
