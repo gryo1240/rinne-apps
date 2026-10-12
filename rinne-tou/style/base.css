@@ -50,6 +50,11 @@
 html { -webkit-text-size-adjust: 100%; }
 html { background: var(--bg); }
 body { min-height: 100%; }   /* ★body に background を置かない（下の body::before の注記） */
+/* 押したまま動かすと文字が青く選択される・画像の影が出るのを止める（2026-10-12 オーナー指摘・こよみ事件簿と同じ対策）。
+   入力欄（セーブの持ち出し・取り込み）だけは選択と長押しの「ペースト」を残す */
+body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+input, textarea { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+img, a { -webkit-user-drag: none; }
 
 body {
   font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;

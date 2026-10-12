@@ -33,6 +33,8 @@ export function h(tag, attrs = null, kids = null) {
       else el.setAttribute(k, String(v));
     }
   }
+  // 画像やリンクを押したまま動かすと半透明の影がついてくるので、画像とリンクは一律ドラッグ不可に（2026-10-12 オーナー指摘。Firefox は CSS の -webkit-user-drag が効かないので属性で）
+  if ((tag === 'img' || tag === 'a') && !el.hasAttribute('draggable')) el.setAttribute('draggable', 'false');
   append(el, kids);
   return el;
 }
