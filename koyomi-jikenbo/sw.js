@@ -1,5 +1,5 @@
 // 宵乃こよみの事件簿 Service Worker (network-first・オフライン時のみキャッシュ)
-const CACHE = "koyomi-jikenbo-v7"; // 2026-10-12 立ち絵の白い縁を除去・誠と湊の大きさをこよみに合わせる（v6 第一夜の月の一文・v5 第二夜の公開・v4 第一夜の改善）。画像は事前キャッシュに入れない（通常の取得時に自動で貯まる）
+const CACHE = "koyomi-jikenbo-v8"; // 2026-10-12 立ち絵・文字・選択肢をドラッグしても選択表示や画像の影が出ないように（v7 立ち絵の白い縁を除去・誠と湊の大きさをこよみに合わせる・v6 第一夜の月の一文・v5 第二夜の公開・v4 第一夜の改善）。画像は事前キャッシュに入れない（通常の取得時に自動で貯まる）
 const ASSETS = ["./", "./index.html", "./scenario.js", "./scenario-2.js", "./episodes.js", "./sprites.js", "./logic.js", "./audio.js", "./engine.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./jp-phrase-4.js", "./fonts/shippori-b1-800.woff"];
 
 self.addEventListener("install", (e) => {

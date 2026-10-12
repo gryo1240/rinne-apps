@@ -14,6 +14,10 @@
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { height:100%; background:#0f0b17; }
   body { font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif; color:var(--ink); overflow:hidden; }
+  /* 立ち絵や文字・選択肢をドラッグすると、青い選択表示と半透明の画像が出ていた（2026-10-12 オーナー指摘）。
+     ゲーム画面では文字も画像も選択・ドラッグさせない。立ち絵は押しても親の枠→#novelに届くので文章送りはそのまま */
+  body { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  img { -webkit-user-drag:none; }
   #app { position:relative; width:100%; max-width:720px; height:100dvh; margin:0 auto; overflow:hidden; background:#0f0b17; }
 
   .screen { position:absolute; inset:0; display:none; }
@@ -225,7 +229,7 @@
   #choices { z-index:4; }
   #sprite-left { left:-4%; }
   #sprite-right { right:-4%; }
-  .sprite img { width:100%; height:100%; max-width:none; max-height:none; object-fit:contain; object-position:50% 100%; }
+  .sprite img { width:100%; height:100%; max-width:none; max-height:none; object-fit:contain; object-position:50% 100%; pointer-events:none; }
   .sprite.enter { animation:kjSpriteIn 0.35s ease-out; }
   @keyframes kjSpriteIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
   #bg.swap { animation:kjBgIn 0.6s ease-out; }

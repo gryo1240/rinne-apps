@@ -206,6 +206,7 @@
     el.classList.remove("empty"); el.innerHTML = ""; el.setAttribute("data-char", chKey);
     if (face.img) {
       var img = document.createElement("img"); img.alt = ch.name;
+      img.draggable = false; // Firefoxは-webkit-user-dragが効かないので属性でも止める
       // 画像が読めない時（配置漏れ・通信切れ）は壊れた画像の印でなく名前入りの枠に。すでに次の立ち絵に替わっていれば何もしない
       img.onerror = function () { if (img.parentNode === el) el.replaceChild(makePlaceholder(ch), img); };
       img.src = face.img; el.appendChild(img);
