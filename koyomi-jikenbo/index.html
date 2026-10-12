@@ -198,6 +198,67 @@
   /* 狭い幅: 「第二幕から（聞き取り）」が1行に収まるよう、ボタンの字間を詰める */
   @media (max-width:340px) { #title .menu button, #result .btns button { letter-spacing:0.02em; } }
 
+  /* ===== 2026-10-12 第二夜の追加・本編画面の作り直し（オーナー了承: 立ち絵の大きさと位置・手紙の場面・長い文の分割） =====
+     ・タイトル: 夜が2つ以上あるときだけ「第一夜／第二夜」の選択を出す（題簽の h2 は選んだ夜の題名）
+     ・文字欄: 固定の高さ（--tbh。engine.js が話ごとに全ページの最長に合わせて決める）＋ほぼ不透明の藍。
+       上端のぼかしの帯（明るい背景で泥色になる）をやめ、名前は生成りの札にしてどの背景でも読めるように
+     ・立ち絵: 文字欄の上の空間いっぱいの高さ。左右は少し画面外へ逃がし、話していない側は奥（暗く・後ろ）へ
+     ・手紙: 文字欄そのものを罫線入りの便箋に（立ち絵の上に文字を重ねない） */
+  #title .eps { display:flex; gap:10px; margin-top:16px; margin-right:14px; }
+  #title .eps button { font-family:"KJ Title",serif; font-weight:800; font-size:0.92rem; letter-spacing:0.14em;
+    padding:7px 16px; background:transparent; color:#d9dbe6; border:1px solid rgba(236,228,206,0.35); border-radius:0; cursor:pointer; }
+  #title .eps button.on { background:#ece4ce; color:#1c2133; border-color:#ece4ce; }
+  /* 夜の選択を足した分（約50px）、高さ601〜680pxの画面では余白を詰めてはみ出さないように（360x640で14pxはみ出していた） */
+  @media (min-height:601px) and (max-height:680px) { #title .credit { margin-top:12px; } #title .eps { margin-top:12px; } #title .menu { margin-top:16px; }
+    #title .menu button { padding:12px; } /* つづきから・隠しの両方が出ると360x640で4px切れた（レビュー低4） */ }
+  @media (max-height:600px) { #title .eps { margin-top:10px; } #title .eps button { padding:5px 14px; } }
+
+  #app { --tbh:190px; }
+  #stage { bottom:var(--tbh); }
+  /* 背景の絵は立ち絵の後ろ（文字欄より上）にだけ敷く。文字欄の下に隠れる部分に絵の見どころを取られないように（2026-10-12 背景画像の追加） */
+  #bg { bottom:var(--tbh); }
+  #novel { background:#141826; }
+  .sprite { width:auto; max-width:72%; height:calc(100% - 48px); aspect-ratio:2/3; z-index:1; }
+  .sprite.dim { z-index:0; }
+  /* 立ち絵に重なり順を付けたので、文字欄・選択肢はそれより上に明示する（無いと立ち絵が選択肢のボタンを覆って押せない） */
+  #textbox { z-index:2; }
+  #choices { z-index:4; }
+  #sprite-left { left:-4%; }
+  #sprite-right { right:-4%; }
+  .sprite img { width:100%; height:100%; max-width:none; max-height:none; object-fit:contain; object-position:50% 100%; }
+  .sprite.enter { animation:kjSpriteIn 0.35s ease-out; }
+  @keyframes kjSpriteIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  #bg.swap { animation:kjBgIn 0.6s ease-out; }
+  @keyframes kjBgIn { from { opacity:0.25; } to { opacity:1; } }
+  @media (prefers-reduced-motion: reduce) { .sprite.enter, #bg.swap { animation-duration:0.15s; } }
+
+  #textbox { height:var(--tbh); min-height:0; padding:24px 22px 26px;
+    background:rgba(18,21,33,0.95); border-top:1px solid rgba(236,228,206,0.28); }
+  #text { max-height:calc(var(--tbh) - 50px); overflow-y:auto; }
+  #textMeasure { position:absolute; left:22px; right:22px; top:0; visibility:hidden; pointer-events:none; }
+  #text, #textMeasure { font-size:1.02rem; line-height:1.85; white-space:pre-wrap; letter-spacing:0.02em; }
+  #speaker { position:absolute; left:16px; top:-14px; margin:0; min-height:0; padding:3px 12px 4px;
+    background:#ece4ce; color:#1c2133; font-size:0.84rem; letter-spacing:0.12em; font-weight:700; line-height:1.4; }
+  #speaker:empty { display:none; }
+  #advance { right:16px; bottom:8px; }
+  /* 狭い幅: 左上の「音」と右上のボタン列が触れないよう、つまみと間隔を詰める（幅320pxで接触していた） */
+  @media (max-width:360px) { #volSlider { width:46px; } #menu { gap:5px; } #menu button { padding:6px 8px; } }
+  /* 手紙・付箋: 罫線の便箋（行の高さと罫線の間隔をそろえる） */
+  #textbox.letter { background:#ece4ce; border-top-color:#b8ab86; }
+  #textbox.letter #text { color:#23263a;
+    background-image:linear-gradient(transparent calc(1.85em - 1px), rgba(28,33,51,0.16) calc(1.85em - 1px));
+    background-size:100% 1.85em; }
+  #textbox.letter #speaker { background:#1c2133; color:#ece4ce; }
+  #textbox.letter #advance { color:#4a4f63; }
+  @media (max-height:620px) {
+    #text, #textMeasure { font-size:0.95rem; line-height:1.7; }
+    #textbox.letter #text { background-image:linear-gradient(transparent calc(1.7em - 1px), rgba(28,33,51,0.16) calc(1.7em - 1px)); background-size:100% 1.7em; }
+  }
+  /* 文字欄が上限（画面の半分）を超える小さな画面だけ、engine.js が tb-compact を付けて一段小さくする（横向きのスマホ等） */
+  #app.tb-compact #text, #app.tb-compact #textMeasure { font-size:0.88rem; line-height:1.6; }
+  #app.tb-compact #textbox.letter #text { background-image:linear-gradient(transparent calc(1.6em - 1px), rgba(28,33,51,0.16) calc(1.6em - 1px)); background-size:100% 1.6em; }
+  #textbox.letter #text { background-attachment:local; } /* 欄の中でスクロールしても罫線が文字と一緒に動く */
+
 </style>
 <script src="jp-phrase-4.js" defer></script>
 </head>
@@ -208,10 +269,11 @@
   <!-- タイトル -->
   <section id="title" class="screen active">
     <div class="cover">
-      <div class="daisen" data-nophrase><h1>宵乃こよみの事件簿</h1><h2>第一夜『十六夜の来客』</h2></div>
+      <div class="daisen" data-nophrase><h1>宵乃こよみの事件簿</h1><h2 id="titleEp">第一夜『十六夜の来客』</h2></div>
       <svg class="moon" viewBox="0 0 84 84" width="84" height="84" aria-hidden="true"><defs><clipPath id="kjLit"><path d="M42 2 A40 40 0 0 0 42 82 A32 40 0 0 0 42 2 Z"/></clipPath></defs><g clip-path="url(#kjLit)"><rect width="84" height="84" fill="#e9e0c4"/><circle cx="30" cy="30" r="7" fill="#d9cfad"/><circle cx="50" cy="52" r="10" fill="#dcd2b0"/><circle cx="28" cy="56" r="5" fill="#d9cfad"/></g></svg>
     </div>
-    <div class="credit">— 夜に暦を読む、占い師の物語 —</div>
+    <div class="credit" id="titleCredit">— 夜に暦を読む、占い師の物語 —</div>
+    <div class="eps" id="epTabs" data-nophrase style="display:none"></div>
     <div class="menu">
       <button id="btnContinue" class="primary">つづきから</button>
       <button id="btnNew">はじめから</button>
@@ -237,6 +299,7 @@
       <div id="speaker"></div>
       <div id="text"></div>
       <div id="advance">▼</div>
+      <div id="textMeasure" aria-hidden="true"></div>
     </div>
     <div id="choices"></div>
     <div id="backlog"><div class="close"><button id="btnLogClose">とじる</button></div><h3>これまでのお話</h3><div id="backlogBody"></div></div>
@@ -255,6 +318,7 @@
     <div id="resNext" style="margin-top:12px;font-size:0.82rem;color:#c9b7e8;letter-spacing:0.1em"></div>
     <div class="btns">
       <button id="btnShare">結果をXで報告（ネタバレなし）</button>
+      <button id="btnNextEp" style="display:none">第二夜を読む</button>
       <button id="btnReplay" class="primary">もう一度・ほかの結末を見る</button>
       <button id="btnToTitle">タイトルへ</button>
     </div>
@@ -264,6 +328,8 @@
 </div>
 
 <script src="scenario.js"></script>
+<script src="scenario-2.js"></script>
+<script src="episodes.js"></script>
 <script src="sprites.js"></script>
 <script src="logic.js"></script>
 <script src="audio.js"></script>

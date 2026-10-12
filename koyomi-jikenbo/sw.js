@@ -1,6 +1,6 @@
 // 宵乃こよみの事件簿 Service Worker (network-first・オフライン時のみキャッシュ)
-const CACHE = "koyomi-jikenbo-v3";
-const ASSETS = ["./", "./index.html", "./scenario.js", "./sprites.js", "./logic.js", "./audio.js", "./engine.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./jp-phrase-4.js", "./fonts/shippori-b1-800.woff"];
+const CACHE = "koyomi-jikenbo-v4"; // 2026-10-12 第二夜の追加（scenario-2.js・episodes.js）。画像は事前キャッシュに入れない（通常の取得時に自動で貯まる）
+const ASSETS = ["./", "./index.html", "./scenario.js", "./scenario-2.js", "./episodes.js", "./sprites.js", "./logic.js", "./audio.js", "./engine.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./jp-phrase-4.js", "./fonts/shippori-b1-800.woff"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));

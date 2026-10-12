@@ -98,7 +98,11 @@ var LOGIC = (function () {
         return false;
       }
       if (n.type !== "text") return false; // choice/endでは停止
-      return !!readSet[id];
+      if (readSet[id]) return true;
+      // 2026-10-12: 長い文を分割した続きのページ(<元ID>_p2…)は、元のページを読んでいれば既読扱い
+      // （分割前の版で読んだ人のスキップが、読んだ文の途中で毎回止まらないように）
+      var base = id.replace(/_p\d+$/, "");
+      return base !== id && !!readSet[base];
     }
   }
 
@@ -145,13 +149,14 @@ var LOGIC = (function () {
   }
 
   // シェア文（ネタバレなし・回収数のみ）
+  // 題名はシナリオの meta.title から（2026-10-12 第二夜追加で一般化。第一夜の文面は従来と同じ）
   function buildShareText(meta, scenario) {
-    var all = ["TRUE", "NORMAL", "BAD", "HIDDEN"];
+    var all = Object.keys(scenario.meta.ends);
     var got = 0; for (var i = 0; i < all.length; i++) if (meta.ends[all[i]]) got++;
     var total = all.length;
     var stars = "";
     for (var j = 0; j < total; j++) stars += j < got ? "★" : "☆";
-    return "宵乃こよみの事件簿 第一夜『十六夜の来客』をプレイ中🌙 エンド回収 " + stars + "（" + got + "/" + total + "） #宵乃こよみの事件簿";
+    return scenario.meta.title + "をプレイ中🌙 エンド回収 " + stars + "（" + got + "/" + total + "） #宵乃こよみの事件簿";
   }
 
   // ===== セーブ（run）: migrate（未知バージョンはnull＝新規扱い） =====
